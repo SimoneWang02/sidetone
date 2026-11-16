@@ -14,6 +14,9 @@ you → session) so you can keep your eyes on your own work.
   **from this repo**: `~/.claude/settings.json` points at `~/personal/claude-speaks/hooks/`.
   Rollback: `~/.claude/settings.json.bak-before-hub` plus the old scripts in `~/.claude/hooks/`.
 - Not yet packaged as a plugin. Paths outside the repo: `~/.local/share/{kokoro,piper}`.
+- `README.md`, `LICENSE` (MIT) and `install.sh` / `uninstall.sh` exist since 2026-11-16. The
+  install script merges the hooks into an existing `settings.json` (tested on a throwaway home
+  folder) but its download and environment steps have not been run on a clean machine.
 - Private GitHub repo: github.com/SimoneWang02/claude-speaks. Claude may commit and push.
 
 ## Roadmap (decided with the author 2026-11-16)
@@ -39,8 +42,8 @@ sits, behaviour over a game, and the physical hotkeys (`Ctrl+Alt+L`, `Y`, `N`, `
 `Backspace`); none of those can be seen or pressed from WSL.
 Decisions: overlay is Windows-native (must be usable over games; no browser chrome);
 sessions are told apart by a spoken label plus a stable voice per project.
-Later: plugin packaging, `install.sh`, README with latency numbers and a demo video with sound,
-short sounds, stereo placement, a "what did I miss" key, MIT license, and a settings panel
+Later: plugin packaging, a demo video with sound for the README, short sounds, stereo placement,
+a "what did I miss" key, and a settings panel
 where every voice can be customized (the author's idea; today the same choices live in
 `config.json` as `voices` and `voice_pool`).
 
@@ -155,6 +158,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   position leaves 150 px on the right so it does not cover a maximized window's buttons.
   To see it from WSL without capturing the user's screen: send `config` with `opaque: true`, ask
   for `bounds`, and capture exactly that rectangle with `Graphics.CopyFromScreen`.
+- Memory: the hub holds about 0.5 GB with Kokoro loaded and about 1.2 GB once Whisper `small.en`
+  has been loaded by the first push-to-talk.
+- `claude-speaks hub stop` and `uninstall.sh` act on the hub of the current `XDG_RUNTIME_DIR`,
+  whatever `HOME` is, so a test with a fake home folder still stops the real hub.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
