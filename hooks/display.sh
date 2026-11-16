@@ -5,7 +5,16 @@
 [ -e "$HOME/.claude/voice-off" ] && exit 0
 input=$(cat)
 case $input in *'<speak>'*) ;; *) exit 0 ;; esac   # fast path: nothing to do
+. "${BASH_SOURCE[0]%/*}/lib.sh"
 
+# The hub parses the batch, queues the speech and returns the display rewrite.
+if out=$(hub_post /display <<<"$input"); then
+  [ -n "$out" ] && printf '%s\n' "$out"
+  exit 0
+fi
+
+# No hub: start one for next time, and speak this line directly.
+hub_start
 out=$(jq -c '
   def tag: "^\\s*<speak>\\s*(?<t>.*?)\\s*</speak>\\s*$";
   (.delta // "" | split("\n")) as $lines
@@ -17,10 +26,10 @@ speech=$(jq -r '.speech // empty' <<<"$out")
 [ -n "$speech" ] || exit 0
 
 session=$(jq -r '.session // "unknown"' <<<"$out")
-STATE="$HOME/.claude/hooks/.state"; mkdir -p "$STATE"
-printf '%s' "$speech" > "$STATE/$session.spoken"   # lets the Stop hook skip a repeat
-. "$HOME/.claude/hooks/tts-lib.sh"
+mkdir -p "$CS_STATE/.state"
+printf '%s' "$speech" > "$CS_STATE/.state/$session.spoken"   # lets the Stop hook (or the hub) skip a repeat
+. "$CS_ROOT/hooks/tts-lib.sh"
 tts_say "$speech"
-echo "$(date '+%F %T') [${session:0:8}] src=stream speech=$speech" >> "$HOME/.claude/hooks/voice.log"
+echo "$(date '+%F %T') [${session:0:8}] src=stream(no-hub) speech=$speech" >> "$CS_STATE/voice.log"
 
 jq -c '{hookSpecificOutput: {hookEventName: "MessageDisplay", displayContent: .display}}' <<<"$out"

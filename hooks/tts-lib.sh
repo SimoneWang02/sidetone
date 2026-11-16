@@ -1,7 +1,7 @@
-# Shared TTS helpers for speak.sh and notify.sh (sourced, not executed).
+# Direct TTS, used by the hooks when the hub is not running (sourced after lib.sh).
 # Engine order: macOS say -> Kokoro -> Piper -> spd-say -> espeak-ng.
-TTS_PIDFILE="$HOME/.claude/hooks/.tts.pid"
-KOKORO_DIR="${KOKORO_DIR:-$HOME/.local/share/kokoro}"
+mkdir -p "$CS_STATE"
+TTS_PIDFILE="$CS_STATE/.tts.pid"
 PIPER_DIR="${PIPER_DIR:-$HOME/.local/share/piper}"
 PIPER_VOICE="${PIPER_VOICE:-$PIPER_DIR/voices/en_US-lessac-medium.onnx}"
 export KOKORO_DIR KOKORO_VOICE="${KOKORO_VOICE:-af_heart}" KOKORO_SPEED="${KOKORO_SPEED:-1.1}"
@@ -28,7 +28,7 @@ tts_say() {  # $1 = text; speaks in the background and returns immediately
   if command -v say >/dev/null 2>&1; then
     nohup say -r 210 <<<"$1" >/dev/null 2>&1 &
   elif command -v paplay >/dev/null 2>&1 && [ -x "$KOKORO_DIR/venv/bin/python" ] && [ -f "$KOKORO_DIR/kokoro-v1.0.onnx" ]; then
-    _tts_pipe "$1" 24000 "$KOKORO_DIR/venv/bin/python" -I "$HOME/.claude/hooks/kokoro-say.py"
+    _tts_pipe "$1" 24000 "$KOKORO_DIR/venv/bin/python" -I "$CS_ROOT/hooks/kokoro-say.py"
   elif command -v paplay >/dev/null 2>&1 && [ -x "$PIPER_DIR/piper/piper" ] && [ -f "$PIPER_VOICE" ]; then
     local rate; rate=$(jq -r '.audio.sample_rate // 22050' "$PIPER_VOICE.json" 2>/dev/null)
     _tts_pipe "$1" "${rate:-22050}" "$PIPER_DIR/piper/piper" --model "$PIPER_VOICE" --output-raw

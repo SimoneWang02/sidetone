@@ -7,3 +7,5 @@ voice.log
 *.onnx.json
 voices-*.bin
 venv/
+# Python
+__pycache__/

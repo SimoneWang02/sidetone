@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# Stop hook (fallback): speaks the <speak> line if display.sh didn't already speak it.
-[ -e "$HOME/.claude/voice-off" ] && exit 0
-LOG="$HOME/.claude/hooks/voice.log"
+# Stop hook: tells the hub the turn ended; the hub speaks the <speak> line unless it was
+# already spoken while streaming. Without a hub, does the same job itself.
 input=$(cat)
+. "${BASH_SOURCE[0]%/*}/lib.sh"
+hub_post /event <<<"$input" >/dev/null 2>&1 && exit 0
+voice_off && exit 0
+mkdir -p "$CS_STATE"
+LOG="$CS_STATE/voice.log"
 
 speak_from() {  # prefer the last line that is exactly a <speak> tag; else the last tag anywhere
   local t; t=$(cat)
@@ -14,7 +18,7 @@ speak_from() {  # prefer the last line that is exactly a <speak> tag; else the l
 }
 
 (
-  . "$HOME/.claude/hooks/tts-lib.sh"
+  . "$CS_ROOT/hooks/tts-lib.sh"
   session=$(jq -r '.session_id // "unknown"' <<<"$input")
   transcript=$(jq -r '.transcript_path // empty' <<<"$input")
   speech=""
@@ -37,14 +41,14 @@ speak_from() {  # prefer the last line that is exactly a <speak> tag; else the l
   fi
 
   # Skip if the streaming hook already said this.
-  spoken="$HOME/.claude/hooks/.state/$session.spoken"
+  spoken="$CS_STATE/.state/$session.spoken"
   if [ -n "$speech" ] && [ -f "$spoken" ] && [ "$(cat "$spoken")" = "$speech" ]; then
     src="$src(already-spoken)"; rm -f "$spoken"; speech_to_say=""
   else
     rm -f "$spoken"; speech_to_say=$speech
   fi
 
-  echo "$(date '+%F %T') [${session:0:8}] src=${src:-none} speech=${speech:-<none>}" >> "$LOG"
+  echo "$(date '+%F %T') [${session:0:8}] src=${src:-none}(no-hub) speech=${speech:-<none>}" >> "$LOG"
   [ -n "$speech_to_say" ] && tts_say "$speech_to_say"
 ) </dev/null >/dev/null 2>&1 &
 exit 0

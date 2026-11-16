@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# claude-speaks: control the voice hub from a terminal.
+set -u
+. "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../hooks/lib.sh"
+
+usage() {
+  cat <<'EOF'
+Usage: claude-speaks <command>
+
+  status                     sessions the hub knows, and what is queued
+  say [-v VOICE] TEXT        speak a line through the hub
+  stop                       stop speaking and clear the queue
+  on | off                   turn the voice on or off for every session
+  hub start|stop|restart     manage the background hub
+  log                        follow the speech log
+EOF
+}
+
+hub_get() { [ -S "$CS_SOCK" ] && curl -sf -m 2 --unix-socket "$CS_SOCK" "http://hub$1"; }
+
+hub_wait() {  # wait until the hub answers, up to 10 s
+  for _ in $(seq 100); do hub_get /health >/dev/null 2>&1 && return 0; sleep 0.1; done
+  echo "hub did not start; see $CS_STATE/hub.log" >&2; return 1
+}
+
+hub_stop() {
+  hub_post /shutdown </dev/null >/dev/null 2>&1 || return 0
+  for _ in $(seq 50); do [ -S "$CS_SOCK" ] || return 0; sleep 0.1; done
+}
+
+case ${1:-} in
+  status)
+    state=$(hub_get /state) || { echo "hub is not running"; exit 1; }
+    jq -r 'if .muted then "voice: off" else "voice: on" end' <<<"$state"
+    jq -r 'if (.sessions | length) == 0 then "no sessions" else
+        (.sessions[] | [.name, .state, (.activity | if . == "" then "-" else . end),
+          (if .tasks_total > 0 then "\(.tasks_done)/\(.tasks_total)" else "-" end), .voice] | @tsv) end' <<<"$state" |
+      column -t -s $'\t'
+    jq -r '.queued[] | "queued: [\(.kind)] \(.text)"' <<<"$state"
+    ;;
+  say)
+    shift; voice=
+    [ "${1:-}" = -v ] && { voice=$2; shift 2; }
+    [ $# -gt 0 ] || { usage; exit 2; }
+    hub_get /health >/dev/null 2>&1 || { hub_start && hub_wait || exit 1; }
+    jq -nc --arg text "$*" --arg voice "$voice" '{text: $text} + (if $voice == "" then {} else {voice: $voice} end)' |
+      hub_post /say >/dev/null
+    ;;
+  stop) hub_post /stop </dev/null >/dev/null || { echo "hub is not running"; exit 1; } ;;
+  on) rm -f "$HOME/.claude/voice-off"; echo "voice on" ;;
+  off) mkdir -p "$HOME/.claude" && touch "$HOME/.claude/voice-off"; hub_post /stop </dev/null >/dev/null 2>&1; echo "voice off" ;;
+  hub)
+    case ${2:-} in
+      start) hub_start && hub_wait && echo "hub running" ;;
+      stop) hub_stop; echo "hub stopped" ;;
+      restart) hub_stop; hub_start && hub_wait && echo "hub running" ;;
+      *) usage; exit 2 ;;
+    esac
+    ;;
+  log) mkdir -p "$CS_STATE"; touch "$CS_STATE/voice.log"; exec tail -n 20 -f "$CS_STATE/voice.log" ;;
+  *) usage; [ $# -eq 0 ] || exit 2 ;;
+esac
