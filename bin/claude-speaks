@@ -17,6 +17,9 @@ Usage: claude-speaks <command>
   stop                       stop speaking and clear the queue
   on | off                   turn the voice on or off for every session
   allow | deny               answer the permission prompt the overlay is showing
+  answer N                   pick option N of the question the overlay is showing
+  repeat                     say the last line again
+  missed                     replay what sessions said since you were last here
   follow-up [-s PROJECT] TEXT   send a follow-up to a session as if you had said it
   talk start|stop|cancel     the talk key and the cancel key, from a shell
   target [PROJECT]           show or choose which session a spoken follow-up goes to
@@ -113,6 +116,15 @@ case ${1:-} in
       start|stop|cancel) jq -nc --arg a "$2" '{action: $a}' | hub_post /talk >/dev/null || { echo "hub is not running"; exit 1; } ;;
       *) usage; exit 2 ;;
     esac
+    ;;
+  answer)
+    answered=$(jq -nc --arg n "${2:-0}" '{option: ($n | tonumber? // 0)}' | hub_post /answer | jq -r .answered)
+    [ "$answered" = true ] && echo "answered" || { echo "no question is waiting, or it has no option ${2:-}"; exit 1; }
+    ;;
+  repeat) echo '{"what": "last"}' | hub_post /replay >/dev/null || { echo "hub is not running"; exit 1; } ;;
+  missed)
+    count=$(echo '{"what": "missed"}' | hub_post /replay | jq -r .count) || { echo "hub is not running"; exit 1; }
+    echo "$count missed"
     ;;
   overlay)
     case ${2:-toggle} in

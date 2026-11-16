@@ -12,7 +12,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
-PRIORITY = {"needs_you": 0, "allowed": 0, "denied": 0, "failed": 1, "done": 2}
+# Lower speaks first. "notice" is feedback to something the user just did; "progress" can wait.
+PRIORITY = {"needs_you": 0, "allowed": 0, "denied": 0, "notice": 0, "failed": 1, "done": 2, "progress": 3}
 
 
 @dataclass
@@ -22,6 +23,7 @@ class Utterance:
     session: str = ""  # session id; empty for lines not tied to a session
     kind: str = "done"  # needs_you | failed | done
     src: str = ""  # where the line came from, for the log
+    entry: dict | None = None  # its record in the hub's history, marked once it was actually spoken
     created: float = field(default_factory=time.monotonic)
 
 

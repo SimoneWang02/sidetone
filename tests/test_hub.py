@@ -351,6 +351,96 @@ class Permissions(HubCase):
         self.assertEqual(hub.requests, [])
 
 
+def question(text, *labels, multi=False):
+    return {"question": text, "header": text[:10], "multiSelect": multi,
+            "options": [{"label": label, "description": label} for label in labels]}
+
+
+def ask_question(*questions, sid="s1"):
+    return ev("PermissionRequest", sid=sid, tool_name="AskUserQuestion", tool_input={"questions": list(questions)})
+
+
+class Questions(HubCase):
+    def make(self, **kw):
+        hub = super().make(**kw)
+        hub.overlay = self.overlay = FakeOverlay()
+        self.addCleanup(setattr, hub_module, "MIN_SHOWN", hub_module.MIN_SHOWN)
+        hub_module.MIN_SHOWN = 0
+        return hub
+
+    def test_number_keys_answer_each_question_in_turn(self):
+        hub = self.make()
+        req = hub.request_permission(ask_question(question("Which drink?", "Tea", "Coffee", "Water"),
+                                                  question("Which colour?", "Red", "Blue")))
+        shown = self.overlay.of("request")[-1]
+        self.assertEqual((shown["text"], shown["detail"]), ("asks: Which drink?", "1  Tea   2  Coffee   3  Water"))
+        self.assertIn("question 1 of 2", shown["keys"])
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["option1", "option2", "option3"])
+        self.assertFalse(hub.decide("allow"))  # a question is not a yes/no
+        self.assertFalse(hub.choose(4))  # there is no fourth option
+        self.assertTrue(hub.choose(2))
+        self.assertFalse(req.done.is_set())
+        self.assertEqual(self.overlay.of("request")[-1]["text"], "asks: Which colour?")
+        self.assertTrue(hub.choose(1))
+        self.assertEqual((req.decision, req.answers), ("answer", {"Which drink?": "Coffee", "Which colour?": "Red"}))
+        self.assertEqual(self.session()["state"], "working")
+        self.assertEqual(self.spoken()[-1], "Answered: Red.")
+
+    def test_a_waiting_question_is_read_out_with_its_options(self):
+        hub = self.make()
+        hub.request_permission(ask_question(question("Which drink?", "Tea", "Coffee")))
+        self.assertEqual(self.spoken(), [])
+        hub.on_event(ev("Notification", notification_type="permission_prompt"))
+        self.assertEqual(self.spoken(), ["Question: Which drink? One: Tea. Two: Coffee."])
+
+    def test_questions_the_keys_cannot_answer_are_only_announced(self):
+        hub = self.make()
+        self.assertIsNone(hub.request_permission(ask_question(question("Pick any", "A", "B", multi=True))))
+        self.assertIsNone(hub.request_permission(ask_question(question("Too many", "A", "B", "C", "D", "E"))))
+        self.assertEqual(self.session()["note"], "has a question for you")
+
+
+class CatchingUp(HubCase):
+    def test_missed_replays_what_was_said_since_you_were_last_here(self):
+        hub = self.make(label="never")
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/api-server"))  # you were here
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/api-server", delta=tag("Tests pass.")))
+        hub.on_event(ev("StopFailure", sid="b", cwd="/w/web", error="rate_limit"))
+        self.spoken()
+        self.engine.spoken.clear()
+        self.assertEqual(hub.catch_up(), 2)
+        self.assertEqual(self.spoken(), ["You missed 2 updates.", "api server. Tests pass.", "web. I hit an error: rate limit"])
+        self.engine.spoken.clear()
+        self.assertEqual(hub.catch_up(), 0)
+        self.assertEqual(self.spoken(), ["Nothing new."])
+
+    def test_repeat_says_the_last_line_again_in_the_same_voice(self):
+        hub = self.make()
+        hub.on_display(ev("MessageDisplay", delta=tag("All done.")))
+        self.spoken()
+        self.assertTrue(hub.repeat())
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1], ("alpha. All done.", self.session()["voice"]))
+
+    def test_progress_is_spoken_in_long_turns_but_not_often(self):
+        hub = self.make(progress_after=0, progress_interval=60)
+        hub.on_event(ev("UserPromptSubmit"))
+        for task in "123":
+            hub.on_event(ev("TaskCreated", task_id=task))
+        hub.on_event(ev("TaskCompleted", task_id="1"))
+        hub.on_event(ev("TaskCompleted", task_id="2"))  # within the interval: stays quiet
+        hub.on_event(ev("TaskCompleted", task_id="3"))  # all done: the final line will say so
+        self.assertEqual(self.spoken(), ["1 of 3 steps done"])
+
+    def test_no_progress_talk_in_short_turns_or_short_lists(self):
+        hub = self.make()  # default: only after 45 s of work
+        hub.on_event(ev("UserPromptSubmit"))
+        for task in "123":
+            hub.on_event(ev("TaskCreated", task_id=task))
+        hub.on_event(ev("TaskCompleted", task_id="1"))
+        self.assertEqual(self.spoken(), [])
+
+
 class FakeRecorder:
     recording = False
 
@@ -638,6 +728,23 @@ class ThroughTheHooks(HubCase):
         decision = json.loads(proc.communicate(timeout=5)[0])["hookSpecificOutput"]["decision"]
         self.assertEqual(decision["behavior"], "deny")
         self.assertIn("overlay", decision["message"])
+        self.spoken()
+
+    def test_permission_hook_hands_claude_the_chosen_option(self):
+        hub_module.MIN_SHOWN, old = 0, hub_module.MIN_SHOWN
+        self.addCleanup(setattr, hub_module, "MIN_SHOWN", old)
+        env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp}
+        proc = subprocess.Popen([os.path.join(ROOT, "hooks", "permission.sh")], stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, text=True, env=env)
+        proc.stdin.write(json.dumps(ask_question(question("Which drink?", "Tea", "Coffee"))))
+        proc.stdin.close()
+        proc.stdin = None
+        self.assertTrue(wait_for(lambda: self.hub.requests))
+        self.assertTrue(self.hub.choose(2))
+        decision = json.loads(proc.communicate(timeout=5)[0])["hookSpecificOutput"]["decision"]
+        self.assertEqual(decision["behavior"], "allow")
+        self.assertEqual(decision["updatedInput"]["answers"], {"Which drink?": "Coffee"})
+        self.assertEqual(len(decision["updatedInput"]["questions"]), 1)
         self.spoken()
 
     def test_permission_hook_prints_nothing_when_answered_in_the_terminal(self):

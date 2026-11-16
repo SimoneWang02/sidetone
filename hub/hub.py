@@ -22,6 +22,8 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # run with -I, so add our own dir
+import collections  # noqa: E402
+
 import claude_sessions  # noqa: E402
 import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
@@ -66,7 +68,14 @@ class Request:
     created: float = field(default_factory=time.monotonic)
     shown: float | None = None  # when it became the one the hotkeys act on
     confirmed: bool = False  # Claude Code told us the prompt is still waiting
-    decision: str | None = None  # allow | deny | None (answered elsewhere)
+    decision: str | None = None  # allow | deny | answer | None (answered elsewhere)
+    questions: list = field(default_factory=list)  # for AskUserQuestion: the questions, each with options
+    answers: dict = field(default_factory=dict)  # question text -> chosen option label
+
+    @property
+    def question(self) -> dict | None:
+        """The question the number keys answer next, if this is a question at all."""
+        return self.questions[len(self.answers)] if len(self.answers) < len(self.questions) else None
     done: threading.Event = field(default_factory=threading.Event)
 
 
@@ -97,6 +106,9 @@ class Config:
     whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
     voices_dir: str = os.path.expanduser("~/.local/share/claude-speaks/voices")  # the user's own voices
+    progress: bool = True  # say "3 of 5 steps done" during long turns
+    progress_after: float = 45.0  # only in turns that have already run this many seconds
+    progress_interval: float = 60.0  # and at most this often per session
     overlay: dict = field(default_factory=lambda: {**overlay_mod.DEFAULTS, "hotkeys": dict(overlay_mod.DEFAULTS["hotkeys"])})
     mute_file: str = os.path.expanduser("~/.claude/voice-off")
 
@@ -127,7 +139,8 @@ class Config:
             return cfg
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail",
-                    "followup_confirm", "whisper_language", "whisper_unload_minutes"):
+                    "followup_confirm", "whisper_language", "whisper_unload_minutes",
+                    "progress", "progress_after", "progress_interval"):
             if key in user:
                 setattr(cfg, key, user[key])
         wanted = user.get("overlay") or {}
@@ -155,6 +168,9 @@ class Hub:
         self._talking: float | None = None  # when the talk key went down
         self._pending: Pending | None = None  # the follow-up being shown
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
+        self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
+        self.last_seen = time.time()  # last sign the user was there: a prompt, a hotkey, a catch-up
+        self._progress_said: dict[str, float] = {}  # session id -> when it last announced progress
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
                                   on_change=self._speech_changed, on_done=self._log_speech)
@@ -182,6 +198,7 @@ class Hub:
                 self._settle(sid, "turn moved on")
 
             if event == "UserPromptSubmit":
+                self.last_seen = time.time()
                 s.state, s.activity, s.note = "working", "Thinking", ""
                 s.turn_started, s.spoken = time.monotonic(), None
                 if s.tasks and all(s.tasks.values()):
@@ -198,12 +215,16 @@ class Hub:
                 s.tasks.setdefault(ev.get("task_id", ""), False)
             elif event == "TaskCompleted":
                 s.tasks[ev.get("task_id", "")] = True
+                self._maybe_say_progress(s)
             elif event == "Notification":
                 if ev.get("notification_type") in NEEDS_INPUT:
                     waiting = [r for r in self.requests if r.session == sid and not r.confirmed]
                     if waiting:  # we know what it is asking for, so say that
                         waiting[0].confirmed = True
-                        self._say(s, f"Permission needed: {waiting[0].summary}", "needs_you", "permission")
+                        if waiting[0].question:
+                            self._say(s, _read_out(waiting[0].question), "needs_you", "question")
+                        else:
+                            self._say(s, f"Permission needed: {waiting[0].summary}", "needs_you", "permission")
                     else:
                         s.state, s.note = "needs_you", "needs your input"
                         self._say(s, "I need your input", "needs_you", "notify")
@@ -266,7 +287,7 @@ class Hub:
         self.publish()
         return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
 
-    def say(self, text: str, voice: str | None = None, kind: str = "done") -> None:
+    def say(self, text: str, voice: str | None = None, kind: str = "notice") -> None:
         """A line from the command line, not tied to a session."""
         self.speech.put(Utterance(text=text, voice=voice or self.cfg.default_voice, kind=kind, src="cli"))
 
@@ -274,6 +295,41 @@ class Hub:
         with self.lock:
             sessions = [s.snapshot() for s in self.sessions.by_id.values()]
         return {"sessions": sessions, "muted": self._muted(), **self.speech.snapshot()}
+
+    # --- catching up -------------------------------------------------------------------------
+
+    def repeat(self) -> bool:
+        """Say the last line again."""
+        with self.lock:
+            self.last_seen = time.time()
+            entry = self.history[-1] if self.history else None
+        if not entry:
+            self.say("Nothing to repeat.", kind="notice")
+            return False
+        self.speech.put(Utterance(text=f"{entry['spoken_name']}. {entry['text']}", voice=entry["voice"], kind="notice", src="repeat"))
+        return True
+
+    def catch_up(self, limit: int = 8) -> int:
+        """Replay what sessions said since the user was last seen (a prompt, a hotkey, a catch-up)."""
+        with self.lock:
+            missed = [e for e in self.history if e["time"] > self.last_seen][-limit:]
+            self.last_seen = time.time()
+        if not missed:
+            self.say("Nothing new.", kind="notice")
+            return 0
+        self.say(f"You missed {len(missed)} update{'s' if len(missed) != 1 else ''}.", kind="notice")
+        for entry in missed:
+            self.speech.put(Utterance(text=f"{entry['spoken_name']}. {entry['text']}", voice=entry["voice"], kind="notice", src="catch-up"))
+        return len(missed)
+
+    def _maybe_say_progress(self, s) -> None:
+        """During a long turn, say how far its task list is, but not often."""
+        done, total, now = sum(s.tasks.values()), len(s.tasks), time.monotonic()
+        if (self.cfg.progress and total >= 3 and done < total and s.turn_started
+                and now - s.turn_started >= self.cfg.progress_after
+                and now - self._progress_said.get(s.id, 0) >= self.cfg.progress_interval):
+            self._progress_said[s.id] = now
+            self._say(s, f"{done} of {total} steps done", "progress", "progress")
 
     # --- voices ------------------------------------------------------------------------------
 
@@ -348,13 +404,20 @@ class Hub:
         with self.lock:
             self.last_event = time.monotonic()
             s = self.sessions.touch(sid, ev.get("cwd", ""))
-            if tool in OWN_DIALOG:
+            tool_input = ev.get("tool_input") or {}
+            questions = _answerable(tool_input) if tool == "AskUserQuestion" else []
+            if questions:  # the number keys can answer these
+                req = Request(session=sid, tool=tool, tool_input=tool_input, summary=questions[0]["question"],
+                              detail="", questions=questions)
+                s.state, s.note = "needs_you", f"asks: {questions[0]['question']}"
+            elif tool in OWN_DIALOG:
                 s.state, s.note = "needs_you", "has a question for you" if tool == "AskUserQuestion" else "has a plan for you"
                 req = None
             else:
-                summary, detail = permission_summary(tool, ev.get("tool_input") or {})
-                req = Request(session=sid, tool=tool, tool_input=ev.get("tool_input") or {}, summary=summary, detail=detail)
+                summary, detail = permission_summary(tool, tool_input)
+                req = Request(session=sid, tool=tool, tool_input=tool_input, summary=summary, detail=detail)
                 s.state, s.note = "needs_you", f"wants to: {summary}"
+            if req:
                 self.requests.append(req)
                 self._show_request()
         self.publish()
@@ -364,14 +427,42 @@ class Hub:
         """Answer the request on screen (hotkey or command line). False if there was nothing to answer."""
         with self.lock:
             req = self.requests[0] if self.requests else None
-            if not req or req.shown is None or time.monotonic() - req.shown < MIN_SHOWN:
-                return False  # nothing there, or it appeared too recently to have been read
+            if not req or req.question or req.shown is None or time.monotonic() - req.shown < MIN_SHOWN:
+                return False  # nothing there, a question, or it appeared too recently to have been read
+            self.last_seen = time.time()
             s = self.sessions.by_id.get(req.session)
             self._resolve(req, decision, "hotkey")
             if s:
                 self.speech.drop_session(s.id)  # stop "permission needed" if it is still being said
                 self._say(s, "Allowed." if decision == "allow" else "Denied.",
                           "allowed" if decision == "allow" else "denied", "decision")
+        self.publish()
+        return True
+
+    def choose(self, number: int) -> bool:
+        """Answer the question on screen with its option number (1 to 4)."""
+        with self.lock:
+            req = self.requests[0] if self.requests else None
+            question = req.question if req else None
+            if (not question or req.shown is None or time.monotonic() - req.shown < MIN_SHOWN
+                    or not 1 <= number <= len(question["options"])):
+                return False
+            self.last_seen = time.time()
+            label = question["options"][number - 1]["label"]
+            req.answers[question["question"]] = label
+            s = self.sessions.by_id.get(req.session)
+            if s:
+                self.speech.drop_session(s.id)  # stop reading the options out
+            if req.question:  # more questions in the same prompt: on to the next
+                req.shown = time.monotonic()
+                if s:
+                    s.note = f"asks: {req.question['question']}"
+                    self._say(s, f"{label}. Next. {_read_out(req.question)}", "needs_you", "question")
+                self._show_request()
+            else:
+                self._resolve(req, "answer", "hotkey")
+                if s:
+                    self._say(s, f"Answered: {label}.", "allowed", "decision")
         self.publish()
         return True
 
@@ -415,6 +506,16 @@ class Hub:
         s = self.sessions.by_id.get(req.session)
         keys = self.cfg.overlay.get("hotkeys", {})
         more = len(self.requests) - 1
+        if req.question:
+            options, total = req.question["options"], len(req.questions)
+            self.overlay.send({
+                "type": "request", "name": s.name if s else "", "text": f"asks: {req.question['question']}",
+                "detail": "   ".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
+                "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} answers"
+                        + (f"  \u00b7  question {len(req.answers) + 1} of {total}" if total > 1 else "")
+                        + (f"  \u00b7  {more} more waiting" if more else ""),
+            })
+            return
         self.overlay.send({
             "type": "request", "name": s.name if s else "", "text": f"wants to: {req.summary}",
             "detail": req.detail[:300],
@@ -427,6 +528,12 @@ class Hub:
         name = msg.get("name")
         if name in ("allow", "deny"):
             self.decide(name)
+        elif name and name.startswith("option"):
+            self.choose(int(name[6:]))
+        elif name == "repeat":
+            self.repeat()
+        elif name == "missed":
+            self.catch_up()
         elif name == "talk":
             self.talk_start()
         elif name == "talk_end":
@@ -644,7 +751,9 @@ class Hub:
                 ])),
                 "speaking": s.id == speaking,
             } for s in self.sessions.by_id.values()]
-            keys = sorted((["allow", "deny"] if self.requests else [])
+            asking = self.requests[0].question if self.requests else None
+            keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)] if asking
+                           else ["allow", "deny"] if self.requests else [])
                           + (["cancel"] if self._talking or self._pending or current else []))
             new_keys, self._keys = keys != self._keys, keys
             new_rows, self._shown = rows != self._shown, rows
@@ -665,9 +774,9 @@ class Hub:
             with self.lock:
                 s = self.sessions.by_id.get(u.session)
                 if s:
-                    if u.kind not in ("allowed", "denied"):
+                    if u.kind not in ("allowed", "denied", "progress"):
                         self.talk_target = s.id  # a follow-up answers whoever spoke last
-                    self._flash(s, u.text, {"allowed": "done", "denied": "failed"}.get(u.kind, u.kind))
+                    self._flash(s, u.text, FLASH_LOOK.get(u.kind, u.kind))
         self.publish()
 
     # --- helpers -----------------------------------------------------------------------------
@@ -677,10 +786,15 @@ class Hub:
 
     def _say(self, s, text: str, kind: str, src: str) -> None:
         s.last_speech = text
+        entry = None
+        if kind in ("done", "failed", "needs_you", "progress"):  # what a session said, not our own feedback
+            entry = {"time": time.time(), "name": s.name, "spoken_name": re.sub(r"[-_.]+", " ", s.name).strip(),
+                     "voice": s.voice, "text": text, "kind": kind, "heard": False}
+            self.history.append(entry)
         if self._muted():
-            self._flash(s, text, {"allowed": "done", "denied": "failed"}.get(kind, kind))  # voice is off
+            self._flash(s, text, FLASH_LOOK.get(kind, kind))  # voice is off
         else:
-            self.speech.put(Utterance(text=text, voice=s.voice, session=s.id, kind=kind, src=src))
+            self.speech.put(Utterance(text=text, voice=s.voice, session=s.id, kind=kind, src=src, entry=entry))
 
     def _spoken_without_hub(self, sid: str, speech: str) -> bool:
         """True if display.sh spoke this line itself while the hub was down (it leaves a marker)."""
@@ -703,11 +817,36 @@ class Hub:
         return re.sub(r"[-_.]+", " ", s.name).strip()
 
     def _log_speech(self, u: Utterance, label: str, waited: float, first: float | None, outcome: str) -> None:
+        if u.entry is not None and outcome == "spoken" and first is not None:
+            u.entry["heard"] = True
         timing = f"waited={waited * 1000:.0f}ms"
         if first is not None:
             timing += f" first_audio={first * 1000:.0f}ms"
         said = f"{label}. {u.text}" if label else u.text
         log(self.cfg, "voice.log", f"[{u.session[:8] or 'cli'}] src={u.src} {outcome} voice={u.voice} {timing} speech={said}")
+
+
+FLASH_LOOK = {"allowed": "done", "denied": "failed", "progress": "working"}  # speech kind -> overlay glyph
+NUMBER_WORDS = ("One", "Two", "Three", "Four")
+
+
+def _answerable(tool_input: dict) -> list:
+    """The questions of an AskUserQuestion call if the number keys can answer all of them:
+    single choice, two to four options each. Otherwise an empty list."""
+    questions = tool_input.get("questions")
+    if not isinstance(questions, list) or not questions:
+        return []
+    for q in questions:
+        options = q.get("options") if isinstance(q, dict) else None
+        if (not isinstance(options, list) or not 2 <= len(options) <= 4 or q.get("multiSelect")
+                or not q.get("question") or not all(isinstance(o, dict) and o.get("label") for o in options)):
+            return []
+    return questions
+
+
+def _read_out(question: dict) -> str:
+    options = " ".join(f"{NUMBER_WORDS[i]}: {o['label']}." for i, o in enumerate(question["options"]))
+    return f"Question: {question['question']} {options}"
 
 
 def _elapsed(seconds: float) -> str:
@@ -803,6 +942,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._reply({"ok": hub.talk_start()})
             hub.talk_end() if action == "stop" else hub.cancel()
             self._reply({"ok": True})
+        elif self.path == "/answer":
+            self._reply({"answered": hub.choose(int(body.get("option") or 0))})
+        elif self.path == "/replay":
+            self._reply({"count": hub.catch_up() if body.get("what") == "missed" else int(hub.repeat())})
         elif self.path == "/decide":
             self._reply({"answered": hub.decide("allow" if body.get("decision") == "allow" else "deny")})
         elif self.path == "/stop":
@@ -838,7 +981,10 @@ class Handler(BaseHTTPRequestHandler):
                 hub.abandon(req, "answered in the terminal")
         if not req.decision:
             return self._reply(None)  # no output: Claude Code's own prompt stays in charge
-        decision = {"behavior": req.decision}
+        if req.decision == "answer":  # the chosen options go back as the tool's own answers field
+            decision = {"behavior": "allow", "updatedInput": {**req.tool_input, "answers": req.answers}}
+        else:
+            decision = {"behavior": req.decision}
         if req.decision == "deny":
             decision["message"] = "Denied by the user from the claude-speaks overlay."
         self._reply({"hookSpecificOutput": {"hookEventName": "PermissionRequest", "decision": decision}})

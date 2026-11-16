@@ -22,9 +22,11 @@ DEFAULTS = {
     "opacity": 0.35,  # dots while nothing is happening
     "list_opacity": 0.85,
     "flash_seconds": 4,
-    # allow/deny/cancel are only claimed while there is something for them to act on.
+    # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
-                "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace"},
+                "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",
+                "repeat": "Ctrl+Alt+R", "missed": "Ctrl+Alt+U",
+                "option1": "Ctrl+Alt+1", "option2": "Ctrl+Alt+2", "option3": "Ctrl+Alt+3", "option4": "Ctrl+Alt+4"},
 }
 RETRY_AFTER = 30.0  # seconds before a crashed overlay is started again
 

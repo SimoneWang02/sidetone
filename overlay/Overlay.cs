@@ -105,7 +105,7 @@ namespace ClaudeSpeaks
             requestDetail.Foreground = Paint("#DDDDDD");
             requestDetail.TextWrapping = TextWrapping.Wrap;
             requestDetail.TextTrimming = TextTrimming.CharacterEllipsis;
-            requestDetail.MaxHeight = 52;  // about three lines; the terminal has the full command
+            requestDetail.MaxHeight = 70;  // about four lines; the terminal has the full command
             requestDetail.Margin = new Thickness(0, 2, 0, 2);
             requestKeys.Foreground = Paint("#FFB300");
             requestBox.Children.Add(requestTitle);
@@ -384,8 +384,9 @@ namespace ClaudeSpeaks
 
         // --- hotkeys --------------------------------------------------------------------------------
 
-        // Claims the global hotkeys. "toggle" and "talk" are always claimed; the others only while
-        // the hub says they can act, so Ctrl+Alt+Y and friends stay free for other programs.
+        // Claims the global hotkeys. Keys that answer something (allow, deny, cancel, option1-4) are
+        // claimed only while the hub says they can act, so those combinations stay free for other
+        // programs the rest of the time. The others (toggle, talk, repeat, missed) are always claimed.
         void RegisterHotkeys()
         {
             foreach (int id in hotkeys.Keys) UnregisterHotKey(hwnd, id);
@@ -394,7 +395,8 @@ namespace ClaudeSpeaks
             int next = 1;
             foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
-                if (entry.Key != "toggle" && entry.Key != "talk" && !liveKeys.Contains(entry.Key)) continue;
+                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key.StartsWith("option");
+                if (answers && !liveKeys.Contains(entry.Key)) continue;
                 string combo = entry.Value;
                 if (combo.Trim().Length == 0) continue;  // an empty combo turns that hotkey off
                 uint modifiers = MOD_NOREPEAT, vk = 0;
