@@ -40,6 +40,20 @@ Milestones 2 to 4 were built in one sitting while the author was away ("you cont
 approve anything"). **Still to be checked by the author**: how the overlay looks and where it
 sits, behaviour over a game, and the physical hotkeys (`Ctrl+Alt+L`, `Y`, `N`, `Space`,
 `Backspace`); none of those can be seen or pressed from WSL.
+Second round, same day, on the author's request (all built and pushed; verified from WSL only):
+- Weak spots fixed: session state now also read from Claude Code's own session files (Esc,
+  closed terminals); follow-ups to sessions that act without asking need a confirming tap;
+  other languages and unloading for Whisper; talk target marked in the list; system-voice
+  engines when Kokoro is missing; `install.sh` run in throwaway folders.
+- Voices: choose per project, blend (`voice mix`), load a Kokoro voice file (`voice add`).
+  The author asked for "selectable or uploadable"; cloning from a recording is not possible
+  with Kokoro and was not built. A settings panel (their earlier idea) is still open.
+- Features: number keys answer Claude's questions, `Ctrl+Alt+U` catch-up, `Ctrl+Alt+R` repeat,
+  spoken progress in long turns.
+- Overlay polish: monitor choice, drag to move (`claude-speaks overlay move`), history on hover.
+- **Still to be checked by the author** in addition to the list above: dragging the overlay,
+  hovering the list, the number keys, `Ctrl+Alt+U`/`R`, and the confirming tap.
+
 Decisions: overlay is Windows-native (must be usable over games; no browser chrome);
 sessions are told apart by a spoken label plus a stable voice per project.
 Later: plugin packaging, a demo video with sound for the README, short sounds, stereo placement,
@@ -94,16 +108,36 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   "Sent.". Target: the session that spoke last; a quick tap of the talk key picks the next one.
   A busy session gets the follow-up right after its current reply. With no listener yet, the
   text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
-- Hotkeys (rebind or blank them under `overlay.hotkeys`): `toggle` Ctrl+Alt+L and `talk`
-  Ctrl+Alt+Space are always claimed; `allow` Ctrl+Alt+Y, `deny` Ctrl+Alt+N and `cancel`
-  Ctrl+Alt+Backspace are claimed only while they can act, so other programs keep them otherwise.
+- Hotkeys (rebind or blank them under `overlay.hotkeys`): always claimed are `toggle` Ctrl+Alt+L,
+  `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R and `missed` Ctrl+Alt+U (Ctrl+Alt+M is taken by
+  another program on the author's machine). Claimed only while they can act: `allow` Ctrl+Alt+Y,
+  `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace.
+- Questions: `PermissionRequest` also fires for `AskUserQuestion`, with the questions and options
+  in `tool_input`. Single-choice questions with 2 to 4 options become a `Request` with
+  `questions`; `choose(n)` records the label and, after the last one, the hook returns allow
+  with `updatedInput.answers` (question text → label). Others are only announced.
+- History and catching up: the hub keeps the last 100 lines sessions said. `last_seen` moves on
+  every prompt and hotkey; `catch_up()` replays lines newer than it. The overlay gets the last 6
+  with each `state` and shows them while the cursor rests on the list (found by polling the
+  cursor position, since the window is click-through).
+- `hub/claude_sessions.py`: reads `~/.claude/sessions/<pid>.json` (pid, sessionId, status
+  busy/idle). `Hub.reconcile()` runs every second: idle there but working here means the turn
+  was interrupted; a session that had a file and lost it is gone. Undocumented files, so
+  sessions that never had one are left alone.
+- Voices: `voices.json` remembers project → voice; own voices are `.npy` style arrays of shape
+  (510, 1, 256) in `~/.local/share/claude-speaks/voices/`, passed to Kokoro as arrays.
+- Overlay placement: `monitor`, `corner`, `offset_x`, `offset_y`. Dragging (after
+  `claude-speaks overlay move`) reports the nearest corner and offsets, which the hub saves into
+  `config.json`.
+- `tests/overlay_check.py`: manual check that saves a picture of every overlay view.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
   does not repeat the line once the hub is back.
-- `bin/claude-speaks`: `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`,
-  `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`, `overlay dots|list|toggle|restart`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 49 tests with a silent engine and fake microphone, including the real hook
+- `bin/claude-speaks`: `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
+  `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
+  `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
+- `tests/test_hub.py`: 69 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
@@ -158,6 +192,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   position leaves 150 px on the right so it does not cover a maximized window's buttons.
   To see it from WSL without capturing the user's screen: send `config` with `opaque: true`, ask
   for `bounds`, and capture exactly that rectangle with `Graphics.CopyFromScreen`.
+- Session-file facts (measured): `status` is only `busy` or `idle`; it stays `busy` during a
+  permission dialog and flips to `idle` within 0.2 s of Esc. The file is removed when the
+  session exits. The Bash tool's process is not a child of the session's pid, so "approved in
+  the terminal, still running" cannot be seen that way.
+- The Notification `permission_prompt` also fires for question dialogs after about 6 s.
 - Memory: the hub holds about 0.5 GB with Kokoro loaded and about 1.2 GB once Whisper `small.en`
   has been loaded by the first push-to-talk.
 - `claude-speaks hub stop` and `uninstall.sh` act on the hub of the current `XDG_RUNTIME_DIR`,

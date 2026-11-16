@@ -2,7 +2,8 @@
 # talks to it over stdin/stdout (see Overlay.cs for the protocol). Nothing here uses the network.
 $ErrorActionPreference = 'Stop'
 try {
-    $assemblies = 'PresentationFramework', 'PresentationCore', 'WindowsBase', 'System.Xaml', 'System.Web.Extensions'
+    $assemblies = 'PresentationFramework', 'PresentationCore', 'WindowsBase', 'System.Xaml', 'System.Web.Extensions',
+                  'System.Windows.Forms', 'System.Drawing'
     Add-Type -AssemblyName $assemblies
     $source = Get-Content -Raw -Encoding UTF8 (Join-Path $PSScriptRoot 'Overlay.cs')
     Add-Type -TypeDefinition $source -ReferencedAssemblies $assemblies

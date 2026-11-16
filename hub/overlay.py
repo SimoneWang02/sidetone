@@ -16,6 +16,7 @@ from typing import Callable
 DEFAULTS = {
     "enabled": True,
     "mode": "dots",  # dots | list
+    "monitor": 0,  # 0 = the primary monitor, 1 and up = the others in Windows' order
     "corner": "top-right",  # top-right | top-left | bottom-right | bottom-left
     "offset_x": 150,  # keeps clear of the window buttons of a maximized app
     "offset_y": 8,
@@ -54,6 +55,12 @@ class Overlay:
                 self._start()
                 return
             self._write(msg)
+
+    def reconfigure(self) -> None:
+        """Send the settings again after one of them changed."""
+        with self._lock:
+            if self.ready:
+                self._write({"type": "config", **{k: v for k, v in self.config.items() if k != "enabled"}})
 
     def restart(self) -> None:
         self.stop()

@@ -1,7 +1,7 @@
 // The claude-speaks overlay window. It only draws what the hub tells it to and reports hotkeys.
 // Protocol: one JSON object per line.
-// In on stdin: config, state, flash, request, banner, keys, mode, bounds, quit.
-// Out on stdout: ready, hotkey, mode, bounds, error.
+// In on stdin: config, state, flash, request, banner, keys, mode, move, bounds, quit.
+// Out on stdout: ready, hotkey, mode, moved, bounds, error.
 // Compiled by Windows PowerShell 5.1 (Add-Type), so this file must stay within C# 5 and ASCII.
 using System;
 using System.Collections.Generic;
@@ -36,6 +36,8 @@ namespace ClaudeSpeaks
         [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
         [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr hwnd, int id);
         [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
+        [DllImport("user32.dll")] static extern bool GetCursorPos(out CursorPoint point);
+        [StructLayout(LayoutKind.Sequential)] struct CursorPoint { public int X; public int Y; }
         [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
 
         // state -> { glyph, color }. Shape differs as well as color, so it reads without color vision.
@@ -62,6 +64,9 @@ namespace ClaudeSpeaks
         readonly StackPanel bannerBox = new StackPanel { Margin = new Thickness(0, 0, 0, 4) };
         readonly TextBlock bannerTitle = new TextBlock();
         readonly TextBlock bannerHint = new TextBlock();
+        readonly StackPanel historyBox = new StackPanel { Margin = new Thickness(0, 4, 0, 0) };
+        readonly DispatcherTimer hoverTimer = new DispatcherTimer();
+        readonly DispatcherTimer moveTimer = new DispatcherTimer();
         readonly DispatcherTimer flashTimer = new DispatcherTimer();
         readonly DispatcherTimer bannerTimer = new DispatcherTimer();
         readonly DispatcherTimer holdTimer = new DispatcherTimer();
@@ -75,6 +80,9 @@ namespace ClaudeSpeaks
         readonly IntPtr hwnd;
 
         object[] sessions = new object[0];
+        object[] history = new object[0];
+        int monitor, hoverTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
+        bool moving, peek, peekForced;
         string mode = "dots", corner = "top-right";
         double offsetX = 150, offsetY = 8, idleOpacity = 0.35, listOpacity = 0.85;
         bool flashing, opaque, hasRequest, hasBanner;
@@ -124,6 +132,7 @@ namespace ClaudeSpeaks
             stack.Children.Add(dots);
             stack.Children.Add(flashLine);
             stack.Children.Add(list);
+            stack.Children.Add(historyBox);
             panel.Child = stack;
             panel.CornerRadius = new CornerRadius(8);
             panel.Padding = new Thickness(10, 6, 10, 6);
@@ -135,6 +144,16 @@ namespace ClaudeSpeaks
             SizeChanged += delegate { Place(); };
             flashTimer.Tick += delegate { flashTimer.Stop(); flashing = false; Render(); };
             bannerTimer.Tick += delegate { bannerTimer.Stop(); hasBanner = false; Render(); };
+            // Clicks pass through, so "hover" is found by watching where the cursor is (list mode only).
+            hoverTimer.Interval = TimeSpan.FromMilliseconds(200);
+            hoverTimer.Tick += delegate { WatchCursor(); };
+            moveTimer.Tick += delegate { EndMove(); };
+            MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) {
+                if (!moving) return;
+                DragMove();  // returns when the button is released
+                ReportMoved();
+                moveTimer.Stop(); moveTimer.Interval = TimeSpan.FromSeconds(4); moveTimer.Start();
+            };
             // Hold-to-talk: a hotkey only reports the press, so watch the key until it comes back up.
             holdTimer.Interval = TimeSpan.FromMilliseconds(30);
             holdTimer.Tick += delegate {
@@ -201,6 +220,7 @@ namespace ClaudeSpeaks
                     offsetY = Num(msg, "offset_y", offsetY);
                     idleOpacity = Num(msg, "opacity", idleOpacity);
                     listOpacity = Num(msg, "list_opacity", listOpacity);
+                    monitor = (int)Num(msg, "monitor", monitor);
                     opaque = msg.ContainsKey("opaque") && Convert.ToBoolean(msg["opaque"]);
                     panel.Background = Paint(opaque ? "#FF161616" : "#E6161616");
                     if (msg.ContainsKey("hotkeys"))
@@ -216,6 +236,7 @@ namespace ClaudeSpeaks
                     break;
                 case "state":
                     sessions = msg.ContainsKey("sessions") ? (object[])msg["sessions"] : new object[0];
+                    history = msg.ContainsKey("history") ? (object[])msg["history"] : new object[0];
                     Render();
                     break;
                 case "flash":
@@ -234,6 +255,14 @@ namespace ClaudeSpeaks
                     break;
                 case "mode":
                     SetMode(Str(msg, "mode", "toggle"));
+                    break;
+                case "move":
+                    BeginMove();
+                    break;
+                case "peek":  // open the history without a mouse (for checking how it looks)
+                    peek = peekForced = msg.ContainsKey("on") && Convert.ToBoolean(msg["on"]);
+                    hoverTicks = peek ? 3 : 0;
+                    Render();
                     break;
                 case "bounds":
                     ReportBounds();
@@ -256,7 +285,12 @@ namespace ClaudeSpeaks
 
             requestBox.Visibility = hasRequest ? Visibility.Visible : Visibility.Collapsed;
             bannerBox.Visibility = hasBanner ? Visibility.Visible : Visibility.Collapsed;
-            bool solid = flashing || hasRequest || hasBanner;
+            bool showHistory = isList && peek && history.Length > 0;
+            historyBox.Visibility = showHistory ? Visibility.Visible : Visibility.Collapsed;
+            if (showHistory) BuildHistory();
+            if (isList && !hoverTimer.IsEnabled) hoverTimer.Start();
+            else if (!isList && hoverTimer.IsEnabled) { hoverTimer.Stop(); peek = false; hoverTicks = 0; }
+            bool solid = flashing || hasRequest || hasBanner || moving || showHistory;
             Fade(solid ? 1.0 : (isList ? listOpacity : idleOpacity));
             bool show = isList || solid || sessions.Length > 0;
             if (show && !IsVisible) Show();
@@ -298,6 +332,105 @@ namespace ClaudeSpeaks
                 if (speaking) row.Background = Paint("#33FFFFFF");
                 list.Children.Add(row);
             }
+        }
+
+        // What sessions said lately, shown under the list while the cursor rests on it.
+        void BuildHistory()
+        {
+            historyBox.Children.Clear();
+            historyBox.Children.Add(new Border { Height = 1, Background = Paint("#55FFFFFF"), Margin = new Thickness(0, 0, 0, 3) });
+            foreach (object o in history)
+            {
+                var h = (Dictionary<string, object>)o;
+                var row = new StackPanel { Orientation = Orientation.Horizontal };
+                row.Children.Add(Cell(Str(h, "ago"), 44, Paint("#9E9E9E"), false, null));
+                row.Children.Add(Cell(Str(h, "name"), 130, Paint("#BBBBBB"), false, null));
+                row.Children.Add(Cell(Str(h, "text"), 410, Paint("#BBBBBB"), false, null));
+                historyBox.Children.Add(row);
+            }
+        }
+
+        void WatchCursor()
+        {
+            CursorPoint cursor;
+            if (peekForced || !IsVisible || !GetCursorPos(out cursor)) return;
+            Point a = PointToScreen(new Point(0, 0)), b = PointToScreen(new Point(ActualWidth, ActualHeight));
+            bool inside = cursor.X >= a.X && cursor.X <= b.X && cursor.Y >= a.Y && cursor.Y <= b.Y;
+            hoverTicks = inside ? Math.Min(hoverTicks + 1, 3) : Math.Max(hoverTicks - 1, 0);
+            bool wanted = inside ? hoverTicks >= 3 : hoverTicks > 0 && peek;  // rest 0.6 s to open, leave 0.6 s to close
+            if (wanted != peek) { peek = wanted; Render(); }
+        }
+
+        // "Move" makes the window catch the mouse for a few seconds so it can be dragged.
+        void BeginMove()
+        {
+            moving = true;
+            IsHitTestVisible = true;
+            SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) & ~WS_EX_TRANSPARENT);
+            panel.BorderBrush = Paint("#FFB300");
+            panel.BorderThickness = new Thickness(2);
+            bannerTimer.Stop();
+            hasBanner = true;
+            bannerTitle.Inlines.Clear();
+            bannerTitle.Inlines.Add(new Run("drag me to where you want me") { FontWeight = FontWeights.SemiBold });
+            bannerHint.Text = "any monitor \u00b7 I stay there once you let go for a few seconds";
+            bannerHint.Visibility = Visibility.Visible;
+            moveTimer.Stop(); moveTimer.Interval = TimeSpan.FromSeconds(15); moveTimer.Start();
+            Render();
+        }
+
+        void EndMove()
+        {
+            moveTimer.Stop();
+            moving = false;
+            hasBanner = false;
+            IsHitTestVisible = false;
+            SetWindowLong(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_TRANSPARENT);
+            panel.BorderThickness = new Thickness(0);
+            Render();
+            Place();
+        }
+
+        // Where it was dropped, as "which monitor, which corner, how far from it", so it keeps its
+        // place when its size changes.
+        void ReportMoved()
+        {
+            Point a = PointToScreen(new Point(0, 0)), b = PointToScreen(new Point(ActualWidth, ActualHeight));
+            var centre = new System.Drawing.Point((int)((a.X + b.X) / 2), (int)((a.Y + b.Y) / 2));
+            System.Windows.Forms.Screen screen = System.Windows.Forms.Screen.FromPoint(centre);
+            monitor = 0;
+            int n = 0;
+            foreach (System.Windows.Forms.Screen other in System.Windows.Forms.Screen.AllScreens)
+            {
+                if (other.Primary) continue;
+                n++;
+                if (other.DeviceName == screen.DeviceName) monitor = n;
+            }
+            Rect work = WorkArea();
+            bool right = Left + ActualWidth / 2 > work.Left + work.Width / 2, bottom = Top + ActualHeight / 2 > work.Top + work.Height / 2;
+            corner = (bottom ? "bottom" : "top") + "-" + (right ? "right" : "left");
+            offsetX = Math.Max(0, right ? work.Right - (Left + ActualWidth) : Left - work.Left);
+            offsetY = Math.Max(0, bottom ? work.Bottom - (Top + ActualHeight) : Top - work.Top);
+            Write(new Dictionary<string, object> {
+                { "type", "moved" }, { "monitor", monitor }, { "corner", corner },
+                { "offset_x", Math.Round(offsetX) }, { "offset_y", Math.Round(offsetY) },
+            });
+        }
+
+        // The chosen monitor's usable area, in the units WPF positions windows in.
+        Rect WorkArea()
+        {
+            System.Windows.Forms.Screen screen = System.Windows.Forms.Screen.PrimaryScreen;
+            int n = 0;
+            foreach (System.Windows.Forms.Screen other in System.Windows.Forms.Screen.AllScreens)
+            {
+                if (other.Primary) continue;
+                n++;
+                if (n == monitor) screen = other;
+            }
+            System.Drawing.Rectangle area = screen.WorkingArea;
+            Matrix fromDevice = HwndSource.FromHwnd(hwnd).CompositionTarget.TransformFromDevice;
+            return new Rect(fromDevice.Transform(new Point(area.Left, area.Top)), fromDevice.Transform(new Point(area.Right, area.Bottom)));
         }
 
         static TextBlock Cell(string text, double width, Brush color, bool bold, FontFamily font)
@@ -376,7 +509,7 @@ namespace ClaudeSpeaks
 
         void Place()
         {
-            Rect work = SystemParameters.WorkArea;
+            Rect work = WorkArea();
             bool right = corner.EndsWith("right"), bottom = corner.StartsWith("bottom");
             Left = right ? work.Right - ActualWidth - offsetX : work.Left + offsetX;
             Top = bottom ? work.Bottom - ActualHeight - offsetY : work.Top + offsetY;
@@ -448,6 +581,8 @@ namespace ClaudeSpeaks
                 reply["x"] = (int)a.X; reply["y"] = (int)a.Y;
                 reply["w"] = (int)(b.X - a.X); reply["h"] = (int)(b.Y - a.Y);
                 reply["opacity"] = Opacity;
+                reply["monitor"] = monitor;
+                reply["catches_mouse"] = moving;
             }
             Write(reply);
         }

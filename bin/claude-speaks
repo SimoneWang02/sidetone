@@ -24,6 +24,9 @@ Usage: claude-speaks <command>
   talk start|stop|cancel     the talk key and the cancel key, from a shell
   target [PROJECT]           show or choose which session a spoken follow-up goes to
   overlay dots|list|toggle|restart   switch the on-screen overlay's view, or restart it
+  overlay move               make the overlay draggable for a few seconds; it stays where you drop it
+  overlay monitor N          put it on monitor N (0 = primary)
+  overlay corner top-right|top-left|bottom-right|bottom-left
   demo                       play three made-up sessions to see and hear every state
   hub start|stop|restart     manage the background hub
   log                        follow the speech log
@@ -130,6 +133,11 @@ case ${1:-} in
     case ${2:-toggle} in
       dots|list|toggle) jq -nc --arg m "${2:-toggle}" '{mode: $m}' | hub_post /overlay >/dev/null ;;
       restart) echo '{"restart": true}' | hub_post /overlay >/dev/null ;;
+      move) echo '{"move": true}' | hub_post /overlay >/dev/null && echo "drag the overlay now; it stays where you drop it" ;;
+      monitor) jq -nc --arg n "${3:-0}" '{monitor: ($n | tonumber)}' | hub_post /overlay >/dev/null ;;
+      corner)
+        case ${3:-} in top-right|top-left|bottom-right|bottom-left) ;; *) usage; exit 2 ;; esac
+        jq -nc --arg c "$3" '{corner: $c}' | hub_post /overlay >/dev/null ;;
       *) usage; exit 2 ;;
     esac || { echo "no overlay (hub not running, or not on Windows/WSL)"; exit 1; }
     ;;

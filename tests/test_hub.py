@@ -268,6 +268,29 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("Stop", last_assistant_message="no tag"))
         self.assertEqual(self.overlay.of("flash")[-1]["text"], "done")
 
+    def test_history_goes_along_newest_first(self):
+        hub = self.make()
+        hub.on_display(ev("MessageDisplay", delta=tag("First.")))
+        hub.on_display(ev("MessageDisplay", delta=tag("Second.")))
+        self.spoken()
+        hub.publish()
+        history = self.overlay.of("state")[-1]["history"]
+        self.assertEqual([(h["ago"], h["name"], h["text"]) for h in history],
+                         [("now", "alpha", "Second."), ("now", "alpha", "First.")])
+
+    def test_a_dragged_position_is_saved_for_next_time(self):
+        hub = self.make(config_path=os.path.join(tempfile.mkdtemp(prefix="cs-test-"), "nested", "config.json"))
+        with self.subTest("existing settings are kept"):
+            os.makedirs(os.path.dirname(self.cfg.config_path))
+            with open(self.cfg.config_path, "w") as f:
+                json.dump({"label": "always", "overlay": {"opacity": 0.5}}, f)
+            hub.on_overlay({"type": "moved", "monitor": 1, "corner": "bottom-left", "offset_x": 40, "offset_y": 12})
+            with open(self.cfg.config_path) as f:
+                saved = json.load(f)
+            self.assertEqual(saved, {"label": "always", "overlay": {"opacity": 0.5, "monitor": 1, "corner": "bottom-left",
+                                                                    "offset_x": 40, "offset_y": 12}})
+            self.assertEqual(self.cfg.overlay["corner"], "bottom-left")
+
     def test_demo_runs_to_the_end(self):
         import demo
         hub = self.make(label="never")

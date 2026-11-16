@@ -105,6 +105,7 @@ class Config:
     whisper_language: str = "en"  # for multilingual models such as "small": a code, or "auto"
     whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
+    config_path: str = ""  # the user's config.json; overlay placement chosen by dragging is saved there
     voices_dir: str = os.path.expanduser("~/.local/share/claude-speaks/voices")  # the user's own voices
     progress: bool = True  # say "3 of 5 steps done" during long turns
     progress_after: float = 45.0  # only in turns that have already run this many seconds
@@ -131,7 +132,8 @@ class Config:
             default_voice=env.get("KOKORO_VOICE", "af_heart"),
             speed=float(env.get("KOKORO_SPEED", "1.1")),
         )
-        path = os.path.join(env.get("XDG_CONFIG_HOME") or f"{home}/.config", "claude-speaks", "config.json")
+        path = cfg.config_path = os.path.join(env.get("XDG_CONFIG_HOME") or f"{home}/.config",
+                                              "claude-speaks", "config.json")
         try:
             with open(path) as f:
                 user = json.load(f)
@@ -522,10 +524,36 @@ class Hub:
             "keys": f"{keys.get('allow', '')} allow  \u00b7  {keys.get('deny', '')} deny" + (f"  \u00b7  {more} more waiting" if more else ""),
         })
 
+    def place_overlay(self, tell_window: bool = True, **changes) -> None:
+        """Change where the overlay sits (monitor, corner, offsets) and remember it."""
+        self.cfg.overlay.update(changes)
+        if tell_window and self.overlay and hasattr(self.overlay, "reconfigure"):
+            self.overlay.reconfigure()
+        if not self.cfg.config_path:
+            return
+        try:
+            with open(self.cfg.config_path) as f:
+                saved = json.load(f)
+        except (OSError, ValueError):
+            saved = {}
+        saved.setdefault("overlay", {}).update(changes)
+        try:
+            os.makedirs(os.path.dirname(self.cfg.config_path), exist_ok=True)
+            with open(self.cfg.config_path, "w") as f:
+                json.dump(saved, f, indent=2)
+        except OSError as e:
+            log(self.cfg, "hub.log", f"could not save the overlay position: {e}")
+
     def on_overlay(self, msg: dict) -> None:
+        if msg.get("type") == "moved":  # dragged to a new place
+            placed = {k: msg[k] for k in ("monitor", "corner", "offset_x", "offset_y") if k in msg}
+            self.place_overlay(False, **placed)  # the window already knows; this saves it
+            return
         if msg.get("type") != "hotkey":
             return
         name = msg.get("name")
+        if name != "missed":  # any other key press shows the user is there
+            self.last_seen = time.time()
         if name in ("allow", "deny"):
             self.decide(name)
         elif name and name.startswith("option"):
@@ -755,12 +783,15 @@ class Hub:
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)] if asking
                            else ["allow", "deny"] if self.requests else [])
                           + (["cancel"] if self._talking or self._pending or current else []))
+            now = time.time()
+            history = [{"ago": _ago(now - e["time"]), "name": e["name"], "text": e["text"]}
+                       for e in list(self.history)[-6:][::-1]]
             new_keys, self._keys = keys != self._keys, keys
-            new_rows, self._shown = rows != self._shown, rows
+            new_rows, self._shown = (rows, history) != self._shown, (rows, history)
         if new_keys:  # claim allow/deny/cancel only while they can do something
             self.overlay.send({"type": "keys", "live": keys})
         if new_rows:
-            self.overlay.send({"type": "state", "sessions": rows})
+            self.overlay.send({"type": "state", "sessions": rows, "history": history})
 
     def _flash(self, s, text: str, state: str | None = None) -> None:
         """Expand the overlay's dots into one line about this session for a few seconds."""
@@ -847,6 +878,10 @@ def _answerable(tool_input: dict) -> list:
 def _read_out(question: dict) -> str:
     options = " ".join(f"{NUMBER_WORDS[i]}: {o['label']}." for i, o in enumerate(question["options"]))
     return f"Question: {question['question']} {options}"
+
+
+def _ago(seconds: float) -> str:
+    return "now" if seconds < 60 else _elapsed(seconds)
 
 
 def _elapsed(seconds: float) -> str:
@@ -956,6 +991,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._reply({"error": "the overlay is not available here"}, 409)
             if body.get("restart"):
                 hub.overlay.restart()
+            elif body.get("move"):
+                hub.overlay.send({"type": "move"})
+            elif "monitor" in body or "corner" in body:
+                hub.place_overlay(**{k: body[k] for k in ("monitor", "corner") if k in body})
             else:
                 hub.overlay.send({"type": "mode", "mode": body.get("mode", "toggle")})
             self._reply({})
