@@ -9,6 +9,11 @@ Usage: claude-speaks <command>
 
   status                     sessions the hub knows, and what is queued
   say [-v VOICE] TEXT        speak a line through the hub
+  voices                     every voice you can choose, and which project has which
+  voice PROJECT VOICE        give a project a voice (applies at once)
+  voice add NAME FILE        add your own Kokoro voice file (.npy)
+  voice mix NAME VOICE=WEIGHT VOICE=WEIGHT...   make a new voice by blending existing ones
+  voice remove NAME          delete one of your own voices
   stop                       stop speaking and clear the queue
   on | off                   turn the voice on or off for every session
   allow | deny               answer the permission prompt the overlay is showing
@@ -51,6 +56,36 @@ case ${1:-} in
     hub_get /health >/dev/null 2>&1 || { hub_start && hub_wait || exit 1; }
     jq -nc --arg text "$*" --arg voice "$voice" '{text: $text} + (if $voice == "" then {} else {voice: $voice} end)' |
       hub_post /say >/dev/null
+    ;;
+  voices)
+    v=$(hub_get /voices) || { echo "hub is not running"; exit 1; }
+    [ "$(jq -r .choosable <<<"$v")" = true ] || { echo "This machine's voice engine has one voice for everything."; exit 0; }
+    echo "Projects:"; jq -r '.projects | to_entries[] | "  \(.key)\t\(.value)"' <<<"$v" | column -t -s $'\t' | sed 's/^/  /'
+    echo "Given to new projects:"; jq -r '"  " + (.pool | join(" "))' <<<"$v"
+    echo "All built-in voices:"; jq -r '.builtin | join(" ")' <<<"$v" | fold -s -w 96 | sed 's/^/  /'
+    echo "Your own voices:"; jq -r '"  " + (if (.custom | length) > 0 then (.custom | join(" ")) else "(none yet; see: voice add, voice mix)" end)' <<<"$v"
+    echo "Hear one:  claude-speaks say -v VOICE \"Hello, this is how I sound.\""
+    ;;
+  voice)
+    case ${2:-} in
+      add)
+        [ $# -eq 4 ] && [ -f "$4" ] || { echo "usage: claude-speaks voice add NAME FILE"; exit 2; }
+        request=$(jq -nc --arg n "$3" --arg p "$(readlink -f "$4")" '{action: "add", name: $n, path: $p}') ;;
+      mix)
+        [ $# -ge 5 ] || { echo "usage: claude-speaks voice mix NAME VOICE=WEIGHT VOICE=WEIGHT..."; exit 2; }
+        name=$3; shift 3
+        request=$(printf '%s\n' "$@" | jq -Rnc --arg n "$name" '{action: "add", name: $n, mix: ([inputs | split("=") | {(.[0]): (.[1] // "1" | tonumber)}] | add)}') ||
+          { echo "weights must be numbers, like af_heart=0.6"; exit 2; } ;;
+      remove)
+        [ $# -eq 3 ] || { echo "usage: claude-speaks voice remove NAME"; exit 2; }
+        request=$(jq -nc --arg n "$3" '{action: "remove", name: $n}') ;;
+      *)
+        [ $# -eq 3 ] || { usage; exit 2; }
+        request=$(jq -nc --arg p "$2" --arg v "$3" '{action: "set", project: $p, voice: $v}') ;;
+    esac
+    reply=$(hub_post /voice 5 <<<"$request") || { echo "hub is not running"; exit 1; }
+    error=$(jq -r '.error // empty' <<<"$reply")
+    [ -z "$error" ] && echo "done" || { echo "$error"; exit 1; }
     ;;
   stop) hub_post /stop </dev/null >/dev/null || { echo "hub is not running"; exit 1; } ;;
   on) rm -f "$HOME/.claude/voice-off"; echo "voice on" ;;

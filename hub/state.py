@@ -178,6 +178,14 @@ class Sessions:
             self._save()
         return voice
 
+    def set_voice(self, name: str, voice: str) -> None:
+        """The user chose this voice for a project: remember it and switch its open sessions now."""
+        self.remembered[name] = voice
+        self._save()
+        for s in self.by_id.values():
+            if s.name == name:
+                s.voice = voice
+
     def _save(self) -> None:
         if not self.voices_file:
             return

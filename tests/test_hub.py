@@ -156,6 +156,16 @@ class LabelsAndVoices(HubCase):
         second.on_event(ev("SessionStart", sid="a2", cwd="/w/alpha"))
         self.assertEqual((self.session("a2")["voice"], self.session("b2")["voice"]), (alpha, beta))
 
+    def test_choosing_a_voice_switches_open_sessions_and_is_remembered(self):
+        hub = self.make()
+        hub.on_event(ev("SessionStart", sid="a", cwd="/w/alpha"))
+        hub.sessions.set_voice("alpha", "am_puck")
+        self.assertEqual(self.session("a")["voice"], "am_puck")
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/alpha"))
+        hub.on_event(ev("SessionStart", sid="a2", cwd="/w/alpha"))
+        self.assertEqual(self.session("a2")["voice"], "am_puck")
+        self.assertIn("only one voice", hub.set_voice("alpha", "af_heart"))  # the silent test engine
+
     def test_pinned_voice_from_config(self):
         hub = self.make(voices={"alpha": "bm_george"})
         hub.on_event(ev("SessionStart"))

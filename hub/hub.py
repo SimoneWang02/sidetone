@@ -96,6 +96,7 @@ class Config:
     whisper_language: str = "en"  # for multilingual models such as "small": a code, or "auto"
     whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
+    voices_dir: str = os.path.expanduser("~/.local/share/claude-speaks/voices")  # the user's own voices
     overlay: dict = field(default_factory=lambda: {**overlay_mod.DEFAULTS, "hotkeys": dict(overlay_mod.DEFAULTS["hotkeys"])})
     mute_file: str = os.path.expanduser("~/.claude/voice-off")
 
@@ -273,6 +274,68 @@ class Hub:
         with self.lock:
             sessions = [s.snapshot() for s in self.sessions.by_id.values()]
         return {"sessions": sessions, "muted": self._muted(), **self.speech.snapshot()}
+
+    # --- voices ------------------------------------------------------------------------------
+
+    def voices(self) -> dict:
+        engine = self.speech.engine
+        with self.lock:
+            projects = {**self.sessions.remembered, **self.sessions.pinned}
+            open_now = {s.name: s.voice for s in self.sessions.by_id.values()}
+        return {"choosable": hasattr(engine, "custom"), "builtin": sorted(getattr(engine, "voices", [])),
+                "custom": sorted(getattr(engine, "custom", {})), "pool": list(self.cfg.voice_pool),
+                "projects": {**projects, **open_now}}
+
+    def set_voice(self, project: str, voice: str) -> str | None:
+        """Give a project a voice. Returns an error message, or None when done."""
+        engine = self.speech.engine
+        if not hasattr(engine, "has"):
+            return "this machine's voice engine has only one voice"
+        if not engine.has(voice):
+            return f"no voice called {voice}; see: claude-speaks voices"
+        with self.lock:
+            self.sessions.set_voice(project, voice)
+        return None
+
+    def add_voice(self, name: str, path: str | None = None, mix: dict | None = None) -> str | None:
+        """Add one of the user's own voices: from a Kokoro voice file, or as a blend of existing ones."""
+        import numpy as np
+
+        engine = self.speech.engine
+        if not hasattr(engine, "save_custom"):
+            return "own voices need the Kokoro voice engine"
+        if not re.fullmatch(r"[a-z0-9_]{1,32}", name) or name in engine.voices:
+            return "a voice name is 1 to 32 lowercase letters, digits or _, and not a built-in name"
+        try:
+            if mix:
+                unknown = [v for v in mix if not engine.has(v)]
+                total = sum(float(w) for w in mix.values())
+                if unknown or total <= 0:
+                    return f"unknown voice: {unknown[0]}" if unknown else "the weights must add up to more than zero"
+                array = sum(engine.style(v) * (float(w) / total) for v, w in mix.items())
+            elif path and path.endswith(".pt"):
+                return ("that is a PyTorch file; convert it first with: "
+                        "python -c \"import torch, numpy; numpy.save('voice.npy', torch.load('FILE').numpy())\"")
+            else:
+                loaded = np.load(path, allow_pickle=False)
+                if hasattr(loaded, "files"):  # an archive of several voices, like Kokoro's own voices file
+                    if name not in loaded.files:
+                        return f"that archive holds several voices ({', '.join(loaded.files[:8])}...); name one of them"
+                    loaded = loaded[name]
+                array = loaded
+            engine.save_custom(name, array)
+        except OSError as e:
+            return f"could not read the file: {e.strerror or e}"
+        except ValueError as e:
+            reason = str(e) if str(e).startswith("not a Kokoro voice") else "it is not a plain numeric .npy array"
+            return f"that file cannot be used as a voice: {reason}"
+        return None
+
+    def remove_voice(self, name: str) -> str | None:
+        engine = self.speech.engine
+        if not hasattr(engine, "remove_custom") or not engine.remove_custom(name):
+            return f"no voice of yours is called {name}"
+        return None
 
     # --- permission prompts ------------------------------------------------------------------
 
@@ -683,6 +746,8 @@ class Handler(BaseHTTPRequestHandler):
         hub: Hub = self.server.hub
         if self.path == "/state":
             self._reply(hub.snapshot())
+        elif self.path == "/voices":
+            self._reply(hub.voices())
         elif self.path == "/health":
             self._reply({"ok": True, "pid": os.getpid()})
         else:
@@ -707,6 +772,15 @@ class Handler(BaseHTTPRequestHandler):
             self._permission(hub, body)
         elif self.path == "/listen":
             self._listen(hub, body)
+        elif self.path == "/voice":
+            action = body.get("action", "set")
+            if action == "set":
+                error = hub.set_voice(str(body.get("project", "")), str(body.get("voice", "")))
+            elif action == "add":
+                error = hub.add_voice(str(body.get("name", "")), body.get("path"), body.get("mix"))
+            else:
+                error = hub.remove_voice(str(body.get("name", "")))
+            self._reply({"error": error})
         elif self.path == "/target":
             with hub.lock:
                 match = next((s for s in hub.sessions.by_id.values() if s.name == body.get("session")), None)
@@ -824,7 +898,7 @@ def main() -> int:
     except OSError:
         return 0  # another hub already owns the socket
 
-    hub = Hub(cfg, make_engine(cfg.engine, cfg.kokoro_dir, cfg.speed, cfg.default_voice))
+    hub = Hub(cfg, make_engine(cfg.engine, cfg.kokoro_dir, cfg.speed, cfg.default_voice, cfg.voices_dir))
     if cfg.overlay.get("enabled") and overlay_mod.Overlay.available():
         script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "overlay", "overlay.ps1")
         hub.overlay = overlay_mod.Overlay(script, cfg.overlay, on_message=hub.on_overlay,

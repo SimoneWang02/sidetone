@@ -60,8 +60,13 @@ class KokoroEngine:
     RATE = 24000
     GAP = b"\0" * int(RATE * 0.15) * 2  # silence between parts (16-bit mono)
 
-    def __init__(self, kokoro_dir: str, speed: float, fallback_voice: str):
+    STYLE_SHAPE = (510, 1, 256)  # how Kokoro stores one voice
+
+    def __init__(self, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = ""):
         self.dir, self.speed, self.fallback_voice = kokoro_dir, speed, fallback_voice
+        self.custom_dir = custom_dir  # the user's own voices, one .npy file each
+        self.custom: dict = {}
+        self.voices: set[str] = set()
         self.kokoro = None
         self._proc: subprocess.Popen | None = None
         self._stop = threading.Event()
@@ -71,7 +76,55 @@ class KokoroEngine:
 
         self.kokoro = Kokoro(f"{self.dir}/kokoro-v1.0.onnx", f"{self.dir}/voices-v1.0.bin")
         self.voices = set(self.kokoro.get_voices())
+        self.reload_custom()
         self._pcm("Ready.", self.fallback_voice)  # the first synthesis is much slower than the rest
+
+    def reload_custom(self) -> None:
+        import numpy as np
+
+        self.custom = {}
+        if not os.path.isdir(self.custom_dir):
+            return
+        for name in sorted(os.listdir(self.custom_dir)):
+            if name.endswith(".npy"):
+                try:
+                    self.custom[name[:-4]] = self.as_style(np.load(os.path.join(self.custom_dir, name)))
+                except (OSError, ValueError):
+                    pass
+
+    def as_style(self, array):
+        """Check an array is a Kokoro voice and return it in the stored shape."""
+        import numpy as np
+
+        array = np.asarray(array, dtype=np.float32)
+        if array.shape == (self.STYLE_SHAPE[0], self.STYLE_SHAPE[2]):
+            array = array[:, None, :]
+        if array.shape != self.STYLE_SHAPE:
+            raise ValueError(f"not a Kokoro voice: expected an array of shape {self.STYLE_SHAPE}, got {array.shape}")
+        return array
+
+    def has(self, voice: str) -> bool:
+        return voice in self.voices or voice in self.custom
+
+    def style(self, voice: str):
+        return self.custom[voice] if voice in self.custom else self.kokoro.get_voice_style(voice)
+
+    def save_custom(self, name: str, array) -> None:
+        import numpy as np
+
+        array = self.as_style(array)
+        os.makedirs(self.custom_dir, exist_ok=True)
+        np.save(os.path.join(self.custom_dir, f"{name}.npy"), array)
+        self.custom[name] = array
+
+    def remove_custom(self, name: str) -> bool:
+        if self.custom.pop(name, None) is None:
+            return False
+        try:
+            os.unlink(os.path.join(self.custom_dir, f"{name}.npy"))
+        except OSError:
+            pass
+        return True
 
     def arm(self) -> None:
         self._stop.clear()
@@ -79,7 +132,7 @@ class KokoroEngine:
     def _pcm(self, text: str, voice: str) -> bytes:
         import numpy as np
 
-        samples, _ = self.kokoro.create(text, voice=voice, speed=self.speed, lang="en-us")
+        samples, _ = self.kokoro.create(text, voice=self.custom.get(voice, voice), speed=self.speed, lang="en-us")
         return (np.clip(samples, -1, 1) * 32767).astype("<i2").tobytes()
 
     def speak(self, parts: list[str], voice: str) -> float | None:
@@ -89,7 +142,7 @@ class KokoroEngine:
         """
         if self._stop.is_set():
             return None
-        if voice not in self.voices:
+        if not self.has(voice):
             voice = self.fallback_voice
         started, first = time.monotonic(), None
         proc = self._proc = subprocess.Popen(
@@ -170,11 +223,11 @@ class CommandEngine:
                 pass
 
 
-def make_engine(name: str, kokoro_dir: str, speed: float, fallback_voice: str):
+def make_engine(name: str, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = ""):
     """`name` is kokoro, null, one of CommandEngine.COMMANDS, or auto (the best one installed)."""
     kokoro = os.path.isfile(f"{kokoro_dir}/kokoro-v1.0.onnx") and importlib.util.find_spec("kokoro_onnx")
     if name in ("kokoro", "auto") and kokoro and shutil.which("paplay"):
-        return KokoroEngine(kokoro_dir, speed, fallback_voice)
+        return KokoroEngine(kokoro_dir, speed, fallback_voice, custom_dir)
     for command, build in CommandEngine.COMMANDS.items():
         if name in (command, "auto", "kokoro") and shutil.which(command):
             return CommandEngine(build)
