@@ -15,7 +15,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
 import hub as hub_module  # noqa: E402
 from hub import Config, Hub, serve  # noqa: E402
-from tts import NullEngine  # noqa: E402
+from tts import CommandEngine, NullEngine  # noqa: E402
 
 
 def ev(event, sid="s1", cwd="/work/alpha", **extra):
@@ -31,7 +31,8 @@ class HubCase(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="cs-test-")
         self.engine = NullEngine(duration)
         self.cfg = Config(run=self.tmp, state=self.tmp, engine="null",
-                          mute_file=os.path.join(self.tmp, "voice-off"), **cfg)
+                          mute_file=os.path.join(self.tmp, "voice-off"),
+                          sessions_dir=os.path.join(self.tmp, "claude-sessions"), **cfg)
         self.hub = Hub(self.cfg, self.engine)
         self.addCleanup(self.hub.speech.close)
         return self.hub
@@ -357,6 +358,9 @@ class FakeTranscriber:
     def load(self):
         pass
 
+    def unload(self):
+        pass
+
     def transcribe(self, pcm):
         return self.text
 
@@ -450,6 +454,47 @@ class PushToTalk(HubCase):
         self.assertIsNone(hub.collect(old))
         self.assertFalse(new.wake.is_set())
 
+    def test_unattended_session_needs_a_confirming_tap(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", permission_mode="bypassPermissions"))
+        hub.talk_target = "a"
+        listener = hub.listen("a")
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: hub._pending is not None))
+        self.assertIn("tap Ctrl+Alt+Space to send", self.overlay.of("banner")[-1]["hint"])
+        time.sleep(0.2)  # well past followup_delay: it must still be waiting
+        self.assertFalse(listener.wake.is_set())
+        hub_module.TAP = 30  # the next press is a tap
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(listener.wake.wait(2))
+        self.assertEqual(hub.collect(listener), "also add a test")
+
+    def test_unconfirmed_follow_up_is_dropped_not_sent(self):
+        hub = self.make(followup_confirm=True)
+        self.addCleanup(setattr, hub_module, "CONFIRM_WINDOW", hub_module.CONFIRM_WINDOW)
+        hub_module.CONFIRM_WINDOW = 0.1
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: "not sent" in self.banners()))
+        self.assertEqual(hub.followups, {})
+
+    def test_typed_follow_up_and_prompting_session_send_without_a_tap(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", permission_mode="default"))
+        self.assertFalse(hub._needs_confirmation(hub.sessions.by_id["a"]))
+        hub.on_event(ev("UserPromptSubmit", sid="b", cwd="/w/b", permission_mode="auto"))
+        hub.follow_up("typed in a shell", "b", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("b")))
+
+    def test_list_marks_who_a_follow_up_goes_to(self):
+        hub = self.make()
+        hub.talk_target = "b"
+        hub.publish()
+        rows = {r["name"]: r["meta"] for r in self.overlay.of("state")[-1]["sessions"]}
+        self.assertEqual((rows["a"], rows["b"]), ("", "\U0001F3A4"))
+
     def test_overlay_claims_keys_only_while_they_can_act(self):
         hub = self.make()
         hub.publish()
@@ -458,6 +503,78 @@ class PushToTalk(HubCase):
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "deny"])
         hub.talk_start()
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "cancel", "deny"])
+
+
+class ClaudeCodesOwnRecords(HubCase):
+    """Claude Code's session files tell the hub what no hook reports."""
+
+    def record(self, sid, status, pid=None, seconds_ago=10):
+        os.makedirs(self.cfg.sessions_dir, exist_ok=True)
+        pid = pid or os.getpid()
+        with open(os.path.join(self.cfg.sessions_dir, f"{pid}.json"), "w") as f:
+            json.dump({"pid": pid, "sessionId": sid, "status": status,
+                       "statusUpdatedAt": (time.time() - seconds_ago) * 1000}, f)
+
+    def quiet_for(self, seconds, sid="s1"):
+        self.hub.sessions.by_id[sid].updated -= seconds
+
+    def test_esc_leaves_no_event_but_the_session_shows_idle(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit"))
+        req = hub.request_permission(ask())
+        self.record("s1", "idle")
+        hub.reconcile()
+        self.assertEqual(self.session()["state"], "needs_you")  # too soon after its last event to judge
+        self.quiet_for(10)
+        hub.reconcile()
+        self.assertEqual((self.session()["state"], self.session()["note"]), ("idle", "interrupted"))
+        self.assertTrue(req.done.is_set())
+
+    def test_a_busy_session_is_left_alone(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit"))
+        self.record("s1", "busy")
+        self.quiet_for(600)
+        hub.reconcile()
+        self.assertEqual(self.session()["state"], "working")
+
+    def test_a_closed_terminal_removes_the_session(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit"))
+        self.record("s1", "busy")
+        hub.reconcile()
+        os.remove(os.path.join(self.cfg.sessions_dir, f"{os.getpid()}.json"))
+        self.quiet_for(10)
+        hub.reconcile()
+        self.assertEqual(hub.snapshot()["sessions"], [])
+
+    def test_a_dead_process_counts_as_gone_and_sessions_without_a_file_are_kept(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit"))
+        hub.on_event(ev("UserPromptSubmit", sid="demo", cwd="/w/demo"))  # never had a file
+        self.record("s1", "busy")
+        hub.reconcile()
+        dead = subprocess.Popen(["true"])
+        dead.wait()
+        os.remove(os.path.join(self.cfg.sessions_dir, f"{os.getpid()}.json"))
+        self.record("s1", "busy", pid=dead.pid)
+        self.quiet_for(10)
+        self.quiet_for(10, "demo")
+        hub.reconcile()
+        self.assertEqual([s["id"] for s in hub.snapshot()["sessions"]], ["demo"])
+
+
+class OtherVoices(unittest.TestCase):
+    def test_a_system_voice_speaks_and_can_be_cut_short(self):
+        said = os.path.join(tempfile.mkdtemp(prefix="cs-test-"), "said")
+        engine = CommandEngine(lambda text: ["sh", "-c", 'echo "$0" > "$1"; sleep 5', text, said])
+        engine.arm()
+        threading.Timer(0.3, engine.stop).start()
+        started = time.monotonic()
+        engine.speak(["alpha.", "Tests pass."], "ignored")
+        self.assertLess(time.monotonic() - started, 3)
+        with open(said) as f:
+            self.assertEqual(f.read().strip(), "alpha. Tests pass.")
 
 
 class ThroughTheHooks(HubCase):

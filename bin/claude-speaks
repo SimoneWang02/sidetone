@@ -14,6 +14,7 @@ Usage: claude-speaks <command>
   allow | deny               answer the permission prompt the overlay is showing
   follow-up [-s PROJECT] TEXT   send a follow-up to a session as if you had said it
   talk start|stop|cancel     the talk key and the cancel key, from a shell
+  target [PROJECT]           show or choose which session a spoken follow-up goes to
   overlay dots|list|toggle|restart   switch the on-screen overlay's view, or restart it
   demo                       play three made-up sessions to see and hear every state
   hub start|stop|restart     manage the background hub
@@ -65,6 +66,12 @@ case ${1:-} in
     queued=$(jq -nc --arg t "$*" --arg p "$project" '{text: $t} + (if $p == "" then {} else {session: $p} end)' |
       hub_post /follow-up | jq -r .queued)
     [ "$queued" = true ] && echo "queued" || { echo "no such session"; exit 1; }
+    ;;
+  target)
+    reply=$(jq -nc --arg p "${2:-}" 'if $p == "" then {} else {session: $p} end' | hub_post /target) ||
+      { echo "hub is not running"; exit 1; }
+    [ "$(jq -r .found <<<"$reply")" = true ] || { echo "no such session: ${2:-}"; exit 1; }
+    echo "follow-ups go to: $(jq -r '.target // "nobody (no sessions)"' <<<"$reply")"
     ;;
   talk)
     case ${2:-} in

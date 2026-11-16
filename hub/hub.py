@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # run with -I, so add our own dir
+import claude_sessions  # noqa: E402
 import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
 import stt  # noqa: E402
@@ -33,6 +34,17 @@ NEEDS_INPUT = ("permission_prompt", "elicitation_dialog")  # Notification types 
 OWN_DIALOG = ("AskUserQuestion", "ExitPlanMode")  # tools whose prompt is a question, not a yes/no
 MIN_SHOWN = 0.7  # a request must be on screen this long before a hotkey can answer it
 TAP = 0.35  # a talk-key press shorter than this picks the next session instead of recording
+CONFIRM_WINDOW = 20.0  # seconds a follow-up waits for its confirming tap before it is dropped
+PROMPTING_MODES = ("", "default", "plan")  # permission modes in which Claude asks before acting
+
+
+@dataclass
+class Pending:
+    """A follow-up on screen, not sent yet."""
+    session: str
+    text: str
+    confirm: bool  # True: wait for a tap of the talk key; False: goes out when the timer ends
+    timer: threading.Timer | None = None
 
 
 @dataclass
@@ -63,7 +75,7 @@ class Config:
     run: str  # socket and lock
     state: str  # logs
     kokoro_dir: str = ""
-    engine: str = "kokoro"  # kokoro | null
+    engine: str = "auto"  # auto | kokoro | say | spd-say | espeak-ng | null
     default_voice: str = "af_heart"
     speed: float = 1.1
     voices: dict = field(default_factory=dict)  # project name -> voice
@@ -78,6 +90,12 @@ class Config:
     mic_source: str = ""  # PulseAudio source for push-to-talk; empty = the default microphone
     followup_delay: float = 2.0  # seconds a transcript is shown (and can be cancelled) before it is sent
     talk_tail: float = 0.4  # seconds to keep recording after the talk key is released
+    # Ask for a confirming tap before sending a spoken follow-up: True, False, or "auto" (only
+    # for sessions that would act on it without asking, i.e. not in default or plan mode).
+    followup_confirm: bool | str = "auto"
+    whisper_language: str = "en"  # for multilingual models such as "small": a code, or "auto"
+    whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
+    sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
     overlay: dict = field(default_factory=lambda: {**overlay_mod.DEFAULTS, "hotkeys": dict(overlay_mod.DEFAULTS["hotkeys"])})
     mute_file: str = os.path.expanduser("~/.claude/voice-off")
 
@@ -96,7 +114,7 @@ class Config:
             state=env.get("CS_STATE") or os.path.join(
                 env.get("XDG_STATE_HOME") or f"{home}/.local/state", "claude-speaks"),
             kokoro_dir=env.get("KOKORO_DIR") or f"{home}/.local/share/kokoro",
-            engine=env.get("CLAUDE_SPEAKS_TTS", "kokoro"),
+            engine=env.get("CLAUDE_SPEAKS_TTS", "auto"),
             default_voice=env.get("KOKORO_VOICE", "af_heart"),
             speed=float(env.get("KOKORO_SPEED", "1.1")),
         )
@@ -107,7 +125,8 @@ class Config:
         except FileNotFoundError:
             return cfg
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail"):
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail",
+                    "followup_confirm", "whisper_language", "whisper_unload_minutes"):
             if key in user:
                 setattr(cfg, key, user[key])
         wanted = user.get("overlay") or {}
@@ -133,7 +152,8 @@ class Hub:
         self.followups: dict[str, list[str]] = {}  # session id -> text not yet picked up
         self.talk_target: str | None = None  # session a spoken follow-up goes to
         self._talking: float | None = None  # when the talk key went down
-        self._pending: tuple[threading.Timer, str, str] | None = None  # (timer, session, text) being shown
+        self._pending: Pending | None = None  # the follow-up being shown
+        self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
                                   on_change=self._speech_changed, on_done=self._log_speech)
@@ -151,15 +171,10 @@ class Hub:
         with self.lock:
             self.last_event = time.monotonic()
             if event == "SessionEnd":
-                self._settle(sid, "session ended")
-                self._release(sid)
-                self.followups.pop(sid, None)
-                if self.talk_target == sid:
-                    self.talk_target = None
-                self.sessions.remove(sid)
-                self.speech.drop_session(sid)
+                self._forget(sid, "session ended")
                 return
             s = self.sessions.touch(sid, ev.get("cwd", ""))
+            s.permission_mode = str(ev.get("permission_mode") or s.permission_mode)
             if event in ("PostToolUse", "PostToolUseFailure"):  # that tool ran: its prompt was answered
                 self._settle(sid, "answered in the terminal", ev.get("tool_name"), ev.get("tool_input"))
             elif event in ("UserPromptSubmit", "Stop", "StopFailure"):
@@ -205,6 +220,36 @@ class Hub:
                 error = str(ev.get("error") or "unknown").replace("_", " ")
                 s.note = f"error: {error}"
                 self._say(s, f"I hit an error: {error}", "failed", "stop-failure")
+
+    def _forget(self, sid: str, why: str) -> None:
+        self._settle(sid, why)
+        self._release(sid)
+        self.followups.pop(sid, None)
+        if self.talk_target == sid:
+            self.talk_target = None
+        self.sessions.remove(sid)
+        self.speech.drop_session(sid)
+
+    def reconcile(self) -> None:
+        """Catch what hooks cannot report, from Claude Code's own session files: a turn you
+        interrupted with Esc, and a session whose terminal was closed."""
+        live = claude_sessions.read(self.cfg.sessions_dir)
+        changed = False
+        with self.lock:
+            for s in list(self.sessions.by_id.values()):
+                info, quiet = live.get(s.id), time.monotonic() - s.updated
+                if info:
+                    s.seen_file = True
+                    if (info["status"] == "idle" and s.state in ("working", "needs_you") and quiet > 3
+                            and time.time() - info["status_at"] > 2):
+                        self._settle(s.id, "interrupted")
+                        s.state, s.activity, s.note, s.turn_started = "idle", "", "interrupted", None
+                        changed = True
+                elif s.seen_file and quiet > 5:  # it had a file and no longer does: the session is gone
+                    self._forget(s.id, "session gone")
+                    changed = True
+        if changed:
+            self.publish()
 
     def on_display(self, ev: dict) -> dict | None:
         """MessageDisplay: speak a speak-tag line as soon as it streams in; return the rewrite."""
@@ -338,8 +383,9 @@ class Hub:
                 self._banner("no Claude session to talk to", seconds=2)
                 return False
             self._talking = time.monotonic()
-            self._cancel_pending()
-            self._banner(f"listening \u2192 {s.name}", "release to send \u00b7 tap to pick another session")
+            if not (self._pending and self._pending.confirm):  # that one may be about to get its confirming tap
+                self._cancel_pending()
+                self._banner(f"listening \u2192 {s.name}", "release to send \u00b7 tap to pick another session")
         self.speech.pause()
         self.recorder.start()
         if self.transcriber:  # load the model while the user is still speaking
@@ -348,22 +394,28 @@ class Hub:
         return True
 
     def talk_end(self) -> None:
-        """The talk key came up: a quick tap picks the next session, anything longer is transcribed."""
+        """The talk key came up. A hold is transcribed. A quick tap confirms the follow-up on
+        screen if one is waiting for that, and otherwise picks the next session."""
         with self.lock:
             if not self._talking:
                 return
             held, self._talking = time.monotonic() - self._talking, None
-        pcm = self.recorder.stop(tail=0 if held < TAP else self.cfg.talk_tail)
+            confirming = self._pending if self._pending and self._pending.confirm else None
+        tap = held < TAP
+        pcm = self.recorder.stop(tail=0 if tap else self.cfg.talk_tail)
         self.speech.resume()
-        if held < TAP:
+        if tap and confirming:
+            self._send(confirming)
+        elif tap:
             with self.lock:
                 ids = list(self.sessions.by_id)
                 if ids:
-                    current = self._target()
-                    self.talk_target = ids[(ids.index(current.id) + 1) % len(ids)]
+                    self.talk_target = ids[(ids.index(self._target().id) + 1) % len(ids)]
                     self._banner(f"talking to {self.sessions.by_id[self.talk_target].name}", seconds=2)
         else:
-            self._banner("transcribing\u2026")
+            with self.lock:
+                self._cancel_pending()
+                self._banner("transcribing\u2026")
             threading.Thread(target=self._transcribe, args=(pcm,), daemon=True).start()
         self.publish()
 
@@ -376,42 +428,69 @@ class Hub:
             text = ""
         log(self.cfg, "hub.log", f"talk: {len(pcm) / 2 / stt.RATE:.1f}s recorded, peak level {stt.loudness(pcm):.2f}, "
                                  f"transcribed in {time.monotonic() - started:.1f}s: {text or '(nothing heard)'}")
+        if self._unload:
+            self._unload.cancel()
+        if self.transcriber and self.cfg.whisper_unload_minutes:
+            self._unload = threading.Timer(self.cfg.whisper_unload_minutes * 60, self.transcriber.unload)
+            self._unload.daemon = True
+            self._unload.start()
         if text:
             self.follow_up(text)
         else:
             self._banner("did not catch that", seconds=2)
 
     def follow_up(self, text: str, session: str | None = None, delay: float | None = None) -> bool:
-        """Show a follow-up, then send it to the session unless it is cancelled in time."""
+        """Show a follow-up, then send it to the session.
+
+        A heard follow-up (no `delay` given) goes out after `followup_delay` unless cancelled, or,
+        when the session would act on it without asking, only after a confirming tap of the talk key.
+        """
         with self.lock:
             s = self.sessions.by_id.get(session) if session else self._target()
             if not s:
                 return False
             self._cancel_pending()
-            cancel = self.cfg.overlay.get("hotkeys", {}).get("cancel", "")
-            self._banner(f"\u2192 {s.name}: \u201c{text}\u201d", f"{cancel} cancels" if cancel else "")
-            timer = threading.Timer(self.cfg.followup_delay if delay is None else delay, self._send, args=(s.id, text))
-            timer.daemon = True
-            self._pending = (timer, s.id, text)
-            timer.start()
+            keys = self.cfg.overlay.get("hotkeys", {})
+            confirm = delay is None and self._needs_confirmation(s)
+            pending = self._pending = Pending(s.id, text, confirm)
+            if confirm:
+                hint = f"tap {keys.get('talk') or 'the talk key'} to send  \u00b7  {keys.get('cancel', '')} cancels"
+                pending.timer = threading.Timer(CONFIRM_WINDOW, self._expire, args=(pending,))
+            else:
+                hint = f"{keys.get('cancel', '')} cancels" if keys.get("cancel") else ""
+                pending.timer = threading.Timer(self.cfg.followup_delay if delay is None else delay,
+                                                self._send, args=(pending,))
+            self._banner(f"\u2192 {s.name}: \u201c{text}\u201d", hint)
+            pending.timer.daemon = True
+            pending.timer.start()
         self.publish()
         return True
 
-    def _send(self, sid: str, text: str) -> None:
+    def _send(self, pending: Pending) -> None:
         with self.lock:
-            if not self._pending or self._pending[1:] != (sid, text):
+            if self._pending is not pending:
                 return  # cancelled or replaced meanwhile
+            pending.timer.cancel()
             self._pending = None
             self._banner(None)
-            s = self.sessions.by_id.get(sid)
+            s = self.sessions.by_id.get(pending.session)
             if not s:
                 return
-            self.followups.setdefault(sid, []).append(text)
-            listener = self.listeners.get(sid)
+            self.followups.setdefault(s.id, []).append(pending.text)
+            listener = self.listeners.get(s.id)
             if listener:
                 listener.wake.set()
-            log(self.cfg, "hub.log", f"follow-up [{sid[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
             self._say(s, "Sent.", "allowed", "follow-up")
+        self.publish()
+
+    def _expire(self, pending: Pending) -> None:
+        """Nobody confirmed it in time: better dropped than sent late and out of context."""
+        with self.lock:
+            if self._pending is not pending:
+                return
+            self._pending = None
+            self._banner("not sent", seconds=2)
         self.publish()
 
     def cancel(self) -> None:
@@ -467,10 +546,14 @@ class Hub:
     def _cancel_pending(self) -> bool:
         if not self._pending:
             return False
-        self._pending[0].cancel()
+        self._pending.timer.cancel()
         self._pending = None
         self._banner(None)
         return True
+
+    def _needs_confirmation(self, s) -> bool:
+        wanted = self.cfg.followup_confirm
+        return s.permission_mode not in PROMPTING_MODES if wanted == "auto" else bool(wanted)
 
     def _banner(self, text: str | None, hint: str = "", seconds: float = 0) -> None:
         """A solid line about push-to-talk; stays until replaced unless `seconds` is given."""
@@ -492,6 +575,7 @@ class Hub:
                 "state": s.state,
                 "text": s.activity if s.state == "working" else s.note,
                 "meta": " \u00b7 ".join(filter(None, [
+                    "\U0001F3A4" if len(self.sessions.by_id) > 1 and self._target() is s else "",  # talk target
                     f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
                 ])),
@@ -623,12 +707,22 @@ class Handler(BaseHTTPRequestHandler):
             self._permission(hub, body)
         elif self.path == "/listen":
             self._listen(hub, body)
+        elif self.path == "/target":
+            with hub.lock:
+                match = next((s for s in hub.sessions.by_id.values() if s.name == body.get("session")), None)
+                if match:
+                    hub.talk_target = match.id
+                target = hub._target()
+            hub.publish()
+            self._reply({"target": target.name if target else None, "found": bool(match) or not body.get("session")})
         elif self.path == "/follow-up":
             sid = None
             if body.get("session"):  # a project name from the command line
                 with hub.lock:
                     sid = next((s.id for s in hub.sessions.by_id.values() if s.name == body["session"]), "?")
-            self._reply({"queued": hub.follow_up(str(body.get("text", "")), sid, body.get("delay"))})
+            delay = body.get("delay")  # typed, not heard, so it needs no confirming tap
+            self._reply({"queued": hub.follow_up(str(body.get("text", "")), sid,
+                                                 hub.cfg.followup_delay if delay is None else delay)})
         elif self.path == "/talk":  # the talk and cancel keys, for use without the overlay
             action = body.get("action")
             if action == "start":
@@ -737,7 +831,8 @@ def main() -> int:
                                           log=lambda line: log(cfg, "hub.log", line))
         hub.publish()  # starts the window now, so it is ready before the first session speaks
     if stt.Recorder.available() and stt.Transcriber.available():
-        hub.recorder, hub.transcriber = stt.Recorder(cfg.mic_source), stt.Transcriber(cfg.whisper_model)
+        hub.recorder = stt.Recorder(cfg.mic_source)
+        hub.transcriber = stt.Transcriber(cfg.whisper_model, cfg.whisper_language)
     server = serve(hub, cfg.sock)
     stop = lambda *_: threading.Thread(target=server.shutdown, daemon=True).start()  # noqa: E731
     signal.signal(signal.SIGTERM, stop)
@@ -753,13 +848,14 @@ def main() -> int:
                 server.shutdown()
                 return
 
-    def refresh_overlay() -> None:  # elapsed times change even when no event arrives
+    def keep_current() -> None:  # elapsed times and Claude Code's session files change without any event
         while True:
-            time.sleep(5)
+            time.sleep(1)
+            hub.reconcile()
             hub.publish()
 
     threading.Thread(target=exit_when_idle, daemon=True).start()
-    threading.Thread(target=refresh_overlay, daemon=True).start()
+    threading.Thread(target=keep_current, daemon=True).start()
     log(cfg, "hub.log", f"hub started pid={os.getpid()} engine={type(hub.speech.engine).__name__}")
     try:
         server.serve_forever()

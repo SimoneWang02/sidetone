@@ -97,6 +97,8 @@ class Session:
     turn_started: float | None = None
     spoken: str | None = None  # line already spoken this turn, so Stop doesn't repeat it
     last_speech: str = ""
+    permission_mode: str = ""  # default | plan | acceptEdits | auto | ... as last reported by a hook
+    seen_file: bool = False  # Claude Code's own session file was seen for it (see claude_sessions.py)
     updated: float = field(default_factory=time.monotonic)
 
     def snapshot(self) -> dict:

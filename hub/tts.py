@@ -1,8 +1,11 @@
 """Speech for the hub: a queue that speaks one line at a time, and the engines that make sound."""
 from __future__ import annotations
 
+import importlib.util
 import os
 import re
+import shutil
+import signal
 import subprocess
 import threading
 import time
@@ -119,9 +122,62 @@ class KokoroEngine:
             proc.kill()
 
 
+class CommandEngine:
+    """A system voice run as a command per line (macOS `say`, speech-dispatcher, espeak-ng).
+
+    One voice for every session, but the queue, labels and overlay work the same.
+    """
+
+    COMMANDS = {
+        "say": lambda text: ["say", "-r", "210", text],
+        "spd-say": lambda text: ["spd-say", "-w", text],
+        "espeak-ng": lambda text: ["espeak-ng", text],
+    }
+
+    def __init__(self, command: Callable[[str], list[str]]):
+        self.command = command
+        self._proc: subprocess.Popen | None = None
+        self._stop = threading.Event()
+
+    def load(self) -> None:
+        pass
+
+    def arm(self) -> None:
+        self._stop.clear()
+
+    def speak(self, parts: list[str], voice: str) -> float | None:
+        if self._stop.is_set():
+            return None
+        started = time.monotonic()
+        try:  # its own process group, so stop() also reaches any helper it starts
+            proc = self._proc = subprocess.Popen(self.command(" ".join(parts)), stdin=subprocess.DEVNULL,
+                                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                                 start_new_session=True)
+        except OSError:
+            return None
+        first = time.monotonic() - started
+        proc.wait()
+        self._proc = None
+        return first
+
+    def stop(self) -> None:
+        self._stop.set()
+        proc = self._proc
+        if proc and proc.poll() is None:
+            try:
+                os.killpg(proc.pid, signal.SIGTERM)
+            except OSError:
+                pass
+
+
 def make_engine(name: str, kokoro_dir: str, speed: float, fallback_voice: str):
-    if name == "kokoro" and os.path.isfile(f"{kokoro_dir}/kokoro-v1.0.onnx"):
+    """`name` is kokoro, null, one of CommandEngine.COMMANDS, or auto (the best one installed)."""
+    kokoro = os.path.isfile(f"{kokoro_dir}/kokoro-v1.0.onnx") and importlib.util.find_spec("kokoro_onnx")
+    if name in ("kokoro", "auto") and kokoro and shutil.which("paplay"):
         return KokoroEngine(kokoro_dir, speed, fallback_voice)
+    for command, build in CommandEngine.COMMANDS.items():
+        if name in (command, "auto", "kokoro") and shutil.which(command):
+            return CommandEngine(build)
     return NullEngine()
 
 

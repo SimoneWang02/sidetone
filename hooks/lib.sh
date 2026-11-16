@@ -20,7 +20,8 @@ hub_post() {
 # Start the hub in the background and return at once. A second hub exits by itself (it takes a lock).
 hub_start() {
   local py=$KOKORO_DIR/venv/bin/python
-  [ -x "$py" ] && [ -f "$CS_ROOT/hub/hub.py" ] || return 1
+  [ -x "$py" ] || py=$(command -v python3) || return 1   # no Kokoro: the hub uses a system voice
+  [ -f "$CS_ROOT/hub/hub.py" ] || return 1
   mkdir -p "$CS_RUN" "$CS_STATE" && chmod 700 "$CS_RUN" || return 1
   CS_RUN=$CS_RUN CS_STATE=$CS_STATE KOKORO_DIR=$KOKORO_DIR \
     setsid nohup "$py" -I "$CS_ROOT/hub/hub.py" </dev/null >>"$CS_STATE/hub.log" 2>&1 &

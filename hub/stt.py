@@ -5,6 +5,7 @@ Both parts run locally: `parec` (PulseAudio) for the microphone, faster-whisper 
 from __future__ import annotations
 
 import array
+import gc
 import importlib.util
 import shutil
 import subprocess
@@ -69,8 +70,10 @@ class Recorder:
 class Transcriber:
     """Whisper kept loaded after its first use. `small.en` reads a short sentence in under a second on CPU."""
 
-    def __init__(self, model: str = "small.en"):
+    def __init__(self, model: str = "small.en", language: str = "en"):
         self.name = model
+        # English-only models ignore the setting; "auto" lets a multilingual model detect it.
+        self.language = "en" if model.endswith(".en") else (None if language == "auto" else language)
         self._model = None
         self._lock = threading.Lock()
 
@@ -85,12 +88,18 @@ class Transcriber:
 
                 self._model = WhisperModel(self.name, device="cpu", compute_type="int8")
 
+    def unload(self) -> None:
+        """Give the model's memory back; the next use loads it again."""
+        with self._lock:
+            self._model = None
+        gc.collect()
+
     def transcribe(self, pcm: bytes) -> str:
         import numpy as np
 
         self.load()
         audio = np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768.0
         # The voice filter drops silence first; without it Whisper invents words for an empty recording.
-        segments, _ = self._model.transcribe(audio, language="en", beam_size=1, vad_filter=True,
+        segments, _ = self._model.transcribe(audio, language=self.language, beam_size=1, vad_filter=True,
                                              condition_on_previous_text=False)
         return " ".join(s.text.strip() for s in segments).strip()
