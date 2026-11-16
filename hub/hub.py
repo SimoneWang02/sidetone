@@ -24,6 +24,7 @@ from http.server import BaseHTTPRequestHandler
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # run with -I, so add our own dir
 import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
+import stt  # noqa: E402
 from state import (VOICE_POOL, Sessions, describe, permission_summary,  # noqa: E402
                    speech_from_message, split_display)
 from tts import SpeechQueue, Utterance, make_engine  # noqa: E402
@@ -31,6 +32,15 @@ from tts import SpeechQueue, Utterance, make_engine  # noqa: E402
 NEEDS_INPUT = ("permission_prompt", "elicitation_dialog")  # Notification types worth interrupting for
 OWN_DIALOG = ("AskUserQuestion", "ExitPlanMode")  # tools whose prompt is a question, not a yes/no
 MIN_SHOWN = 0.7  # a request must be on screen this long before a hotkey can answer it
+TAP = 0.35  # a talk-key press shorter than this picks the next session instead of recording
+
+
+@dataclass
+class Listener:
+    """A session's background hook, waiting to carry a spoken follow-up into that session."""
+    session: str
+    released: bool = False  # a newer listener took over, or the session ended
+    wake: threading.Event = field(default_factory=threading.Event)
 
 
 @dataclass
@@ -64,6 +74,10 @@ class Config:
     # Claude Code sends a notification once a permission prompt has waited about 6 s. A request
     # with no such notification after this long was answered in the terminal.
     permission_grace: float = 9.0
+    whisper_model: str = "small.en"
+    mic_source: str = ""  # PulseAudio source for push-to-talk; empty = the default microphone
+    followup_delay: float = 2.0  # seconds a transcript is shown (and can be cancelled) before it is sent
+    talk_tail: float = 0.4  # seconds to keep recording after the talk key is released
     overlay: dict = field(default_factory=lambda: {**overlay_mod.DEFAULTS, "hotkeys": dict(overlay_mod.DEFAULTS["hotkeys"])})
     mute_file: str = os.path.expanduser("~/.claude/voice-off")
 
@@ -93,7 +107,7 @@ class Config:
         except FileNotFoundError:
             return cfg
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace"):
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail"):
             if key in user:
                 setattr(cfg, key, user[key])
         wanted = user.get("overlay") or {}
@@ -108,11 +122,19 @@ class Hub:
     def __init__(self, cfg: Config, engine):
         self.cfg = cfg
         self.lock = threading.Lock()
-        self.sessions = Sessions(cfg.voice_pool, cfg.voices)
+        self.sessions = Sessions(cfg.voice_pool, cfg.voices, os.path.join(cfg.state, "voices.json"))
         self.last_event = time.monotonic()
         self.overlay = None  # anything with send(dict); set by main() or the tests
         self._shown: dict | None = None  # last state sent to the overlay, to skip repeats
         self.requests: list[Request] = []  # open permission prompts, oldest first
+        self.recorder = None  # stt.Recorder, set by main() or the tests
+        self.transcriber = None  # stt.Transcriber
+        self.listeners: dict[str, Listener] = {}  # session id -> its waiting hook
+        self.followups: dict[str, list[str]] = {}  # session id -> text not yet picked up
+        self.talk_target: str | None = None  # session a spoken follow-up goes to
+        self._talking: float | None = None  # when the talk key went down
+        self._pending: tuple[threading.Timer, str, str] | None = None  # (timer, session, text) being shown
+        self._keys: list | None = None  # hotkeys the overlay was last told to claim
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
                                   on_change=self._speech_changed, on_done=self._log_speech)
 
@@ -130,6 +152,10 @@ class Hub:
             self.last_event = time.monotonic()
             if event == "SessionEnd":
                 self._settle(sid, "session ended")
+                self._release(sid)
+                self.followups.pop(sid, None)
+                if self.talk_target == sid:
+                    self.talk_target = None
                 self.sessions.remove(sid)
                 self.speech.drop_session(sid)
                 return
@@ -288,8 +314,169 @@ class Hub:
         })
 
     def on_overlay(self, msg: dict) -> None:
-        if msg.get("type") == "hotkey" and msg.get("name") in ("allow", "deny"):
-            self.decide(msg["name"])
+        if msg.get("type") != "hotkey":
+            return
+        name = msg.get("name")
+        if name in ("allow", "deny"):
+            self.decide(name)
+        elif name == "talk":
+            self.talk_start()
+        elif name == "talk_end":
+            self.talk_end()
+        elif name == "cancel":
+            self.cancel()
+
+    # --- push-to-talk ------------------------------------------------------------------------
+
+    def talk_start(self) -> bool:
+        """The talk key went down: go quiet and record."""
+        with self.lock:
+            if self._talking or not self.recorder:
+                return False
+            s = self._target()
+            if not s:
+                self._banner("no Claude session to talk to", seconds=2)
+                return False
+            self._talking = time.monotonic()
+            self._cancel_pending()
+            self._banner(f"listening \u2192 {s.name}", "release to send \u00b7 tap to pick another session")
+        self.speech.pause()
+        self.recorder.start()
+        if self.transcriber:  # load the model while the user is still speaking
+            threading.Thread(target=self.transcriber.load, daemon=True).start()
+        self.publish()
+        return True
+
+    def talk_end(self) -> None:
+        """The talk key came up: a quick tap picks the next session, anything longer is transcribed."""
+        with self.lock:
+            if not self._talking:
+                return
+            held, self._talking = time.monotonic() - self._talking, None
+        pcm = self.recorder.stop(tail=0 if held < TAP else self.cfg.talk_tail)
+        self.speech.resume()
+        if held < TAP:
+            with self.lock:
+                ids = list(self.sessions.by_id)
+                if ids:
+                    current = self._target()
+                    self.talk_target = ids[(ids.index(current.id) + 1) % len(ids)]
+                    self._banner(f"talking to {self.sessions.by_id[self.talk_target].name}", seconds=2)
+        else:
+            self._banner("transcribing\u2026")
+            threading.Thread(target=self._transcribe, args=(pcm,), daemon=True).start()
+        self.publish()
+
+    def _transcribe(self, pcm: bytes) -> None:
+        started = time.monotonic()
+        try:
+            text = self.transcriber.transcribe(pcm) if self.transcriber else ""
+        except Exception as e:  # a broken model must not take the hub down
+            log(self.cfg, "hub.log", f"transcription failed: {e}")
+            text = ""
+        log(self.cfg, "hub.log", f"talk: {len(pcm) / 2 / stt.RATE:.1f}s recorded, peak level {stt.loudness(pcm):.2f}, "
+                                 f"transcribed in {time.monotonic() - started:.1f}s: {text or '(nothing heard)'}")
+        if text:
+            self.follow_up(text)
+        else:
+            self._banner("did not catch that", seconds=2)
+
+    def follow_up(self, text: str, session: str | None = None, delay: float | None = None) -> bool:
+        """Show a follow-up, then send it to the session unless it is cancelled in time."""
+        with self.lock:
+            s = self.sessions.by_id.get(session) if session else self._target()
+            if not s:
+                return False
+            self._cancel_pending()
+            cancel = self.cfg.overlay.get("hotkeys", {}).get("cancel", "")
+            self._banner(f"\u2192 {s.name}: \u201c{text}\u201d", f"{cancel} cancels" if cancel else "")
+            timer = threading.Timer(self.cfg.followup_delay if delay is None else delay, self._send, args=(s.id, text))
+            timer.daemon = True
+            self._pending = (timer, s.id, text)
+            timer.start()
+        self.publish()
+        return True
+
+    def _send(self, sid: str, text: str) -> None:
+        with self.lock:
+            if not self._pending or self._pending[1:] != (sid, text):
+                return  # cancelled or replaced meanwhile
+            self._pending = None
+            self._banner(None)
+            s = self.sessions.by_id.get(sid)
+            if not s:
+                return
+            self.followups.setdefault(sid, []).append(text)
+            listener = self.listeners.get(sid)
+            if listener:
+                listener.wake.set()
+            log(self.cfg, "hub.log", f"follow-up [{sid[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
+            self._say(s, "Sent.", "allowed", "follow-up")
+        self.publish()
+
+    def cancel(self) -> None:
+        """The cancel key: stop recording, or take back a follow-up, or cut the line being spoken."""
+        with self.lock:
+            talking, self._talking = self._talking, None
+            had_pending = self._cancel_pending()
+            if talking or had_pending:
+                self._banner("cancelled", seconds=1.5)
+        if talking:
+            self.recorder.stop()
+            self.speech.resume()
+        elif not had_pending:
+            self.speech.skip()
+        self.publish()
+
+    def listen(self, sid: str, cwd: str = "") -> Listener:
+        """A session's hook starts waiting for follow-ups; it replaces that session's older one."""
+        with self.lock:
+            self.sessions.touch(sid, cwd)  # after a hub restart this is how an idle session reappears
+            self._release(sid)
+            listener = self.listeners[sid] = Listener(sid)
+            if self.followups.get(sid):
+                listener.wake.set()
+            return listener
+
+    def collect(self, listener: Listener) -> str | None:
+        """What the hook should hand to Claude, or None if it should just exit."""
+        with self.lock:
+            if listener.released or self.listeners.get(listener.session) is not listener:
+                return None
+            del self.listeners[listener.session]
+            return " ".join(self.followups.pop(listener.session, [])) or None
+
+    def stop_listening(self, listener: Listener) -> None:
+        with self.lock:
+            if self.listeners.get(listener.session) is listener:
+                del self.listeners[listener.session]
+
+    def _release(self, sid: str) -> None:
+        old = self.listeners.pop(sid, None)
+        if old:
+            old.released = True
+            old.wake.set()
+
+    def _target(self):
+        """Who a follow-up goes to: the chosen session, else the one that spoke last, else the newest."""
+        s = self.sessions.by_id.get(self.talk_target or "")
+        if not s and self.sessions.by_id:
+            s = max(self.sessions.by_id.values(), key=lambda x: x.updated)
+        return s
+
+    def _cancel_pending(self) -> bool:
+        if not self._pending:
+            return False
+        self._pending[0].cancel()
+        self._pending = None
+        self._banner(None)
+        return True
+
+    def _banner(self, text: str | None, hint: str = "", seconds: float = 0) -> None:
+        """A solid line about push-to-talk; stays until replaced unless `seconds` is given."""
+        if self.overlay:
+            self.overlay.send({"type": "banner", "text": text, "hint": hint, "seconds": seconds}
+                              if text else {"type": "banner"})
 
     # --- overlay -----------------------------------------------------------------------------
 
@@ -310,10 +497,14 @@ class Hub:
                 ])),
                 "speaking": s.id == speaking,
             } for s in self.sessions.by_id.values()]
-            if rows == self._shown:
-                return
-            self._shown = rows
-        self.overlay.send({"type": "state", "sessions": rows})
+            keys = sorted((["allow", "deny"] if self.requests else [])
+                          + (["cancel"] if self._talking or self._pending or current else []))
+            new_keys, self._keys = keys != self._keys, keys
+            new_rows, self._shown = rows != self._shown, rows
+        if new_keys:  # claim allow/deny/cancel only while they can do something
+            self.overlay.send({"type": "keys", "live": keys})
+        if new_rows:
+            self.overlay.send({"type": "state", "sessions": rows})
 
     def _flash(self, s, text: str, state: str | None = None) -> None:
         """Expand the overlay's dots into one line about this session for a few seconds."""
@@ -327,6 +518,8 @@ class Hub:
             with self.lock:
                 s = self.sessions.by_id.get(u.session)
                 if s:
+                    if u.kind not in ("allowed", "denied"):
+                        self.talk_target = s.id  # a follow-up answers whoever spoke last
                     self._flash(s, u.text, {"allowed": "done", "denied": "failed"}.get(u.kind, u.kind))
         self.publish()
 
@@ -428,6 +621,20 @@ class Handler(BaseHTTPRequestHandler):
             self._reply({})
         elif self.path == "/permission":
             self._permission(hub, body)
+        elif self.path == "/listen":
+            self._listen(hub, body)
+        elif self.path == "/follow-up":
+            sid = None
+            if body.get("session"):  # a project name from the command line
+                with hub.lock:
+                    sid = next((s.id for s in hub.sessions.by_id.values() if s.name == body["session"]), "?")
+            self._reply({"queued": hub.follow_up(str(body.get("text", "")), sid, body.get("delay"))})
+        elif self.path == "/talk":  # the talk and cancel keys, for use without the overlay
+            action = body.get("action")
+            if action == "start":
+                return self._reply({"ok": hub.talk_start()})
+            hub.talk_end() if action == "stop" else hub.cancel()
+            self._reply({"ok": True})
         elif self.path == "/decide":
             self._reply({"answered": hub.decide("allow" if body.get("decision") == "allow" else "deny")})
         elif self.path == "/stop":
@@ -467,6 +674,19 @@ class Handler(BaseHTTPRequestHandler):
         if req.decision == "deny":
             decision["message"] = "Denied by the user from the claude-speaks overlay."
         self._reply({"hookSpecificOutput": {"hookEventName": "PermissionRequest", "decision": decision}})
+
+    def _listen(self, hub: Hub, body: dict) -> None:
+        """Hold a session's listener hook until there is a follow-up for it."""
+        sid = body.get("session_id")
+        if not sid:
+            return self._reply(None)
+        listener = hub.listen(sid, body.get("cwd", ""))
+        hub.publish()
+        while not listener.wake.wait(0.5):
+            if self._client_gone():  # the session exited and took its hook with it
+                return hub.stop_listening(listener)
+        text = hub.collect(listener)
+        self._reply({"text": text} if text else None)
 
     def _client_gone(self) -> bool:
         try:
@@ -516,6 +736,8 @@ def main() -> int:
         hub.overlay = overlay_mod.Overlay(script, cfg.overlay, on_message=hub.on_overlay,
                                           log=lambda line: log(cfg, "hub.log", line))
         hub.publish()  # starts the window now, so it is ready before the first session speaks
+    if stt.Recorder.available() and stt.Transcriber.available():
+        hub.recorder, hub.transcriber = stt.Recorder(cfg.mic_source), stt.Transcriber(cfg.whisper_model)
     server = serve(hub, cfg.sock)
     stop = lambda *_: threading.Thread(target=server.shutdown, daemon=True).start()  # noqa: E731
     signal.signal(signal.SIGTERM, stop)

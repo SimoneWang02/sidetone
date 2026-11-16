@@ -27,10 +27,16 @@ you → session) so you can keep your eyes on your own work.
    through `claude-speaks allow|deny`; the author still has to try the actual `Ctrl+Alt+Y` /
    `Ctrl+Alt+N` keys. `PermissionRequest` hook long-polls the hub; the terminal dialog stays usable
    and whichever answers first wins.
-4. **Push-to-talk follow-ups**: hold `Ctrl+Alt+Space`, local `faster-whisper`, delivered to the
-   session that spoke last through an `asyncRewake` hook (fallback: `tmux send-keys`).
+4. **Push-to-talk follow-ups**: built 2026-11-16 and verified end to end without the author (a
+   sentence played through the speakers was recorded, transcribed and delivered to a real idle
+   session, which acted on it). The author still has to try it with their own voice and the real
+   key. Hold `Ctrl+Alt+Space`, local `faster-whisper`, delivered to the session that spoke last
+   through an `asyncRewake` hook.
 
-The author checks each milestone by ear and eye before the next one starts.
+Milestones 2 to 4 were built in one sitting while the author was away ("you continue, I'll
+approve anything"). **Still to be checked by the author**: how the overlay looks and where it
+sits, behaviour over a game, and the physical hotkeys (`Ctrl+Alt+L`, `Y`, `N`, `Space`,
+`Backspace`); none of those can be seen or pressed from WSL.
 Decisions: overlay is Windows-native (must be usable over games; no browser chrome);
 sessions are told apart by a spoken label plus a stable voice per project.
 Later: plugin packaging, `install.sh`, README with latency numbers and a demo video with sound,
@@ -52,6 +58,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 | Stop | `hooks/speak.sh` | Tells the hub the turn ended; the hub speaks the line only if streaming missed it |
 | Notification (`permission_prompt`, `elicitation_dialog`) | `hooks/notify.sh` | Hub marks the session "needs you" and says "I need your input" |
 | PermissionRequest | `hooks/permission.sh` | Holds a request open on the hub until the prompt is answered. Prints the hub's allow/deny, or nothing if it was answered in the terminal |
+| Stop, SessionStart (`asyncRewake`) | `hooks/listen.sh` | Background listener: waits on the hub for a spoken follow-up for this session, prints it for Claude and exits 2, which wakes the session |
 | SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse(Failure), TaskCreated, TaskCompleted, StopFailure | `hooks/report.sh` (async) | Forwards the payload so the hub knows what each session is doing. `--start` also starts the hub |
 
 - `hub/hub.py`: the one background process. HTTP over a Unix socket at
@@ -77,18 +84,32 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `permission_grace` (9 s) counts as answered in the terminal. A hotkey only works after the
   request has been on screen 0.7 s; the hub says "Allowed." or "Denied." as feedback.
   Questions and plan approvals (`AskUserQuestion`, `ExitPlanMode`) are never offered to the hotkeys.
+- Push-to-talk (`hub/stt.py` and the talk methods in `hub/hub.py`): while the talk key is held
+  the voice goes quiet and `parec` records the default microphone; on release (plus a 0.4 s tail)
+  `faster-whisper` `small.en` transcribes it. The overlay shows the text for `followup_delay`
+  (2 s, `Ctrl+Alt+Backspace` cancels), then the hub hands it to that session's listener and says
+  "Sent.". Target: the session that spoke last; a quick tap of the talk key picks the next one.
+  A busy session gets the follow-up right after its current reply. With no listener yet, the
+  text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
+- Hotkeys (rebind or blank them under `overlay.hotkeys`): `toggle` Ctrl+Alt+L and `talk`
+  Ctrl+Alt+Space are always claimed; `allow` Ctrl+Alt+Y, `deny` Ctrl+Alt+N and `cancel`
+  Ctrl+Alt+Backspace are claimed only while they can act, so other programs keep them otherwise.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
   does not repeat the line once the hub is back.
 - `bin/claude-speaks`: `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`,
-  `overlay dots|list|toggle|restart`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 37 tests with a silent engine, including the real hook scripts over a socket.
+  `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`, `overlay dots|list|toggle|restart`, `demo`, `hub start|stop|restart`, `log`.
+- `tests/test_hub.py`: 49 tests with a silent engine and fake microphone, including the real hook
+  scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `label` (`auto`/`always`/`never`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `corner`, `offset_x`, `offset_y`, `opacity`, `list_opacity`,
-  `flash_seconds`, `hotkeys`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
+  `flash_seconds`, `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
+  `talk_tail`. `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
+- `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
+  the same across hub restarts (a future settings panel would edit this and `config.json`).
 - Toggle: voice is off while `~/.claude/voice-off` exists (the hub still tracks state).
 - Runtime files live outside the repo: `~/.local/state/claude-speaks/` (`voice.log` contains
   spoken summaries, `hub.log`, `.state/`, `.tts.pid`).
@@ -117,10 +138,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   follows an Esc, so an interrupted session can look "working" until its next event.
 - To test hooks without the author: run `claude --model haiku` in a detached tmux session (unset
   the inherited `CLAUDE*` variables), drive it with `tmux send-keys`, read it with `capture-pane`.
-- Hook facts for the next milestone (from the docs, not yet tried): `asyncRewake: true` hooks wake
-  an idle session when they exit 2 (their `timeout` is still enforced); hooks inherit the
-  terminal's environment (e.g. `TMUX_PANE`); channels could also inject messages and relay
-  permission prompts but need `--dangerously-load-development-channels`.
+- `asyncRewake` facts (measured 2026-11-16): a hook with `asyncRewake: true` that exits 2 wakes
+  an idle session within a second; its stderr reaches Claude and the terminal shows "Stop hook
+  feedback". Delivered while the session is busy, it is handled right after the current reply.
+  It works from both Stop and SessionStart. Claude Code kills these hooks when the session exits.
+  Its `timeout` is enforced, so the listener asks for 86400 s.
+- Speech-to-text facts: `small.en` (int8, CPU) transcribes 4.4 s of speech in about 0.7 s,
+  `base.en` in 0.3 s but drops punctuation. The WSLg microphone works through `parec`. Without a
+  tail after key release the last word is cut. After a hub restart idle sessions are unknown
+  until their listener reconnects (it retries every 5 s).
+- Not used but possible: channels could also inject messages and relay permission prompts, but
+  need `--dangerously-load-development-channels` at every start.
 - Overlay facts: it is ready about 0.6 s after launch. `Add-Type` in PowerShell 5.1 compiles
   C# 5 only (no `$""`, `?.`, `nameof`, `out var`), and the source is kept ASCII. Running the
   script from the `\\wsl.localhost\...` path with `-ExecutionPolicy Bypass` works here. The default
@@ -134,7 +162,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 ## Deps (current machine)
 
 - apt: `jq`, `curl`, `espeak-ng`, `pulseaudio-utils` (`paplay`)
-- `uv` in `~/.local/bin`, with a Python 3.12 venv in `~/.local/share/kokoro/venv` (`kokoro-onnx`)
+- `uv` in `~/.local/bin`, with a Python 3.12 venv in `~/.local/share/kokoro/venv` (`kokoro-onnx`,
+  `faster-whisper`; the Whisper model is downloaded to the Hugging Face cache on first use)
+- `pulseaudio-utils` also provides `parec` for the microphone
 - Models: `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the kokoro-onnx GitHub release `model-files-v1.0`.
   Piper 2023.11.14-2 binary plus `en_US-lessac-medium` from Hugging Face (fallback).
 

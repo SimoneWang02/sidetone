@@ -143,6 +143,18 @@ class LabelsAndVoices(HubCase):
         second.on_event(ev("SessionStart", sid="z", cwd="/elsewhere/alpha"))
         self.assertEqual(self.session("z")["voice"], a["voice"])
 
+    def test_voice_survives_a_restart_whatever_starts_first(self):
+        first = self.make()
+        first.on_event(ev("SessionStart", sid="a", cwd="/w/alpha"))
+        first.on_event(ev("SessionStart", sid="b", cwd="/w/beta"))
+        alpha, beta = self.session("a")["voice"], self.session("b")["voice"]
+        state_dir = self.tmp
+        second = self.make()
+        second.sessions.__init__(self.cfg.voice_pool, {}, os.path.join(state_dir, "voices.json"))
+        second.on_event(ev("SessionStart", sid="b2", cwd="/w/beta"))   # the other order this time
+        second.on_event(ev("SessionStart", sid="a2", cwd="/w/alpha"))
+        self.assertEqual((self.session("a2")["voice"], self.session("b2")["voice"]), (alpha, beta))
+
     def test_pinned_voice_from_config(self):
         hub = self.make(voices={"alpha": "bm_george"})
         hub.on_event(ev("SessionStart"))
@@ -328,6 +340,126 @@ class Permissions(HubCase):
         self.assertEqual(hub.requests, [])
 
 
+class FakeRecorder:
+    recording = False
+
+    def start(self):
+        self.recording = True
+
+    def stop(self, tail=0.0):
+        self.recording = False
+        return b"\0\0" * 1600
+
+
+class FakeTranscriber:
+    text = "also add a test"
+
+    def load(self):
+        pass
+
+    def transcribe(self, pcm):
+        return self.text
+
+
+def wait_for(condition, seconds=3.0):
+    end = time.monotonic() + seconds
+    while time.monotonic() < end:
+        if condition():
+            return True
+        time.sleep(0.02)
+    return False
+
+
+class PushToTalk(HubCase):
+    def make(self, **kw):
+        hub = super().make(followup_delay=0.05, talk_tail=0, label="never", **kw)
+        hub.overlay = self.overlay = FakeOverlay()
+        hub.recorder, hub.transcriber = FakeRecorder(), FakeTranscriber()
+        self.addCleanup(setattr, hub_module, "TAP", hub_module.TAP)
+        hub_module.TAP = 0  # every press in these tests counts as a hold
+        hub.on_event(ev("SessionStart", sid="a", cwd="/w/a"))
+        hub.on_event(ev("SessionStart", sid="b", cwd="/w/b"))
+        return hub
+
+    def banners(self):
+        return [m.get("text") for m in self.overlay.of("banner")]
+
+    def test_hold_to_talk_reaches_the_session_that_spoke_last(self):
+        hub = self.make()
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("A is done.")))
+        self.spoken()
+        listener = hub.listen("a")
+        self.assertTrue(hub.talk_start())
+        self.assertTrue(hub.recorder.recording)
+        self.assertIn("listening \u2192 a", self.banners())
+        hub.talk_end()
+        self.assertTrue(listener.wake.wait(3), "the follow-up never reached the listener")
+        self.assertIn("\u2192 a: \u201calso add a test\u201d", self.banners())
+        self.assertEqual(hub.collect(listener), "also add a test")
+        self.assertEqual(self.spoken(), ["A is done.", "Sent."])
+
+    def test_speech_goes_quiet_while_recording(self):
+        hub = self.make(duration=0.3)
+        hub.talk_start()
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B is done.")))
+        time.sleep(0.15)
+        self.assertEqual(self.engine.spoken, [])
+        hub.cancel()
+        self.assertFalse(hub.recorder.recording)
+        self.assertEqual(self.spoken(), ["B is done."])
+        self.assertEqual(hub.followups, {})
+
+    def test_cancel_takes_a_follow_up_back(self):
+        hub = self.make()
+        self.assertTrue(hub.follow_up("delete everything", "a", delay=0.2))
+        hub.cancel()
+        time.sleep(0.35)
+        self.assertEqual(hub.followups, {})
+        self.assertIn("cancelled", self.banners())
+
+    def test_a_quick_tap_picks_the_next_session(self):
+        hub = self.make()
+        hub_module.TAP = 30
+        hub.talk_target = "a"
+        hub.talk_start()
+        hub.talk_end()
+        self.assertEqual(hub.talk_target, "b")
+        self.assertIn("talking to b", self.banners())
+        self.assertFalse(wait_for(lambda: hub.followups, 0.2))
+
+    def test_silence_sends_nothing(self):
+        hub = self.make()
+        hub.transcriber.text = ""
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: "did not catch that" in self.banners()))
+        self.assertEqual(hub.followups, {})
+
+    def test_follow_up_waits_for_a_session_with_no_listener_yet(self):
+        hub = self.make()
+        hub.follow_up("run the tests", "b", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("b")))
+        listener = hub.listen("b")  # armed when the session next stops
+        self.assertTrue(listener.wake.is_set())
+        self.assertEqual(hub.collect(listener), "run the tests")
+
+    def test_a_newer_listener_replaces_the_older_one(self):
+        hub = self.make()
+        old, new = hub.listen("a"), hub.listen("a")
+        self.assertTrue(old.wake.is_set())
+        self.assertIsNone(hub.collect(old))
+        self.assertFalse(new.wake.is_set())
+
+    def test_overlay_claims_keys_only_while_they_can_act(self):
+        hub = self.make()
+        hub.publish()
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], [])
+        hub.request_permission(ask(sid="a", cwd="/w/a"))
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "deny"])
+        hub.talk_start()
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "cancel", "deny"])
+
+
 class ThroughTheHooks(HubCase):
     """The real hook scripts talking to a hub over its socket."""
 
@@ -393,6 +525,7 @@ class ThroughTheHooks(HubCase):
         proc = self.start_permission_hook()
         proc.terminate()  # what Claude Code does when you press Esc on the prompt
         proc.wait(5)
+        proc.stdout.close()
         for _ in range(60):
             if not self.hub.requests:
                 break
@@ -400,11 +533,86 @@ class ThroughTheHooks(HubCase):
         self.assertEqual(self.hub.requests, [])
         self.assertEqual((self.session()["state"], self.session()["note"]), ("idle", "interrupted"))
 
+    def start_listener_hook(self):
+        env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp}
+        proc = subprocess.Popen([os.path.join(ROOT, "hooks", "listen.sh")], stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+        proc.stdin.write(json.dumps(ev("Stop")))
+        proc.stdin.close()
+        proc.stdin = None
+        self.assertTrue(wait_for(lambda: "s1" in self.hub.listeners), "the hub never saw the listener")
+        return proc
+
+    def test_listener_hook_wakes_claude_with_the_follow_up(self):
+        self.hub.on_event(ev("SessionStart"))
+        proc = self.start_listener_hook()
+        self.hub.follow_up("run the tests again", "s1", delay=0)
+        out, err = proc.communicate(timeout=5)
+        self.assertEqual(proc.returncode, 2)  # exit 2 is what wakes an idle session
+        self.assertIn('"run the tests again"', err)
+        self.assertEqual(out, "")
+        self.assertEqual(os.listdir(self.tmp).count("listen"), 0)
+        self.assertFalse([f for f in os.listdir(self.tmp) if f.startswith("listen.")])
+        self.spoken()
+
+    def test_listener_hook_exits_quietly_when_the_session_ends(self):
+        self.hub.on_event(ev("SessionStart"))
+        proc = self.start_listener_hook()
+        self.hub.on_event(ev("SessionEnd"))
+        out, err = proc.communicate(timeout=5)
+        self.assertEqual((proc.returncode, out, err), (0, "", ""))
+
     def test_report_and_notify(self):
         self.hook("report.sh", ev("PreToolUse", tool_name="Read", tool_input={"file_path": "/x/notes.md"}))
         self.assertEqual(self.session()["activity"], "Reading notes.md")
         self.hook("notify.sh", ev("Notification", notification_type="permission_prompt"))
         self.assertEqual(self.spoken(), ["I need your input"])
+
+
+class HubProcess(unittest.TestCase):
+    """The hub as a real process, so it can die the way it would in real life."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="cs-test-")
+        self.env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp,
+                    "XDG_CONFIG_HOME": self.tmp, "CLAUDE_SPEAKS_TTS": "null", "CLAUDE_SPEAKS_OVERLAY": "off",
+                    "CS_RETRY": "0.2"}
+        self.sock = os.path.join(self.tmp, "hub.sock")
+
+    def start_hub(self):
+        proc = subprocess.Popen([sys.executable, "-I", os.path.join(ROOT, "hub", "hub.py")], env=self.env)
+        self.addCleanup(proc.kill)
+        self.assertTrue(wait_for(lambda: self.call("/health") is not None, 10), "the hub did not start")
+        return proc
+
+    def call(self, path, body=None):
+        cmd = ["curl", "-sf", "-m", "2", "--unix-socket", self.sock, f"http://hub{path}"]
+        if body is not None:
+            cmd += ["--data-binary", json.dumps(body)]
+        done = subprocess.run(cmd, capture_output=True, text=True)
+        return json.loads(done.stdout or "null") if done.returncode == 0 else None
+
+    def names(self):
+        state = self.call("/state")
+        return [s["name"] for s in state["sessions"]] if state else []
+
+    def test_an_idle_session_is_reachable_again_after_the_hub_restarts(self):
+        first = self.start_hub()
+        hook = subprocess.Popen([os.path.join(ROOT, "hooks", "listen.sh")], stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=self.env)
+        self.addCleanup(hook.kill)
+        hook.stdin.write(json.dumps(ev("Stop")))
+        hook.stdin.close()
+        hook.stdin = None
+        self.assertTrue(wait_for(lambda: self.names() == ["alpha"], 5), "the hub never saw the listener")
+        first.kill()  # no goodbye: the socket file is left behind, like after a crash
+        first.wait(5)
+        self.start_hub()
+        self.assertTrue(wait_for(lambda: self.names() == ["alpha"], 5), "the listener did not come back")
+        self.assertEqual(self.call("/follow-up", {"text": "run the tests", "session": "alpha", "delay": 0}), {"queued": True})
+        out, err = hook.communicate(timeout=5)
+        self.assertEqual(hook.returncode, 2)
+        self.assertIn('"run the tests"', err)
 
 
 if __name__ == "__main__":

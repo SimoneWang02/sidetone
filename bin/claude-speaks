@@ -12,6 +12,8 @@ Usage: claude-speaks <command>
   stop                       stop speaking and clear the queue
   on | off                   turn the voice on or off for every session
   allow | deny               answer the permission prompt the overlay is showing
+  follow-up [-s PROJECT] TEXT   send a follow-up to a session as if you had said it
+  talk start|stop|cancel     the talk key and the cancel key, from a shell
   overlay dots|list|toggle|restart   switch the on-screen overlay's view, or restart it
   demo                       play three made-up sessions to see and hear every state
   hub start|stop|restart     manage the background hub
@@ -55,6 +57,20 @@ case ${1:-} in
   allow|deny)
     answered=$(jq -nc --arg d "$1" '{decision: $d}' | hub_post /decide | jq -r .answered)
     [ "$answered" = true ] && echo "$1 sent" || { echo "no permission prompt is waiting"; exit 1; }
+    ;;
+  follow-up)
+    shift; project=
+    [ "${1:-}" = -s ] && { project=$2; shift 2; }
+    [ $# -gt 0 ] || { usage; exit 2; }
+    queued=$(jq -nc --arg t "$*" --arg p "$project" '{text: $t} + (if $p == "" then {} else {session: $p} end)' |
+      hub_post /follow-up | jq -r .queued)
+    [ "$queued" = true ] && echo "queued" || { echo "no such session"; exit 1; }
+    ;;
+  talk)
+    case ${2:-} in
+      start|stop|cancel) jq -nc --arg a "$2" '{action: $a}' | hub_post /talk >/dev/null || { echo "hub is not running"; exit 1; } ;;
+      *) usage; exit 2 ;;
+    esac
     ;;
   overlay)
     case ${2:-toggle} in

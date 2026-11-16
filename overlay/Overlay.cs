@@ -1,5 +1,6 @@
 // The claude-speaks overlay window. It only draws what the hub tells it to and reports hotkeys.
-// Protocol: one JSON object per line. In on stdin: config, state, flash, request, mode, bounds, quit.
+// Protocol: one JSON object per line.
+// In on stdin: config, state, flash, request, banner, keys, mode, bounds, quit.
 // Out on stdout: ready, hotkey, mode, bounds, error.
 // Compiled by Windows PowerShell 5.1 (Add-Type), so this file must stay within C# 5 and ASCII.
 using System;
@@ -34,6 +35,7 @@ namespace ClaudeSpeaks
         [DllImport("user32.dll")] static extern int SetWindowLong(IntPtr hwnd, int index, int value);
         [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
         [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr hwnd, int id);
+        [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
         [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
 
         // state -> { glyph, color }. Shape differs as well as color, so it reads without color vision.
@@ -57,15 +59,25 @@ namespace ClaudeSpeaks
         readonly TextBlock requestTitle = new TextBlock();
         readonly TextBlock requestDetail = new TextBlock();
         readonly TextBlock requestKeys = new TextBlock();
+        readonly StackPanel bannerBox = new StackPanel { Margin = new Thickness(0, 0, 0, 4) };
+        readonly TextBlock bannerTitle = new TextBlock();
+        readonly TextBlock bannerHint = new TextBlock();
         readonly DispatcherTimer flashTimer = new DispatcherTimer();
+        readonly DispatcherTimer bannerTimer = new DispatcherTimer();
+        readonly DispatcherTimer holdTimer = new DispatcherTimer();
         readonly DispatcherTimer topTimer = new DispatcherTimer();
-        readonly Dictionary<int, string> hotkeys = new Dictionary<int, string>();
+        readonly Dictionary<int, string> hotkeys = new Dictionary<int, string>();        // registered id -> name
+        readonly Dictionary<int, uint> hotkeyKeys = new Dictionary<int, uint>();         // registered id -> key
+        readonly Dictionary<string, string> wantedKeys = new Dictionary<string, string>(); // name -> "Ctrl+Alt+L"
+        readonly HashSet<string> liveKeys = new HashSet<string>();  // names claimed only while they can act
+        readonly HashSet<string> complained = new HashSet<string>();  // hotkey problems already reported
+        uint heldKey;
         readonly IntPtr hwnd;
 
         object[] sessions = new object[0];
         string mode = "dots", corner = "top-right";
         double offsetX = 150, offsetY = 8, idleOpacity = 0.35, listOpacity = 0.85;
-        bool flashing, opaque, hasRequest;
+        bool flashing, opaque, hasRequest, hasBanner;
 
         Overlay(TextWriter output)
         {
@@ -100,7 +112,14 @@ namespace ClaudeSpeaks
             requestBox.Children.Add(requestDetail);
             requestBox.Children.Add(requestKeys);
 
+            bannerTitle.MaxWidth = bannerHint.MaxWidth = 620;
+            bannerTitle.TextWrapping = TextWrapping.Wrap;
+            bannerHint.Foreground = Paint("#9E9E9E");
+            bannerBox.Children.Add(bannerTitle);
+            bannerBox.Children.Add(bannerHint);
+
             var stack = new StackPanel();
+            stack.Children.Add(bannerBox);
             stack.Children.Add(requestBox);
             stack.Children.Add(dots);
             stack.Children.Add(flashLine);
@@ -115,6 +134,14 @@ namespace ClaudeSpeaks
 
             SizeChanged += delegate { Place(); };
             flashTimer.Tick += delegate { flashTimer.Stop(); flashing = false; Render(); };
+            bannerTimer.Tick += delegate { bannerTimer.Stop(); hasBanner = false; Render(); };
+            // Hold-to-talk: a hotkey only reports the press, so watch the key until it comes back up.
+            holdTimer.Interval = TimeSpan.FromMilliseconds(30);
+            holdTimer.Tick += delegate {
+                if ((GetAsyncKeyState((int)heldKey) & 0x8000) != 0) return;
+                holdTimer.Stop();
+                Send("hotkey", "name", "talk_end");
+            };
             // Other always-on-top windows (and some games) push us down; climb back regularly.
             topTimer.Interval = TimeSpan.FromSeconds(2);
             topTimer.Tick += delegate { SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE); };
@@ -176,7 +203,13 @@ namespace ClaudeSpeaks
                     listOpacity = Num(msg, "list_opacity", listOpacity);
                     opaque = msg.ContainsKey("opaque") && Convert.ToBoolean(msg["opaque"]);
                     panel.Background = Paint(opaque ? "#FF161616" : "#E6161616");
-                    if (msg.ContainsKey("hotkeys")) RegisterHotkeys((Dictionary<string, object>)msg["hotkeys"]);
+                    if (msg.ContainsKey("hotkeys"))
+                    {
+                        wantedKeys.Clear();
+                        foreach (KeyValuePair<string, object> entry in (Dictionary<string, object>)msg["hotkeys"])
+                            wantedKeys[entry.Key] = Convert.ToString(entry.Value);
+                        RegisterHotkeys();
+                    }
                     if (msg.ContainsKey("mode")) mode = Str(msg, "mode", mode);
                     Render();
                     Place();
@@ -190,6 +223,14 @@ namespace ClaudeSpeaks
                     break;
                 case "request":
                     ShowRequest(msg);
+                    break;
+                case "banner":
+                    ShowBanner(msg);
+                    break;
+                case "keys":
+                    liveKeys.Clear();
+                    if (msg.ContainsKey("live")) foreach (object name in (object[])msg["live"]) liveKeys.Add(Convert.ToString(name));
+                    RegisterHotkeys();
                     break;
                 case "mode":
                     SetMode(Str(msg, "mode", "toggle"));
@@ -214,8 +255,10 @@ namespace ClaudeSpeaks
             if (isList) BuildList(); else BuildDots();
 
             requestBox.Visibility = hasRequest ? Visibility.Visible : Visibility.Collapsed;
-            Fade(flashing || hasRequest ? 1.0 : (isList ? listOpacity : idleOpacity));
-            bool show = isList || flashing || hasRequest || sessions.Length > 0;
+            bannerBox.Visibility = hasBanner ? Visibility.Visible : Visibility.Collapsed;
+            bool solid = flashing || hasRequest || hasBanner;
+            Fade(solid ? 1.0 : (isList ? listOpacity : idleOpacity));
+            bool show = isList || solid || sessions.Length > 0;
             if (show && !IsVisible) Show();
             else if (!show && IsVisible) Hide();
         }
@@ -300,6 +343,24 @@ namespace ClaudeSpeaks
             Render();
         }
 
+        // Push-to-talk feedback: who is being recorded for, the transcript about to be sent, and so on.
+        void ShowBanner(Dictionary<string, object> msg)
+        {
+            bannerTimer.Stop();
+            hasBanner = msg.ContainsKey("text") && msg["text"] != null;
+            if (hasBanner)
+            {
+                bannerTitle.Inlines.Clear();
+                bannerTitle.Inlines.Add(new Run("\uD83C\uDFA4  ") { Foreground = Paint("#4FC3F7"), FontFamily = Symbols });
+                bannerTitle.Inlines.Add(new Run(Str(msg, "text")) { FontWeight = FontWeights.SemiBold });
+                bannerHint.Text = Str(msg, "hint");
+                bannerHint.Visibility = bannerHint.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+                double seconds = Num(msg, "seconds", 0);
+                if (seconds > 0) { bannerTimer.Interval = TimeSpan.FromSeconds(seconds); bannerTimer.Start(); }
+            }
+            Render();
+        }
+
         void SetMode(string wanted)
         {
             mode = wanted == "toggle" ? (mode == "list" ? "dots" : "list") : (wanted == "list" ? "list" : "dots");
@@ -323,14 +384,19 @@ namespace ClaudeSpeaks
 
         // --- hotkeys --------------------------------------------------------------------------------
 
-        void RegisterHotkeys(Dictionary<string, object> wanted)
+        // Claims the global hotkeys. "toggle" and "talk" are always claimed; the others only while
+        // the hub says they can act, so Ctrl+Alt+Y and friends stay free for other programs.
+        void RegisterHotkeys()
         {
             foreach (int id in hotkeys.Keys) UnregisterHotKey(hwnd, id);
             hotkeys.Clear();
+            hotkeyKeys.Clear();
             int next = 1;
-            foreach (KeyValuePair<string, object> entry in wanted)
+            foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
-                string combo = Convert.ToString(entry.Value);
+                if (entry.Key != "toggle" && entry.Key != "talk" && !liveKeys.Contains(entry.Key)) continue;
+                string combo = entry.Value;
+                if (combo.Trim().Length == 0) continue;  // an empty combo turns that hotkey off
                 uint modifiers = MOD_NOREPEAT, vk = 0;
                 try
                 {
@@ -350,9 +416,9 @@ namespace ClaudeSpeaks
                     }
                 }
                 catch (Exception) { vk = 0; }
-                if (vk == 0) { Error("hotkey not understood: " + combo); continue; }
-                if (RegisterHotKey(hwnd, next, modifiers, vk)) hotkeys[next++] = entry.Key;
-                else Error("hotkey " + combo + " is already taken by another program");
+                if (vk == 0) { if (complained.Add(combo)) Error("hotkey not understood: " + combo); continue; }
+                if (RegisterHotKey(hwnd, next, modifiers, vk)) { hotkeys[next] = entry.Key; hotkeyKeys[next] = vk; next++; }
+                else if (complained.Add(combo)) Error("hotkey " + combo + " is already taken by another program");
             }
         }
 
@@ -362,6 +428,7 @@ namespace ClaudeSpeaks
             if (message == WM_HOTKEY && hotkeys.TryGetValue(wParam.ToInt32(), out name))
             {
                 if (name == "toggle") SetMode("toggle");
+                if (name == "talk") { heldKey = hotkeyKeys[wParam.ToInt32()]; holdTimer.Start(); }
                 Send("hotkey", "name", name);
                 handled = true;
             }

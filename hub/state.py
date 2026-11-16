@@ -1,6 +1,7 @@
 """Sessions the hub knows about, and how hook payloads map to what each one is doing."""
 from __future__ import annotations
 
+import json
 import os
 import re
 import time
@@ -118,10 +119,19 @@ class Session:
 class Sessions:
     """Registry keyed by session id. Not thread-safe: the hub holds its lock around every call."""
 
-    def __init__(self, pool: list[str], pinned: dict[str, str]):
+    def __init__(self, pool: list[str], pinned: dict[str, str], voices_file: str | None = None):
         self.pool = pool
         self.pinned = pinned  # project name -> voice, from the config file
         self.by_id: dict[str, Session] = {}
+        # Voices already handed out, kept on disk so a project sounds the same after a restart.
+        self.voices_file = voices_file
+        self.remembered: dict[str, str] = {}
+        if voices_file:
+            try:
+                with open(voices_file) as f:
+                    self.remembered = {str(k): str(v) for k, v in json.load(f).items()}
+            except (OSError, ValueError, AttributeError):
+                pass
 
     def touch(self, sid: str, cwd: str) -> Session:
         """Return the session, creating it on first sight (the hub may start after the session)."""
@@ -151,13 +161,26 @@ class Sessions:
         return name
 
     def _voice_for(self, name: str) -> str:
-        """Same project, same voice every time; step to the next one if a live session has it."""
+        """Same project, same voice every time. A new project gets one nobody else has, if any is left."""
         if name in self.pinned:
             return self.pinned[name]
-        in_use = {s.voice for s in self.by_id.values()}
+        live = {s.voice for s in self.by_id.values()}
+        if self.remembered.get(name) in self.pool and self.remembered[name] not in live:
+            return self.remembered[name]
         start = zlib.crc32(name.encode()) % len(self.pool)
-        for i in range(len(self.pool)):
-            voice = self.pool[(start + i) % len(self.pool)]
-            if voice not in in_use:
-                return voice
-        return self.pool[start]
+        order = [self.pool[(start + i) % len(self.pool)] for i in range(len(self.pool))]
+        taken = live | set(self.remembered.values())
+        voice = next((v for v in order if v not in taken), None) or next((v for v in order if v not in live), order[0])
+        if name not in self.remembered:  # a second session of the same project borrows, it does not rename
+            self.remembered[name] = voice
+            self._save()
+        return voice
+
+    def _save(self) -> None:
+        if not self.voices_file:
+            return
+        try:
+            with open(self.voices_file, "w") as f:
+                json.dump(self.remembered, f, indent=2, sort_keys=True)
+        except OSError:
+            pass

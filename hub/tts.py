@@ -144,6 +144,7 @@ class SpeechQueue:
         self.current: Utterance | None = None
         self._cond = threading.Condition()
         self._closed = False
+        self._paused = False
         self._thread = threading.Thread(target=self._run, name="speech", daemon=True)
         self._thread.start()
 
@@ -159,6 +160,23 @@ class SpeechQueue:
         with self._cond:
             self.queued = [q for q in self.queued if q.session != session]
             if self.current and self.current.session == session:
+                self.engine.stop()
+
+    def pause(self) -> None:
+        """Go quiet (the user is talking): cut the current line and hold the rest."""
+        with self._cond:
+            self._paused = True
+            self.engine.stop()
+
+    def resume(self) -> None:
+        with self._cond:
+            self._paused = False
+            self._cond.notify_all()
+
+    def skip(self) -> None:
+        """Cut the line being spoken; queued lines follow as usual."""
+        with self._cond:
+            if self.current:
                 self.engine.stop()
 
     def stop_all(self) -> None:
@@ -189,7 +207,7 @@ class SpeechQueue:
         self.engine.load()
         while True:
             with self._cond:
-                self._cond.wait_for(lambda: self.queued or self._closed)
+                self._cond.wait_for(lambda: (self.queued and not self._paused) or self._closed)
                 if self._closed:
                     return
                 u = min(self.queued, key=lambda q: (PRIORITY.get(q.kind, 2), q.created))
