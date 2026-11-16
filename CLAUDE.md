@@ -9,7 +9,7 @@ spoken summary, never the full output. It starts speaking while the reply is sti
   `~/.claude/hooks/` and is registered in `~/.claude/settings.json`.
 - This repo is a **copy** of those scripts, not yet packaged. Paths inside still point
   at `$HOME/.claude/hooks/` and `~/.local/share/{kokoro,piper}`.
-- Private GitHub repo: github.com/SimoneWang02/claude-speaks. Claude may commit.
+- Private GitHub repo: github.com/SimoneWang02/claude-speaks. Claude may commit and push.
 
 ## How it works
 
