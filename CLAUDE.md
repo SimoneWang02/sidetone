@@ -18,7 +18,7 @@ you → session) so you can keep your eyes on your own work.
 
 ## Roadmap (decided with the author 2026-11-16)
 
-1. **Hub and voice queue**: built; waiting for the author's check by ear.
+1. **Hub and voice queue**: done; the author confirmed it by ear on 2026-11-16.
 2. **Windows overlay**: native window (PowerShell + WPF, started by the hub, JSON lines over
    stdin/stdout), see-through and click-through. Two modes switched by `Ctrl+Alt+L`: faint dots
    that expand to one line on a change, and a full list.
@@ -31,7 +31,9 @@ The author checks each milestone by ear and eye before the next one starts.
 Decisions: overlay is Windows-native (must be usable over games; no browser chrome);
 sessions are told apart by a spoken label plus a stable voice per project.
 Later: plugin packaging, `install.sh`, README with latency numbers and a demo video with sound,
-short sounds, stereo placement, a "what did I miss" key, MIT license.
+short sounds, stereo placement, a "what did I miss" key, MIT license, and a settings panel
+where every voice can be customized (the author's idea; today the same choices live in
+`config.json` as `voices` and `voice_pool`).
 
 ## How it works
 
