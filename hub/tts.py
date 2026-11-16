@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
-PRIORITY = {"needs_you": 0, "failed": 1, "done": 2}
+PRIORITY = {"needs_you": 0, "allowed": 0, "denied": 0, "failed": 1, "done": 2}
 
 
 @dataclass

@@ -13,6 +13,7 @@ import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
+import hub as hub_module  # noqa: E402
 from hub import Config, Hub, serve  # noqa: E402
 from tts import NullEngine  # noqa: E402
 
@@ -254,6 +255,79 @@ class OverlayFeed(HubCase):
         self.assertEqual(self.hub.snapshot()["sessions"], [])
 
 
+def ask(sid="s1", description="Run tests", command="npm test", **extra):
+    return ev("PermissionRequest", sid=sid, tool_name="Bash",
+              tool_input={"command": command, "description": description}, **extra)
+
+
+class Permissions(HubCase):
+    def make(self, **kw):
+        hub = super().make(**kw)
+        hub.overlay = self.overlay = FakeOverlay()
+        self.addCleanup(setattr, hub_module, "MIN_SHOWN", hub_module.MIN_SHOWN)
+        hub_module.MIN_SHOWN = 0
+        return hub
+
+    def test_request_shows_and_allow_answers_it(self):
+        hub = self.make()
+        req = hub.request_permission(ask())
+        self.assertEqual((self.session()["state"], self.session()["note"]), ("needs_you", "wants to: Run tests"))
+        shown = self.overlay.of("request")[-1]
+        self.assertEqual((shown["name"], shown["text"], shown["detail"]), ("alpha", "wants to: Run tests", "npm test"))
+        self.assertIn("Ctrl+Alt+Y allow", shown["keys"])
+        self.assertTrue(hub.decide("allow"))
+        self.assertEqual(req.decision, "allow")
+        self.assertTrue(req.done.is_set())
+        self.assertEqual(self.session()["state"], "working")
+        self.assertEqual(self.overlay.of("request")[-1], {"type": "request"})  # cleared
+        self.assertEqual(self.spoken(), ["Allowed."])
+
+    def test_a_request_just_shown_cannot_be_answered_yet(self):
+        hub = self.make()
+        hub_module.MIN_SHOWN = 30
+        req = hub.request_permission(ask())
+        self.assertFalse(hub.decide("allow"))
+        self.assertIsNone(req.decision)
+
+    def test_nothing_waiting_means_nothing_answered(self):
+        self.assertFalse(self.make().decide("allow"))
+
+    def test_voice_waits_for_claude_codes_notification_and_names_the_request(self):
+        hub = self.make()
+        hub.request_permission(ask())
+        self.assertEqual(self.spoken(), [])  # you may be answering in the terminal right now
+        hub.on_event(ev("Notification", notification_type="permission_prompt"))
+        self.assertEqual(self.spoken(), ["Permission needed: Run tests"])
+
+    def test_oldest_request_first_and_deny(self):
+        hub = self.make(label="never")
+        first = hub.request_permission(ask(sid="a", cwd="/w/a", description="Push"))
+        second = hub.request_permission(ask(sid="b", cwd="/w/b", description="Delete logs"))
+        self.assertIn("1 more waiting", self.overlay.of("request")[-1]["keys"])
+        self.assertTrue(hub.decide("deny"))
+        self.assertEqual((first.decision, second.decision), ("deny", None))
+        self.assertEqual(self.overlay.of("request")[-1]["text"], "wants to: Delete logs")
+        self.assertTrue(hub.decide("allow"))
+        self.assertEqual(second.decision, "allow")
+        self.assertEqual(self.spoken(), ["Denied.", "Allowed."])
+
+    def test_the_tool_running_means_it_was_answered_in_the_terminal(self):
+        hub = self.make()
+        req = hub.request_permission(ask())
+        hub.on_event(ev("PostToolUse", tool_name="Bash", tool_input={"command": "ls", "description": "List"}))
+        self.assertFalse(req.done.is_set())  # a different call
+        hub.on_event(ev("PostToolUse", tool_name="Bash", tool_input={"command": "npm test", "description": "Run tests"}))
+        self.assertTrue(req.done.is_set())
+        self.assertIsNone(req.decision)
+        self.assertEqual(self.session()["state"], "working")
+
+    def test_questions_are_not_offered_to_the_hotkeys(self):
+        hub = self.make()
+        self.assertIsNone(hub.request_permission(ev("PermissionRequest", tool_name="AskUserQuestion", tool_input={})))
+        self.assertEqual(self.session()["note"], "has a question for you")
+        self.assertEqual(hub.requests, [])
+
+
 class ThroughTheHooks(HubCase):
     """The real hook scripts talking to a hub over its socket."""
 
@@ -283,6 +357,48 @@ class ThroughTheHooks(HubCase):
 
     def test_display_without_tag_prints_nothing(self):
         self.assertEqual(self.hook("display.sh", ev("MessageDisplay", delta="plain text\n")).stdout, "")
+
+    def start_permission_hook(self):
+        env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp}
+        proc = subprocess.Popen([os.path.join(ROOT, "hooks", "permission.sh")], stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, text=True, env=env)
+        proc.stdin.write(json.dumps(ask()))
+        proc.stdin.close()
+        proc.stdin = None  # so communicate() only reads
+        for _ in range(100):
+            if self.hub.requests:
+                return proc
+            time.sleep(0.05)
+        self.fail("the hub never saw the request")
+
+    def test_permission_hook_prints_the_hotkey_decision(self):
+        hub_module.MIN_SHOWN, old = 0, hub_module.MIN_SHOWN
+        self.addCleanup(setattr, hub_module, "MIN_SHOWN", old)
+        proc = self.start_permission_hook()
+        self.assertTrue(self.hub.decide("deny"))
+        decision = json.loads(proc.communicate(timeout=5)[0])["hookSpecificOutput"]["decision"]
+        self.assertEqual(decision["behavior"], "deny")
+        self.assertIn("overlay", decision["message"])
+        self.spoken()
+
+    def test_permission_hook_prints_nothing_when_answered_in_the_terminal(self):
+        self.cfg.permission_grace = 0.3  # no notification arrives: the prompt was answered at once
+        proc = self.start_permission_hook()
+        self.assertEqual(proc.communicate(timeout=5)[0], "")
+        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(self.hub.requests, [])
+        self.assertEqual(self.session()["state"], "working")
+
+    def test_killed_permission_hook_means_the_turn_was_interrupted(self):
+        proc = self.start_permission_hook()
+        proc.terminate()  # what Claude Code does when you press Esc on the prompt
+        proc.wait(5)
+        for _ in range(60):
+            if not self.hub.requests:
+                break
+            time.sleep(0.05)
+        self.assertEqual(self.hub.requests, [])
+        self.assertEqual((self.session()["state"], self.session()["note"]), ("idle", "interrupted"))
 
     def test_report_and_notify(self):
         self.hook("report.sh", ev("PreToolUse", tool_name="Read", tool_input={"file_path": "/x/notes.md"}))

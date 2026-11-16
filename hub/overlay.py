@@ -22,7 +22,7 @@ DEFAULTS = {
     "opacity": 0.35,  # dots while nothing is happening
     "list_opacity": 0.85,
     "flash_seconds": 4,
-    "hotkeys": {"toggle": "Ctrl+Alt+L"},
+    "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N"},
 }
 RETRY_AFTER = 30.0  # seconds before a crashed overlay is started again
 

@@ -11,7 +11,9 @@ import fcntl
 import json
 import os
 import re
+import select
 import signal
+import socket
 import socketserver
 import sys
 import threading
@@ -22,10 +24,28 @@ from http.server import BaseHTTPRequestHandler
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # run with -I, so add our own dir
 import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
-from state import VOICE_POOL, Sessions, describe, speech_from_message, split_display  # noqa: E402
+from state import (VOICE_POOL, Sessions, describe, permission_summary,  # noqa: E402
+                   speech_from_message, split_display)
 from tts import SpeechQueue, Utterance, make_engine  # noqa: E402
 
 NEEDS_INPUT = ("permission_prompt", "elicitation_dialog")  # Notification types worth interrupting for
+OWN_DIALOG = ("AskUserQuestion", "ExitPlanMode")  # tools whose prompt is a question, not a yes/no
+MIN_SHOWN = 0.7  # a request must be on screen this long before a hotkey can answer it
+
+
+@dataclass
+class Request:
+    """One permission prompt a session is showing, which the hub may answer on the user's behalf."""
+    session: str
+    tool: str
+    tool_input: dict
+    summary: str  # what is being asked, in a few words
+    detail: str  # the exact command or path
+    created: float = field(default_factory=time.monotonic)
+    shown: float | None = None  # when it became the one the hotkeys act on
+    confirmed: bool = False  # Claude Code told us the prompt is still waiting
+    decision: str | None = None  # allow | deny | None (answered elsewhere)
+    done: threading.Event = field(default_factory=threading.Event)
 
 
 @dataclass
@@ -41,6 +61,9 @@ class Config:
     label: str = "auto"  # auto (only with several sessions) | always | never
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
+    # Claude Code sends a notification once a permission prompt has waited about 6 s. A request
+    # with no such notification after this long was answered in the terminal.
+    permission_grace: float = 9.0
     overlay: dict = field(default_factory=lambda: {**overlay_mod.DEFAULTS, "hotkeys": dict(overlay_mod.DEFAULTS["hotkeys"])})
     mute_file: str = os.path.expanduser("~/.claude/voice-off")
 
@@ -69,7 +92,8 @@ class Config:
                 user = json.load(f)
         except FileNotFoundError:
             return cfg
-        for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed"):
+        for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
+                    "permission_grace"):
             if key in user:
                 setattr(cfg, key, user[key])
         wanted = user.get("overlay") or {}
@@ -88,6 +112,7 @@ class Hub:
         self.last_event = time.monotonic()
         self.overlay = None  # anything with send(dict); set by main() or the tests
         self._shown: dict | None = None  # last state sent to the overlay, to skip repeats
+        self.requests: list[Request] = []  # open permission prompts, oldest first
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
                                   on_change=self._speech_changed, on_done=self._log_speech)
 
@@ -104,10 +129,15 @@ class Hub:
         with self.lock:
             self.last_event = time.monotonic()
             if event == "SessionEnd":
+                self._settle(sid, "session ended")
                 self.sessions.remove(sid)
                 self.speech.drop_session(sid)
                 return
             s = self.sessions.touch(sid, ev.get("cwd", ""))
+            if event in ("PostToolUse", "PostToolUseFailure"):  # that tool ran: its prompt was answered
+                self._settle(sid, "answered in the terminal", ev.get("tool_name"), ev.get("tool_input"))
+            elif event in ("UserPromptSubmit", "Stop", "StopFailure"):
+                self._settle(sid, "turn moved on")
 
             if event == "UserPromptSubmit":
                 s.state, s.activity, s.note = "working", "Thinking", ""
@@ -118,15 +148,23 @@ class Hub:
             elif event == "PreToolUse":
                 s.state, s.activity = "working", describe(ev.get("tool_name", ""), ev.get("tool_input") or {})
             elif event in ("PostToolUse", "PostToolUseFailure"):
-                s.state, s.activity = "working", "Thinking"
+                if ev.get("is_interrupt"):  # you pressed Esc; no Stop event will follow
+                    s.state, s.activity, s.note, s.turn_started = "idle", "", "interrupted", None
+                else:
+                    s.state, s.activity = "working", "Thinking"
             elif event == "TaskCreated":
                 s.tasks.setdefault(ev.get("task_id", ""), False)
             elif event == "TaskCompleted":
                 s.tasks[ev.get("task_id", "")] = True
             elif event == "Notification":
                 if ev.get("notification_type") in NEEDS_INPUT:
-                    s.state, s.note = "needs_you", "needs your input"
-                    self._say(s, "I need your input", "needs_you", "notify")
+                    waiting = [r for r in self.requests if r.session == sid and not r.confirmed]
+                    if waiting:  # we know what it is asking for, so say that
+                        waiting[0].confirmed = True
+                        self._say(s, f"Permission needed: {waiting[0].summary}", "needs_you", "permission")
+                    else:
+                        s.state, s.note = "needs_you", "needs your input"
+                        self._say(s, "I need your input", "needs_you", "notify")
             elif event == "Stop":
                 s.state, s.activity, s.turn_started = "done", "", None
                 speech = speech_from_message(str(ev.get("last_assistant_message") or ""))
@@ -165,6 +203,94 @@ class Hub:
             sessions = [s.snapshot() for s in self.sessions.by_id.values()]
         return {"sessions": sessions, "muted": self._muted(), **self.speech.snapshot()}
 
+    # --- permission prompts ------------------------------------------------------------------
+
+    def request_permission(self, ev: dict) -> Request | None:
+        """A session is showing a permission prompt. Returns a request the caller waits on,
+        or None when there is nothing for the hub to answer."""
+        sid, tool = ev.get("session_id"), str(ev.get("tool_name") or "")
+        if not sid:
+            return None
+        with self.lock:
+            self.last_event = time.monotonic()
+            s = self.sessions.touch(sid, ev.get("cwd", ""))
+            if tool in OWN_DIALOG:
+                s.state, s.note = "needs_you", "has a question for you" if tool == "AskUserQuestion" else "has a plan for you"
+                req = None
+            else:
+                summary, detail = permission_summary(tool, ev.get("tool_input") or {})
+                req = Request(session=sid, tool=tool, tool_input=ev.get("tool_input") or {}, summary=summary, detail=detail)
+                s.state, s.note = "needs_you", f"wants to: {summary}"
+                self.requests.append(req)
+                self._show_request()
+        self.publish()
+        return req
+
+    def decide(self, decision: str) -> bool:
+        """Answer the request on screen (hotkey or command line). False if there was nothing to answer."""
+        with self.lock:
+            req = self.requests[0] if self.requests else None
+            if not req or req.shown is None or time.monotonic() - req.shown < MIN_SHOWN:
+                return False  # nothing there, or it appeared too recently to have been read
+            s = self.sessions.by_id.get(req.session)
+            self._resolve(req, decision, "hotkey")
+            if s:
+                self.speech.drop_session(s.id)  # stop "permission needed" if it is still being said
+                self._say(s, "Allowed." if decision == "allow" else "Denied.",
+                          "allowed" if decision == "allow" else "denied", "decision")
+        self.publish()
+        return True
+
+    def abandon(self, req: Request, why: str, interrupted: bool = False) -> None:
+        """The request ended without the hub answering it (answered in the terminal, hook killed...)."""
+        with self.lock:
+            s = self.sessions.by_id.get(req.session)
+            self._resolve(req, None, why)
+            if interrupted and s and not req.decision:
+                s.state, s.activity, s.note, s.turn_started = "idle", "", "interrupted", None
+        self.publish()
+
+    def _settle(self, sid: str, why: str, tool: str | None = None, tool_input: dict | None = None) -> None:
+        """Close a session's open requests; with a tool given, only the one for that exact call."""
+        for req in [r for r in self.requests if r.session == sid]:
+            if tool is None or (req.tool == tool and req.tool_input == (tool_input or {})):
+                self._resolve(req, None, why)
+
+    def _resolve(self, req: Request, decision: str | None, why: str) -> None:
+        if req.done.is_set():
+            return
+        req.decision = decision
+        self.requests.remove(req)
+        req.done.set()
+        s = self.sessions.by_id.get(req.session)
+        if s and s.state == "needs_you" and not any(r.session == req.session for r in self.requests):
+            s.state, s.note = "working", ""
+        log(self.cfg, "hub.log", f"permission [{req.session[:8]}] {req.tool}: {decision or 'no answer'} ({why})")
+        self._show_request()
+
+    def _show_request(self) -> None:
+        """Keep the overlay showing the oldest open request; that is the one the hotkeys answer."""
+        req = self.requests[0] if self.requests else None
+        if req and req.shown is None:
+            req.shown = time.monotonic()
+        if not self.overlay:
+            return
+        if not req:
+            self.overlay.send({"type": "request"})
+            return
+        s = self.sessions.by_id.get(req.session)
+        keys = self.cfg.overlay.get("hotkeys", {})
+        more = len(self.requests) - 1
+        self.overlay.send({
+            "type": "request", "name": s.name if s else "", "text": f"wants to: {req.summary}",
+            "detail": req.detail[:300],
+            "keys": f"{keys.get('allow', '')} allow  \u00b7  {keys.get('deny', '')} deny" + (f"  \u00b7  {more} more waiting" if more else ""),
+        })
+
+    def on_overlay(self, msg: dict) -> None:
+        if msg.get("type") == "hotkey" and msg.get("name") in ("allow", "deny"):
+            self.decide(msg["name"])
+
     # --- overlay -----------------------------------------------------------------------------
 
     def publish(self) -> None:
@@ -201,7 +327,7 @@ class Hub:
             with self.lock:
                 s = self.sessions.by_id.get(u.session)
                 if s:
-                    self._flash(s, u.text, u.kind)
+                    self._flash(s, u.text, {"allowed": "done", "denied": "failed"}.get(u.kind, u.kind))
         self.publish()
 
     # --- helpers -----------------------------------------------------------------------------
@@ -212,7 +338,7 @@ class Hub:
     def _say(self, s, text: str, kind: str, src: str) -> None:
         s.last_speech = text
         if self._muted():
-            self._flash(s, text, kind)  # voice is off, so the overlay is the only signal
+            self._flash(s, text, {"allowed": "done", "denied": "failed"}.get(kind, kind))  # voice is off
         else:
             self.speech.put(Utterance(text=text, voice=s.voice, session=s.id, kind=kind, src=src))
 
@@ -268,7 +394,7 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args) -> None:  # the default logger assumes a TCP client address
         pass
 
-    def _reply(self, body: dict | None = None, status: int = 200) -> None:
+    def _send(self, body: dict | None, status: int) -> None:
         data = json.dumps(body, ensure_ascii=False).encode() if body is not None else b""
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
@@ -300,6 +426,10 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/say":
             hub.say(str(body.get("text", "")), body.get("voice"), body.get("kind", "done"))
             self._reply({})
+        elif self.path == "/permission":
+            self._permission(hub, body)
+        elif self.path == "/decide":
+            self._reply({"answered": hub.decide("allow" if body.get("decision") == "allow" else "deny")})
         elif self.path == "/stop":
             hub.speech.stop_all()
             self._reply({})
@@ -319,6 +449,37 @@ class Handler(BaseHTTPRequestHandler):
             threading.Thread(target=self.server.shutdown, daemon=True).start()
         else:
             self._reply({"error": "not found"}, 404)
+
+
+    def _permission(self, hub: Hub, body: dict) -> None:
+        """Hold the hook's request open until the prompt is answered here or elsewhere."""
+        req = hub.request_permission(body)
+        if not req:
+            return self._reply(None)
+        while not req.done.wait(0.25):
+            if self._client_gone():  # Claude Code killed the hook: you pressed Esc
+                hub.abandon(req, "hook ended", interrupted=True)
+            elif not req.confirmed and time.monotonic() - req.created > hub.cfg.permission_grace:
+                hub.abandon(req, "answered in the terminal")
+        if not req.decision:
+            return self._reply(None)  # no output: Claude Code's own prompt stays in charge
+        decision = {"behavior": req.decision}
+        if req.decision == "deny":
+            decision["message"] = "Denied by the user from the claude-speaks overlay."
+        self._reply({"hookSpecificOutput": {"hookEventName": "PermissionRequest", "decision": decision}})
+
+    def _client_gone(self) -> bool:
+        try:
+            readable, _, _ = select.select([self.connection], [], [], 0)
+            return bool(readable) and self.connection.recv(1, socket.MSG_PEEK) == b""
+        except OSError:
+            return True
+
+    def _reply(self, body: dict | None = None, status: int = 200) -> None:
+        try:
+            self._send(body, status)
+        except OSError:  # the client hung up while we were waiting
+            pass
 
 
 class Server(socketserver.ThreadingUnixStreamServer):
@@ -352,7 +513,8 @@ def main() -> int:
     hub = Hub(cfg, make_engine(cfg.engine, cfg.kokoro_dir, cfg.speed, cfg.default_voice))
     if cfg.overlay.get("enabled") and overlay_mod.Overlay.available():
         script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "overlay", "overlay.ps1")
-        hub.overlay = overlay_mod.Overlay(script, cfg.overlay, log=lambda line: log(cfg, "hub.log", line))
+        hub.overlay = overlay_mod.Overlay(script, cfg.overlay, on_message=hub.on_overlay,
+                                          log=lambda line: log(cfg, "hub.log", line))
         hub.publish()  # starts the window now, so it is ready before the first session speaks
     server = serve(hub, cfg.sock)
     stop = lambda *_: threading.Thread(target=server.shutdown, daemon=True).start()  # noqa: E731

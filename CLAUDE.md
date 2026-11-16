@@ -23,8 +23,10 @@ you → session) so you can keep your eyes on your own work.
    `Ctrl+Alt+L`, behaviour over a game). Native window (PowerShell + WPF, started by the hub, JSON
    lines over stdin/stdout), see-through and click-through. Two modes: faint dots that expand to
    one line on a change, and a full list.
-3. **Allow or deny by hotkey**: `PermissionRequest` hook long-polls the hub; `Ctrl+Alt+Y` /
-   `Ctrl+Alt+N` from any app. First test whether the terminal dialog stays usable while the hook waits.
+3. **Allow or deny by hotkey**: built 2026-11-16 and verified end to end against a real session
+   through `claude-speaks allow|deny`; the author still has to try the actual `Ctrl+Alt+Y` /
+   `Ctrl+Alt+N` keys. `PermissionRequest` hook long-polls the hub; the terminal dialog stays usable
+   and whichever answers first wins.
 4. **Push-to-talk follow-ups**: hold `Ctrl+Alt+Space`, local `faster-whisper`, delivered to the
    session that spoke last through an `asyncRewake` hook (fallback: `tmux send-keys`).
 
@@ -49,6 +51,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 | MessageDisplay | `hooks/display.sh` | Runs per streamed batch. Sends a batch containing a speak tag to the hub, which queues the speech and returns the "🔊 …" rewrite |
 | Stop | `hooks/speak.sh` | Tells the hub the turn ended; the hub speaks the line only if streaming missed it |
 | Notification (`permission_prompt`, `elicitation_dialog`) | `hooks/notify.sh` | Hub marks the session "needs you" and says "I need your input" |
+| PermissionRequest | `hooks/permission.sh` | Holds a request open on the hub until the prompt is answered. Prints the hub's allow/deny, or nothing if it was answered in the terminal |
 | SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse(Failure), TaskCreated, TaskCompleted, StopFailure | `hooks/report.sh` (async) | Forwards the payload so the hub knows what each session is doing. `--start` also starts the hub |
 
 - `hub/hub.py`: the one background process. HTTP over a Unix socket at
@@ -67,13 +70,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   being spoken, or instead of speech when the voice is off); the window sends `ready`, `hotkey`,
   `mode`, `error`. All logic lives in the hub so it can be tested; the C# only draws.
   Glyphs: ● working, ▲ needs you, ✔ done, ✖ failed, ○ idle, 🔊 on the row being spoken.
+- Permission prompts (`Request` in `hub/hub.py`): the overlay shows the oldest open request at once
+  (what, the exact command, the keys) and keeps it solid until answered. The voice waits for
+  Claude Code's own "still waiting" notification (about 6 s) so it does not nag someone answering
+  in the terminal, then says "Permission needed: …". A request with no notification after
+  `permission_grace` (9 s) counts as answered in the terminal. A hotkey only works after the
+  request has been on screen 0.7 s; the hub says "Allowed." or "Denied." as feedback.
+  Questions and plan approvals (`AskUserQuestion`, `ExitPlanMode`) are never offered to the hotkeys.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
   does not repeat the line once the hub is back.
-- `bin/claude-speaks`: `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `overlay dots|list|toggle|restart`,
-  `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 27 tests with a silent engine, including the real hook scripts over a socket.
+- `bin/claude-speaks`: `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`,
+  `overlay dots|list|toggle|restart`, `demo`, `hub start|stop|restart`, `log`.
+- `tests/test_hub.py`: 37 tests with a silent engine, including the real hook scripts over a socket.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `label` (`auto`/`always`/`never`), `max_age`, `idle_exit`, `default_voice`, `speed`,
@@ -98,9 +108,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   itself. With a label, the label is the first (very short) piece.
 - Edits to `~/.claude/settings.json` hooks are picked up by running sessions at once.
 - A Unix socket path is limited to about 108 characters; keep the run directory short.
-- Hook facts for the next milestones (from the docs, not yet tried): Notification
-  `permission_prompt` fires only after the prompt has waited about 6 s, `PermissionRequest`
-  fires at once and can return `decision.behavior` allow/deny; `asyncRewake: true` hooks wake
+- Permission hook facts (measured 2026-11-16 by driving a real session in tmux): the terminal
+  dialog appears about 0.5 s after the `PermissionRequest` hook starts and stays usable while the
+  hook runs. A hook "allow" closes the dialog at once. If the user answers "yes" in the terminal
+  the hook is NOT told and keeps running (no signal, stdout stays open); if the user presses Esc
+  the hook gets SIGTERM. Blank lines before the JSON are harmless. Notification
+  `permission_prompt` fires only if the dialog is still open after about 6 s. No Stop event
+  follows an Esc, so an interrupted session can look "working" until its next event.
+- To test hooks without the author: run `claude --model haiku` in a detached tmux session (unset
+  the inherited `CLAUDE*` variables), drive it with `tmux send-keys`, read it with `capture-pane`.
+- Hook facts for the next milestone (from the docs, not yet tried): `asyncRewake: true` hooks wake
   an idle session when they exit 2 (their `timeout` is still enforced); hooks inherit the
   terminal's environment (e.g. `TMUX_PANE`); channels could also inject messages and relay
   permission prompts but need `--dangerously-load-development-channels`.

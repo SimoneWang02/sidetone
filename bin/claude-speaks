@@ -11,6 +11,7 @@ Usage: claude-speaks <command>
   say [-v VOICE] TEXT        speak a line through the hub
   stop                       stop speaking and clear the queue
   on | off                   turn the voice on or off for every session
+  allow | deny               answer the permission prompt the overlay is showing
   overlay dots|list|toggle|restart   switch the on-screen overlay's view, or restart it
   demo                       play three made-up sessions to see and hear every state
   hub start|stop|restart     manage the background hub
@@ -51,6 +52,10 @@ case ${1:-} in
   stop) hub_post /stop </dev/null >/dev/null || { echo "hub is not running"; exit 1; } ;;
   on) rm -f "$HOME/.claude/voice-off"; echo "voice on" ;;
   off) mkdir -p "$HOME/.claude" && touch "$HOME/.claude/voice-off"; hub_post /stop </dev/null >/dev/null 2>&1; echo "voice off" ;;
+  allow|deny)
+    answered=$(jq -nc --arg d "$1" '{decision: $d}' | hub_post /decide | jq -r .answered)
+    [ "$answered" = true ] && echo "$1 sent" || { echo "no permission prompt is waiting"; exit 1; }
+    ;;
   overlay)
     case ${2:-toggle} in
       dots|list|toggle) jq -nc --arg m "${2:-toggle}" '{mode: $m}' | hub_post /overlay >/dev/null ;;

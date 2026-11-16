@@ -1,5 +1,5 @@
 // The claude-speaks overlay window. It only draws what the hub tells it to and reports hotkeys.
-// Protocol: one JSON object per line. In on stdin: config, state, flash, mode, bounds, quit.
+// Protocol: one JSON object per line. In on stdin: config, state, flash, request, mode, bounds, quit.
 // Out on stdout: ready, hotkey, mode, bounds, error.
 // Compiled by Windows PowerShell 5.1 (Add-Type), so this file must stay within C# 5 and ASCII.
 using System;
@@ -53,6 +53,10 @@ namespace ClaudeSpeaks
         readonly StackPanel dots = new StackPanel { Orientation = Orientation.Horizontal };
         readonly TextBlock flashLine = new TextBlock();
         readonly StackPanel list = new StackPanel();
+        readonly StackPanel requestBox = new StackPanel { Margin = new Thickness(0, 0, 0, 4) };
+        readonly TextBlock requestTitle = new TextBlock();
+        readonly TextBlock requestDetail = new TextBlock();
+        readonly TextBlock requestKeys = new TextBlock();
         readonly DispatcherTimer flashTimer = new DispatcherTimer();
         readonly DispatcherTimer topTimer = new DispatcherTimer();
         readonly Dictionary<int, string> hotkeys = new Dictionary<int, string>();
@@ -61,7 +65,7 @@ namespace ClaudeSpeaks
         object[] sessions = new object[0];
         string mode = "dots", corner = "top-right";
         double offsetX = 150, offsetY = 8, idleOpacity = 0.35, listOpacity = 0.85;
-        bool flashing, opaque;
+        bool flashing, opaque, hasRequest;
 
         Overlay(TextWriter output)
         {
@@ -83,7 +87,21 @@ namespace ClaudeSpeaks
             FontSize = 13;
             Foreground = Brushes.White;
 
+            requestTitle.MaxWidth = requestDetail.MaxWidth = requestKeys.MaxWidth = 620;
+            requestTitle.TextTrimming = TextTrimming.CharacterEllipsis;
+            requestDetail.FontFamily = new FontFamily("Consolas");
+            requestDetail.Foreground = Paint("#DDDDDD");
+            requestDetail.TextWrapping = TextWrapping.Wrap;
+            requestDetail.TextTrimming = TextTrimming.CharacterEllipsis;
+            requestDetail.MaxHeight = 52;  // about three lines; the terminal has the full command
+            requestDetail.Margin = new Thickness(0, 2, 0, 2);
+            requestKeys.Foreground = Paint("#FFB300");
+            requestBox.Children.Add(requestTitle);
+            requestBox.Children.Add(requestDetail);
+            requestBox.Children.Add(requestKeys);
+
             var stack = new StackPanel();
+            stack.Children.Add(requestBox);
             stack.Children.Add(dots);
             stack.Children.Add(flashLine);
             stack.Children.Add(list);
@@ -170,6 +188,9 @@ namespace ClaudeSpeaks
                 case "flash":
                     Flash(msg);
                     break;
+                case "request":
+                    ShowRequest(msg);
+                    break;
                 case "mode":
                     SetMode(Str(msg, "mode", "toggle"));
                     break;
@@ -192,8 +213,9 @@ namespace ClaudeSpeaks
             list.Visibility = isList ? Visibility.Visible : Visibility.Collapsed;
             if (isList) BuildList(); else BuildDots();
 
-            Fade(flashing ? 1.0 : (isList ? listOpacity : idleOpacity));
-            bool show = isList || flashing || sessions.Length > 0;
+            requestBox.Visibility = hasRequest ? Visibility.Visible : Visibility.Collapsed;
+            Fade(flashing || hasRequest ? 1.0 : (isList ? listOpacity : idleOpacity));
+            bool show = isList || flashing || hasRequest || sessions.Length > 0;
             if (show && !IsVisible) Show();
             else if (!show && IsVisible) Hide();
         }
@@ -257,6 +279,24 @@ namespace ClaudeSpeaks
             flashTimer.Stop();
             flashTimer.Interval = TimeSpan.FromSeconds(Num(msg, "seconds", 4));
             flashTimer.Start();
+            Render();
+        }
+
+        // A permission prompt stays on screen, solid, until it is answered: the hotkeys act on it.
+        void ShowRequest(Dictionary<string, object> msg)
+        {
+            hasRequest = msg.ContainsKey("text");
+            if (hasRequest)
+            {
+                string[] look = Look("needs_you");
+                requestTitle.Inlines.Clear();
+                requestTitle.Inlines.Add(new Run(look[0] + "  ") { Foreground = Paint(look[1]), FontFamily = Symbols });
+                requestTitle.Inlines.Add(new Run(Str(msg, "name") + "  ") { FontWeight = FontWeights.SemiBold });
+                requestTitle.Inlines.Add(new Run(Str(msg, "text")));
+                requestDetail.Text = Str(msg, "detail");
+                requestDetail.Visibility = requestDetail.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+                requestKeys.Text = Str(msg, "keys");
+            }
             Render();
         }
 

@@ -65,6 +65,24 @@ def describe(tool: str, tool_input: dict) -> str:
     return tool
 
 
+def permission_summary(tool: str, tool_input: dict) -> tuple[str, str]:
+    """(what is being asked, the exact thing it would run or touch) for a permission request."""
+    path = str(tool_input.get("file_path") or tool_input.get("notebook_path") or "")
+    if tool == "Bash":
+        return tool_input.get("description") or "run a command", str(tool_input.get("command") or "")
+    if tool in ("Edit", "Write", "NotebookEdit"):
+        return f"{'write' if tool == 'Write' else 'edit'} {os.path.basename(path)}", path
+    if tool == "Read":
+        return f"read {os.path.basename(path)}", path
+    if tool in ("WebFetch", "WebSearch"):
+        target = str(tool_input.get("url") or tool_input.get("query") or "")
+        return "use the web", target
+    if tool.startswith("mcp__"):
+        parts = tool.split("__")
+        return f"use {parts[1].replace('_', ' ')}", parts[-1]
+    return f"use {tool}", ""
+
+
 @dataclass
 class Session:
     id: str

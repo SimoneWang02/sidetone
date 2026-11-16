@@ -49,6 +49,17 @@
         ]
       }
     ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/personal/claude-speaks/hooks/permission.sh",
+            "timeout": 3600
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "hooks": [
