@@ -1,0 +1,9 @@
+# Runtime files, never commit (voice.log contains spoken summaries)
+voice.log
+.tts.pid
+.state/
+# Downloaded models
+*.onnx
+*.onnx.json
+voices-*.bin
+venv/
