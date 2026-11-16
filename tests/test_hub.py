@@ -185,6 +185,75 @@ class State(HubCase):
         self.assertEqual(self.hub.snapshot()["sessions"], [])
 
 
+class FakeOverlay:
+    def __init__(self):
+        self.sent = []
+
+    def send(self, msg):
+        self.sent.append(msg)
+
+    def of(self, kind):
+        return [m for m in self.sent if m["type"] == kind]
+
+
+class OverlayFeed(HubCase):
+    def make(self, **kw):
+        hub = super().make(**kw)
+        hub.overlay = self.overlay = FakeOverlay()
+        return hub
+
+    def test_rows_show_activity_tasks_and_how_the_turn_ended(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit"))
+        hub.on_event(ev("TaskCreated", task_id="1"))
+        hub.on_event(ev("PreToolUse", tool_name="Bash", tool_input={"description": "Run tests"}))
+        row = self.overlay.of("state")[-1]["sessions"][0]
+        self.assertEqual((row["name"], row["state"], row["text"], row["meta"]),
+                         ("alpha", "working", "Run tests", "0/1 \u00b7 <1m"))
+        hub.on_event(ev("Stop", last_assistant_message=tag("All done.")))
+        self.spoken()
+        row = self.overlay.of("state")[-1]["sessions"][0]
+        self.assertEqual((row["state"], row["text"], row["speaking"]), ("done", "All done.", False))
+
+    def test_unchanged_state_is_not_sent_again(self):
+        hub = self.make()
+        hub.on_event(ev("SessionStart"))
+        hub.on_event(ev("SessionStart"))
+        hub.publish()
+        self.assertEqual(len(self.overlay.of("state")), 1)
+
+    def test_flash_and_speaking_mark_follow_the_voice(self):
+        hub = self.make(duration=0.2)
+        hub.on_display(ev("MessageDisplay", delta=tag("Tests pass.")))
+        time.sleep(0.05)
+        flash = self.overlay.of("flash")[-1]
+        self.assertEqual((flash["state"], flash["name"], flash["text"]), ("done", "alpha", "Tests pass."))
+        self.assertTrue(self.overlay.of("state")[-1]["sessions"][0]["speaking"])
+        self.spoken()
+        self.assertFalse(self.overlay.of("state")[-1]["sessions"][0]["speaking"])
+
+    def test_muted_voice_still_flashes(self):
+        hub = self.make()
+        open(self.cfg.mute_file, "w").close()
+        hub.on_event(ev("Notification", notification_type="permission_prompt"))
+        flash = self.overlay.of("flash")[-1]
+        self.assertEqual((flash["state"], flash["text"]), ("needs_you", "I need your input"))
+
+    def test_turn_without_a_spoken_line_flashes_done(self):
+        hub = self.make()
+        hub.on_event(ev("Stop", last_assistant_message="no tag"))
+        self.assertEqual(self.overlay.of("flash")[-1]["text"], "done")
+
+    def test_demo_runs_to_the_end(self):
+        import demo
+        hub = self.make(label="never")
+        demo.run(hub, speed=200)
+        spoken = self.spoken()
+        self.assertIn("All forty two tests pass.", spoken)
+        self.assertIn("I hit an error: rate limit", spoken)
+        self.assertEqual(self.hub.snapshot()["sessions"], [])
+
+
 class ThroughTheHooks(HubCase):
     """The real hook scripts talking to a hub over its socket."""
 

@@ -129,14 +129,17 @@ class SpeechQueue:
     """Speaks one utterance at a time, most urgent first.
 
     `label_for(utterance)` is asked just before speaking, so the label reflects the sessions
-    active at that moment. `on_done(utterance, label, waited, first_audio, outcome)` is for logging.
+    active at that moment. `on_change(utterance or None)` fires when a line starts and when it
+    ends. `on_done(utterance, label, waited, first_audio, outcome)` is for logging.
+    All three are called without the queue's lock held, so they may take the hub's lock.
     """
 
     def __init__(self, engine, *, max_age: float = 60.0,
                  label_for: Callable[[Utterance], str] = lambda u: "",
+                 on_change: Callable[[Utterance | None], None] = lambda u: None,
                  on_done: Callable[..., None] = lambda *a: None):
         self.engine, self.max_age = engine, max_age
-        self.label_for, self.on_done = label_for, on_done
+        self.label_for, self.on_change, self.on_done = label_for, on_change, on_done
         self.queued: list[Utterance] = []
         self.current: Utterance | None = None
         self._cond = threading.Condition()
@@ -186,20 +189,27 @@ class SpeechQueue:
         self.engine.load()
         while True:
             with self._cond:
-                self.current = None
-                self._cond.notify_all()
                 self._cond.wait_for(lambda: self.queued or self._closed)
                 if self._closed:
                     return
                 u = min(self.queued, key=lambda q: (PRIORITY.get(q.kind, 2), q.created))
                 self.queued.remove(u)
                 waited = time.monotonic() - u.created
-                if waited > self.max_age:  # old news by now; saying it late would only confuse
-                    self.on_done(u, "", waited, None, "dropped-stale")
-                    continue
-                self.current = u
-                self.engine.arm()  # under the lock, so a stop arriving from now on is kept
+                stale = waited > self.max_age  # old news by now; saying it late would only confuse
+                if stale:
+                    self._cond.notify_all()
+                else:
+                    self.current = u
+                    self.engine.arm()  # under the lock, so a stop arriving from now on is kept
+            if stale:
+                self.on_done(u, "", waited, None, "dropped-stale")
+                continue
             label = self.label_for(u)
+            self.on_change(u)
             parts = ([label + "."] if label else []) + sentences(u.text)
             first = self.engine.speak(parts, u.voice)
+            with self._cond:
+                self.current = None
+                self._cond.notify_all()
+            self.on_change(None)
             self.on_done(u, label, waited, first, "spoken")

@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # run with -I, so add our own dir
+import demo  # noqa: E402
+import overlay as overlay_mod  # noqa: E402
 from state import VOICE_POOL, Sessions, describe, speech_from_message, split_display  # noqa: E402
 from tts import SpeechQueue, Utterance, make_engine  # noqa: E402
 
@@ -39,6 +41,7 @@ class Config:
     label: str = "auto"  # auto (only with several sessions) | always | never
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
+    overlay: dict = field(default_factory=lambda: {**overlay_mod.DEFAULTS, "hotkeys": dict(overlay_mod.DEFAULTS["hotkeys"])})
     mute_file: str = os.path.expanduser("~/.claude/voice-off")
 
     @property
@@ -69,6 +72,11 @@ class Config:
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed"):
             if key in user:
                 setattr(cfg, key, user[key])
+        wanted = user.get("overlay") or {}
+        cfg.overlay.update({k: v for k, v in wanted.items() if k != "hotkeys"})
+        cfg.overlay["hotkeys"].update(wanted.get("hotkeys") or {})
+        if env.get("CLAUDE_SPEAKS_OVERLAY") == "off":
+            cfg.overlay["enabled"] = False
         return cfg
 
 
@@ -78,15 +86,21 @@ class Hub:
         self.lock = threading.Lock()
         self.sessions = Sessions(cfg.voice_pool, cfg.voices)
         self.last_event = time.monotonic()
-        self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for, on_done=self._log_speech)
+        self.overlay = None  # anything with send(dict); set by main() or the tests
+        self._shown: dict | None = None  # last state sent to the overlay, to skip repeats
+        self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
+                                  on_change=self._speech_changed, on_done=self._log_speech)
 
     # --- hook events -------------------------------------------------------------------------
 
     def on_event(self, ev: dict) -> None:
         """Update a session from any hook payload other than MessageDisplay."""
-        sid, event = ev.get("session_id"), ev.get("hook_event_name", "")
-        if not sid:
-            return
+        if ev.get("session_id"):
+            self._apply(ev)
+            self.publish()
+
+    def _apply(self, ev: dict) -> None:
+        sid, event = ev["session_id"], ev.get("hook_event_name", "")
         with self.lock:
             self.last_event = time.monotonic()
             if event == "SessionEnd":
@@ -96,7 +110,8 @@ class Hub:
             s = self.sessions.touch(sid, ev.get("cwd", ""))
 
             if event == "UserPromptSubmit":
-                s.state, s.activity, s.turn_started, s.spoken = "working", "Thinking", time.monotonic(), None
+                s.state, s.activity, s.note = "working", "Thinking", ""
+                s.turn_started, s.spoken = time.monotonic(), None
                 if s.tasks and all(s.tasks.values()):
                     s.tasks.clear()
                 self.speech.drop_session(sid)  # you have moved on; the old line is stale
@@ -110,17 +125,21 @@ class Hub:
                 s.tasks[ev.get("task_id", "")] = True
             elif event == "Notification":
                 if ev.get("notification_type") in NEEDS_INPUT:
-                    s.state = "needs_you"
+                    s.state, s.note = "needs_you", "needs your input"
                     self._say(s, "I need your input", "needs_you", "notify")
             elif event == "Stop":
                 s.state, s.activity, s.turn_started = "done", "", None
                 speech = speech_from_message(str(ev.get("last_assistant_message") or ""))
+                s.note = speech or "done"
                 if speech and speech != s.spoken and not self._spoken_without_hub(sid, speech):
                     self._say(s, speech, "done", "stop")
+                elif not speech:
+                    self._flash(s, "done")  # nothing is spoken for this turn, so show it instead
                 s.spoken = None
             elif event == "StopFailure":
                 s.state, s.activity, s.turn_started = "failed", "", None
                 error = str(ev.get("error") or "unknown").replace("_", " ")
+                s.note = f"error: {error}"
                 self._say(s, f"I hit an error: {error}", "failed", "stop-failure")
 
     def on_display(self, ev: dict) -> dict | None:
@@ -134,6 +153,7 @@ class Hub:
             s = self.sessions.touch(sid, ev.get("cwd", ""))
             s.spoken = speech
             self._say(s, speech, "done", "stream")
+        self.publish()
         return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
 
     def say(self, text: str, voice: str | None = None, kind: str = "done") -> None:
@@ -145,6 +165,45 @@ class Hub:
             sessions = [s.snapshot() for s in self.sessions.by_id.values()]
         return {"sessions": sessions, "muted": self._muted(), **self.speech.snapshot()}
 
+    # --- overlay -----------------------------------------------------------------------------
+
+    def publish(self) -> None:
+        """Send the overlay what to draw, if it changed. Call without the lock held."""
+        if not self.overlay:
+            return
+        current = self.speech.current
+        speaking = current.session if current else None
+        with self.lock:
+            rows = [{
+                "name": s.name,
+                "state": s.state,
+                "text": s.activity if s.state == "working" else s.note,
+                "meta": " \u00b7 ".join(filter(None, [
+                    f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
+                    _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
+                ])),
+                "speaking": s.id == speaking,
+            } for s in self.sessions.by_id.values()]
+            if rows == self._shown:
+                return
+            self._shown = rows
+        self.overlay.send({"type": "state", "sessions": rows})
+
+    def _flash(self, s, text: str, state: str | None = None) -> None:
+        """Expand the overlay's dots into one line about this session for a few seconds."""
+        if self.overlay:
+            self.overlay.send({"type": "flash", "state": state or s.state, "name": s.name, "text": text,
+                               "seconds": self.cfg.overlay.get("flash_seconds", 4)})
+
+    def _speech_changed(self, u: Utterance | None) -> None:
+        """A line starts or ends: show it while it is heard, and mark which session is speaking."""
+        if u and u.session:
+            with self.lock:
+                s = self.sessions.by_id.get(u.session)
+                if s:
+                    self._flash(s, u.text, u.kind)
+        self.publish()
+
     # --- helpers -----------------------------------------------------------------------------
 
     def _muted(self) -> bool:
@@ -152,7 +211,9 @@ class Hub:
 
     def _say(self, s, text: str, kind: str, src: str) -> None:
         s.last_speech = text
-        if not self._muted():
+        if self._muted():
+            self._flash(s, text, kind)  # voice is off, so the overlay is the only signal
+        else:
             self.speech.put(Utterance(text=text, voice=s.voice, session=s.id, kind=kind, src=src))
 
     def _spoken_without_hub(self, sid: str, speech: str) -> bool:
@@ -181,6 +242,13 @@ class Hub:
             timing += f" first_audio={first * 1000:.0f}ms"
         said = f"{label}. {u.text}" if label else u.text
         log(self.cfg, "voice.log", f"[{u.session[:8] or 'cli'}] src={u.src} {outcome} voice={u.voice} {timing} speech={said}")
+
+
+def _elapsed(seconds: float) -> str:
+    minutes = int(seconds // 60)
+    if minutes < 1:
+        return "<1m"
+    return f"{minutes}m" if minutes < 60 else f"{minutes // 60}h{minutes % 60:02d}"
 
 
 def log(cfg: Config, name: str, line: str) -> None:
@@ -235,6 +303,17 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/stop":
             hub.speech.stop_all()
             self._reply({})
+        elif self.path == "/overlay":
+            if not hub.overlay:
+                return self._reply({"error": "the overlay is not available here"}, 409)
+            if body.get("restart"):
+                hub.overlay.restart()
+            else:
+                hub.overlay.send({"type": "mode", "mode": body.get("mode", "toggle")})
+            self._reply({})
+        elif self.path == "/demo":
+            threading.Thread(target=demo.run, args=(hub,), name="demo", daemon=True).start()
+            self._reply({})
         elif self.path == "/shutdown":
             self._reply({})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
@@ -271,6 +350,10 @@ def main() -> int:
         return 0  # another hub already owns the socket
 
     hub = Hub(cfg, make_engine(cfg.engine, cfg.kokoro_dir, cfg.speed, cfg.default_voice))
+    if cfg.overlay.get("enabled") and overlay_mod.Overlay.available():
+        script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "overlay", "overlay.ps1")
+        hub.overlay = overlay_mod.Overlay(script, cfg.overlay, log=lambda line: log(cfg, "hub.log", line))
+        hub.publish()  # starts the window now, so it is ready before the first session speaks
     server = serve(hub, cfg.sock)
     stop = lambda *_: threading.Thread(target=server.shutdown, daemon=True).start()  # noqa: E731
     signal.signal(signal.SIGTERM, stop)
@@ -286,12 +369,20 @@ def main() -> int:
                 server.shutdown()
                 return
 
+    def refresh_overlay() -> None:  # elapsed times change even when no event arrives
+        while True:
+            time.sleep(5)
+            hub.publish()
+
     threading.Thread(target=exit_when_idle, daemon=True).start()
+    threading.Thread(target=refresh_overlay, daemon=True).start()
     log(cfg, "hub.log", f"hub started pid={os.getpid()} engine={type(hub.speech.engine).__name__}")
     try:
         server.serve_forever()
     finally:
         hub.speech.close()
+        if hub.overlay:
+            hub.overlay.stop()
         server.server_close()
         try:
             os.unlink(cfg.sock)

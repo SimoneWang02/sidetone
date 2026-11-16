@@ -11,6 +11,8 @@ Usage: claude-speaks <command>
   say [-v VOICE] TEXT        speak a line through the hub
   stop                       stop speaking and clear the queue
   on | off                   turn the voice on or off for every session
+  overlay dots|list|toggle|restart   switch the on-screen overlay's view, or restart it
+  demo                       play three made-up sessions to see and hear every state
   hub start|stop|restart     manage the background hub
   log                        follow the speech log
 EOF
@@ -49,6 +51,17 @@ case ${1:-} in
   stop) hub_post /stop </dev/null >/dev/null || { echo "hub is not running"; exit 1; } ;;
   on) rm -f "$HOME/.claude/voice-off"; echo "voice on" ;;
   off) mkdir -p "$HOME/.claude" && touch "$HOME/.claude/voice-off"; hub_post /stop </dev/null >/dev/null 2>&1; echo "voice off" ;;
+  overlay)
+    case ${2:-toggle} in
+      dots|list|toggle) jq -nc --arg m "${2:-toggle}" '{mode: $m}' | hub_post /overlay >/dev/null ;;
+      restart) echo '{"restart": true}' | hub_post /overlay >/dev/null ;;
+      *) usage; exit 2 ;;
+    esac || { echo "no overlay (hub not running, or not on Windows/WSL)"; exit 1; }
+    ;;
+  demo)
+    hub_get /health >/dev/null 2>&1 || { hub_start && hub_wait || exit 1; }
+    hub_post /demo </dev/null >/dev/null && echo "demo running for about 40 seconds"
+    ;;
   hub)
     case ${2:-} in
       start) hub_start && hub_wait && echo "hub running" ;;

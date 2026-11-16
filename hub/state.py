@@ -72,7 +72,8 @@ class Session:
     name: str
     voice: str
     state: str = "idle"  # idle | working | needs_you | done | failed
-    activity: str = ""
+    activity: str = ""  # what it is doing, while working
+    note: str = ""  # how the last turn ended, shown when not working
     tasks: dict[str, bool] = field(default_factory=dict)  # task id -> completed
     turn_started: float | None = None
     spoken: str | None = None  # line already spoken this turn, so Stop doesn't repeat it
@@ -87,6 +88,7 @@ class Session:
             "voice": self.voice,
             "state": self.state,
             "activity": self.activity,
+            "note": self.note,
             "tasks_done": sum(self.tasks.values()),
             "tasks_total": len(self.tasks),
             "turn_seconds": round(now - self.turn_started) if self.turn_started else None,

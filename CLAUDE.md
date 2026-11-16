@@ -19,9 +19,10 @@ you → session) so you can keep your eyes on your own work.
 ## Roadmap (decided with the author 2026-11-16)
 
 1. **Hub and voice queue**: done; the author confirmed it by ear on 2026-11-16.
-2. **Windows overlay**: native window (PowerShell + WPF, started by the hub, JSON lines over
-   stdin/stdout), see-through and click-through. Two modes switched by `Ctrl+Alt+L`: faint dots
-   that expand to one line on a change, and a full list.
+2. **Windows overlay**: built 2026-11-16; waiting for the author's check by eye (look, position,
+   `Ctrl+Alt+L`, behaviour over a game). Native window (PowerShell + WPF, started by the hub, JSON
+   lines over stdin/stdout), see-through and click-through. Two modes: faint dots that expand to
+   one line on a change, and a full list.
 3. **Allow or deny by hotkey**: `PermissionRequest` hook long-polls the hub; `Ctrl+Alt+Y` /
    `Ctrl+Alt+N` from any app. First test whether the terminal dialog stays usable while the hook waits.
 4. **Push-to-talk follow-ups**: hold `Ctrl+Alt+Space`, local `faster-whisper`, delivered to the
@@ -38,8 +39,8 @@ where every voice can be customized (the author's idea; today the same choices l
 ## How it works
 
 ```
-Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro venv)
-                  Unix socket, owner-only   session state · speech queue
+Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro venv) ──stdin──▶ overlay (Windows)
+                  Unix socket, owner-only   session state · speech queue   ◀─stdout── hotkeys
 ```
 
 | Hook event | Script | Job |
@@ -60,14 +61,24 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
   was active in the last 15 min. Voice = stable hash of the name over a pool of 13 clearer
   English Kokoro voices, never one a live session already uses.
+- `hub/overlay.py` + `overlay/overlay.ps1` + `overlay/Overlay.cs`: the on-screen overlay, a child
+  process of the hub (only where `powershell.exe` exists). The hub sends `config`, `state` (one
+  ready-to-draw row per session) and `flash` (one line for a few seconds, sent when a line starts
+  being spoken, or instead of speech when the voice is off); the window sends `ready`, `hotkey`,
+  `mode`, `error`. All logic lives in the hub so it can be tested; the C# only draws.
+  Glyphs: ● working, ▲ needs you, ✔ done, ✖ failed, ○ idle, 🔊 on the row being spoken.
+- `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
   does not repeat the line once the hub is back.
-- `bin/claude-speaks`: `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 21 tests with a silent engine, including the real hook scripts over a socket.
+- `bin/claude-speaks`: `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `overlay dots|list|toggle|restart`,
+  `demo`, `hub start|stop|restart`, `log`.
+- `tests/test_hub.py`: 27 tests with a silent engine, including the real hook scripts over a socket.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
-  `voice_pool`, `label` (`auto`/`always`/`never`), `max_age`, `idle_exit`, `default_voice`, `speed`.
+  `voice_pool`, `label` (`auto`/`always`/`never`), `max_age`, `idle_exit`, `default_voice`, `speed`,
+  and `overlay` (`enabled`, `mode`, `corner`, `offset_x`, `offset_y`, `opacity`, `list_opacity`,
+  `flash_seconds`, `hotkeys`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - Toggle: voice is off while `~/.claude/voice-off` exists (the hub still tracks state).
 - Runtime files live outside the repo: `~/.local/state/claude-speaks/` (`voice.log` contains
   spoken summaries, `hub.log`, `.state/`, `.tts.pid`).
@@ -93,6 +104,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   an idle session when they exit 2 (their `timeout` is still enforced); hooks inherit the
   terminal's environment (e.g. `TMUX_PANE`); channels could also inject messages and relay
   permission prompts but need `--dangerously-load-development-channels`.
+- Overlay facts: it is ready about 0.6 s after launch. `Add-Type` in PowerShell 5.1 compiles
+  C# 5 only (no `$""`, `?.`, `nameof`, `out var`), and the source is kept ASCII. Running the
+  script from the `\\wsl.localhost\...` path with `-ExecutionPolicy Bypass` works here. The default
+  position leaves 150 px on the right so it does not cover a maximized window's buttons.
+  To see it from WSL without capturing the user's screen: send `config` with `opaque: true`, ask
+  for `bounds`, and capture exactly that rectangle with `Graphics.CopyFromScreen`.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
