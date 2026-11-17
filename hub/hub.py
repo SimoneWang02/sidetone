@@ -835,11 +835,15 @@ class Hub:
             with self.lock:
                 self._cancel_pending()
                 self._transcribing = True
-                self._talk("transcribing", self._target())
-            threading.Thread(target=self._transcribe, args=(pcm,), daemon=True).start()
+                # Who was listening when the key came up gets the words: turning them into
+                # text takes a second or two, and the focus may move on in that time.
+                said_to = self._target()
+                self._talk("transcribing", said_to)
+            threading.Thread(target=self._transcribe, args=(pcm, said_to.id if said_to else None),
+                             daemon=True).start()
         self.publish()
 
-    def _transcribe(self, pcm: bytes) -> None:
+    def _transcribe(self, pcm: bytes, session: str | None = None) -> None:
         started = time.monotonic()
         try:
             text = self.transcriber.transcribe(pcm) if self.transcriber else ""
@@ -857,11 +861,16 @@ class Hub:
             self._unload.daemon = True
             self._unload.start()
         try:
-            if text:
-                self.follow_up(text)
-            else:
-                self._talk("failed", self._target(), "Didn't catch that", seconds=2)
+            said_to = self.sessions.by_id.get(session or "")
+            if not text:
+                self._talk("failed", said_to or self._target(), "Didn't catch that", seconds=2)
                 self._signal("failed")
+            elif session and not said_to:  # it ended while the words were being worked out
+                self._talk("failed", None, "That session is gone, not sent", seconds=2.5)
+                self._signal("failed")
+                log(self.cfg, "hub.log", f"follow-up [{session[:8]}] not sent: the session is gone")
+            else:
+                self.follow_up(text, session)
         finally:
             self._transcribing = False
 

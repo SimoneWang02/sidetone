@@ -912,6 +912,32 @@ class PushToTalk(HubCase):
         self.assertTrue(wait_for(lambda: hub.followups.get("b") == ["also add a test"]))
         self.assertIn(("sent", "b", "also add a test"), self.talks())
 
+    def test_moving_the_focus_after_letting_go_does_not_take_the_words_along(self):
+        hub = self.make()
+        hub.transcriber.seconds = 0.15  # the words are still being worked out when the focus moves
+        hub.talk_target = "a"
+        to_a, to_b = hub.listen("a"), hub.listen("b")
+        hub.talk_start()
+        hub.talk_end()
+        hub.focus(1)  # on to the next session, right after letting go
+        self.assertTrue(to_a.wake.wait(3), "the follow-up never reached the session it was said to")
+        self.assertEqual(hub.collect(to_a), "also add a test")
+        self.assertFalse(to_b.wake.is_set())
+        self.assertIn(("sent", "a", "also add a test"), self.talks())
+        self.assertEqual(self.in_focus(), "b")  # the focus stays where you put it
+
+    def test_words_for_a_session_that_ended_meanwhile_go_to_nobody(self):
+        hub = self.make()
+        hub.transcriber.seconds = 0.15
+        hub.talk_target = "a"
+        to_b = hub.listen("b")
+        hub.talk_start()
+        hub.talk_end()
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a"))
+        self.assertTrue(wait_for(lambda: self.talks()[-1][0] == "failed"))
+        self.assertFalse(to_b.wake.is_set())
+        self.assertEqual(hub.followups, {})
+
     def test_the_microphone_is_shown_while_listening(self):
         hub = self.make()
         hub._mic_heard(bytes(1600))

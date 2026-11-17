@@ -286,7 +286,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   that the wheel not jump from the bottom back to the top). A line that starts between the talk
   key going down and the words being sent does not take the focus (`Hub._transcribing`): on
   2026-11-17 the author spoke to one session, another one's reply started on release, and the
-  words went to that one. Rows carry `target`; the overlay draws a frame that glides
+  words went to that one. The words go to whoever was listening when the key came up
+  (`talk_end` hands that session to `_transcribe`): the author let go, moved the focus at
+  once, and the words followed the focus to another session ("it went to another session"),
+  because the receiver was only looked up when the text came back from the speech model, one
+  to two seconds later. Moving the focus while the key is still held does move who gets
+  them, as the listening sign shows. If that session ends meanwhile, nothing is sent ("That
+  session is gone, not sent"). Rows carry `target`; the overlay draws a frame that glides
   to that light and lights its row. `Ctrl+Alt` + wheel (`overlay.focus_wheel`, `""` turns it off)
   sends `focus_prev` / `focus_next` and brings the panel out for 1.6 s. Windows only reports
   the wheel to a background program through a low-level mouse hook, which sits in the path of
@@ -445,7 +451,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 144 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 133 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
