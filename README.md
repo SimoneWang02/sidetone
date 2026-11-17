@@ -35,8 +35,9 @@ its own spoken line as the first line of its reply.
 - **Answer permission prompts from anywhere.** The overlay shows what a session wants to run.
   `Ctrl+Alt+Y` allows, `Ctrl+Alt+N` denies. The dialog in the terminal keeps working too;
   whichever you use first wins.
-- **Answer Claude's questions with a number key.** A multiple-choice question is shown with
-  numbered options and read out; `Ctrl+Alt+1` to `4` picks one.
+- **Answer Claude's questions with a number key, or in your own words.** A multiple-choice
+  question is shown with numbered options and read out; `Ctrl+Alt+1` to `4` picks one. Or hold
+  the talk key and say something else: your words go back as the answer.
 - **Push-to-talk follow-ups.** Hold `Ctrl+Alt+Space`, say "also add a test for the empty case",
   release. While you hold the key, that session's light and the bubble next to it show your
   own voice as a wave, so you can see the microphone hears you. A local Whisper model transcribes it and

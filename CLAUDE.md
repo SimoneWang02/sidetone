@@ -274,6 +274,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   in `tool_input`. Single-choice questions with 2 to 4 options become a `Request` with
   `questions`; `choose(n)` records the label and, after the last one, the hook returns allow
   with `updatedInput.answers` (question text → label). Others are only announced.
+  Since 2026-11-17 a question can also be answered in your own words (the author: "let's say I
+  want to clarify, I want to put my notes. Can I send an audio instead of picking a choice?").
+  Before, words spoken to a session waiting on a question sat in the queue until the question
+  was answered some other way. Now `Hub._send` gives them to `Hub._answer` as the answer to
+  the question on that session; Claude Code takes any text in `answers`, as for a typed
+  "Other" (checked with a real session: "Which drink? → Neither, sparkling water with lemon ·
+  Allowed by PermissionRequest hook"). Only for questions that have a `Request`, so not for
+  multiple choice or more than four options, and not for permission prompts.
+  A question answered in the terminal used to stay on the overlay until the turn ended (the
+  author, same day: "I chose the answer via Visual Studio Code. I still see the prompt"): the
+  call that ran comes back in `PostToolUse` with the answers added to its input, so it never
+  equalled the open request. `_same_call` compares only the questions (checked for real: the
+  request is closed in the second the dialog is answered).
 - History and catching up: the hub keeps the last 100 lines sessions said. `last_seen` moves on
   every prompt and hotkey; `catch_up()` replays lines newer than it. `repeat()` says again the
   last line of the session in focus (the author, 2026-11-17, after trying the key: "it would be
@@ -366,7 +379,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off]`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 114 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 116 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
@@ -433,6 +446,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   follows an Esc, so an interrupted session can look "working" until its next event.
 - To test hooks without the author: run `claude --model haiku` in a detached tmux session (unset
   the inherited `CLAUDE*` variables), drive it with `tmux send-keys`, read it with `capture-pane`.
+  A new folder first shows a trust dialog (Down, Enter). To wait between steps use
+  `python3 -c "import time; time.sleep(2)"`: `read -t 1 < /dev/null` returns at once, and
+  keys sent without a real wait land in the wrong dialog.
 - `asyncRewake` facts (measured 2026-11-16): a hook with `asyncRewake: true` that exits 2 wakes
   an idle session within a second; its stderr reaches Claude and the terminal shows "Stop hook
   feedback". Delivered while the session is busy, it is handled right after the current reply.

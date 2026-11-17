@@ -26,7 +26,15 @@ real keys yet.
 - [x] `Ctrl+Alt` + mouse wheel: the focus moves, and stops at the first and last session
       (the author, 2026-11-17: works)
 - [ ] `Ctrl+Alt+Y` / `Ctrl+Alt+N` on a real permission prompt
-- [ ] `Ctrl+Alt+1` to `4` on a real multiple-choice question
+- [ ] `Ctrl+Alt+1` to `4` on a real multiple-choice question (a real question came up on
+      2026-11-17, but the author answered it in the VS Code terminal, so the keys are still
+      untried)
+- [ ] Answering a question by voice (built 2026-11-17 on the author's question whether they
+      could "send an audio instead of picking a choice"; checked with a real session through
+      the command line, not yet with a real voice): while a session shows a question, hold
+      the talk key and say the answer in your own words.
+- [ ] A question answered in the terminal leaving the overlay at once (mended 2026-11-17
+      after the author saw it stay; checked with a real session).
 - [x] `Ctrl+Alt+R` (repeat): the author, 2026-11-17: "good for replay".
 - [ ] `Ctrl+Alt+R` again after the change they asked for the same day: it now says the last
       line of the session in focus (move the focus with `Ctrl+Alt` + wheel first), and the
@@ -110,7 +118,11 @@ real keys yet.
       tap any more (the author's choice). `followup_delay` and `followup_confirm` bring them back.
 - [ ] A permission prompt that waited more than six seconds and is then approved in the
       terminal stays "needs you" until that tool finishes.
-- [ ] The number keys only answer single-choice questions with up to four options.
+- [ ] The number keys only answer single-choice questions with up to four options. The same
+      limit holds for answering by voice: other questions are only announced, and words
+      spoken meanwhile wait until the question is answered in the terminal. A permission
+      prompt cannot be answered by voice either (the words wait); "deny, and here is why"
+      by voice would be possible, since a deny can carry a message.
 - [ ] The spoken project name is off while the overlay is up; with many sessions and eyes
       away from the screen, the voices alone may not be enough to tell them apart.
 - [ ] `hub/hub.py` is over 1,100 lines. Split it (permission requests, push-to-talk, the
