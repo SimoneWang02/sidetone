@@ -25,10 +25,12 @@ real keys yet.
       2026-11-17: works)
 - [x] `Ctrl+Alt` + mouse wheel: the focus moves, and stops at the first and last session
       (the author, 2026-11-17: works)
-- [ ] `Ctrl+Alt+Y` / `Ctrl+Alt+N` on a real permission prompt
-- [ ] `Ctrl+Alt+1` to `4` on a real multiple-choice question (a real question came up on
-      2026-11-17, but the author answered it in the VS Code terminal, so the keys are still
-      untried)
+- [x] `Ctrl+Alt+Y` / `Ctrl+Alt+N` on a real permission prompt. Done by the author on
+      2026-11-17 against a throwaway session that asks before running commands: the hub
+      logged "deny (hotkey)" and the file was not made, then "allow (hotkey)" and it was.
+- [x] `Ctrl+Alt+1` to `4` on a real multiple-choice question. Done by the author on
+      2026-11-17 with the third choice of three: the hub logged "answer (hotkey)" and the
+      session got that choice.
 - [x] Answering a question by voice (built 2026-11-17 on the author's question whether they
       could "send an audio instead of picking a choice"): while a session shows a question,
       hold the talk key and say the answer in your own words. Done by the author the same
