@@ -103,7 +103,7 @@ real keys yet.
       said: since 2026-11-17 the sentence is cut to one line in the details (`row_lines`).
       The author the same day: "It works. It's only one row. I mean you can make it two.
       No, one is fine." So one line stays; two is there as `row_lines: 2` if wanted.
-- [ ] Clicking while talking (the author, 2026-11-17: "while I talk I cannot right click, so
+- [x] Clicking while talking (the author, 2026-11-17: "while I talk I cannot right click, so
       for instance I cannot pause the YouTube video"). Not looked into beyond a guess: with
       `Ctrl+Alt` still down the click reaches the browser as Ctrl+Alt+click, which a video
       player may ignore; the overlay passes every click on. To find out: hold only
@@ -123,6 +123,9 @@ real keys yet.
       from WSL with a stand-in key; to be tried by the author: hold `Ctrl+Alt+Space`, keep
       all three down, click the video (it should pause), and with the keys still down
       press Backspace (it should cancel the recording).
+      The author, minutes later, by voice with the keys held: "It does pause." Sending
+      still works too, since that message arrived. Not reported yet: Backspace with the
+      keys still down, which the overlay now has to recognise itself.
 
 ## To decide
 
