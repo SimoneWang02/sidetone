@@ -133,6 +133,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   **bubble** appears beside the light of the session that is talking while the panel is away:
   name, title, the sentence, and the voice flowing behind the text. Mode names are still
   `dots` (lights only) and `list` (panel kept out).
+- Rows keep one height (2026-11-17): a sentence being said used to wrap to three lines in its
+  row of the panel, and since each light is kept level with its row, the bar stretched while
+  the panel was out. The author noticed it on hovering ("it ... increase ... the height") and
+  chose, from three offered, to cut the sentence to one line with dots. `overlay.row_lines`
+  (1 to 3, default 1) brings the wrapping and the stretching back. The bubble still shows the
+  whole sentence. They then asked by voice what the choices meant, so the choice may not
+  have been an informed one; ask again if they do not like what they see.
 - Layouts (2026-11-17): `overlay.layout` is `bar` or `island`; `Ctrl+Alt+K` or
   `claude-speaks overlay layout NAME|next` switches, and `Hub.set_layout` saves it. `island` lays
   the lights out sideways at the top middle of the screen, with a dash of the session's color

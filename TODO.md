@@ -65,6 +65,15 @@ real keys yet.
       move cursor shows on the bar and it can be dragged; without them there is no move
       cursor and clicks and the wheel go to the window underneath.
 - [ ] Sessions started from the VS Code extension showing up in the bar
+- [ ] The bar no longer getting taller when the mouse is on it while a long sentence is
+      said: since 2026-11-17 the sentence is cut to one line in the details (`row_lines`).
+- [ ] Clicking while talking (the author, 2026-11-17: "while I talk I cannot right click, so
+      for instance I cannot pause the YouTube video"). Not looked into beyond a guess: with
+      `Ctrl+Alt` still down the click reaches the browser as Ctrl+Alt+click, which a video
+      player may ignore; the overlay passes every click on. To find out: hold only
+      `Ctrl+Alt`, without Space, and click the video. If that does not pause it either, it
+      is the browser. Since the same day the hold goes on with Space alone, so letting go
+      of Ctrl and Alt while talking should give plain clicks.
 
 ## To decide
 

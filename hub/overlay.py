@@ -39,6 +39,9 @@ DEFAULTS = {
     # Keeping the held talk key from other programs needs a keyboard hook. "held": in only while
     # the hotkey's Ctrl/Alt are down and during the hold; "always": for a talk key without them; "off".
     "keep_talk_key": "held",
+    # Lines a sentence may take in a session's row of the details: 1 = cut with dots, and the bar
+    # never changes size; 2 or 3 = the row grows and the bar stretches to keep lights and rows level.
+    "row_lines": 1,
     # Where push-to-talk's sign (dots, paper plane, not sent) goes: light = inside the session's
     # status light | line = at the right of its name in the details
     "talk_sign": "light",

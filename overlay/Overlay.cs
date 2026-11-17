@@ -35,6 +35,10 @@ namespace ClaudeSpeaks
         public static readonly FontFamily Symbols = new FontFamily("Segoe UI Symbol");
         public static readonly Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00), Mic = Color.FromRgb(0xFF, 0x6E, 0x8A);
         public static readonly Brush Dim = Paint("#C8FFFFFF"), Faint = Paint("#8CFFFFFF"), MicInk = Paint("#FFFF8FA6");
+        // How many lines a sentence may take in a session's row of the details. With one, every row
+        // is as high as its light and the bar never changes size; with more, a long sentence makes
+        // its row higher and the bar stretches so that the lights stay level with their rows.
+        public static int RowLines = 1;
         public static bool SignInLight = true;  // where push-to-talk's sign goes: in the session's light, or at the right of its line
 
         // Shape differs as well as color (see Orb), so a state reads without color vision.
@@ -609,7 +613,6 @@ namespace ClaudeSpeaks
             words.RenderTransform = Slide;
             line1.TextTrimming = line2.TextTrimming = TextTrimming.CharacterEllipsis;
             line2.FontSize = meta.FontSize = 12;
-            line2.MaxHeight = 50;  // three lines of a spoken sentence
             meta.Foreground = Ui.Faint;
             meta.FontFamily = Ui.Symbols;
             meta.Margin = new Thickness(8, 0, 0, 0);
@@ -682,7 +685,8 @@ namespace ClaudeSpeaks
         {
             bool saying = Showing, talk = TalkKind != null;
             line2.Text = talk ? TalkText : saying ? FlashText : rowText;
-            line2.TextWrapping = saying ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            line2.TextWrapping = saying && Ui.RowLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            line2.MaxHeight = 16.7 * Ui.RowLines;
             line2.Foreground = talk ? talkInk : saying ? Brushes.White : Ui.Dim;
             line2.FontWeight = talk && talkInk == Ui.MicInk ? FontWeights.SemiBold : FontWeights.Normal;
             meta.Text = metaText;
@@ -970,6 +974,7 @@ namespace ClaudeSpeaks
                     if (wanted != layout) { layout = wanted; ApplyLayout(); }
                     if (msg.ContainsKey("focus_wheel")) wheelKeys = Keys(Str(msg, "focus_wheel"));
                     if (msg.ContainsKey("drag_keys")) dragKeys = Keys(Str(msg, "drag_keys"));
+                    Ui.RowLines = Math.Max(1, Math.Min(3, (int)Num(msg, "row_lines", Ui.RowLines)));
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
                     SetGlass();
