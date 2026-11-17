@@ -144,6 +144,18 @@ guesses to check first.
 
 Smaller ideas:
 
+- [ ] Easier ways to take back what you said (the author, 2026-11-17: "it would be really
+      cool to somehow cancel with a shortcut"; today it is `Ctrl+Alt+Backspace` while the talk
+      key is still held, a four-key grip). Ideas offered, none chosen yet:
+      - `Esc` while recording throws it away (claimed only while the talk key is down)
+      - a short take-back window after letting go: the words show for a second or two and
+        `Esc` or `Backspace` alone stops them; no key means sent (`followup_delay` already
+        gives the wait, the single key is missing)
+      - a spoken ending: "never mind" or "scratch that" as the last words discards it
+      - a right click or wheel click while holding the talk key, for a hand on the mouse
+      - tap the talk key twice right after sending to unsend; if the session already has
+        the words, send "ignore my last message" after them
+      - the same single key cuts the line being spoken when nothing is being recorded
 - [ ] Short sounds for states (done, needs you) for when a full sentence is too much
 - [ ] Left or right ear per session
 - [ ] Stay quiet for the session whose terminal is in front

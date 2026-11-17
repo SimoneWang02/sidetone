@@ -97,7 +97,18 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `flock`, exits after 30 min with no sessions.
 - `hub/tts.py`: Kokoro kept loaded, synthesized sentence by sentence into `paplay`. Queue rules:
   one line at a time; needs-you > failed > done; a session's newer line replaces its queued one;
-  lines older than 60 s are dropped; a new prompt silences that session.
+  lines older than 60 s are dropped; a new **typed** prompt silences that session.
+- Replies are queued, not cut (the author, 2026-11-17: "could you queue all these responses
+  instead of cutting?", after a reply was lost while they were talking). What happened: the
+  reply arrived while the talk key was held, started on release, and three seconds later their
+  own follow-up reached the same session as a "new prompt" and silenced it; the next session's
+  line then played, so it sounded as if that session had cut in. Since then: a prompt that is
+  markup (a voice follow-up arrives wrapped in `<task-notification>`) does not silence; the
+  hub's own short answers ("Sent.", "Allowed.", kinds in `tts.FEEDBACK`) do not replace a
+  session's waiting line; a line cut by the talk key is said again from its start on release,
+  unless the key was held to answer that very session (`SpeechQueue.resume(answering)`); and
+  time spent holding the key does not count towards the 60 s. `voice.log` now says `cut`
+  for a line that was stopped, and such a line stays "not heard" for catching up.
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
   was active in the last 15 min and no overlay is on screen (the author, 2026-11-17: "i dont
   think it's necessary to say the project folder whenever it speaks"; the bubble and the voice
@@ -252,7 +263,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 86 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 90 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

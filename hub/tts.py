@@ -16,6 +16,9 @@ from typing import Callable
 
 # Lower speaks first. "notice" is feedback to something the user just did; "progress" can wait.
 PRIORITY = {"needs_you": 0, "allowed": 0, "denied": 0, "notice": 0, "failed": 1, "done": 2, "progress": 3}
+# The hub's own short answers ("Sent.", "Allowed."). They are said in a session's voice but are
+# not what the session said, so they neither replace its waiting line nor are replaced by it.
+FEEDBACK = {"allowed", "denied", "notice"}
 
 
 @dataclass
@@ -323,13 +326,16 @@ class SpeechQueue:
         self._cond = threading.Condition()
         self._closed = False
         self._paused = False
+        self._paused_at = 0.0
+        self._cut: Utterance | None = None  # the line push-to-talk cut; resume() brings it back
+        self._stopped = False  # the line being spoken was stopped by us, so it was not heard in full
         self._thread = threading.Thread(target=self._run, name="speech", daemon=True)
         self._thread.start()
 
     def put(self, u: Utterance) -> None:
         with self._cond:
-            if u.session:  # a session's newer line replaces its queued one
-                self.queued = [q for q in self.queued if q.session != u.session]
+            if u.session and u.kind not in FEEDBACK:  # a session's newer line replaces its queued one
+                self.queued = [q for q in self.queued if q.session != u.session or q.kind in FEEDBACK]
             self.queued.append(u)
             self._cond.notify_all()
 
@@ -337,17 +343,35 @@ class SpeechQueue:
         """Forget everything a session wanted to say, including the line being spoken."""
         with self._cond:
             self.queued = [q for q in self.queued if q.session != session]
+            if self._cut and self._cut.session == session:
+                self._cut = None
             if self.current and self.current.session == session:
-                self.engine.stop()
+                self._stop()
+
+    def _stop(self) -> None:
+        """Stop the sound. Call with the lock held."""
+        self._stopped = self.current is not None
+        self.engine.stop()
 
     def pause(self) -> None:
         """Go quiet (the user is talking): cut the current line and hold the rest."""
         with self._cond:
-            self._paused = True
-            self.engine.stop()
+            if not self._paused:
+                self._paused, self._paused_at, self._cut = True, time.monotonic(), self.current
+            self._stop()
 
-    def resume(self) -> None:
+    def resume(self, answering: str = "") -> None:
+        """Speak again. The line that was cut is said again from its start, before the others,
+        unless it belongs to the session the user was `answering` (they cut it on purpose).
+        The quiet time does not count towards a line's age, however long the user spoke."""
         with self._cond:
+            if self._paused:
+                cut, self._cut = self._cut, None
+                if cut and not (answering and cut.session == answering):
+                    self.queued.append(cut)
+                quiet = time.monotonic() - self._paused_at
+                for q in self.queued:
+                    q.created += quiet
             self._paused = False
             self._cond.notify_all()
 
@@ -355,18 +379,20 @@ class SpeechQueue:
         """Cut the line being spoken; queued lines follow as usual."""
         with self._cond:
             if self.current:
-                self.engine.stop()
+                self._stop()
 
     def stop_all(self) -> None:
         with self._cond:
             self.queued.clear()
-            self.engine.stop()
+            self._cut = None
+            self._stop()
 
     def close(self) -> None:
         with self._cond:
             self._closed = True
             self.queued.clear()
-            self.engine.stop()
+            self._cut = None
+            self._stop()
             self._cond.notify_all()
 
     def wait_idle(self, timeout: float = 5.0) -> bool:
@@ -395,7 +421,7 @@ class SpeechQueue:
                 if stale:
                     self._cond.notify_all()
                 else:
-                    self.current = u
+                    self.current, self._stopped = u, False
                     self.engine.arm()  # under the lock, so a stop arriving from now on is kept
             if stale:
                 self.on_done(u, "", waited, None, "dropped-stale")
@@ -413,6 +439,7 @@ class SpeechQueue:
                     u.heard = meter.stop()
             with self._cond:
                 self.current = None
+                outcome = "cut" if self._stopped else "spoken"
                 self._cond.notify_all()
             self.on_change(None)
-            self.on_done(u, label, waited, first, "spoken")
+            self.on_done(u, label, waited, first, outcome)

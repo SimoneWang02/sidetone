@@ -113,6 +113,24 @@ class Queue(HubCase):
         self.assertEqual(self.spoken(), ["Long line."])
         self.assertLess(time.monotonic() - started, 1.0)
 
+    def test_a_spoken_follow_up_does_not_silence_the_reply_before_it(self):
+        hub = self.make(duration=0.2, label="never")
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("A.")))
+        time.sleep(0.05)
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B, not heard yet.")))
+        wake = "<task-notification>\n<summary>Stop hook feedback</summary>\n</task-notification>"
+        hub.on_event(ev("UserPromptSubmit", sid="b", cwd="/w/b", prompt=wake))  # said by voice, not typed
+        self.assertEqual(self.spoken(), ["A.", "B, not heard yet."])
+
+    def test_our_own_short_answers_do_not_replace_what_a_session_said(self):
+        hub = self.make(duration=0.2, label="never")
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("A.")))
+        time.sleep(0.05)
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B is done.")))
+        with hub.lock:
+            hub._say(hub.sessions.by_id["b"], "Sent.", "allowed", "follow-up")
+        self.assertEqual(self.spoken(), ["A.", "Sent.", "B is done."])
+
     def test_muted_keeps_state_but_says_nothing(self):
         hub = self.make()
         open(self.cfg.mute_file, "w").close()
@@ -599,6 +617,33 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.collect(listener), "also add a test")
         self.assertEqual(self.spoken(), ["A is done.", "Sent."])
 
+    def test_a_line_cut_by_the_talk_key_is_said_again_unless_you_were_answering_it(self):
+        hub = self.make(duration=0.3)
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("A is talking.")))
+        time.sleep(0.05)
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B waits.")))
+        hub.talk_target = "b"  # you turn to B while A is still talking
+        hub.talk_start()
+        time.sleep(0.05)
+        hub.talk_end()
+        self.assertEqual(self.spoken(), ["A is talking.", "A is talking.", "Sent.", "B waits."])
+        self.engine.spoken.clear()
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("A again.")))
+        time.sleep(0.05)
+        hub.talk_start()  # A spoke last, so this answers A: its line was cut on purpose
+        time.sleep(0.05)
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: len(self.engine.spoken) > 1))
+        self.assertEqual(self.spoken(), ["A again.", "Sent."])
+
+    def test_time_spent_talking_does_not_make_a_waiting_line_too_old(self):
+        hub = self.make(duration=0.0, max_age=0.2)
+        hub.talk_start()
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B is done.")))
+        time.sleep(0.4)
+        hub.cancel()
+        self.assertEqual(self.spoken(), ["B is done."])
+
     def test_speech_goes_quiet_while_recording(self):
         hub = self.make(duration=0.3)
         hub.talk_start()
@@ -908,6 +953,103 @@ class ClaudeCodesOwnRecords(HubCase):
         self.quiet_for(10, "demo")
         hub.reconcile()
         self.assertEqual([s["id"] for s in hub.snapshot()["sessions"]], ["demo"])
+
+
+class AcrossARestart(HubCase):
+    """A restarted hub knows its sessions again: who is who must not depend on who reports first."""
+
+    def restart(self):
+        self.hub = Hub(self.cfg, NullEngine())
+        self.addCleanup(self.hub.speech.close)
+        return self.hub
+
+    def record(self, sid, status, pid):
+        os.makedirs(self.cfg.sessions_dir, exist_ok=True)
+        with open(os.path.join(self.cfg.sessions_dir, f"{pid}.json"), "w") as f:
+            json.dump({"pid": pid, "sessionId": sid, "status": status,
+                       "statusUpdatedAt": (time.time() - 90) * 1000}, f)
+
+    def who(self):
+        return [(s["id"], s["name"], s["color"], s["voice"]) for s in self.hub.snapshot()["sessions"]]
+
+    def three(self):
+        hub = self.make()
+        for sid in "abc":
+            hub.on_event(ev("SessionStart", sid=sid))
+        return hub
+
+    def test_sessions_of_one_project_do_not_swap_names_colors_and_voices(self):
+        self.three()
+        before = self.who()
+        self.assertEqual([name for _, name, _, _ in before], ["alpha", "alpha 2", "alpha 3"])
+        hub = self.restart()
+        self.assertEqual(self.who(), [])  # no session files here: nobody is known to be alive
+        for sid in "cab":  # they report in another order than they started in
+            hub.on_event(ev("PreToolUse", sid=sid, tool_name="Read", tool_input={}))
+        self.assertEqual(self.who(), before)
+
+    def test_a_new_session_does_not_take_what_belongs_to_one_that_is_not_back_yet(self):
+        self.three()
+        before = self.who()
+        hub = self.restart()
+        hub.on_event(ev("SessionStart", sid="new"))
+        new = self.who()[0]
+        self.assertEqual(new[1], "alpha 4")
+        self.assertNotIn(new[2], [color for _, _, color, _ in before])
+        self.assertNotIn(new[3], [voice for _, _, _, voice in before])
+        for sid in "cba":
+            hub.listen(sid)
+        self.assertEqual(self.who(), before + [new])  # and it stays last in the bar
+
+    def test_a_second_restart_before_everyone_is_back_forgets_nobody(self):
+        self.three()
+        before = self.who()
+        self.restart().on_event(ev("PreToolUse", sid="b", tool_name="Read", tool_input={}))
+        hub = self.restart()
+        for sid in "cba":
+            hub.listen(sid)
+        self.assertEqual(self.who(), before)
+
+    def test_sessions_claude_code_still_lists_are_back_at_once(self):
+        hub = self.three()
+        hub.on_event(ev("UserPromptSubmit", sid="a", prompt="tidy the readme"))
+        hub.on_event(ev("Stop", sid="a", last_assistant_message=tag("Readme tidied.")))
+        hub.on_event(ev("UserPromptSubmit", sid="b", prompt="run the tests"))
+        hub.talk_target = "b"
+        self.record("a", "idle", os.getpid())
+        self.record("b", "busy", os.getppid())
+        self.record("c", "idle", os.getpid() + 1)  # rewritten below as a session that has ended
+        hub.reconcile()
+        hub.publish()
+        before = self.who()
+        os.unlink(os.path.join(self.cfg.sessions_dir, f"{os.getpid() + 1}.json"))
+        self.spoken()
+        hub = self.restart()
+        self.assertEqual(self.who(), before[:2])  # "c" had a session file and has none now: it ended
+        a, b = self.session("a"), self.session("b")
+        self.assertEqual((a["state"], a["note"], a["title"]), ("done", "Readme tidied.", "Readme tidied."))
+        self.assertEqual((b["state"], b["activity"], b["title"]), ("working", "Thinking", "Run the tests"))
+        self.assertGreater(b["turn_seconds"], 80)  # the turn's clock did not start again
+        self.assertEqual(hub.talk_target, "b")
+        hub.on_event(ev("SessionStart", sid="c2"))
+        self.assertEqual(self.session("c2")["name"], "alpha 3")  # the name of the one that ended is free
+
+    def test_an_ended_session_is_not_brought_back(self):
+        hub = self.three()
+        hub.on_event(ev("SessionEnd", sid="b"))
+        self.restart()
+        for sid in "ac":
+            self.hub.listen(sid)
+        self.assertEqual([sid for sid, _, _, _ in self.who()], ["a", "c"])
+        self.assertNotIn("b", self.hub.sessions.kept)
+
+    def test_what_is_kept_is_private_and_goes_stale(self):
+        self.three()
+        path = os.path.join(self.tmp, "sessions.json")
+        self.assertEqual(os.stat(path).st_mode & 0o077, 0)
+        old = time.time() - 7 * 3600
+        os.utime(path, (old, old))
+        self.assertEqual(self.restart().sessions.kept, {})
 
 
 class OtherVoices(unittest.TestCase):

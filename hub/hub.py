@@ -207,12 +207,17 @@ class Hub:
 
             if event == "UserPromptSubmit":
                 self.last_seen = time.time()
-                self._title_from(s, prompt=str(ev.get("prompt") or ""))
+                prompt = str(ev.get("prompt") or "")
+                self._title_from(s, prompt=prompt)
                 s.state, s.activity, s.note = "working", "Thinking", ""
                 s.turn_started, s.spoken = time.monotonic(), None
                 if s.tasks and all(s.tasks.values()):
                     s.tasks.clear()
-                self.speech.drop_session(sid)  # you have moved on; the old line is stale
+                if not prompt.lstrip().startswith("<"):
+                    # You typed: you have moved on and the old line is stale. A voice follow-up
+                    # arrives as markup, often while you have not heard the reply yet, so that
+                    # reply stays in the queue and is spoken in full.
+                    self.speech.drop_session(sid)
             elif event == "PreToolUse":
                 s.state, s.activity = "working", describe(ev.get("tool_name", ""), ev.get("tool_input") or {})
             elif event in ("PostToolUse", "PostToolUseFailure"):
@@ -649,7 +654,8 @@ class Hub:
             confirming = self._pending if self._pending and self._pending.confirm else None
         tap = held < TAP
         pcm = self.recorder.stop(tail=0 if tap else self.cfg.talk_tail)
-        self.speech.resume()
+        # A line cut by the key is said again, unless you held the key to answer that very session.
+        self.speech.resume(answering="" if tap else self.talk_target or "")
         if tap and confirming:
             self._send(confirming)
         elif tap:
