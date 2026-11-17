@@ -1512,6 +1512,37 @@ class OwnTerminals(HubCase):
         hub.publish()
         self.assertEqual(self.last("/dev/pts/91"), "\x1b]2;alpha \u00b7 fix ]11;#ff0000  the login\x1b\\".encode())
 
+    def test_going_to_a_terminal_in_the_editor_gives_its_session_the_focus(self):
+        hub = self.make()
+        self.open("a", os.getpid(), "/dev/pts/91")
+        self.open("b", os.getppid(), "/dev/pts/92")
+        self.ttys[7001], self.ttys[7002], self.ttys[7003] = "/dev/pts/91", "/dev/pts/92", "/dev/pts/93"  # their shells
+        del self.written[:]
+        self.assertEqual(hub.terminal_in_front(7001), "alpha")
+        self.assertEqual(hub._target().id, "a")
+        self.assertCountEqual(self.written, [("/dev/pts/92", terminal.RESET), ("/dev/pts/91", self.tint("a", 0.08))])  # no flash
+        self.assertIsNone(hub.terminal_in_front(7001), "it has the focus already")
+        self.assertIsNone(hub.terminal_in_front(7003), "a terminal with no session in it")
+        self.assertEqual(hub._target().id, "a")
+        self.assertIsNone(hub.terminal_in_front(424242), "a process that is not there")
+
+    def test_coming_back_to_the_window_does_not_take_the_focus_from_who_spoke(self):
+        hub = self.make()
+        self.open("a", os.getpid(), "/dev/pts/91")
+        self.open("b", os.getppid(), "/dev/pts/92")
+        self.ttys[7001], self.ttys[7002] = "/dev/pts/91", "/dev/pts/92"
+        hub.terminal_in_front(7001)
+        hub.on_event(ev("Stop", sid="b", last_assistant_message=tag("Done here.")))
+        self.spoken()
+        self.assertEqual(hub._target().id, "b")  # whoever speaks gets the focus
+        self.assertIsNone(hub.terminal_in_front(7001, switched=False))  # the same terminal as before: only the window came back
+        self.assertEqual(hub._target().id, "b")
+        hub.terminal_in_front(7002, switched=False)
+        self.assertEqual(hub.terminal_in_front(7001, switched=False), "alpha")  # another window's terminal: that is a change
+        hub.set_terminal(follow=False)
+        self.assertIsNone(hub.terminal_in_front(7002))
+        self.assertEqual(hub._target().id, "a")
+
     def test_a_session_with_no_terminal_is_left_alone(self):
         self.make()
         self.open("a", os.getpid(), "")
@@ -1545,6 +1576,21 @@ class ARealTerminal(unittest.TestCase):
         self.assertTrue(terminal.write(tty, terminal.RESET))
         self.assertEqual(os.read(ours, 100), terminal.RESET)
         self.assertFalse(terminal.write("/dev/pts/no-such-terminal", terminal.RESET))
+
+    def test_the_editor_extension_packs_into_a_file_vs_code_installs(self):
+        import importlib.util
+        import zipfile
+        spec = importlib.util.spec_from_file_location("pack", os.path.join(ROOT, "vscode", "pack.py"))
+        pack = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(pack)
+        out = os.path.join(tempfile.mkdtemp(prefix="cs-test-"), "x.vsix")
+        self.assertEqual(pack.pack(out), "claude-speaks.claude-speaks")
+        with zipfile.ZipFile(out) as z:
+            self.assertEqual(sorted(z.namelist()), ["[Content_Types].xml", "extension.vsixmanifest",
+                                                    "extension/extension.js", "extension/package.json"])
+            package = json.loads(z.read("extension/package.json"))
+            self.assertIn(f'Version="{package["version"]}"', z.read("extension.vsixmanifest").decode())
+        self.assertEqual((package["main"], package["extensionKind"]), ("./extension.js", ["workspace"]))
 
     def test_colors_mix(self):
         self.assertEqual(terminal.mix("#000000", "#ffffff", 0.5), "rgb:80/80/80")
@@ -1598,6 +1644,48 @@ class HubProcess(unittest.TestCase):
         out, err = hook.communicate(timeout=5)
         self.assertEqual(hook.returncode, 2)
         self.assertIn('"run the tests"', err)
+
+    @unittest.skipUnless(__import__("shutil").which("node"), "needs node to run the editor extension")
+    def test_the_editor_extension_tells_the_hub_which_terminal_you_went_to(self):
+        """The real extension code, with a stand-in for the editor, against a real hub."""
+        import pty
+        import shutil
+        sessions = os.path.join(self.tmp, ".claude", "sessions")
+        os.makedirs(sessions)
+        pids = {}
+        for sid in ("a", "b"):  # two sessions, each a process in a terminal of its own
+            ours, theirs = pty.openpty()
+            proc = subprocess.Popen(["sleep", "30"], stdin=theirs)
+            os.close(theirs)
+            self.addCleanup(os.close, ours)
+            self.addCleanup(proc.wait)
+            self.addCleanup(proc.kill)
+            pids[sid] = proc.pid
+            with open(os.path.join(sessions, f"{proc.pid}.json"), "w") as f:
+                json.dump({"pid": proc.pid, "sessionId": sid, "status": "idle", "statusUpdatedAt": time.time() * 1000}, f)
+        self.start_hub()
+        self.call("/event", ev("SessionStart", sid="a", cwd="/work/alpha"))
+        self.call("/event", ev("SessionStart", sid="b", cwd="/work/beta"))
+        self.assertEqual(self.call("/target", {})["target"], "beta")
+        ext = os.path.join(self.tmp, "ext")
+        os.makedirs(os.path.join(ext, "node_modules", "vscode"))
+        shutil.copy(os.path.join(ROOT, "vscode", "extension.js"), ext)
+        with open(os.path.join(ext, "node_modules", "vscode", "index.js"), "w") as f:
+            f.write("""
+                const went = [];
+                exports.went = went;
+                exports.window = {
+                  state: { focused: true },
+                  activeTerminal: { processId: Promise.resolve(Number(process.env.SHELL_PID)) },
+                  onDidChangeActiveTerminal: (f) => { went.push(f); return { dispose() {} }; },
+                  onDidChangeWindowState: (f) => ({ dispose() {} }),
+                };""")
+        go = "const x = require('./extension.js'); x.activate({ subscriptions: [] }); require('vscode').went[0]();"
+        # Told within two seconds of the hub starting, or the hub has not looked for the terminals yet.
+        self.assertTrue(wait_for(lambda: subprocess.run(
+            ["node", "-e", go], cwd=ext, env={**self.env, "SHELL_PID": str(pids["a"])}, timeout=10).returncode == 0
+            and self.call("/target", {})["target"] == "alpha", 8), "the hub did not move the focus")
+
 
     def test_a_listener_keeps_working_when_its_script_is_edited_under_it(self):
         """Bash reads a script from its file as it goes. A listener waits for hours, and when the

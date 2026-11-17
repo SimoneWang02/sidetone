@@ -57,6 +57,11 @@ its own spoken line as the first line of its reply.
   writes to the terminal each session runs in, which works in VS Code's terminal and most
   others. `claude-speaks terminal tint all` lets every terminal wear its color all the time,
   `tint off` none; `claude-speaks terminal find` lights up the one in focus again.
+- **Go to a terminal, and its session has the focus.** With the small VS Code extension
+  (`claude-speaks vscode install`, run in a VS Code terminal), switching to another terminal
+  in VS Code selects the session running there, so push-to-talk goes to the terminal you are
+  looking at. VS Code reports a change of terminal, not every click: going back into the
+  terminal you were last in changes nothing. `claude-speaks terminal follow off` turns it off.
 - **Catch up.** `Ctrl+Alt+U` replays what your sessions said since you were last there;
   `Ctrl+Alt+R` repeats the last line of the session in focus. Long turns say "3 of 5 steps done" along the way.
 - **Your own voices.** Pick a voice per project, blend two into a new one, or load a Kokoro
@@ -138,6 +143,8 @@ claude-speaks terminal               how sessions' own terminals are marked
 claude-speaks terminal tint focus|all|off     whose terminal wears its session's color
 claude-speaks terminal find [PROJECT]         light a session's terminal up for a moment
 claude-speaks terminal strength N | background COLOR | pulse on|off|N | title on|off
+claude-speaks terminal follow on|off          going to a terminal in VS Code selects its session
+claude-speaks vscode install|uninstall        the VS Code extension that reports the terminal you are in
 claude-speaks demo                   three made-up sessions through every state
 claude-speaks hub start|stop|restart
 claude-speaks log                    follow the speech log
@@ -173,7 +180,8 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "background": "#181818",
     "pulse": true,
     "pulse_strength": 0.15,
-    "title": false
+    "title": false,
+    "follow": true
   }
 }
 ```
@@ -244,7 +252,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-124 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+128 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
 `python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
 view. It captures only the overlay's own rectangles, and shows the see-through glass over a

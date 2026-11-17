@@ -28,6 +28,9 @@ DEFAULTS = {
     "pulse": True,  # moving the focus by hand lights its terminal up brighter for a moment
     "pulse_strength": 0.15,  # how much of the color at the top of that moment, 0 to 1
     "title": False,  # also write the session's name and title into the terminal's title
+    # Not about marking: when the editor says which terminal you went to (the VS Code extension in
+    # vscode/ does), the session running there gets the focus.
+    "follow": True,
 }
 TINTS = ("focus", "all", "off")
 PULSE_SECONDS = 0.7

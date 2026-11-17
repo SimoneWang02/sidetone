@@ -353,6 +353,24 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   shows a written title only with `"terminal.integrated.tabs.title": "${sequence}"`, and Claude
   Code writes its own title unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`; neither
   is set on the author's machine, and nobody has checked which title wins.
+- The other way round, terminal → session (2026-11-17; the author, by voice: "if I focus on
+  a terminal it would be great to automatically select that" session): `vscode/` is a VS
+  Code extension of two files (`extension.js`, `package.json`; no build step, no
+  dependencies). On `onDidChangeActiveTerminal` it posts `{"front": <the terminal's shell
+  pid>, "why": "switch"}` to the hub's socket at `/terminal`; when its window comes to the
+  front, the same with `"why": "window"`. `Hub.terminal_in_front` finds the session whose
+  `tty` is that process's terminal and gives it the focus (`_focus_on`, shared with the
+  wheel), without a flash. A `window` report only counts when it names another terminal than
+  the last report (several windows): coming back to the window must not take the focus from
+  a session that spoke meanwhile. `terminal.follow: false` ignores the reports.
+  `vscode/pack.py` zips the folder into a `.vsix` and `claude-speaks vscode install` hands
+  it to `code --install-extension` (the `code` of a VS Code terminal installs on the WSL
+  side, where the hub's socket is; `extensionKind` is `workspace` for that reason). Measured:
+  VS Code 1.146 started it at once, without a reload ("_doActivateExtension ...
+  activationEvent: 'onStartupFinished'" in `~/.vscode-server/data/logs/*/exthost*/`).
+  Installed on the author's machine; **nobody has switched terminals with it yet**. Limit:
+  VS Code reports a change of the active terminal, not keyboard focus, so clicking back
+  into the terminal you were last in reports nothing.
 - `hub/claude_sessions.py`: reads `~/.claude/sessions/<pid>.json` (pid, sessionId, status
   busy/idle). `Hub.reconcile()` runs every second: idle there but working here means the turn
   was interrupted; a session that had a file and lost it is gone. Undocumented files, so
@@ -392,9 +410,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `bin/claude-speaks` (linked by `install.sh` into `~/.local/bin` as `claude-speaks` and `cs`;
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
-  `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off]`,
+  `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 124 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 128 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
@@ -402,7 +420,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
   `talk_tail`, `talk_feedback`, `sound_volume`, and `terminal` (`tint`, `strength`, `background`,
-  `pulse`, `pulse_strength`, `title`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
+  `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
 - Toggle: voice is off while `~/.claude/voice-off` exists (the hub still tracks state).

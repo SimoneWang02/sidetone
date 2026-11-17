@@ -192,6 +192,7 @@ class Hub:
         self.followups: dict[str, list[str]] = self._kept_followups()
         self.talk_target: str | None = None  # session a spoken follow-up goes to
         self._kept_sessions: dict | None = None  # what sessions.json last said (see _keep_sessions)
+        self._front = ""  # the terminal the editor last said you were in (see terminal_in_front)
         self._restore_sessions()
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
         self._mic_meter = Meter()  # turns microphone audio into a loudness for the overlay
@@ -993,16 +994,44 @@ class Hub:
             ids = list(self.sessions.by_id)
             if not ids:
                 return None
-            self.talk_target = ids[max(0, min(len(ids) - 1, ids.index(self._target().id) + step))]
-            s = self.sessions.by_id[self.talk_target]
+            s = self.sessions.by_id[ids[max(0, min(len(ids) - 1, ids.index(self._target().id) + step))]]
+            self._focus_on(s)
             name, tty, color = s.name, s.tty, s.color
-            if self._talk_shown:  # what is on screen for push-to-talk follows the focus
-                if self._pending:
-                    self._pending.session = s.id
-                self._talk(self._talk_shown[0], s, *self._talk_shown[1:])
         self.publish()
         if tty:  # chosen by hand: its terminal lights up for a moment, so it can be found
             self.terminals.pulse(tty, color)
+        return name
+
+    def _focus_on(self, s) -> None:
+        """Give this session the focus because the user chose it. Call with the lock held."""
+        self.talk_target = s.id
+        if self._talk_shown:  # what is on screen for push-to-talk follows the focus
+            if self._pending:
+                self._pending.session = s.id
+            self._talk(self._talk_shown[0], s, *self._talk_shown[1:])
+
+    def terminal_in_front(self, pid: int, switched: bool = True) -> str | None:
+        """The editor says you are now in the terminal that process `pid` (its shell) runs in:
+        the session running there gets the focus. Returns its name, or None when nothing changed.
+
+        `switched`: you went to another terminal inside the editor. Otherwise the editor's
+        window only came to the front, which counts when that is another terminal than the
+        last one reported (several windows), and not when it is the same one: coming back to
+        the window should not take the focus away from a session that spoke meanwhile.
+        No pulse: you are looking at that terminal already."""
+        if not self.cfg.terminal.get("follow", True):
+            return None
+        tty = terminal_mod.tty_of(pid)
+        with self.lock:
+            same, self._front = tty == self._front, tty
+            s = next((x for x in self.sessions.by_id.values() if tty and x.tty == tty), None)
+            if not s or (same and not switched) or self._target() is s:
+                return None
+            self.last_seen = time.time()  # you are there
+            self._focus_on(s)
+            name = s.name
+        log(self.cfg, "hub.log", f"focus on {name}: its terminal ({tty}) came to the front")
+        self.publish()
         return name
 
     def _target(self):
@@ -1334,6 +1363,12 @@ class Handler(BaseHTTPRequestHandler):
                 hub.overlay.send({"type": "mode", "mode": body.get("mode", "toggle")})
             self._reply({})
         elif self.path == "/terminal":
+            if "front" in body:  # from the editor: the terminal of this process is the one you are in
+                try:
+                    pid = int(body["front"])
+                except (TypeError, ValueError):
+                    return self._reply({"error": "front is a process id"}, 400)
+                return self._reply({"focus": hub.terminal_in_front(pid, body.get("why") != "window")})
             if "find" in body:  # light up one session's terminal, to see which it is
                 return self._reply({"found": hub.find_terminal(str(body["find"] or ""))})
             changes = {k: body[k] for k in terminal_mod.DEFAULTS if k in body}
