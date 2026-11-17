@@ -869,11 +869,30 @@ class ClaudeCodesOwnRecords(HubCase):
         self.record("s1", "busy", name="proj-3f", nameSource="derived")
         hub.reconcile()
         self.assertEqual(self.session()["title"], "What is this project about?")
-        hub.follow_up("and how do I run the tests", delay=0)  # a spoken prompt is a prompt too
-        self.assertTrue(wait_for(lambda: self.session()["title"] == "And how do I run the tests"))
         self.record("s1", "busy", name="project-tour", nameSource="auto")
         hub.reconcile()
         self.assertEqual(self.session()["title"], "Project tour")
+
+    def test_the_first_reply_names_a_session_claude_code_has_not_named(self):
+        hub = self.make()
+        wake = "<task-notification>\n<summary>Stop hook feedback</summary>\n</task-notification>"
+        hub.on_event(ev("UserPromptSubmit", prompt=wake))  # how a spoken follow-up reaches Claude
+        self.assertEqual(self.session()["title"], "")  # markup is no one's words, so wait for the reply
+        hub.on_display(ev("MessageDisplay", delta=tag("I added the phone idea to the list.") + "\n"))
+        self.assertEqual(self.session()["title"], "I added the phone idea to the list.")
+        hub.on_event(ev("Stop", last_assistant_message=tag("I added the phone idea to the list.")))
+        hub.on_event(ev("UserPromptSubmit", prompt="now something else entirely"))
+        hub.on_display(ev("MessageDisplay", delta=tag("Done with the other thing.") + "\n"))
+        self.assertEqual(self.session()["title"], "I added the phone idea to the list.")  # it stays
+        self.record("s1", "busy", name="phone-ideas", nameSource="auto")
+        hub.reconcile()
+        self.assertEqual(self.session()["title"], "Phone ideas")  # Claude Code's own name still wins
+
+    def test_a_reply_that_only_reached_the_stop_event_names_the_session_too(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", prompt="<task-notification>"))
+        hub.on_event(ev("Stop", last_assistant_message=tag("The tests pass.")))
+        self.assertEqual(self.session()["title"], "The tests pass.")
 
     def test_a_dead_process_counts_as_gone_and_sessions_without_a_file_are_kept(self):
         hub = self.make()

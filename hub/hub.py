@@ -207,8 +207,7 @@ class Hub:
 
             if event == "UserPromptSubmit":
                 self.last_seen = time.time()
-                if not s.named:  # until Claude Code names the session, the prompt says what it is about
-                    s.title = short_title(ev.get("prompt") or "") or s.title
+                self._title_from(s, prompt=str(ev.get("prompt") or ""))
                 s.state, s.activity, s.note = "working", "Thinking", ""
                 s.turn_started, s.spoken = time.monotonic(), None
                 if s.tasks and all(s.tasks.values()):
@@ -242,6 +241,7 @@ class Hub:
                 s.state, s.activity, s.turn_started = "done", "", None
                 speech = speech_from_message(str(ev.get("last_assistant_message") or ""))
                 s.note = speech or "done"
+                self._title_from(s, reply=speech)
                 if speech and speech != s.spoken and not self._spoken_without_hub(sid, speech):
                     self._say(s, speech, "done", "stop")
                 elif not speech:
@@ -296,9 +296,28 @@ class Hub:
             self.last_event = time.monotonic()
             s = self.sessions.touch(sid, ev.get("cwd", ""))
             s.spoken = speech
+            self._title_from(s, reply=speech)
             self._say(s, speech, "done", "stream")
         self.publish()
         return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
+
+    @staticmethod
+    def _title_from(s, prompt: str = "", reply: str = "") -> None:
+        """Our own title for a session Claude Code has not named (it names one within a second of
+        the first typed prompt, but never one that was started by voice).
+
+        The first reply decides: its spoken line says what the session turned out to be about,
+        and that title then stays. Until then a typed prompt stands in. A prompt that opens with
+        markup is no one's words (a voice follow-up reaches Claude wrapped in
+        "<task-notification>"), and the follow-up itself is not used either: the author asked
+        to wait for the reply instead of naming a session from the start of a spoken ramble.
+        """
+        if s.named or s.settled:
+            return
+        if reply:
+            s.title, s.settled = short_title(reply), True
+        elif prompt and not prompt.lstrip().startswith("<"):
+            s.title = short_title(prompt)
 
     def say(self, text: str, voice: str | None = None, kind: str = "notice") -> None:
         """A line from the command line, not tied to a session."""
@@ -706,8 +725,6 @@ class Hub:
                 self._talk(None)
                 return
             self._talk("sent", s, pending.text, seconds=2.5)  # what went out, for a glance
-            if not s.named:  # a spoken prompt says what the session is about, like a typed one
-                s.title = short_title(pending.text) or s.title
             self.followups.setdefault(s.id, []).append(pending.text)
             self._keep_followups()
             listener = self.listeners.get(s.id)

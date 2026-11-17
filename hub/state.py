@@ -107,8 +107,9 @@ class Session:
     voice: str
     color: str = COLORS[0]  # its name is written in this color in the overlay
     state: str = "idle"  # idle | working | needs_you | done | failed
-    title: str = ""  # a few words on what it is about: Claude Code's name for it, else the last prompt
-    named: str = ""  # that name as Claude Code has it; empty while the title comes from a prompt
+    title: str = ""  # a few words on what it is about: Claude Code's name for it, else see Hub._title_from
+    named: str = ""  # that name as Claude Code has it; empty while the title is our own
+    settled: bool = False  # our own title came from the first reply and stays; before that it follows the prompt
     activity: str = ""  # what it is doing, while working
     note: str = ""  # how the last turn ended, shown when not working
     tasks: dict[str, bool] = field(default_factory=dict)  # task id -> completed

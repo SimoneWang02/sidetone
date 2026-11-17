@@ -36,12 +36,12 @@ real keys yet.
 ## Rough edges
 
 - [ ] A hub restart forgets the order of the sessions in the bar (they come back in the order
-      they next report something) and the titles that came from a prompt (a session Claude
-      Code has not named shows only its folder until the next prompt). The author noticed
+      they next report something) and the titles the hub made itself (a session Claude
+      Code has not named shows only its folder until its next reply). The author noticed
       both on 2026-11-17. Keep order and titles in a small file, like the waiting follow-ups.
-- [ ] A session started by voice keeps Claude Code's placeholder name (the folder plus two
-      letters, "claude-speaks-3f"). The hub now ignores that name and uses the prompt, typed
-      or spoken, but see the restart item above.
+- [ ] A session Claude Code has not named (one started by voice) gets its title from the
+      spoken line of its first reply, which is the start of a sentence, not a real title.
+      Better: ask Claude for a title of a few words in that first reply.
 - [ ] Something said to a busy session waits until its reply ends, and a turn stuck on an
       unanswered dialog in the terminal holds it back for as long as the dialog is open. The
       overlay shows "waiting" for 3.5 s only; the author took it as not heard (2026-11-17).

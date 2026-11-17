@@ -203,7 +203,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-83 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+86 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
 `python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
 view. It captures only the overlay's own rectangles, and shows the see-through glass over a
