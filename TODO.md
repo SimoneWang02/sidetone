@@ -62,11 +62,14 @@ real keys yet.
       built: the focus following the terminal you click (see below, needs a VS Code
       extension); the focus moving to a session when you type to it; saying the session's
       name when the talk key goes down and the focus is not where you last typed.
-- [ ] Speak, let go, and move the focus at once (arrows, wheel or another terminal): the
+- [x] Speak, let go, and move the focus at once (arrows, wheel or another terminal): the
       words should still reach the session that was listening, and "sent" should show on its
       light. Fixed 2026-11-17 after the author did exactly that and the words "went to
       another session". The first fix still lost the words when the focus moved in the first
       0.4 s after letting go; the second one is checked by tests only, not with the real keys.
+      The author, 2026-11-17, asked to try exactly this: "It works. Seems to be working."
+      Those words reached the session they spoke to; the log does not record the arrow
+      keys, so the move right after letting go is on their word.
 - [ ] Take back what was just sent: speak to a session that is in the middle of a reply, and
       within four seconds of "sent" press `Ctrl+Alt+Backspace`. The light should show
       "Taken back" with the two notes going down, and the session should never get the
