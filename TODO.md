@@ -106,6 +106,12 @@ real keys yet.
       back. Compiled and live; not pressed by anyone. To try: speak, let go of Space only,
       keep `Ctrl+Alt` down, wait for "sent", count to three and press Backspace: it should
       say "Taken back" and type nothing in the window in front.
+      The author tried twice that evening and both were taken back, but about two seconds
+      after "sent" by the log's whole seconds, where the old three seconds already
+      reached, so the late press is not proven. Asked for a third, slower try they did
+      not see the point ("I don't get it. Like what's your point?") and chose to skip it:
+      a rare case, left open. `hub.log` now gives the time of a take-back to a tenth of
+      a second, so a late press in everyday use will show there by itself.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
       which was right, since nothing had been said since the last message. Not heard yet:
       a real replay, pressed after a session spoke while the author was away from it.
