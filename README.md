@@ -170,6 +170,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "opacity": 0.9,
     "talk_sign": "light",
     "keep_talk_key": "held",
+    "talk_frees_keys": true,
     "drag_keys": "Ctrl+Alt",
     "row_lines": 1,
     "hotkeys": { "talk": "Ctrl+Alt+Space", "toggle": "Ctrl+Alt+L" }

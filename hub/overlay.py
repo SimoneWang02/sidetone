@@ -39,6 +39,9 @@ DEFAULTS = {
     # Keeping the held talk key from other programs needs a keyboard hook. "held": in only while
     # the hotkey's Ctrl/Alt are down and during the hold; "always": for a talk key without them; "off".
     "keep_talk_key": "held",
+    # While you talk, hide the talk hotkey's Ctrl and Alt from other programs, so that a click
+    # is a plain click and not a Ctrl+Alt+click (which a video player, for one, ignores).
+    "talk_frees_keys": True,
     # Lines a sentence may take in a session's row of the details: 1 = cut with dots, and the bar
     # never changes size; 2 or 3 = the row grows and the bar stretches to keep lights and rows level.
     "row_lines": 1,

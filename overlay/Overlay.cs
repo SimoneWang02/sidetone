@@ -715,6 +715,7 @@ namespace ClaudeSpeaks
         const int VK_LBUTTON = 1, VK_RBUTTON = 2, SM_SWAPBUTTON = 23;
         const int WH_KEYBOARD_LL = 13, WM_KEYDOWN = 0x0100, WM_SYSKEYDOWN = 0x0104;
         const int WH_MOUSE_LL = 14, WM_MOUSEWHEEL = 0x020A, VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B, VK_RWIN = 0x5C, VK_RMENU = 0xA5;
+        const int VK_LSHIFT = 0xA0, VK_RSHIFT = 0xA1, VK_LCONTROL = 0xA2, VK_RCONTROL = 0xA3, VK_LMENU = 0xA4;
         const double PanelWidth = 340, BubbleWidth = 340, Gap = 6, Wide = PanelWidth - 32;
 
         [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
@@ -723,6 +724,7 @@ namespace ClaudeSpeaks
         [DllImport("user32.dll")] static extern bool GetCursorPos(out CursorPoint point);
         [StructLayout(LayoutKind.Sequential)] struct CursorPoint { public int X; public int Y; }
         [DllImport("user32.dll")] static extern int GetSystemMetrics(int index);
+        [DllImport("user32.dll")] static extern void keybd_event(byte key, byte scan, uint flags, UIntPtr extra);
         delegate IntPtr HookProc(int code, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")] static extern IntPtr SetWindowsHookEx(int kind, HookProc proc, IntPtr module, uint thread);
         [DllImport("user32.dll")] static extern bool UnhookWindowsHookEx(IntPtr hook);
@@ -786,6 +788,13 @@ namespace ClaudeSpeaks
         bool taken;  // the press that began this hold was kept from Windows, so its release must be too
         bool repeated;  // the held key has repeated, so its repeats can tell us it is still down
         double lastRepeat;
+        // While you talk, the Ctrl and Alt of the talk hotkey are hidden from other programs (see MaskKeys).
+        bool freeKeys = true;  // overlay.talk_frees_keys
+        readonly HashSet<int> masked = new HashSet<int>();  // those keys: still held as far as we know, though Windows was told they are up
+        double maskedUntil;  // once talking is over, how long we go on believing that without a sign of it
+        const double MaskGrace = 3;
+        const long Ours = 0x43535031;  // marks the key events the overlay sends itself
+        readonly Dictionary<string, uint[]> claims = new Dictionary<string, uint[]>();  // hotkey name -> its key and MOD_ flags
         readonly IntPtr hwnd;
 
         object[] sessions = new object[0];
@@ -977,6 +986,7 @@ namespace ClaudeSpeaks
                     Ui.RowLines = Math.Max(1, Math.Min(3, (int)Num(msg, "row_lines", Ui.RowLines)));
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
+                    if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
                     if (msg.ContainsKey("hotkeys"))
@@ -1399,9 +1409,9 @@ namespace ClaudeSpeaks
             else if (!want && wheelHook != IntPtr.Zero) { UnhookWindowsHookEx(wheelHook); wheelHook = IntPtr.Zero; wheelTurned = 0; }
         }
 
-        static bool Held(int[] keys)
+        bool Held(int[] keys)
         {
-            foreach (int key in keys) if ((GetAsyncKeyState(key) & 0x8000) == 0) return false;
+            foreach (int key in keys) if (!Pressed(key)) return false;
             // AltGr, used to type letters on many keyboards, reports itself as Ctrl+Alt: leave it alone.
             return (GetAsyncKeyState(VK_RMENU) & 0x8000) == 0;
         }
@@ -1442,18 +1452,65 @@ namespace ClaudeSpeaks
 
         void WatchTalkKeys()
         {
+            // Talking is over and nothing has shown those keys to be held still: take Windows' word again.
+            if (!holding && masked.Count > 0 && Ui.Now > maskedUntil) masked.Clear();
             bool ahead = talkKey != 0 && (keepTalk == "always" || (keepTalk == "held" && talkMods != 0 && Mods(talkMods, false)));
-            KeepKey(keepTalk != "off" && (holding || ahead));
+            KeepKey(keepTalk != "off" && (holding || ahead || masked.Count > 0));
             // Should the release ever get past us, the repeats stopping says the key is up.
             if (holding && taken && repeated && Ui.Now - lastRepeat > 1.0) EndHold();
         }
 
         static bool Down(int key) { return (GetAsyncKeyState(key) & 0x8000) != 0; }
 
-        // Are the Ctrl, Alt, Shift and Win keys of a hotkey down? With `only`, and none of the others.
-        static bool Mods(uint wanted, bool only)
+        // Is the key down, counting the ones we have hidden from Windows as down?
+        bool Pressed(int key)
         {
-            bool[] down = { Down(VK_CONTROL), Down(VK_MENU), Down(VK_SHIFT), Down(VK_LWIN) || Down(VK_RWIN) };
+            if (Down(key)) return true;
+            if (key == VK_CONTROL) return masked.Contains(VK_LCONTROL) || masked.Contains(VK_RCONTROL);
+            if (key == VK_MENU) return masked.Contains(VK_LMENU);
+            if (key == VK_SHIFT) return masked.Contains(VK_LSHIFT) || masked.Contains(VK_RSHIFT);
+            return masked.Contains(key);
+        }
+
+        // With Ctrl and Alt down, a click is a Ctrl+Alt+click to the program under the mouse, and
+        // the author could not pause a video while talking: the player ignores such a click. So
+        // when a hold begins, Windows is told that the talk hotkey's Ctrl, Alt and Shift have come
+        // up, though they are still held. Clicks and the wheel are then plain ones, and we go on
+        // counting those keys as down ourselves (Pressed) until their real release reaches the
+        // hook, so the cancel key, another press of the talk key and the other hotkeys still work
+        // without letting go first. Windows is only ever told "up", never "down", so a mistake
+        // here cannot leave a key stuck for other programs; at worst they miss a shortcut until
+        // the keys are pressed again. AltGr is left alone, and so is the Windows key, whose
+        // release alone opens the Start menu.
+        void MaskKeys()
+        {
+            if (!freeKeys || !holding || keyHook == IntPtr.Zero || Down(VK_RMENU)) return;
+            var keys = new List<int>();
+            if ((talkMods & MOD_ALT) != 0 && Down(VK_LMENU)) keys.Add(VK_LMENU);
+            if ((talkMods & MOD_CONTROL) != 0 && Down(VK_LCONTROL)) keys.Add(VK_LCONTROL);
+            if ((talkMods & MOD_CONTROL) != 0 && Down(VK_RCONTROL)) keys.Add(VK_RCONTROL);
+            if ((talkMods & MOD_SHIFT) != 0 && Down(VK_LSHIFT)) keys.Add(VK_LSHIFT);
+            if ((talkMods & MOD_SHIFT) != 0 && Down(VK_RSHIFT)) keys.Add(VK_RSHIFT);
+            if (keys.Contains(VK_LMENU)) { Press(0xE8, false); Press(0xE8, true); }  // a key no keyboard has: Alt coming up after it opens no menu
+            foreach (int key in keys) { masked.Add(key); Press(key, true); }
+        }
+
+        static void Press(int key, bool up)
+        {
+            keybd_event((byte)key, 0, (up ? 2u : 0u) | (key == VK_RCONTROL ? 1u : 0u), new UIntPtr((ulong)Ours));
+        }
+
+        // What a hotkey does when it arrives, from Windows or from the hook.
+        void Hotkey(string name)
+        {
+            if (name == "toggle") SetMode("toggle");
+            Send("hotkey", "name", name);
+        }
+
+        // Are the Ctrl, Alt, Shift and Win keys of a hotkey down? With `only`, and none of the others.
+        bool Mods(uint wanted, bool only)
+        {
+            bool[] down = { Pressed(VK_CONTROL), Pressed(VK_MENU), Pressed(VK_SHIFT), Down(VK_LWIN) || Down(VK_RWIN) };
             uint[] flags = { MOD_CONTROL, MOD_ALT, MOD_SHIFT, MOD_WIN };
             for (int i = 0; i < 4; i++)
             {
@@ -1469,6 +1526,7 @@ namespace ClaudeSpeaks
             if (!holding) return;
             holding = taken = false;
             holdTimer.Stop();
+            maskedUntil = Ui.Now + MaskGrace;
             Send("hotkey", "name", "talk_end");
         }
 
@@ -1477,9 +1535,21 @@ namespace ClaudeSpeaks
         IntPtr OnKey(int code, IntPtr wParam, IntPtr lParam)
         {
             if (code < 0) return CallNextHookEx(keyHook, code, wParam, lParam);
+            if (Marshal.ReadIntPtr(lParam, 16).ToInt64() == Ours) return CallNextHookEx(keyHook, code, wParam, lParam);  // sent by ourselves
             uint key = (uint)Marshal.ReadInt32(lParam);
             int message = wParam.ToInt32();
             bool down = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+            if (masked.Remove((int)key))  // really let go, or pressed anew: from here on Windows is right about this key again
+                return CallNextHookEx(keyHook, code, wParam, lParam);
+            if (down && masked.Count > 0)  // Windows no longer sees our hotkeys' Ctrl and Alt, so they are matched here
+                foreach (KeyValuePair<string, uint[]> claim in claims)
+                    if (claim.Key != "talk" && claim.Value[0] == key && Mods(claim.Value[1], true))
+                    {
+                        string name = claim.Key;
+                        maskedUntil = Ui.Now + MaskGrace;
+                        rail.Dispatcher.BeginInvoke(new Action(delegate { Hotkey(name); }));
+                        return new IntPtr(1);
+                    }
             if (holding && key == heldKey)
             {
                 if (down) { repeated = true; lastRepeat = Ui.Now; return new IntPtr(1); }  // the held key repeating
@@ -1492,7 +1562,7 @@ namespace ClaudeSpeaks
                 holding = taken = true;  // the hotkey, taken before Windows sees the key at all
                 heldKey = key;
                 repeated = false;
-                rail.Dispatcher.BeginInvoke(new Action(delegate { Send("hotkey", "name", "talk"); }));
+                rail.Dispatcher.BeginInvoke(new Action(delegate { Send("hotkey", "name", "talk"); MaskKeys(); }));
                 return new IntPtr(1);
             }
             return CallNextHookEx(keyHook, code, wParam, lParam);
@@ -1913,6 +1983,7 @@ namespace ClaudeSpeaks
             foreach (int id in hotkeys.Keys) UnregisterHotKey(hwnd, id);
             hotkeys.Clear();
             hotkeyKeys.Clear();
+            claims.Clear();
             talkKey = talkMods = 0;
             int next = 1;
             foreach (KeyValuePair<string, string> entry in wantedKeys)
@@ -1944,6 +2015,7 @@ namespace ClaudeSpeaks
                 if (RegisterHotKey(hwnd, next, modifiers, vk))
                 {
                     hotkeys[next] = entry.Key; hotkeyKeys[next] = vk; next++;
+                    claims[entry.Key] = new uint[] { vk, modifiers & ~MOD_NOREPEAT };
                     if (entry.Key == "talk") { talkKey = vk; talkMods = modifiers & ~MOD_NOREPEAT; }
                 }
                 else if (complained.Add(combo)) Error("hotkey " + combo + " is already taken by another program");
@@ -1955,7 +2027,6 @@ namespace ClaudeSpeaks
             string name;
             if (message == WM_HOTKEY && hotkeys.TryGetValue(wParam.ToInt32(), out name))
             {
-                if (name == "toggle") SetMode("toggle");
                 if (name == "talk")
                 {
                     // This press got past the hook (pressed in one go with Ctrl and Alt, or the hook
@@ -1965,8 +2036,10 @@ namespace ClaudeSpeaks
                     holding = true; taken = false; repeated = false;
                     holdTimer.Start();
                     KeepKey(keepTalk != "off");
+                    Send("hotkey", "name", name);
+                    MaskKeys();
                 }
-                Send("hotkey", "name", name);
+                else Hotkey(name);
                 handled = true;
             }
             return IntPtr.Zero;

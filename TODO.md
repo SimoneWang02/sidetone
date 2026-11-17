@@ -115,10 +115,14 @@ real keys yet.
       hook, in while those keys are down, passes on everything but the wheel (read again
       in `OnMouse`), which leaves the video player ignoring a click made with Ctrl and
       Alt down; not proven, since nobody has clicked with the overlay switched off.
-      Suggested to the author, not tried yet: let go of Ctrl and Alt once the recording has
-      begun and keep Space. If they want clicks while all three are held, the choices are a
-      talk key without Ctrl or Alt (`keep_talk_key: always`), or having the overlay hide
-      those two keys from other programs during a hold, which risks leaving them stuck.
+      Suggested to the author: let go of Ctrl and Alt once the recording has begun and
+      keep Space. Their answer: "It's not really great ... not very intuitive." So, the
+      same day, the overlay hides Ctrl and Alt from other programs for as long as you
+      talk (`talk_frees_keys`), and a click with all three keys held is a plain click. It
+      only ever tells Windows the keys came up, so it cannot leave them stuck. Checked
+      from WSL with a stand-in key; to be tried by the author: hold `Ctrl+Alt+Space`, keep
+      all three down, click the video (it should pause), and with the keys still down
+      press Backspace (it should cancel the recording).
 
 ## To decide
 

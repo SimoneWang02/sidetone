@@ -3,7 +3,10 @@
 # It watches with a keyboard hook put in before the overlay's own, so anything the overlay
 # takes for itself never shows up here. It prints "hooked" once it watches and then waits
 # -Delay milliseconds, so the caller can have the overlay put its own hook in after ours.
-param([int]$Key = 0x83, [int]$Repeats = 4, [int]$Delay = 300)
+# With -Modifier (a key such as left Shift, 0xA0) that key is held down first and let go last,
+# as the Ctrl and Alt of the real hotkey are, and the output also says whether Windows took it
+# for up or down in the middle of the hold.
+param([int]$Key = 0x83, [int]$Repeats = 4, [int]$Delay = 300, [int]$Modifier = 0)
 
 Add-Type -ReferencedAssemblies System.Windows.Forms -TypeDefinition @"
 using System;
@@ -37,18 +40,20 @@ public static class KeysCheck
         return CallNextHookEx(hook, code, wParam, lParam);
     }
 
-    public static string Run(int key, int repeats, int delay)
+    public static string Run(int key, int repeats, int delay, int modifier)
     {
         watched = key;
         proc = OnKey;
         hook = SetWindowsHookEx(13, proc, GetModuleHandle(null), 0);
         Console.Out.WriteLine("hooked");
         Console.Out.Flush();
-        string state = "";
+        string state = "", held = "";
         var presser = new Thread(delegate() {
             Thread.Sleep(delay);
+            if (modifier != 0) { keybd_event((byte)modifier, 0, 0, UIntPtr.Zero); Thread.Sleep(200); }
             keybd_event((byte)key, 0, 0, UIntPtr.Zero);          // the press that starts the hold
             Thread.Sleep(400);                                    // time for the overlay to react
+            if (modifier != 0) held = (GetAsyncKeyState(modifier) & 0x8000) != 0 ? "down" : "up";
             for (int i = 0; i < repeats; i++) { keybd_event((byte)key, 0, 0, UIntPtr.Zero); Thread.Sleep(40); }
             keybd_event((byte)key, 0, 2, UIntPtr.Zero);          // let go
             Thread.Sleep(300);
@@ -57,13 +62,14 @@ public static class KeysCheck
             Thread.Sleep(40);
             keybd_event((byte)key, 0, 2, UIntPtr.Zero);
             Thread.Sleep(300);
+            if (modifier != 0) { keybd_event((byte)modifier, 0, 2, UIntPtr.Zero); Thread.Sleep(200); }
         });
         presser.Start();
         while (presser.IsAlive) { Application.DoEvents(); Thread.Sleep(2); }
         UnhookWindowsHookEx(hook);
-        lock (seen) return string.Join(" ", seen.ToArray()) + " | " + state;
+        lock (seen) return string.Join(" ", seen.ToArray()) + " | " + state + (modifier != 0 ? " | " + held : "");
     }
 }
 "@
 
-[KeysCheck]::Run($Key, $Repeats, $Delay)
+[KeysCheck]::Run($Key, $Repeats, $Delay, $Modifier)

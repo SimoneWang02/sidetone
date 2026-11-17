@@ -403,6 +403,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   The author's wider idea, that holding Ctrl+Alt switches off every other key, was not built:
   it would also take the Ctrl+Alt shortcuts of other programs and, on keyboards such as the
   Italian one, characters typed with those keys. It is in `TODO.md` as a possible setting.
+- Ctrl and Alt are hidden from other programs while talking (2026-11-17, `MaskKeys` in
+  `overlay/Overlay.cs`, `overlay.talk_frees_keys`, on by default). The author could not pause
+  a video by clicking it while holding the talk keys; their own test showed the click fails
+  with Ctrl+Alt held even without Space, so the player ignores a Ctrl+Alt+click. Letting go
+  of Ctrl and Alt and keeping Space works, but they found that "not very intuitive". So when
+  a hold begins the overlay sends key-ups for the talk hotkey's Ctrl, Alt and Shift (marked
+  as its own, after a tap of an unused key so that Alt coming up opens no menu), and keeps
+  counting them as down itself (`Pressed`) until their real release reaches the hook, or
+  for 3 s after the hold with no sign of them. While they are hidden, Windows no longer
+  matches the other hotkeys, so the hook does (`claims`): cancel, repeat, the list and so on
+  still work without letting go first, as does a second press of the talk key and the
+  focus wheel. Windows is only ever told "up", never "down", so nothing can be left stuck
+  for other programs. Not hidden: AltGr and the Windows key. `tests/keys_check.py` checks
+  it with left Shift standing in for Ctrl and Alt. Not checked: the real keys and a real click.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event

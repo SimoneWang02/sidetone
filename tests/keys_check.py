@@ -15,6 +15,11 @@ Two rounds:
    Alt (`keep_talk_key: held` with a key that has no Ctrl or Alt). Expected: only the first
    press and the release are passed on ("down up"), the overlay reports the hold, the key is
    not left stuck, and the press after the hold is passed on again in full.
+3. A hotkey with a second key, as Ctrl and Alt are for the real one; left Shift stands in for
+   them here (for about a fifth of a second Windows takes Shift for held, so do not type just
+   then). Expected: nothing of the talk key is passed on, during the hold Windows takes Shift
+   for up although it is still held (so a click would be a plain click), and the second hold,
+   begun without letting go of Shift, is still recognised.
 """
 import json
 import os
@@ -68,29 +73,33 @@ def wait_ready(timeout=40):
     return False
 
 
-def round_(keep, expected, what):
-    """Hold the key once with the overlay set to `keep`; True if other programs saw `expected`."""
-    send(type="config", opaque=True, still=True, mode="dots", focus_wheel="", hotkeys={"talk": "F20"},
+def round_(keep, expected, what, talk="F20", modifier=0, hidden=None):
+    """Hold the key once with the overlay set to `keep`; True if other programs saw `expected`
+    (and, with a `modifier` held as well, if Windows took that key for `hidden` during the hold)."""
+    send(type="config", opaque=True, still=True, mode="dots", focus_wheel="", drag_keys="", hotkeys={"talk": talk},
          keep_talk_key="off", monitor=0, corner="bottom-right", offset_x=420, offset_y=260)
     for m in drain(1.0):
         if m.get("type") == "error":
             print("  overlay error:", m.get("message"))
     watcher = subprocess.Popen(
         ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", win(f"{ROOT}/tests/keys_check.ps1"),
-         "-Repeats", str(REPEATS), "-Delay", "1500"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd="/mnt/c/Windows")
+         "-Repeats", str(REPEATS), "-Delay", "1500", "-Modifier", str(modifier)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd="/mnt/c/Windows")
     if watcher.stdout.readline().strip() != "hooked":
         print("  !! the watcher did not start:", watcher.stderr.read()[:300])
         return False
     send(type="config", keep_talk_key=keep)  # the overlay's hook, if it puts one in now, comes after the watcher's
     out, err = watcher.communicate(timeout=60)
-    seen, _, state = out.strip("\r\n").partition(" | ")  # nothing passed on leaves the left side empty
+    seen, state, held = (out.strip("\r\n").split(" | ") + ["", ""])[:3]  # nothing passed on leaves the first part empty
     hotkeys = [m.get("name") for m in drain(1.0) if m.get("type") == "hotkey"]
     print(f"  {what}")
     print("    the overlay passed on:", seen or "(nothing)", err.strip()[:300])
     print("    the overlay reported:", " ".join(hotkeys) or "(nothing)")
     print("    the key afterwards:", state)
-    good = seen == expected and hotkeys == ["talk", "talk_end"] * 2 and state == "released"
-    print("    OK" if good else f"    !! expected to be passed on: {expected or '(nothing)'}")
+    if modifier:
+        print("    the other key during the hold, as Windows had it:", held)
+    good = seen == expected and hotkeys == ["talk", "talk_end"] * 2 and state == "released" and (hidden is None or held == hidden)
+    print("    OK" if good else f"    !! expected to be passed on: {expected or '(nothing)'}" + (f", the other key {hidden}" if hidden else ""))
     return good
 
 
@@ -100,7 +109,10 @@ try:
         sys.exit("  !! the overlay did not start")
     first = round_("always", "", "hook in before the key goes down:")
     second = round_("held", "down up down up", "hook in only once the hold has begun:")
-    ok = first and second
+    # Left Shift stands in for Ctrl and Alt: held before the talk key and let go after two holds.
+    third = round_("held", "", "a hotkey with a second key (Shift+F20), which is hidden while talking:",
+                   talk="Shift+F20", modifier=0xA0, hidden="up")
+    ok = first and second and third
 finally:
     try:
         proc.stdin.close()
