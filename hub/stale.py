@@ -6,27 +6,30 @@ been mended and committed two minutes earlier, because the hub was still running
 """
 from __future__ import annotations
 
+import hashlib
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
-def times(folder: str = HERE, endings: tuple = (".py",)) -> dict:
-    """When each source file in `folder` was last changed."""
+def prints(folder: str = HERE, endings: tuple = (".py",)) -> dict:
+    """What each source file in `folder` holds, as a fingerprint. Not its time of change: a file
+    that was only touched, or rewritten with the same text by a checkout, has not changed."""
     found = {}
     try:
         for name in os.listdir(folder):
             if name.endswith(endings):
-                found[name] = os.path.getmtime(os.path.join(folder, name))
+                with open(os.path.join(folder, name), "rb") as f:
+                    found[name] = hashlib.sha1(f.read()).hexdigest()
     except OSError:
         pass
     return found
 
 
-LOADED = times()  # taken when the hub starts, which is when it reads its code
+LOADED = prints()  # taken when the hub starts, which is when it reads its code
 
 
 def changed(loaded: dict | None = None, folder: str = HERE, endings: tuple = (".py",)) -> list:
     """The files that are not as they were then: edited, added or removed."""
-    loaded, now = LOADED if loaded is None else loaded, times(folder, endings)
+    loaded, now = LOADED if loaded is None else loaded, prints(folder, endings)
     return sorted(name for name in set(loaded) | set(now) if loaded.get(name) != now.get(name))

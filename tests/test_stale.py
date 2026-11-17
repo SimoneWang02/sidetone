@@ -21,10 +21,12 @@ class WhatChanged(unittest.TestCase):
         for name in ("a.py", "b.py", "gone.py", "notes.txt"):
             with open(os.path.join(folder, name), "w") as f:
                 f.write("x")
-        then = stale.times(folder)
+        then = stale.prints(folder)
         self.assertEqual(sorted(then), ["a.py", "b.py", "gone.py"])
         self.assertEqual(stale.changed(then, folder), [])
-        os.utime(os.path.join(folder, "b.py"), (1, 1))
+        os.utime(os.path.join(folder, "a.py"), (1, 1))  # only touched: the same text
+        with open(os.path.join(folder, "b.py"), "w") as f:
+            f.write("y")
         os.unlink(os.path.join(folder, "gone.py"))
         with open(os.path.join(folder, "new.py"), "w") as f:
             f.write("x")
@@ -37,9 +39,10 @@ class WhatChanged(unittest.TestCase):
                 f.write("x")
         window = overlay.Overlay(os.path.join(folder, "overlay.ps1"), {})
         self.assertFalse(window.outdated())  # not started: nothing is running
-        window.proc, window._source = object(), stale.times(folder, overlay.SOURCES)
+        window.proc, window._source = object(), stale.prints(folder, overlay.SOURCES)
         self.assertFalse(window.outdated())
-        os.utime(os.path.join(folder, "Overlay.cs"), (1, 1))
+        with open(os.path.join(folder, "Overlay.cs"), "w") as f:
+            f.write("y")
         self.assertTrue(window.outdated())
 
 
@@ -55,11 +58,11 @@ class TheStatusCommand(HubCase):
                               text=True, env=env, timeout=10).stdout
 
     def test_it_is_quiet_when_nothing_changed(self):
-        with mock.patch.object(stale, "LOADED", stale.times()):  # as if started this instant: another session may be editing
+        with mock.patch.object(stale, "LOADED", stale.prints()):  # as if started this instant: another session may be editing
             self.assertNotIn("note:", self.status())
 
     def test_it_names_the_files_a_restart_would_bring_in(self):
-        with mock.patch.object(stale, "LOADED", {**stale.LOADED, "hub.py": 1.0, "tts.py": 1.0}):
+        with mock.patch.object(stale, "LOADED", {**stale.LOADED, "hub.py": "older", "tts.py": "older"}):
             said = self.status()
         self.assertIn("note: the hub is running older code than is on disk (hub.py, tts.py)", said)
         self.assertIn("claude-speaks hub restart", said)

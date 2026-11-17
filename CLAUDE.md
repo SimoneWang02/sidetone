@@ -442,7 +442,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Installed on the author's machine; **nobody has switched terminals with it yet**. Limit:
   VS Code reports a change of the active terminal, not keyboard focus, so clicking back
   into the terminal you were last in reports nothing.
-- `hub/stale.py`: the hub notes when each of its own files was last changed as it starts,
+- `hub/stale.py`: the hub takes a fingerprint of each of its own files as it starts (of
+  what they hold, not their time of change, so a file that was only touched does not count),
   and the overlay does the same for its source when a window is started. `/state` carries
   `outdated` (`hub`: the files that differ now; `overlay`: true or false), and
   `claude-speaks status` turns it into a note with the command that applies the change. A

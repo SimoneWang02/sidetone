@@ -194,7 +194,7 @@ class Overlay:
         if self.proc or time.monotonic() - self._started < RETRY_AFTER:
             return
         self._started = time.monotonic()
-        self._source = stale.times(os.path.dirname(self.script), SOURCES)
+        self._source = stale.prints(os.path.dirname(self.script), SOURCES)
         try:
             self.proc = subprocess.Popen(
                 command(self.script, self.log), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
