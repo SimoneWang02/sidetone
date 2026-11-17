@@ -262,6 +262,17 @@ class OverlayFeed(HubCase):
         row = self.overlay.of("state")[-1]["sessions"][0]
         self.assertEqual(row["title"], "Fix the flaky login test, then run the\u2026")
 
+    def test_no_spoken_label_while_the_overlay_shows_who_talks(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/alpha"))
+        hub.on_event(ev("UserPromptSubmit", sid="b", cwd="/w/beta"))
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/alpha", delta=tag("Tests pass.")))
+        self.assertEqual(self.spoken(), ["Tests pass."])
+        self.engine.spoken.clear()
+        self.overlay.ready = False  # the window is gone: the voice has to say who it is again
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/beta", delta=tag("Build is green.")))
+        self.assertEqual(self.spoken(), ["beta. Build is green."])
+
     def test_the_voice_wave_goes_to_the_session_that_speaks(self):
         class FakeMeter:
             def start(self, on_levels):

@@ -21,7 +21,8 @@ its own spoken line as the first line of its reply.
   0.3 s after the line is written (measured on the speakers' own output), often before the
   rest of the reply has finished printing.
 - **Several sessions take turns.** One line at a time. "Needs you" goes before "done". Each
-  project has its own voice, and its name is spoken first when more than one session is active.
+  project has its own voice. The overlay shows who is talking; without an overlay the
+  project's name is spoken first when more than one session is active.
 - **A glass overlay** (Windows): a slim bar of frosted glass with one status light per session:
   a spinner while it works, a pulsing amber light when it needs you, a check when it is done.
   Move the mouse onto it and a panel unfolds beside it with each session's name, a short
@@ -180,7 +181,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-74 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+75 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
 `python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
 view. It captures only the overlay's own rectangles, and shows the see-through glass over a

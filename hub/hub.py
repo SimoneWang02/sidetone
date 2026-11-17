@@ -89,7 +89,7 @@ class Config:
     speed: float = 1.1
     voices: dict = field(default_factory=dict)  # project name -> voice
     voice_pool: list = field(default_factory=lambda: list(VOICE_POOL))
-    label: str = "auto"  # auto (only with several sessions) | always | never
+    label: str = "auto"  # auto (several sessions and no overlay to show who talks) | always | never
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
     # Claude Code sends a notification once a permission prompt has waited about 6 s. A request
@@ -870,11 +870,13 @@ class Hub:
         return said == speech
 
     def _label_for(self, u: Utterance) -> str:
-        """The spoken project name, used only when it helps tell sessions apart."""
+        """The spoken project name, used only when nothing else tells sessions apart: several
+        are active and there is no overlay on screen showing who is talking."""
         with self.lock:
             s = self.sessions.by_id.get(u.session)
             several = self.sessions.active_count() > 1
-        if s is None or self.cfg.label == "never" or (self.cfg.label == "auto" and not several):
+        shown = bool(self.overlay) and getattr(self.overlay, "ready", True)
+        if s is None or self.cfg.label == "never" or (self.cfg.label == "auto" and (shown or not several)):
             return ""
         return re.sub(r"[-_.]+", " ", s.name).strip()
 

@@ -100,7 +100,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   one line at a time; needs-you > failed > done; a session's newer line replaces its queued one;
   lines older than 60 s are dropped; a new prompt silences that session.
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
-  was active in the last 15 min. Voice = stable hash of the name over a pool of 13 clearer
+  was active in the last 15 min and no overlay is on screen (the author, 2026-11-17: "i dont
+  think it's necessary to say the project folder whenever it speaks"; the bubble and the voice
+  already say who it is). `label: always` brings it back. Voice = stable hash of the name over a pool of 13 clearer
   English Kokoro voices, never one a live session already uses.
 - `hub/overlay.py` + `overlay/Overlay.cs` (+ `overlay/overlay.ps1` as fallback): the on-screen
   overlay, a child process of the hub (only where `powershell.exe` exists). `overlay.build()`
@@ -198,7 +200,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 74 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 75 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
