@@ -61,6 +61,14 @@ real keys yet.
       away from the screen, the voices alone may not be enough to tell them apart.
 - [ ] `hub/hub.py` is over 1,100 lines. Split it (permission requests, push-to-talk, the
       HTTP layer) before adding much more.
+- [ ] The overlay gets in the way of a game (the author, 2026-11-17, by voice): when the
+      mouse passes over the bar while playing, the bar reacts and takes the mouse (it
+      unfolds, and a press there starts a drag instead of reaching the game). Their
+      suggestion: the bar only answers to the mouse while `Ctrl+Alt` is held; otherwise the
+      mouse goes straight through to what is underneath. As a setting, with choices such as
+      always, only with the keys held, and (an idea, not asked for) only with the keys held
+      while a full-screen program is in front. The keys already bring the panel out, so
+      nothing is lost; dragging the bar would then also need the keys.
 - [ ] The picture check can catch the live overlay when the two overlap on screen.
 - [ ] `install.sh` has only been run in throwaway folders, never on a clean machine with the
       model download.
