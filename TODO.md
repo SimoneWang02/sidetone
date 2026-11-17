@@ -94,6 +94,11 @@ real keys yet.
       plain Backspace for the program in front and takes nothing back, though the time to
       take words back runs to about 6 s after letting go. Not fixed (read from the code
       2026-11-17, not tried): keep believing them held while the cancel key can still act.
+      Mended the same evening: the overlay goes on believing them held for as long as the
+      "sent" or "waiting" sign of those words is up, which is as long as they can be taken
+      back. Compiled and live; not pressed by anyone. To try: speak, let go of Space only,
+      keep `Ctrl+Alt` down, wait for "sent", count to three and press Backspace: it should
+      say "Taken back" and type nothing in the window in front.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
       which was right, since nothing had been said since the last message. Not heard yet:
       a real replay, pressed after a session spoke while the author was away from it.
@@ -188,6 +193,12 @@ real keys yet.
       move cursor shows on the bar and it can be dragged; without them there is no move
       cursor and clicks and the wheel go to the window underneath. The author, 2026-11-17:
       "Oh yes, it works. Now perfect." The new place was saved to `config.json`.
+- [ ] A session's first spoken words before anything was typed to it (mended 2026-11-17:
+      the first session after the hub had gone away had no listener until its first
+      prompt; the author spoke to it twice and asked "why are you not receiving audio
+      inputs?"). Tests only. To try: close every session, wait for the hub to go
+      (`claude-speaks hub stop` does it at once), open one session and speak to it
+      without typing.
 - [ ] Sessions started from the VS Code extension showing up in the bar
 - [x] The bar no longer getting taller when the mouse is on it while a long sentence is
       said: since 2026-11-17 the sentence is cut to one line in the details (`row_lines`).
@@ -560,15 +571,17 @@ Smaller ideas:
 - [ ] The terminal tint on a light theme: the color is mixed into `terminal.background`,
       which defaults to VS Code's dark theme. Read the editor's theme, or offer a light
       default.
-- [ ] The focus follows the terminal you go to (the author's idea, 2026-11-17: "if I focus
+- [x] The focus follows the terminal you go to (the author's idea, 2026-11-17: "if I focus
       on a terminal it would be great to automatically select that" session). Built the
       same day as a small VS Code extension (`vscode/`, `claude-speaks vscode install`):
       VS Code tells it which terminal became the active one, it tells the hub that
       terminal's process, and the hub gives the focus to the session running there
       (`terminal follow off` turns it off). Installed on the author's machine and seen
       starting in VS Code's log; the real extension code is tested against a real hub
-      with a stand-in for the editor. **Not tried by anyone: actually switching terminals.**
-      Open:
+      with a stand-in for the editor. In use since: by the evening of the same day
+      `hub.log` had 79 lines "focus on ...: its terminal came to the front" from the
+      author going from terminal to terminal. They have not said in words that it is right.
+- [ ] What following the terminal does not do yet:
       - VS Code only reports a change of the active terminal. Clicking back into the
         terminal you were last in (from the editor, or after another session spoke and
         took the focus) reports nothing, so the focus stays where it was. No extension

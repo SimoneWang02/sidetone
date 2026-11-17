@@ -522,7 +522,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   a hold begins the overlay sends key-ups for the talk hotkey's Ctrl, Alt and Shift (marked
   as its own, after a tap of an unused key so that Alt coming up opens no menu), and keeps
   counting them as down itself (`Pressed`) until their real release reaches the hook, or
-  for 3 s after the hold with no sign of them. While they are hidden, Windows no longer
+  for 3 s after the hold with no sign of them (longer while the "sent" or "waiting" sign
+  of the words is up, so that Backspace with the keys never let go still takes them back;
+  `WatchTalkKeys`, 2026-11-17, not pressed by anyone yet). While they are hidden, Windows no longer
   matches the other hotkeys, so the hook does (`claims`): cancel, repeat, the list and so on
   still work without letting go first, as does a second press of the talk key and the
   focus wheel. Windows is only ever told "up", never "down", so nothing can be left stuck

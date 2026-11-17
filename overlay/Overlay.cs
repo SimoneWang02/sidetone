@@ -1574,7 +1574,12 @@ namespace ClaudeSpeaks
         void WatchTalkKeys()
         {
             // Talking is over and nothing has shown those keys to be held still: take Windows' word again.
-            if (!holding && masked.Count > 0 && Ui.Now > maskedUntil) masked.Clear();
+            // Not while words that just went out can still be taken back: with the keys never let
+            // go, Windows takes them for up, and Backspace would be a plain one for the program
+            // in front. The hub's steps say how long that is; a quarter of a minute at most.
+            bool unsent = (talkState == "transcribing" || talkState == "ready" || talkState == "sent" || talkState == "queued")
+                && Ui.Now < talkUntil && Ui.Now < maskedUntil + 12;
+            if (!holding && masked.Count > 0 && Ui.Now > maskedUntil && !unsent) masked.Clear();
             bool ahead = talkKey != 0 && (keepTalk == "always" || (keepTalk == "held" && talkMods != 0 && Mods(talkMods, false)));
             KeepKey(keepTalk != "off" && (holding || ahead || masked.Count > 0));
             // Should the release ever get past us, the repeats stopping says the key is up.
