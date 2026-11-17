@@ -205,8 +205,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   it, shared by the bubble and the row and moved once per frame by `Ui.MoveMicInk` while the
   step is `listening`; the glint is a gradient placed in pixels from the start of the line,
   240 px of travel, which fits these words and would need measuring for longer ones. Seen in
-  pictures taken while it ran, all three styles, in the white and in a color of one's own;
-  **not seen by the author yet**.
+  pictures taken while it ran, all three styles, in the white and in a color of one's own.
+  The author saw the glint on the white words the same day: "I think it's good. Yeah, I
+  like it."
 - Titles: `Session.title` is Claude Code's own name for the session (the `name` field of its
   session file, a slug such as `eyes-free-claude-speaks`, turned into words). Claude Code
   writes that name within a second of the first typed prompt, but a session started by voice
