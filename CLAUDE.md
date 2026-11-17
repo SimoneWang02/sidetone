@@ -70,10 +70,9 @@ seen it yet**):
 
 Decisions: overlay is Windows-native (must be usable over games; no browser chrome);
 sessions are told apart by a spoken label plus a stable voice per project.
-Later: plugin packaging, a demo video with sound for the README, short sounds, stereo placement,
-a "what did I miss" key, and a settings panel
-where every voice can be customized (the author's idea; today the same choices live in
-`config.json` as `voices` and `voice_pool`).
+What is left (things to try by hand, open decisions, rough edges, ideas not started) is kept in
+`TODO.md`; the author asked for that list to live in its own file. Update it when something
+on it is done or a new idea comes up.
 
 ## How it works
 
