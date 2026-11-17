@@ -34,29 +34,32 @@ namespace ClaudeSpeaks
 
         public static readonly FontFamily Symbols = new FontFamily("Segoe UI Symbol");
         public static readonly Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00), Mic = Color.FromRgb(0xFF, 0x6E, 0x8A);
-        public static readonly Brush Dim = Paint("#C8FFFFFF"), Faint = Paint("#8CFFFFFF"), MicInk = Paint("#FFFF8FA6");
+        public static readonly Brush Dim = Paint("#C8FFFFFF"), Faint = Paint("#8CFFFFFF"), MicInk = Paint("#FFFF8FA6"), LiveInk = Paint("#FFFF8FA7");
         // How many lines a sentence may take in a session's row of the details. With one, every row
         // is as high as its light and the bar never changes size; with more, a long sentence makes
         // its row higher and the bar stretches so that the lights stay level with their rows.
         public static int RowLines = 1;
         public static bool SignInLight = true;  // where push-to-talk's sign goes: in the session's light, or at the right of its line
 
-        // "Release to send" moves while you hold the talk key (the author asked for "an animation
-        // on the text"): shimmer = a glint of light runs along the words, then rests a moment |
-        // pulse = the words breathe between soft and full | still.
+        // The overlay's own words about push-to-talk move ("Release to send", "Working out what
+        // you said...", "In focus", why nothing was sent; the author asked for "an animation on
+        // the text", then for more of it and on all of these and not only the first):
+        // shimmer = a glint of light runs along the words, then rests a moment |
+        // pulse = the words breathe between soft and full | still. Your own words stay plain.
+        // MicInk and LiveInk are only names for "this moving ink", in bold and in normal weight.
         // Its color is a soft white with a white glint, the color of no session: it was the
         // microphone's pink until the author saw it look like the name of a session whose own
         // color is nearly that pink, and chose to change the words and keep the name. A color of
         // your own (talk_text_color, "#RRGGBB") is used as it is, with a lighter glint.
         public static string TalkText = "shimmer";
         public static bool Motionless;  // for pictures
-        static Color askInk = Color.FromArgb(0xA8, 0xFF, 0xFF, 0xFF), askGlint = Colors.White;
+        static Color askInk = Color.FromArgb(0x8C, 0xFF, 0xFF, 0xFF), askGlint = Colors.White;
         static readonly LinearGradientBrush shine = MakeShine();
-        static readonly SolidColorBrush breath = new SolidColorBrush(askInk), plain = new SolidColorBrush(Colors.White);
+        static readonly SolidColorBrush breath = new SolidColorBrush(askInk), plain = new SolidColorBrush(Color.FromArgb(0xDC, 0xFF, 0xFF, 0xFF));
 
         static LinearGradientBrush MakeShine()
         {
-            var brush = new LinearGradientBrush { MappingMode = BrushMappingMode.Absolute, StartPoint = new Point(-90, 0), EndPoint = new Point(0, 0) };
+            var brush = new LinearGradientBrush { MappingMode = BrushMappingMode.Absolute, StartPoint = new Point(-150, 0), EndPoint = new Point(0, 0) };
             brush.GradientStops.Add(new GradientStop(askInk, 0));
             brush.GradientStops.Add(new GradientStop(askGlint, 0.5));
             brush.GradientStops.Add(new GradientStop(askInk, 1));
@@ -65,7 +68,7 @@ namespace ClaudeSpeaks
 
         public static void SetTalkColor(string hex)
         {
-            Color soft = Color.FromArgb(0xA8, 0xFF, 0xFF, 0xFF), glint = Colors.White, full = Colors.White;
+            Color soft = Color.FromArgb(0x8C, 0xFF, 0xFF, 0xFF), glint = Colors.White, full = Color.FromArgb(0xDC, 0xFF, 0xFF, 0xFF);
             try
             {
                 if (hex != null && hex.Length > 0)
@@ -88,16 +91,29 @@ namespace ClaudeSpeaks
             get { return Motionless || TalkText == "still" ? plain : TalkText == "pulse" ? breath : (Brush)shine; }
         }
 
-        // One frame of that motion. The glint takes a second to cross the words and stays away for half of one.
+        // How far the glint has to travel: about the width of the words it runs along.
+        public static double GlintOver = 110;
+        const double GlintWide = 150, GlintSpeed = 330, GlintRest = 0.3;  // pixels, pixels a second, seconds away
+
+        public static void GlintFor(string words)
+        {
+            int longest = 0;
+            foreach (string line in (words ?? "").Split('\n')) longest = Math.Max(longest, line.Length);
+            GlintOver = Math.Max(60, Math.Min(300, longest * 7.2));
+        }
+
+        // One frame of that motion. The glint crosses the words at one speed whatever their length,
+        // and is back a moment after it left.
         public static void MoveMicInk(double now)
         {
             if (Motionless) return;
             if (TalkText == "pulse") breath.Color = Mix(askInk, askGlint, 0.5 - 0.5 * Math.Cos(now * 2 * Math.PI / 1.4));
             else if (TalkText == "shimmer")
             {
-                double at = -90 + 240 * Clamp((now % 1.5) / 1.0);  // left edge of the glint, in pixels from the start of the line
+                double travel = GlintOver + GlintWide, takes = travel / GlintSpeed;
+                double at = -GlintWide + travel * Clamp((now % (takes + GlintRest)) / takes);  // left edge of the glint, in pixels from the start of the line
                 shine.StartPoint = new Point(at, 0);
-                shine.EndPoint = new Point(at + 90, 0);
+                shine.EndPoint = new Point(at + GlintWide, 0);
             }
         }
 
@@ -753,7 +769,9 @@ namespace ClaudeSpeaks
             line2.Text = talk ? TalkText : saying ? FlashText : rowText;
             line2.TextWrapping = saying && Ui.RowLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap;
             line2.MaxHeight = 16.7 * Ui.RowLines;
-            line2.Foreground = talk ? (talkInk == Ui.MicInk ? Ui.MicLive : talkInk) : saying ? Brushes.White : Ui.Dim;
+            bool live = talkInk == Ui.MicInk || talkInk == Ui.LiveInk;
+            if (talk && live) Ui.GlintFor(TalkText);
+            line2.Foreground = talk ? (live ? Ui.MicLive : talkInk) : saying ? Brushes.White : Ui.Dim;
             line2.FontWeight = talk && talkInk == Ui.MicInk ? FontWeights.SemiBold : FontWeights.Normal;
             meta.Text = metaText;
             meta.Visibility = saying || metaText.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -1296,7 +1314,10 @@ namespace ClaudeSpeaks
                 bubbleBadge.Show(Ui.SignInLight && !orphan ? "" : kind);  // with no session there is no light to put it in
                 bubbleLine2.Text = body;
                 bubbleLine2.Visibility = body.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-                bubbleLine2.Foreground = !mine ? Brushes.White : listening ? Ui.MicLive : TalkInk();
+                Brush ink = TalkInk();
+                bool live = mine && (ink == Ui.MicInk || ink == Ui.LiveInk);
+                if (live) Ui.GlintFor(body);
+                bubbleLine2.Foreground = !mine ? Brushes.White : live ? Ui.MicLive : ink;
                 bubbleLine2.FontWeight = mine && talkState == "listening" ? FontWeights.SemiBold : FontWeights.Normal;
                 bubbleStrip.Wave = listening ? mic : orphan ? mic : found.Wave;
                 bubbleStrip.Tint = mine ? Ui.Mic : Ui.Tint(found.State);
@@ -1339,7 +1360,7 @@ namespace ClaudeSpeaks
             if (talkState.Length > 0)
             {
                 again = true;
-                if (talkState == "listening") Ui.MoveMicInk(now);
+                Ui.MoveMicInk(now);
                 if (now >= talkUntil) { talkState = ""; expired = true; }
             }
             if (now < wheelUntil) again = true;
@@ -1933,12 +1954,13 @@ namespace ClaudeSpeaks
             }
         }
 
-        // How those words are written: what to do stands out (Ui.MicInk stands for "the ink of
-        // Ui.MicLive", which moves), your own words are white, and a note about what happened is dim.
+        // How those words are written: your own words are white, and the overlay's words about
+        // the step (what to do, what it is doing, what went wrong) are in the moving ink, with
+        // what to do in bold.
         Brush TalkInk()
         {
             if (talkState == "listening") return Ui.MicInk;
-            return talkState == "ready" || talkState == "sent" || talkState == "queued" ? Brushes.White : Ui.Dim;
+            return talkState == "ready" || talkState == "sent" || talkState == "queued" ? Brushes.White : Ui.LiveInk;
         }
 
         // A permission prompt or question stays on screen until it is answered: the hotkeys act on it.

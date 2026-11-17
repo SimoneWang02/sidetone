@@ -207,7 +207,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   240 px of travel, which fits these words and would need measuring for longer ones. Seen in
   pictures taken while it ran, all three styles, in the white and in a color of one's own.
   The author saw the glint on the white words the same day: "I think it's good. Yeah, I
-  like it."
+  like it." Minutes later they asked for "more" of it and for it to be "consistent": "put
+  a glint to all action labels", naming "Working out what you said". Read as: every line
+  the overlay itself writes about a push-to-talk step (`listening`, `transcribing`,
+  `focus`, `failed`), not the user's own quoted words, which stay plain white, and not
+  what a session is doing. `TalkInk` gives those steps `Ui.LiveInk` (the same moving ink in
+  normal weight; `Ui.MicInk` is the bold one for "Release to send"). "More": the glint is
+  wider (150 px), the resting white softer so it shows, it is back 0.3 s after it left,
+  and it travels at one speed over the real length of the words (`Ui.GlintFor`, estimated
+  from the number of letters). Seen in pictures; **the author has not seen this round**.
 - Titles: `Session.title` is Claude Code's own name for the session (the `name` field of its
   session file, a slug such as `eyes-free-claude-speaks`, turned into words). Claude Code
   writes that name within a second of the first typed prompt, but a session started by voice
