@@ -173,6 +173,18 @@ Smaller ideas:
 - [ ] Left or right ear per session
 - [ ] Stay quiet for the session whose terminal is in front
 - [ ] A key that jumps to the terminal of the session in focus
+- [ ] Mark the terminal of the session that is speaking (the author, 2026-11-17, with four
+      terminals open in VS Code: "I cannot distinguish which"). Checked the same day: every
+      session's terminal can be found from its process and written to by the hub (five
+      sessions, each on its own terminal, all inside VS Code). Not tried: what to write.
+      - ring that terminal's bell when its line starts: VS Code should show a bell sign on
+        the tab for a moment. No extension needed; the sign is small and short.
+      - write the session's name and state into the tab title. VS Code only shows such a
+        title when its tab title setting includes the sequence, and Claude Code sets a
+        title of its own that may overwrite it.
+      - a small VS Code extension that gives each tab the session's color from the overlay
+        and can bring the speaking terminal to the front. The only way to color a tab, and
+        it would also give the jump key above. The most work.
 - [ ] A phone notification when a session needs you and you are away
 - [ ] Spoken summaries in the language you spoke (they are always English today)
 - [ ] Running the speech model on the graphics card to make transcription faster
