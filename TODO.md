@@ -235,10 +235,17 @@ real keys yet.
       overlay shows "waiting" for 3.5 s only; the author took it as not heard (2026-11-17).
       Keep the waiting sign on that session's light until the words are delivered. (Done
       2026-11-17: a waiting message has its own sound, or "Queued." with `talk_feedback: voice`.)
-- [ ] Some push-to-talk holds record sound and come back as "nothing heard". Some were
+- [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next
       step: keep the last failed recording (opt-in) so it can be examined.
+      Explained 2026-11-17 by the author: "sometimes I just click ... and say nothing. So I
+      guess that's why they come out as like no text." The log agrees: of the 9 holds that
+      came back empty, 6 were in the night between 01:00 and 03:00, when Italian was still
+      being dropped by the English-only model, and the 3 since then (out of 124 holds)
+      lasted 0.6 to 1.8 s with a peak level of 0.15 or less, which is a press without
+      speech. So nothing was built. If a hold with real
+      speech comes back empty again, the recording keeper is the next step.
 - [ ] A misheard sentence is sent straight to the session: there is no pause and no confirming
       tap any more (the author's choice). `followup_delay` and `followup_confirm` bring them back.
 - [ ] A permission prompt that waited more than six seconds and is then approved in the
