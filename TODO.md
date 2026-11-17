@@ -90,8 +90,10 @@ real keys yet.
       release are both kept back, and tried again by the author: "It works. It works.
       Nice." Known gap: Space pressed in the very same instant as Ctrl and Alt can still
       pause the video on release.
-- [ ] `Ctrl+Alt+L`: keeps the details out, and puts them away again (on the list of things
-      the author had not pressed yet in `CLAUDE.md`, but never on this one)
+- [x] `Ctrl+Alt+L`: keeps the details out, and puts them away again (on the list of things
+      the author had not pressed yet in `CLAUDE.md`, but never on this one). The author,
+      2026-11-17, told to start with this one of five: "Oh, yeah, that works." Taken as
+      this key; they did not name it.
 - [ ] The last lines the sessions said, shown under the rows while the details are kept out
       with `Ctrl+Alt+L` and the mouse rests on them
 - [ ] A quick tap of the talk key: the focus goes to the next session, without recording
