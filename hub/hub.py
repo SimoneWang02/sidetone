@@ -28,6 +28,7 @@ import claude_sessions  # noqa: E402
 import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
 import sounds as sounds_mod  # noqa: E402
+import stale  # noqa: E402
 import stt  # noqa: E402
 import terminal as terminal_mod  # noqa: E402
 from state import (FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
@@ -466,7 +467,8 @@ class Hub:
     def snapshot(self) -> dict:
         with self.lock:
             sessions = [s.snapshot() for s in self.sessions.by_id.values()]
-        return {"sessions": sessions, "muted": self._muted(), **self.speech.snapshot()}
+        outdated = {"hub": stale.changed(), "overlay": bool(getattr(self.overlay, "outdated", lambda: False)())}
+        return {"sessions": sessions, "muted": self._muted(), "outdated": outdated, **self.speech.snapshot()}
 
     # --- catching up -------------------------------------------------------------------------
 

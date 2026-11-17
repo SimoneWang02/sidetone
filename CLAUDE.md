@@ -442,6 +442,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Installed on the author's machine; **nobody has switched terminals with it yet**. Limit:
   VS Code reports a change of the active terminal, not keyboard focus, so clicking back
   into the terminal you were last in reports nothing.
+- `hub/stale.py`: the hub notes when each of its own files was last changed as it starts,
+  and the overlay does the same for its source when a window is started. `/state` carries
+  `outdated` (`hub`: the files that differ now; `overlay`: true or false), and
+  `claude-speaks status` turns it into a note with the command that applies the change. A
+  file another session is still working on counts too, so the note is a reason to look, not
+  an order to restart.
 - `hub/claude_sessions.py`: reads `~/.claude/sessions/<pid>.json` (pid, sessionId, status
   busy/idle). `Hub.reconcile()` runs every second: idle there but working here means the turn
   was interrupted; a session that had a file and lost it is gone. Undocumented files, so

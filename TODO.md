@@ -277,10 +277,14 @@ real keys yet.
       taken after the sentence was written to the player, and that write waits until the
       player has taken most of it. Take the time before writing. Done 2026-11-17
       (`tests/test_timing.py`); the running hub logs the old way until its next restart.
-- [ ] A hub that is running old code keeps old faults: a fix only counts once the hub was
+- [x] A hub that is running old code keeps old faults: a fix only counts once the hub was
       restarted. On 2026-11-17 a reply was cut by the author's own voice message two minutes
       after that fault was fixed and committed, because the hub had not been restarted yet.
       Say in `claude-speaks status` when the running hub is older than the code on disk.
+      Done 2026-11-17: `status` adds a note naming the hub's files that changed since it
+      started, and one when the overlay on screen is older than its source, each with the
+      command that applies it. It shows from the next hub restart on. Not done: saying it
+      anywhere but in `status` (the overlay could show it).
 - [ ] The picture check can catch the live overlay when the two overlap on screen.
 - [ ] `install.sh` has only been run in throwaway folders, never on a clean machine with the
       model download.

@@ -14,6 +14,10 @@ import threading
 import time
 from typing import Callable
 
+import stale
+
+SOURCES = ("Overlay.cs", "overlay.ps1")  # what the window is made from
+
 DEFAULTS = {
     "enabled": True,
     "mode": "dots",  # dots = only the lights; the details come out under the mouse | list = details always out
@@ -144,6 +148,11 @@ class Overlay:
         self._lock = threading.Lock()
         self._state: dict | None = None  # last state message, replayed when the window (re)starts
         self._started = 0.0
+        self._source: dict = {}  # the overlay's source files as they were when the window was started
+
+    def outdated(self) -> bool:
+        """The window on screen was started from an older source than is on disk now."""
+        return bool(self.proc and self._source and stale.changed(self._source, os.path.dirname(self.script), SOURCES))
 
     @staticmethod
     def available() -> bool:
@@ -185,6 +194,7 @@ class Overlay:
         if self.proc or time.monotonic() - self._started < RETRY_AFTER:
             return
         self._started = time.monotonic()
+        self._source = stale.times(os.path.dirname(self.script), SOURCES)
         try:
             self.proc = subprocess.Popen(
                 command(self.script, self.log), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,

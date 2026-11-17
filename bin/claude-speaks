@@ -61,6 +61,9 @@ case ${1:-} in
   status)
     state=$(hub_get /state) || { echo "hub is not running"; exit 1; }
     jq -r 'if .muted then "voice: off" else "voice: on" end' <<<"$state"
+    # A fix only counts once what runs was restarted.
+    jq -r '(.outdated.hub // []) | if length > 0 then "note: the hub is running older code than is on disk (\(join(", "))); to apply: claude-speaks hub restart" else empty end' <<<"$state"
+    jq -r 'if .outdated.overlay then "note: the overlay is running an older version than is on disk; to apply: claude-speaks overlay restart" else empty end' <<<"$state"
     jq -r 'if (.sessions | length) == 0 then "no sessions" else
         (.sessions[] | [.name, .state, (.activity | if . == "" then "-" else . end),
           (if .tasks_total > 0 then "\(.tasks_done)/\(.tasks_total)" else "-" end), .voice] | @tsv) end' <<<"$state" |
