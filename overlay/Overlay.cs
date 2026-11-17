@@ -799,6 +799,8 @@ namespace ClaudeSpeaks
 
         object[] sessions = new object[0];
         object[] history = new object[0];
+        bool historyAll;  // the history shows every session's lines, not only those of the one under the mouse
+        string historyOf = "";  // the session whose lines the history shows: the one the mouse was on last
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
         string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
@@ -986,6 +988,7 @@ namespace ClaudeSpeaks
                     Ui.RowLines = Math.Max(1, Math.Min(3, (int)Num(msg, "row_lines", Ui.RowLines)));
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
+                    if (msg.ContainsKey("history")) historyAll = Str(msg, "history") == "all";
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
@@ -1037,6 +1040,7 @@ namespace ClaudeSpeaks
                 case "peek":  // open the panel and the history without a mouse (for checking how it looks)
                     peekForced = hover = msg.ContainsKey("on") && Convert.ToBoolean(msg["on"]);
                     peek = peekForced && mode == "list";
+                    historyOf = Str(msg, "over", "");  // as if the mouse were on that session's row
                     Render();
                     break;
                 case "bounds":
@@ -1122,6 +1126,7 @@ namespace ClaudeSpeaks
             bool showHistory = isList && peek && history.Length > 0;
             historyBox.Visibility = showHistory ? Visibility.Visible : Visibility.Collapsed;
             if (showHistory) BuildHistory();
+            if (historyLines.Children.Count == 0) historyBox.Visibility = Visibility.Collapsed;  // that session has said nothing yet
             bool talking = talkState.Length > 0;
             foreach (Row row in order)
                 if (talking && row.Name == talkName) row.SetTalk(TalkKind(), TalkWords(), TalkInk(), talkState == "listening" ? mic : null);
@@ -1336,13 +1341,25 @@ namespace ClaudeSpeaks
             return moving;
         }
 
-        // What sessions said lately, shown in the panel while the cursor rests on it in list mode.
+        // What was said lately, shown in the panel while the cursor rests on it in list mode: the
+        // lines of the session under the mouse (the author hovered another session and expected
+        // its history, not the same lines as before). The session stays chosen while the mouse
+        // moves on to the lines themselves. Before any row was touched it is the one in focus.
+        // With `history: all` it is every session's lines, as it used to be.
         void BuildHistory()
         {
             historyLines.Children.Clear();
+            string of = null;
+            if (!historyAll)
+            {
+                foreach (Row row in order) if (row.Name == historyOf) of = row.Name;
+                if (of == null) foreach (Row row in order) if (row.Focus) of = row.Name;
+            }
             foreach (object o in history)
             {
                 var h = (Dictionary<string, object>)o;
+                if (of != null && Str(h, "name") != of) continue;
+                if (historyLines.Children.Count >= (of != null ? 4 : 6)) break;
                 var line = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 2), FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
                 line.Inlines.Add(new Run(Str(h, "ago") + "  ") { Foreground = Ui.Faint });
                 line.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
@@ -1382,7 +1399,12 @@ namespace ClaudeSpeaks
             }
             bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys)))) && Ui.Now > passUntil;
             if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); Edge(); }
-            if (under != hot) { hot = under; Run(true); }
+            if (under != hot)
+            {
+                hot = under;
+                Run(true);
+                if (hot != null && hot.Name != historyOf) { historyOf = hot.Name; if (peek && wantPeek) Render(); }
+            }
             if (wantHover == hover && wantPeek == peek) return;
             hover = wantHover;
             peek = wantPeek;

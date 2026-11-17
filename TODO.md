@@ -94,8 +94,12 @@ real keys yet.
       the author had not pressed yet in `CLAUDE.md`, but never on this one). The author,
       2026-11-17, told to start with this one of five: "Oh, yeah, that works." Taken as
       this key; they did not name it.
-- [ ] The last lines the sessions said, shown under the rows while the details are kept out
-      with `Ctrl+Alt+L` and the mouse rests on them
+- [x] The last lines the sessions said, shown under the rows while the details are kept out
+      with `Ctrl+Alt+L` and the mouse rests on them. The author, 2026-11-17: "that works",
+      but hovering another session lit it up without showing its history.
+- [ ] The history of the session under the mouse (changed 2026-11-17 on that remark, seen
+      in pictures only): with the details kept out, rest the mouse on one session and
+      then on another; the lines under the rows should change to that session's.
 - [ ] A quick tap of the talk key: the focus goes to the next session, without recording
 - [ ] `Ctrl+Alt+K`: switches between the bar and the island, and back
 - [ ] Push-to-talk in Italian from the first word (so far every Italian recording began in

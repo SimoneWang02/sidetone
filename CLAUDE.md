@@ -309,9 +309,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   out"); `repeat: last` in the settings brings back the last line anyone said. A replayed line
   is tied to its session (`Hub._replay`), so its bubble, voice bars and wave show as they did
   the first time; before, it belonged to no session and nothing showed. Catch-up still says
-  each session's name first (`Utterance.label`). The overlay gets the last 6
-  with each `state` and shows them while the cursor rests on the list (found by polling the
-  cursor position, since the window is click-through).
+  each session's name first (`Utterance.label`). The overlay gets the newest lines with each
+  `state`, up to four of each session, and shows them while the cursor rests on the list
+  (found by polling the cursor position, since the window is click-through). It shows the
+  lines of the session under the mouse (`historyOf`; before a row was touched, the session
+  in focus): the author hovered another session, saw it light up and expected its history
+  (2026-11-17). `overlay.history: all` shows every session's lines mixed, as before.
 - Follow-ups waiting for a busy session are also written to `followups.json` in the run folder
   (owner-only, dropped when over an hour old), because a hub restart lost one for real: the
   author asked a question by voice during a reply, and a restart made while working on the

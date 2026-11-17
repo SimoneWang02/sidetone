@@ -42,6 +42,9 @@ DEFAULTS = {
     # While you talk, hide the talk hotkey's Ctrl and Alt from other programs, so that a click
     # is a plain click and not a Ctrl+Alt+click (which a video player, for one, ignores).
     "talk_frees_keys": True,
+    # What the history under the kept-out details shows: session = the lines of the session the
+    # mouse is on (before it touched one: the session in focus) | all = every session's lines
+    "history": "session",
     # Lines a sentence may take in a session's row of the details: 1 = cut with dots, and the bar
     # never changes size; 2 or 3 = the row grows and the bar stretches to keep lights and rows level.
     "row_lines": 1,

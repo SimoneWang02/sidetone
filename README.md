@@ -173,6 +173,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "talk_frees_keys": true,
     "drag_keys": "Ctrl+Alt",
     "row_lines": 1,
+    "history": "session",
     "hotkeys": { "talk": "Ctrl+Alt+Space", "toggle": "Ctrl+Alt+L" }
   },
   "terminal": {

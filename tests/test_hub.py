@@ -413,6 +413,18 @@ class OverlayFeed(HubCase):
         self.assertEqual([(h["ago"], h["name"], h["text"]) for h in history],
                          [("now", "alpha", "Second."), ("now", "alpha", "First.")])
 
+    def test_history_keeps_some_lines_of_every_session(self):
+        hub = self.make(label="never")
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/web", delta=tag("Page built.")))
+        for n in range(7):  # one session talks a lot
+            hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/api-server", delta=tag(f"Step {n}.")))
+            self.spoken()
+        hub.publish()
+        history = self.overlay.of("state")[-1]["history"]
+        self.assertEqual([(h["name"], h["text"]) for h in history],
+                         [("api-server", "Step 6."), ("api-server", "Step 5."), ("api-server", "Step 4."),
+                          ("api-server", "Step 3."), ("web", "Page built.")])
+
     def test_a_dragged_position_is_saved_for_next_time(self):
         hub = self.make(config_path=os.path.join(tempfile.mkdtemp(prefix="cs-test-"), "nested", "config.json"))
         with self.subTest("existing settings are kept"):

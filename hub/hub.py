@@ -1102,8 +1102,13 @@ class Hub:
                            else ["allow", "deny"] if self.requests else [])
                           + (["cancel"] if self._talking or self._pending or current else []))
             now = time.time()
-            history = [{"ago": _ago(now - e["time"]), "name": e["name"], "color": e.get("color", ""), "text": e["text"]}
-                       for e in list(self.history)[-6:][::-1]]
+            # Newest first, and up to four lines of each session: the overlay shows those of the
+            # session under the mouse, so one that talks a lot must not push the others out.
+            each, history = collections.Counter(), []
+            for e in reversed(self.history):
+                if each[e["name"]] < 4 and len(history) < 24:
+                    each[e["name"]] += 1
+                    history.append({"ago": _ago(now - e["time"]), "name": e["name"], "color": e.get("color", ""), "text": e["text"]})
             new_keys, self._keys = keys != self._keys, keys
             new_rows, self._shown = (rows, history) != self._shown, (rows, history)
         if new_keys:  # claim allow/deny/cancel only while they can do something
