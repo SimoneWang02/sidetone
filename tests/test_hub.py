@@ -870,7 +870,7 @@ class ClaudeCodesOwnRecords(HubCase):
         hub.reconcile()
         self.assertEqual(self.session()["title"], "What is this project about?")
         hub.follow_up("and how do I run the tests", delay=0)  # a spoken prompt is a prompt too
-        self.assertEqual(self.session()["title"], "And how do I run the tests")
+        self.assertTrue(wait_for(lambda: self.session()["title"] == "And how do I run the tests"))
         self.record("s1", "busy", name="project-tour", nameSource="auto")
         hub.reconcile()
         self.assertEqual(self.session()["title"], "Project tour")

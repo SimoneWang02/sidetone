@@ -20,6 +20,8 @@ DEFAULTS = {
     # How the sessions are shown: bar (a column of lights at the side, details beside it) |
     # island (a row of lights at the top middle of the screen, details dropping down from it)
     "layout": "bar",
+    "island_x": 0.5,  # the island's own place: where its middle is across the screen (0 = left, 1 = right)
+    "island_y": 10,  # and how far down from the top, in pixels. Dragging it sets both.
     "monitor": 0,  # 0 = the primary monitor, 1 and up = the others in Windows' order
     "corner": "top-right",  # top-right | top-left | bottom-right | bottom-left
     "offset_x": 12,

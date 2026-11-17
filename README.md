@@ -57,8 +57,9 @@ which one you are on.
 
 - **bar**: a column of lights in one piece of glass at the side of the screen, wherever you
   drag it; the details unfold beside it.
-- **island**: a row of lights at the top middle of the screen, each with a dash of its
-  session's color; the bubble and the details drop down from it.
+- **island**: a row of lights, each with a dash of its session's color, at the top middle of
+  the screen until you drag it somewhere else; the bubble and the details drop down from it
+  (or open upward when it sits in the lower half of the screen).
 
 ## Install
 

@@ -247,7 +247,12 @@ for layout in ("island",):
     send(type="peek", on=True)
     shot(f"{layout}-open", 1.0)
     send(type="peek", on=False)
-send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="bar", **HERE)
+# Dragged to the lower left: it opens upward, and nothing leaves the screen.
+send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="island", island_x=0.03, island_y=1200, **HERE)
+send(type="peek", on=True)
+shot("island-moved-open", 1.0)
+send(type="peek", on=False)
+send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="bar", island_x=0.5, island_y=10, **HERE)
 
 if "--glass" in sys.argv:
     for kind in ("blur", "acrylic"):

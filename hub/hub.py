@@ -570,7 +570,7 @@ class Hub:
 
     def on_overlay(self, msg: dict) -> None:
         if msg.get("type") == "moved":  # dragged to a new place
-            placed = {k: msg[k] for k in ("monitor", "corner", "offset_x", "offset_y") if k in msg}
+            placed = {k: msg[k] for k in ("monitor", "corner", "offset_x", "offset_y", "island_x", "island_y") if k in msg}
             self.place_overlay(False, **placed)  # the window already knows; this saves it
             return
         if msg.get("type") != "hotkey":

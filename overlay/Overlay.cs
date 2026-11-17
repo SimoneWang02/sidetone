@@ -729,6 +729,11 @@ namespace ClaudeSpeaks
         // everything else dropping down from it).
         string layout = "bar";
         bool Island { get { return layout == "island"; } }
+        // The island keeps its own place: where its middle is across the screen (0 to 1), and how
+        // far down from the top. In the lower half of the screen everything opens upward from it.
+        double islandX = 0.5, islandY = 10;
+        bool islandLow;
+        bool Low { get { return Island ? islandLow : corner.StartsWith("bottom"); } }
         bool handling;
         readonly Queue<string> waiting = new Queue<string>();
         // Push-to-talk: what is going on (listening, transcribing, sent, ...), for which session,
@@ -890,6 +895,8 @@ namespace ClaudeSpeaks
                     opaque = msg.ContainsKey("opaque") && Convert.ToBoolean(msg["opaque"]);
                     still = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
                     glass = Str(msg, "glass", glass);
+                    islandX = Num(msg, "island_x", islandX);
+                    islandY = Num(msg, "island_y", islandY);
                     string wanted = Str(msg, "layout", layout);
                     if (wanted != "island") wanted = "bar";
                     if (wanted != layout) { layout = wanted; ApplyLayout(); }
@@ -993,7 +1000,7 @@ namespace ClaudeSpeaks
         // them when the bar hangs from the bottom of the screen.
         void Stack()
         {
-            bool bottom = corner.StartsWith("bottom");
+            bool bottom = Low;
             var parts = new List<UIElement> { rowsPanel, emptyLine, requestBox, bannerBox, historyBox };
             if (bottom) parts.Reverse();
             sections.Children.Clear();
@@ -1286,7 +1293,7 @@ namespace ClaudeSpeaks
                     along -= room;
                 }
             }
-            bool wantCatch = (onBar || moving) && !Island && Ui.Now > passUntil;  // the island stays in the middle: nothing to drag
+            bool wantCatch = (onBar || moving) && Ui.Now > passUntil;
             if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); Edge(); }
             if (under != hot) { hot = under; Run(true); }
             if (wantHover == hover && wantPeek == peek) return;
@@ -1382,7 +1389,7 @@ namespace ClaudeSpeaks
         void BeginDrag()
         {
             CursorPoint cursor;
-            if (dragging || Island || !GetCursorPos(out cursor)) return;
+            if (dragging || !GetCursorPos(out cursor)) return;
             grabbedAt = rail.Area();
             grabX = cursor.X - grabbedAt[0];
             grabY = cursor.Y - grabbedAt[1];
@@ -1479,6 +1486,17 @@ namespace ClaudeSpeaks
                 if (other.DeviceName == screen.DeviceName) monitor = n;
             }
             Rect work = WorkArea();
+            if (Island)
+            {
+                // Where its middle is across the screen, and how far down. Near the middle it snaps to it.
+                islandX = Ui.Clamp((rail.Left + rail.ActualWidth / 2 - work.Left) / Math.Max(1, work.Width));
+                if (Math.Abs(islandX - 0.5) < 0.02) islandX = 0.5;
+                islandY = Math.Max(0, rail.Top - work.Top);
+                Write(new Dictionary<string, object> {
+                    { "type", "moved" }, { "monitor", monitor }, { "island_x", Math.Round(islandX, 3) }, { "island_y", Math.Round(islandY) },
+                });
+                return;
+            }
             string was = corner;
             double left = rail.Left, top = rail.Top, wide = rail.ActualWidth, tall = rail.ActualHeight;
             bool right = left + wide / 2 > work.Left + work.Width / 2, bottom = top + tall / 2 > work.Top + work.Height / 2;
@@ -1645,9 +1663,13 @@ namespace ClaudeSpeaks
             bool right = corner.EndsWith("right"), bottom = corner.StartsWith("bottom");
             if (Island)
             {
-                // Top middle of the screen (bottom middle if the bar was last put at the bottom).
-                rail.Left = work.Left + (work.Width - rail.ActualWidth) / 2;
-                rail.Top = bottom ? work.Bottom - rail.ActualHeight - 10 : work.Top + 10;
+                // Its middle stays where it was put (the top middle of the screen unless dragged),
+                // however many lights it holds.
+                double wide = rail.ActualWidth, tall = rail.ActualHeight;
+                rail.Left = Math.Max(work.Left, Math.Min(work.Right - wide, work.Left + work.Width * islandX - wide / 2));
+                rail.Top = Math.Max(work.Top, Math.Min(work.Bottom - tall, work.Top + islandY));
+                bool low = rail.Top + tall / 2 > work.Top + work.Height / 2;
+                if (low != islandLow) { islandLow = low; Stack(); }
             }
             else
             {
@@ -1665,13 +1687,22 @@ namespace ClaudeSpeaks
         {
             if (!rail.IsVisible) return;
             Rect work = WorkArea();
-            bool right = corner.EndsWith("right"), bottom = corner.StartsWith("bottom");
+            bool right = corner.EndsWith("right"), bottom = Low;
             double width = rail.ActualWidth > 0 ? rail.ActualWidth : Row.High + 8, height = rail.ActualHeight;
             if (Island)
             {
                 double middle = rail.Left + width / 2;
-                if (panel.Goal > 0) { panel.Left = middle - PanelWidth / 2; panel.Top = bottom ? rail.Top - Gap - panel.Goal : rail.Top + height + Gap; }
-                if (bubble.Goal > 0) { bubble.Left = middle - BubbleWidth / 2; bubble.Top = bottom ? rail.Top - Gap - bubble.Goal : rail.Top + height + Gap; }
+                // Under its middle (over it in the lower half of the screen), kept on the screen.
+                if (panel.Goal > 0)
+                {
+                    panel.Left = Math.Max(work.Left + 4, Math.Min(work.Right - PanelWidth - 4, middle - PanelWidth / 2));
+                    panel.Top = bottom ? rail.Top - Gap - panel.Goal : rail.Top + height + Gap;
+                }
+                if (bubble.Goal > 0)
+                {
+                    bubble.Left = Math.Max(work.Left + 4, Math.Min(work.Right - BubbleWidth - 4, middle - BubbleWidth / 2));
+                    bubble.Top = bottom ? rail.Top - Gap - bubble.Goal : rail.Top + height + Gap;
+                }
                 return;
             }
             if (panel.Goal > 0)

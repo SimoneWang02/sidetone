@@ -125,7 +125,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - Layouts (2026-11-17): `overlay.layout` is `bar` or `island`; `Ctrl+Alt+K` or
   `claude-speaks overlay layout NAME|next` switches, and `Hub.set_layout` saves it. `island` lays
   the lights out sideways at the top middle of the screen, with a dash of the session's color
-  under each light, and drops the panel and bubble from its middle (no dragging). The author
+  under each light, and drops the panel and bubble from its middle. It keeps its own place
+  (`island_x`: where its middle is across the screen, 0 to 1; `island_y`: pixels from the top),
+  set by dragging; the author asked for that after finding only the bar could be moved. In the
+  lower half of the screen it opens upward. The author
   asked to see four ideas ("living" with lights sized by importance, "island", "edge" as a thin
   line of light at the side of the screen, "tiles" with a window per session), tried them, and
   kept bar and island; the other three were removed again (they are in commit `8558c4a` if
