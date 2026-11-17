@@ -366,19 +366,22 @@ namespace ClaudeSpeaks
                     break;
                 case "sent":
                 {
-                    // A paper plane that flies in from the left.
-                    double fly = (1 - Ui.EaseOut(age / 0.4)) * -9;
+                    // A paper plane that flies in from behind. Its three corners are equally far
+                    // from the middle and it is the same on both sides of its line of flight, so
+                    // it sits in the middle of a round light.
+                    double back = (1 - Ui.EaseOut(age / 0.4)) * -9;
                     Color ink = inLight ? Colors.White : Ui.Tint("done");
+                    Point nose = Aim(cx, cy, 9 + back, 0), notch = Aim(cx, cy, -2.6 + back, 0);
                     var plane = new StreamGeometry();
                     using (StreamGeometryContext g = plane.Open())
                     {
-                        g.BeginFigure(new Point(cx - 8 + fly, cy - 1), true, true);
-                        g.LineTo(new Point(cx + 8 + fly, cy - 7), true, true);
-                        g.LineTo(new Point(cx + 2.5 + fly, cy + 7), true, true);
-                        g.LineTo(new Point(cx - 0.5 + fly, cy + 1.8), true, true);
+                        g.BeginFigure(nose, true, true);
+                        g.LineTo(Aim(cx, cy, -6.2 + back, -6.5), true, true);
+                        g.LineTo(notch, true, true);
+                        g.LineTo(Aim(cx, cy, -6.2 + back, 6.5), true, true);
                     }
                     dc.DrawGeometry(Ui.Alpha(ink, 0.35), Ui.Line(ink, 1, 1.5), plane);
-                    dc.DrawLine(Ui.Line(ink, 1, 1.5), new Point(cx - 0.5 + fly, cy + 1.8), new Point(cx + 8 + fly, cy - 7));
+                    dc.DrawLine(Ui.Line(ink, 1, 1.5), notch, nose);
                     break;
                 }
                 case "failed":
@@ -398,6 +401,13 @@ namespace ClaudeSpeaks
                 }
             }
             dc.Pop();
+        }
+
+        // A point given along and across the paper plane's line of flight, which goes up to the right.
+        static Point Aim(double cx, double cy, double along, double across)
+        {
+            const double Cos = 0.8192, Sin = -0.5736;  // 35 degrees up
+            return new Point(cx + along * Cos - across * Sin, cy + along * Sin + across * Cos);
         }
 
         static void Microphone(DrawingContext dc, double cx, double cy, Brush ink)
