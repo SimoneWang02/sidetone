@@ -388,6 +388,15 @@ Bigger pieces:
       check first: what Claude Code hands to a status line command (it gets a JSON about the
       session, which may carry both), and whether context use can be counted from the
       transcript a hook points to.
+- [ ] Usage said aloud (the author, 2026-11-17, by voice: "check if in the future it's
+      possible to make you say the percentage of the current usage"). Today a session
+      cannot answer "what's the current usage?": nothing it can call reports the plan's
+      five-hour and weekly windows, and Claude Code keeps no file with those figures (looked
+      for in `~/.claude` the same day). The author can see them with `/usage`. It hangs on
+      the same question as the two items above: whether the status line report carries
+      the figures. If it does, the hub could hold them and answer by voice: a hotkey or a
+      spoken "how much have I used?" that says, for example, "forty percent of the five
+      hours, resets at three", and a warning by itself when a window is nearly used up.
 
 Away from the PC (the author's idea, 2026-11-17: with sessions open and nobody at the desk,
 "is it possible to use like either phone or AirPods interaction to do stuff", for example an
