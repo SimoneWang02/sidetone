@@ -982,7 +982,7 @@ namespace ClaudeSpeaks
                     islandY = Num(msg, "island_y", islandY);
                     string wanted = Str(msg, "layout", layout);
                     if (wanted != "island") wanted = "bar";
-                    if (wanted != layout) { layout = wanted; ApplyLayout(); }
+                    if (wanted != layout) { layout = wanted; ApplyLayout(); RegisterHotkeys(); }  // other arrow keys now
                     if (msg.ContainsKey("focus_wheel")) wheelKeys = Keys(Str(msg, "focus_wheel"));
                     if (msg.ContainsKey("drag_keys")) dragKeys = Keys(Str(msg, "drag_keys"));
                     Ui.RowLines = Math.Max(1, Math.Min(3, (int)Num(msg, "row_lines", Ui.RowLines)));
@@ -1523,8 +1523,12 @@ namespace ClaudeSpeaks
         }
 
         // What a hotkey does when it arrives, from Windows or from the hook.
+        // The hub knows two ways to move the focus, whichever arrows were used.
+        static string Plain(string name) { return name == "focus_left" ? "focus_prev" : name == "focus_right" ? "focus_next" : name; }
+
         void Hotkey(string name)
         {
+            name = Plain(name);
             if (name == "toggle") SetMode("toggle");
             if (name == "focus_prev" || name == "focus_next") ShowChoice();
             Send("hotkey", "name", name);
@@ -2020,7 +2024,11 @@ namespace ClaudeSpeaks
             foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
                 bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
-                if (answers && !liveKeys.Contains(entry.Key)) continue;
+                // The focus moves with the arrows that point the way the lights run: up and down
+                // for the bar, left and right for the island. The other pair is left to other programs.
+                bool sideways = entry.Key == "focus_left" || entry.Key == "focus_right";
+                if (sideways != Island && entry.Key.StartsWith("focus_")) continue;
+                if (answers && !liveKeys.Contains(Plain(entry.Key))) continue;
                 string combo = entry.Value;
                 if (combo.Trim().Length == 0) continue;  // an empty combo turns that hotkey off
                 uint modifiers = MOD_NOREPEAT, vk = 0;

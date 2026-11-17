@@ -106,7 +106,8 @@ real keys yet.
       `talk_tap: next` is set.
 - [ ] `Ctrl+Alt+Up` / `Ctrl+Alt+Down` move the focus (built on that remark; checked only as
       far as the overlay accepting the keys): the frame goes to the session above or below,
-      stops at the first and last, and the details come out for a moment. To watch for:
+      stops at the first and last, and the details come out for a moment. In the island
+      layout it is `Ctrl+Alt+Left` / `Right` (the author's wish the same day). To watch for:
       VS Code's own use of these keys in the editor (a cursor above or below) no longer
       works while two or more sessions are open.
 - [ ] `Ctrl+Alt+K`: switches between the bar and the island, and back

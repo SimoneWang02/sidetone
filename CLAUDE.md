@@ -275,8 +275,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Ctrl+Alt+Up/Down send the same `focus_prev`/`focus_next` as the wheel, stop at the ends
   like it, and bring the panel out for a moment. While claimed they are taken from every
   program, and VS Code uses these two in its editor to add a cursor above or below; they
-  can be bound to other keys or blanked. Left and Right are not claimed (VS Code moves an
-  editor between groups with them), so in the island layout it is still Up and Down.
+  can be bound to other keys or blanked. In the island layout, where the lights run across,
+  it is Ctrl+Alt+Left/Right instead (`focus_left`, `focus_right`; the author: "more intuitive
+  if you use the horizontal arrow keys"). Only the pair of the layout in use is claimed, so
+  VS Code keeps the other (it moves an editor between groups with Left and Right).
 - Focus (asked for by the author on 2026-11-17: "combine ctrl+alt and the mouse wheel to decide
   which session to focus on. also whichever spoke last gets focused"): the focus is the hub's
   `talk_target`, the session a spoken follow-up goes to. It moves to whoever speaks, and

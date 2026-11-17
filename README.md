@@ -110,7 +110,7 @@ work, run `cs demo` in a terminal.
 | `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Allow / deny the permission prompt shown in the overlay |
 | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Answer the question shown in the overlay |
 | hold `Ctrl+Alt` | Show the details panel while held |
-| `Ctrl+Alt+Up` / `Ctrl+Alt+Down` | Move the focus to the session above or below (claimed only while two or more are open) |
+| `Ctrl+Alt+Up` / `Ctrl+Alt+Down` | Move the focus to the session above or below (claimed only while two or more are open). In the island layout it is `Ctrl+Alt+Left` / `Ctrl+Alt+Right` |
 | `Ctrl+Alt` + mouse wheel | The same with the wheel |
 | hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send |
 | `Ctrl+Alt+Backspace` | Take back a follow-up, stop recording, or cut the line being spoken |
