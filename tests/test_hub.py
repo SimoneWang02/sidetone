@@ -570,6 +570,7 @@ class FakeRecorder:
 
 class FakeTranscriber:
     text = "also add a test"
+    seconds = 0.0
 
     def load(self):
         pass
@@ -578,6 +579,7 @@ class FakeTranscriber:
         pass
 
     def transcribe(self, pcm):
+        time.sleep(self.seconds)
         return self.text
 
 
@@ -637,6 +639,23 @@ class PushToTalk(HubCase):
         hub.talk_end()
         self.assertTrue(wait_for(lambda: len(self.engine.spoken) > 1))
         self.assertEqual(self.spoken(), ["A again.", "Sent."])
+
+    def test_a_line_that_starts_while_you_talk_does_not_take_your_words(self):
+        hub = self.make(duration=0.3)
+        hub.transcriber.seconds = 0.15  # B's line is already being heard when the words come back
+        hub.talk_target = "a"
+        to_a, to_b = hub.listen("a"), hub.listen("b")
+        hub.talk_start()
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B is done.")))
+        hub.talk_end()
+        self.assertTrue(to_a.wake.wait(3), "the follow-up never reached the session it was said to")
+        self.assertEqual(hub.collect(to_a), "also add a test")
+        self.assertFalse(to_b.wake.is_set())
+        self.assertEqual(self.spoken(), ["B is done.", "Sent."])
+        self.assertEqual(self.in_focus(), "a")
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B once more.")))
+        self.spoken()
+        self.assertEqual(self.in_focus(), "b")  # with the talk over, whoever speaks takes the focus again
 
     def test_time_spent_talking_does_not_make_a_waiting_line_too_old(self):
         hub = self.make(duration=0.0, max_age=0.2)

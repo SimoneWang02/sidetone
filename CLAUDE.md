@@ -224,7 +224,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   which session to focus on. also whichever spoke last gets focused"): the focus is the hub's
   `talk_target`, the session a spoken follow-up goes to. It moves to whoever speaks, and
   `Hub.focus(step)` moves it by hand and stops at the first and last session (the author asked
-  that the wheel not jump from the bottom back to the top). Rows carry `target`; the overlay draws a frame that glides
+  that the wheel not jump from the bottom back to the top). A line that starts between the talk
+  key going down and the words being sent does not take the focus (`Hub._transcribing`): on
+  2026-11-17 the author spoke to one session, another one's reply started on release, and the
+  words went to that one. Rows carry `target`; the overlay draws a frame that glides
   to that light and lights its row. `Ctrl+Alt` + wheel (`overlay.focus_wheel`, `""` turns it off)
   sends `focus_prev` / `focus_next` and brings the panel out for 1.6 s. Windows only reports
   the wheel to a background program through a low-level mouse hook, which sits in the path of
@@ -285,7 +288,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 96 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 97 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

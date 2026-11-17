@@ -175,6 +175,7 @@ class Hub:
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
         self._mic_meter = Meter()  # turns microphone audio into a loudness for the overlay
         self._talking: float | None = None  # when the talk key went down
+        self._transcribing = False  # the key is up and the words are not out of the speech model yet
         self._pending: Pending | None = None  # the follow-up being shown
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
         self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
@@ -727,6 +728,7 @@ class Hub:
         else:
             with self.lock:
                 self._cancel_pending()
+                self._transcribing = True
                 self._talk("transcribing", self._target())
             threading.Thread(target=self._transcribe, args=(pcm,), daemon=True).start()
         self.publish()
@@ -748,10 +750,13 @@ class Hub:
             self._unload = threading.Timer(self.cfg.whisper_unload_minutes * 60, self.transcriber.unload)
             self._unload.daemon = True
             self._unload.start()
-        if text:
-            self.follow_up(text)
-        else:
-            self._talk("failed", self._target(), "Didn't catch that", seconds=2)
+        try:
+            if text:
+                self.follow_up(text)
+            else:
+                self._talk("failed", self._target(), "Didn't catch that", seconds=2)
+        finally:
+            self._transcribing = False
 
     def follow_up(self, text: str, session: str | None = None, delay: float | None = None) -> bool:
         """Show a follow-up, then send it to the session.
@@ -996,8 +1001,11 @@ class Hub:
             with self.lock:
                 s = self.sessions.by_id.get(u.session)
                 if s:
-                    if u.kind not in ("allowed", "denied", "progress"):
-                        self.talk_target = s.id  # a follow-up answers whoever spoke last
+                    # A follow-up answers whoever spoke last. Not while you are talking, though:
+                    # a line that starts between the key going down and your words being sent
+                    # must not take them away from the session you were talking to.
+                    if u.kind not in ("allowed", "denied", "progress") and not (self._talking or self._transcribing):
+                        self.talk_target = s.id
                     self._flash(s, u.text, FLASH_LOOK.get(u.kind, u.kind))
         self.publish()
 
