@@ -48,10 +48,12 @@ real keys yet.
       branch and restart the hub. Drop: the offer was to remove the key and the catch-up
       code altogether, since the present version mostly says "Nothing new".
 - [ ] `Ctrl+Alt+Backspace` while recording
-- [x] Hold the talk key with a video playing in the browser in front (YouTube): the video
-      should neither pause nor change speed, also when Ctrl or Alt is let go before Space
-      (the author, 2026-11-17, by voice while trying it: "Seems working ... Yeah, it's
-      working"; taken as both cases, they did not say which)
+- [ ] Hold the talk key with a video playing in the browser in front (YouTube): the video
+      should neither pause nor change speed, also when Ctrl or Alt is let go before Space.
+      The author, 2026-11-17: fine while holding, but "it stops the video on release". The
+      release of Space still reached the browser. Changed the same day so that press and
+      release are both kept back; to be tried again. Known gap: Space pressed in the very
+      same instant as Ctrl and Alt can still pause the video on release.
 - [ ] The bar over a game in borderless windowed mode
 - [ ] A plain click on the bar reaching the window underneath
 - [ ] Sessions started from the VS Code extension showing up in the bar

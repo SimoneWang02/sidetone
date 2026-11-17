@@ -1,8 +1,9 @@
 # Used by tests/keys_check.py. Presses a spare key the way a held talk key looks to Windows
 # (down, repeats, up) and prints which of those presses other programs would still get.
 # It watches with a keyboard hook put in before the overlay's own, so anything the overlay
-# takes for itself never shows up here.
-param([int]$Key = 0x83, [int]$Repeats = 4)
+# takes for itself never shows up here. It prints "hooked" once it watches and then waits
+# -Delay milliseconds, so the caller can have the overlay put its own hook in after ours.
+param([int]$Key = 0x83, [int]$Repeats = 4, [int]$Delay = 300)
 
 Add-Type -ReferencedAssemblies System.Windows.Forms -TypeDefinition @"
 using System;
@@ -36,14 +37,16 @@ public static class KeysCheck
         return CallNextHookEx(hook, code, wParam, lParam);
     }
 
-    public static string Run(int key, int repeats)
+    public static string Run(int key, int repeats, int delay)
     {
         watched = key;
         proc = OnKey;
         hook = SetWindowsHookEx(13, proc, GetModuleHandle(null), 0);
+        Console.Out.WriteLine("hooked");
+        Console.Out.Flush();
         string state = "";
         var presser = new Thread(delegate() {
-            Thread.Sleep(300);
+            Thread.Sleep(delay);
             keybd_event((byte)key, 0, 0, UIntPtr.Zero);          // the press that starts the hold
             Thread.Sleep(400);                                    // time for the overlay to react
             for (int i = 0; i < repeats; i++) { keybd_event((byte)key, 0, 0, UIntPtr.Zero); Thread.Sleep(40); }
@@ -63,4 +66,4 @@ public static class KeysCheck
 }
 "@
 
-[KeysCheck]::Run($Key, $Repeats)
+[KeysCheck]::Run($Key, $Repeats, $Delay)

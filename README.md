@@ -159,6 +159,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "glass": "blur",
     "opacity": 0.9,
     "talk_sign": "light",
+    "keep_talk_key": "held",
     "hotkeys": { "talk": "Ctrl+Alt+Space", "toggle": "Ctrl+Alt+L" }
   },
   "terminal": {

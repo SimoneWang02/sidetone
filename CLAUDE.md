@@ -325,10 +325,21 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   while watching YouTube and the video paused). A hotkey only keeps a key to itself while its
   Ctrl and Alt are down too; over a long hold one of them is let go, and the key then repeats
   into whatever has the keyboard. From the hotkey until the key is up, `KeepKey` puts in a
-  keyboard hook that takes every further press of that one key (`OnKey`); the release is passed
-  on, since Windows saw the key go down and would think it still held. The hook is in only
-  during a hold. `tests/keys_check.py` checks it from WSL with a spare key (F20, no Ctrl or
-  Alt). Not checked: what a browser does with the lone release, and the real keys.
+  keyboard hook that takes every further press of that one key (`OnKey`). The release was
+  passed on at first, and the author found the same day that the video then stopped "on
+  release": the browser acts on a release alone. Since then the hook takes the whole hold,
+  press and release too, so the program in front never learns the key was touched. Measured
+  with a spare key: when a release is kept from Windows it goes on thinking the key is down,
+  and when the press was kept too it never thinks so; so a release can only be kept if its
+  press was, and the hook has to be in before the talk key goes down. `WatchTalkKeys` puts it
+  in as soon as the hotkey's other keys (Ctrl, Alt) are down, and keeps it for the hold; the
+  hook then starts the hold itself (`taken`) and the hotkey never fires. A talk key that goes
+  down within about 30 ms of Ctrl and Alt still arrives as a plain hotkey, and that hold goes
+  the old way (repeats kept, release passed on, so a video can still pause then).
+  `overlay.keep_talk_key`: `held` (default), `always` (hook in all the time, for a talk key
+  without Ctrl or Alt) or `off`. If a kept release is ever lost, the hold ends a second after
+  the key stops repeating. `tests/keys_check.py` checks both ways from WSL with a spare key
+  (F20, no Ctrl or Alt). Not checked from WSL: the hook going in on the real Ctrl and Alt.
   The author's wider idea, that holding Ctrl+Alt switches off every other key, was not built:
   it would also take the Ctrl+Alt shortcuts of other programs and, on keyboards such as the
   Italian one, characters typed with those keys. It is in `TODO.md` as a possible setting.

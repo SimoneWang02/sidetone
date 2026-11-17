@@ -32,6 +32,9 @@ DEFAULTS = {
     "flash_seconds": 4,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
+    # Keeping the held talk key from other programs needs a keyboard hook. "held": in only while
+    # the hotkey's Ctrl/Alt are down and during the hold; "always": for a talk key without them; "off".
+    "keep_talk_key": "held",
     # Where push-to-talk's sign (dots, paper plane, not sent) goes: light = inside the session's
     # status light | line = at the right of its name in the details
     "talk_sign": "light",
