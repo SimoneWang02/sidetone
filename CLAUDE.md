@@ -184,7 +184,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the wheel to a background program through a low-level mouse hook, which sits in the path of
   all mouse input, so the overlay installs it only while those keys are down and there are at
   least two sessions, and swallows only the wheel. The wheel alone works while the mouse is on
-  the bar. **Not tried with a real mouse yet.**
+  the bar. Holding the same keys for 0.2 s also brings the panel out while they are held (the
+  author: "ctrl+alt should open the details"), except during push-to-talk, which shows in its
+  bubble. AltGr (right Alt, which Windows reports as Ctrl+Alt) is ignored for both.
 - Questions: `PermissionRequest` also fires for `AskUserQuestion`, with the questions and options
   in `tool_input`. Single-choice questions with 2 to 4 options become a `Request` with
   `questions`; `choose(n)` records the label and, after the last one, the hook returns allow

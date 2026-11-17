@@ -79,6 +79,7 @@ work, run `cs demo` in a terminal.
 | `Ctrl+Alt+L` | Overlay: keep the panel out ↔ only the lights |
 | `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Allow / deny the permission prompt shown in the overlay |
 | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Answer the question shown in the overlay |
+| hold `Ctrl+Alt` | Show the details panel while held |
 | `Ctrl+Alt` + mouse wheel | Move the focus to the session above or below (also: the wheel alone while the mouse is on the bar) |
 | hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send. A quick tap picks the next session |
 | `Ctrl+Alt+Backspace` | Take back a follow-up, stop recording, or cut the line being spoken |

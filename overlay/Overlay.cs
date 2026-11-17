@@ -538,7 +538,7 @@ namespace ClaudeSpeaks
         const uint MOD_ALT = 1, MOD_CONTROL = 2, MOD_SHIFT = 4, MOD_WIN = 8, MOD_NOREPEAT = 0x4000;
         const uint MOUSEEVENTF_LEFTDOWN = 2, MOUSEEVENTF_LEFTUP = 4;
         const int VK_LBUTTON = 1, VK_RBUTTON = 2, SM_SWAPBUTTON = 23;
-        const int WH_MOUSE_LL = 14, WM_MOUSEWHEEL = 0x020A, VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B;
+        const int WH_MOUSE_LL = 14, WM_MOUSEWHEEL = 0x020A, VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B, VK_RMENU = 0xA5;
         const double PanelWidth = 340, BubbleWidth = 340, Gap = 6, Wide = PanelWidth - 32;
 
         [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
@@ -570,8 +570,8 @@ namespace ClaudeSpeaks
         IntPtr wheelHook;
         int[] wheelKeys = { VK_CONTROL, VK_MENU };  // held together with the wheel to change the focus
         int wheelTurned;
-        double wheelUntil, selectorY, selectorShown;
-        bool wheeling;
+        double wheelUntil, selectorY, selectorShown, heldSince;
+        bool wheeling, keysOpen;
         readonly Grid spare = new Grid { Width = Row.High, Height = Row.High };  // a dim light shown when there is no session
         readonly StackPanel sections = new StackPanel { Margin = new Thickness(3) };
         readonly StackPanel rowsPanel = new StackPanel();
@@ -858,8 +858,8 @@ namespace ClaudeSpeaks
         }
 
         // The panel (names, titles, what each session is doing) is out in list mode, under the
-        // mouse, and while there is something to ask or show. Otherwise there are only the lights.
-        bool IsOpen() { return !dragging && (mode == "list" || hover || moving || hasRequest || hasBanner || Ui.Now < wheelUntil); }
+        // mouse, while Ctrl+Alt is held, and while there is something to ask or show. Otherwise there are only the lights.
+        bool IsOpen() { return !dragging && (mode == "list" || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
 
         // Brings everything in line with what there is to show. What moves is then moved by Frame.
         void Render()
@@ -1126,7 +1126,14 @@ namespace ClaudeSpeaks
         // are down and there is more than one session to choose from.
         void WatchWheelKeys()
         {
-            bool want = wheelKeys.Length > 0 && order.Count > 1 && rail.IsVisible && Held();
+            bool held = wheelKeys.Length > 0 && rail.IsVisible && Held();
+            // Holding those keys by themselves also brings the panel out. Not at once, so a quick
+            // hotkey does not make it flicker, and not during push-to-talk, which has its bubble.
+            if (!held) heldSince = 0;
+            else if (heldSince == 0) heldSince = Ui.Now;
+            bool open = held && talkState.Length == 0 && Ui.Now - heldSince >= 0.2;
+            if (open != keysOpen) { keysOpen = open; Render(); }
+            bool want = held && order.Count > 1;
             if (want && wheelHook == IntPtr.Zero) wheelHook = SetWindowsHookEx(WH_MOUSE_LL, wheelProc, GetModuleHandle(null), 0);
             else if (!want && wheelHook != IntPtr.Zero) { UnhookWindowsHookEx(wheelHook); wheelHook = IntPtr.Zero; wheelTurned = 0; }
         }
@@ -1134,7 +1141,8 @@ namespace ClaudeSpeaks
         bool Held()
         {
             foreach (int key in wheelKeys) if ((GetAsyncKeyState(key) & 0x8000) == 0) return false;
-            return true;
+            // AltGr, used to type letters on many keyboards, reports itself as Ctrl+Alt: leave it alone.
+            return (GetAsyncKeyState(VK_RMENU) & 0x8000) == 0;
         }
 
         // Called by Windows for every mouse event while the hook is in. The wheel is taken (the
