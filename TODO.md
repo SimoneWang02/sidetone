@@ -34,6 +34,14 @@ real keys yet.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
       which was right, since nothing had been said since the last message. Not heard yet:
       a real replay, pressed after a session spoke while the author was away from it.
+      The author found it hard to grasp (2026-11-17: "so it detects when im away? so far
+      ctrl+alt+u says nothing new"). It does not detect anything: "missed" is every line
+      said since the last typed prompt or hotkey, so any key pressed after a line (repeat,
+      the wheel, push-to-talk) empties it, and a line heard at the desk still counts.
+      Ideas offered, none chosen: count a line as missed only when it was said while
+      keyboard and mouse had been still for a minute or more (the overlay can ask Windows
+      for that), plus lines that were cut or dropped unsaid (each line already carries a
+      `heard` mark that catch-up does not use yet).
 - [ ] `Ctrl+Alt+Backspace` while recording
 - [ ] Hold the talk key with a video playing in the browser in front (YouTube): the video
       should neither pause nor change speed, also when Ctrl or Alt is let go before Space
