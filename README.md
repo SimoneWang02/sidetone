@@ -54,12 +54,13 @@ git clone https://github.com/SimoneWang02/claude-speaks && cd claude-speaks
 
 `install.sh` creates a Python environment in `~/.local/share/kokoro/venv`, downloads the Kokoro
 voice model (about 350 MB), and adds the hooks to `~/.claude/settings.json`. Your existing
-hooks are kept and a backup of the file is written first. The Whisper model for push-to-talk
+hooks are kept and a backup of the file is written first. It also links the command into
+`~/.local/bin` as `claude-speaks` and the shorter `cs`. The Whisper model for push-to-talk
 (about 250 MB) is downloaded the first time you use the talk key. `./uninstall.sh` removes the
 hooks again.
 
 Start a new Claude Code session and it speaks. To see and hear everything without doing real
-work, run `bin/claude-speaks demo`.
+work, run `cs demo` in a terminal.
 
 ## Using it
 

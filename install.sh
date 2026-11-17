@@ -57,4 +57,22 @@ sed "s|\$HOME/personal/claude-speaks|$ROOT|g" "$ROOT/hooks/settings-snippet.json
 jq -e . "$SETTINGS.tmp" >/dev/null
 mv "$SETTINGS.tmp" "$SETTINGS"
 echo "Hooks registered in $SETTINGS (backup: $backup)"
-echo "Done. Start a new Claude Code session and it will speak. Try: $ROOT/bin/claude-speaks demo"
+
+# Put the command on the PATH as `claude-speaks` and the short `cs`. A name that already
+# belongs to something else is left alone.
+BIN=$HOME/.local/bin
+mkdir -p "$BIN"
+try=$ROOT/bin/claude-speaks
+for name in claude-speaks cs; do
+  link=$BIN/$name
+  if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$ROOT/bin/claude-speaks" ]; then
+    :
+  elif [ -e "$link" ] || [ -L "$link" ] || command -v "$name" >/dev/null 2>&1; then
+    echo "Note: '$name' already exists, so it was not linked."
+    continue
+  else
+    ln -s "$ROOT/bin/claude-speaks" "$link"
+  fi
+  case ":$PATH:" in *":$BIN:"*) try=$name ;; *) echo "Note: $BIN is not on your PATH, so '$name' will not be found yet." ;; esac
+done
+echo "Done. Start a new Claude Code session and it will speak. Try: $try demo"

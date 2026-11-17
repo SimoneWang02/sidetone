@@ -15,5 +15,9 @@ jq --arg ours "$ROOT/hooks/" --arg home_form "\$HOME${ROOT#"$HOME"}/hooks/" '
 jq -e . "$SETTINGS.tmp" >/dev/null
 mv "$SETTINGS.tmp" "$SETTINGS"
 "$ROOT/bin/claude-speaks" hub stop >/dev/null 2>&1 || true
+for name in claude-speaks cs; do
+  link=$HOME/.local/bin/$name
+  if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$ROOT/bin/claude-speaks" ]; then rm -f "$link"; fi
+done
 echo "Hooks removed from $SETTINGS (backup: $backup)"
 echo "Left in place: ~/.local/share/kokoro (models, Python environment), ~/.local/state/claude-speaks (logs)."
