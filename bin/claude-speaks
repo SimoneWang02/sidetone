@@ -32,7 +32,8 @@ Usage: claude-speaks <command>
   terminal                   show how sessions' own terminals are marked
   terminal tint focus|all|off   whose terminal wears its session's color (focus = the one in focus)
   terminal find [PROJECT]    light up a session's terminal for a moment (default: the one in focus)
-  terminal pulse|title on|off   the flash when the focus is moved by hand; the name as the terminal's title
+  terminal pulse on|off|N    the brighter moment when the focus is moved by hand; N = how bright, 0 to 1
+  terminal title on|off      the session's name as the terminal's title
   terminal strength N        how strong the color is, 0 to 1
   terminal background COLOR  the terminal's own background (#RRGGBB) that the color is mixed into
   demo                       play three made-up sessions to see and hear every state
@@ -162,8 +163,10 @@ case ${1:-} in
       find) request=$(jq -nc --arg p "${3:-}" '{find: $p}') ;;
       tint) request=$(jq -nc --arg t "${3:-}" '{tint: $t}') ;;
       pulse|title)
-        case ${3:-} in on|off) ;; *) usage; exit 2 ;; esac
-        request=$(jq -nc --arg k "$2" --arg v "$3" '{($k): ($v == "on")}') ;;
+        case ${3:-} in
+          on|off) request=$(jq -nc --arg k "$2" --arg v "$3" '{($k): ($v == "on")}') ;;
+          *) [ "$2" = pulse ] && request=$(jq -nc --arg n "${3:-}" '{pulse: true, pulse_strength: ($n | tonumber)}' 2>/dev/null) || { usage; exit 2; } ;;
+        esac ;;
       strength) request=$(jq -nc --arg n "${3:-}" '{strength: ($n | tonumber)}') || { usage; exit 2; } ;;
       background)
         [[ ${3:-} =~ ^#[0-9a-fA-F]{6}$ ]] || { echo "a color looks like #181818"; exit 2; }

@@ -1374,7 +1374,7 @@ class OwnTerminals(HubCase):
                 thread.join(5)
         to_a = [data for tty, data in self.written if tty == "/dev/pts/91"]
         self.assertEqual(to_a[0], self.tint("a", 0.14))  # at once
-        self.assertEqual(to_a[1], self.tint("a", terminal.PULSE_PEAK))  # then bright
+        self.assertEqual(to_a[1], self.tint("a", 0.24))  # then a little brighter
         self.assertEqual(to_a[-1], self.tint("a", 0.14))  # and back to its resting tint
         self.assertEqual(len(to_a), terminal.PULSE_STEPS + 2)
         self.assertEqual([data for tty, data in self.written if tty == "/dev/pts/92"], [terminal.RESET])

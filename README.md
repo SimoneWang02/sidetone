@@ -135,7 +135,7 @@ claude-speaks overlay monitor N | corner top-left|top-right|bottom-left|bottom-r
 claude-speaks terminal               how sessions' own terminals are marked
 claude-speaks terminal tint focus|all|off     whose terminal wears its session's color
 claude-speaks terminal find [PROJECT]         light a session's terminal up for a moment
-claude-speaks terminal strength N | background COLOR | pulse on|off | title on|off
+claude-speaks terminal strength N | background COLOR | pulse on|off|N | title on|off
 claude-speaks demo                   three made-up sessions through every state
 claude-speaks hub start|stop|restart
 claude-speaks log                    follow the speech log
@@ -166,6 +166,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "strength": 0.14,
     "background": "#181818",
     "pulse": true,
+    "pulse_strength": 0.24,
     "title": false
   }
 }

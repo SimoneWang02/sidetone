@@ -297,7 +297,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (`#181818`, VS Code's dark theme; the real background cannot be asked for from outside, the
   answer would land in Claude Code's input). `all` tints every terminal (the others at half
   strength), `off` none. `Hub.focus` (wheel, tap) also calls `Terminals.pulse`: 14 steps over
-  0.7 s from `PULSE_PEAK` (0.42) down to the resting tint. `claude-speaks terminal find
+  0.7 s from `pulse_strength` down to the resting tint (0.24 since the author, having seen
+  it at 0.42, said "maybe the flash might be too much"; `terminal pulse off` removes it). `claude-speaks terminal find
   [PROJECT]` does the same on request. Stopping the hub gives every terminal its own
   background back, and a terminal seen for the first time is reset, which clears what a hub
   that died left. `title` (off by default) writes "name · title"; control characters are
@@ -337,7 +338,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `bin/claude-speaks` (linked by `install.sh` into `~/.local/bin` as `claude-speaks` and `cs`;
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
-  `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off | title on|off]`,
+  `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off]`,
   `demo`, `hub start|stop|restart`, `log`.
 - `tests/test_hub.py`: 114 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
@@ -347,7 +348,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
   `talk_tail`, `talk_feedback`, `sound_volume`, and `terminal` (`tint`, `strength`, `background`,
-  `pulse`, `title`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
+  `pulse`, `pulse_strength`, `title`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
 - Toggle: voice is off while `~/.claude/voice-off` exists (the hub still tracks state).

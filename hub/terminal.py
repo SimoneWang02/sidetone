@@ -26,10 +26,10 @@ DEFAULTS = {
     "strength": 0.14,  # how much of the color goes into the background, 0 to 1
     "background": "#181818",  # the terminal's own background, which the color is mixed into
     "pulse": True,  # moving the focus by hand lights its terminal up brighter for a moment
+    "pulse_strength": 0.24,  # how much of the color at the top of that moment, 0 to 1
     "title": False,  # also write the session's name and title into the terminal's title
 }
 TINTS = ("focus", "all", "off")
-PULSE_PEAK = 0.42  # how much of the color at the top of a pulse
 PULSE_SECONDS = 0.7
 PULSE_STEPS = 14
 RESET = b"\x1b]111\x1b\\"
@@ -168,7 +168,8 @@ class Terminals:
                     return
                 # From the peak down to the resting color, fast at first and slow at the end.
                 at_rest = float(self.settings["strength"]) * (1 if rest else 0)
-                amount = at_rest + (PULSE_PEAK - at_rest) * (1 - step / PULSE_STEPS) ** 2
+                peak = max(at_rest, float(self.settings["pulse_strength"]))
+                amount = at_rest + (peak - at_rest) * (1 - step / PULSE_STEPS) ** 2
                 self.write(tty, _background(mix(self.settings["background"], color, amount)))
             self.sleep(PULSE_SECONDS / PULSE_STEPS)
 
