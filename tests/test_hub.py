@@ -556,6 +556,16 @@ class Questions(HubCase):
         self.assertEqual(self.session()["state"], "working")
         self.assertEqual(self.spoken()[-1], "Answered: Red.")
 
+    def test_an_open_question_is_shown_again_by_a_window_that_has_just_started(self):
+        hub = self.make()
+        hub.request_permission(ask_question(question("Which drink?", "Tea", "Coffee", "Water")))
+        del self.overlay.sent[:]  # the window was restarted: the new one has been told nothing
+        hub.on_overlay({"type": "ready"})
+        shown = self.overlay.of("request")[-1]
+        self.assertEqual((shown["text"], shown["options"]), ("asks: Which drink?", ["Tea", "Coffee", "Water"]))
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["option1", "option2", "option3"])
+        self.assertTrue(hub.choose(2))
+
     def test_a_question_can_be_answered_in_your_own_words(self):
         hub = self.make(talk_feedback="none")
         req = hub.request_permission(ask_question(question("Which drink?", "Tea", "Coffee"),

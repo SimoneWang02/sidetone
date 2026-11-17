@@ -796,6 +796,15 @@ class Hub:
         return name
 
     def on_overlay(self, msg: dict) -> None:
+        if msg.get("type") == "ready":
+            # A window that has just started is handed the sessions again by its own module, and
+            # nothing else: tell it the question that is still open and the keys that are live.
+            with self.lock:
+                self._keys = None
+                if self.requests:
+                    self._show_request()
+            self.publish()
+            return
         if msg.get("type") == "moved":  # dragged to a new place
             placed = {k: msg[k] for k in ("monitor", "corner", "offset_x", "offset_y", "island_x", "island_y") if k in msg}
             self.place_overlay(False, **placed)  # the window already knows; this saves it
