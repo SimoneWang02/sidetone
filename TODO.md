@@ -23,6 +23,9 @@ real keys yet.
 
 ## To decide
 
+- [ ] Which layout to keep as the default, or whether to keep several: `bar`, `living`, `island`,
+      `edge`, `tiles` (`Ctrl+Alt+K` goes round them). All five were only checked in pictures.
+
 - [ ] Voice of this project: it speaks with `bf_isabella` since the voice pool changed. Pin
       the earlier `af_heart` back? (`claude-speaks voice claude-speaks af_heart`)
 - [ ] "Uploadable" voices: was that cloning a voice from a recording? Kokoro cannot do it; it

@@ -257,6 +257,16 @@ class OverlayFeed(HubCase):
         self.spoken()
         self.assertFalse(self.overlay.of("state")[-1]["sessions"][0]["speaking"])
 
+    def test_the_layout_key_goes_round_the_layouts(self):
+        hub = self.make()
+        seen = []
+        for _ in range(6):
+            hub.on_overlay({"type": "hotkey", "name": "layout"})
+            seen.append(hub.cfg.overlay["layout"])
+        self.assertEqual(seen, ["living", "island", "edge", "tiles", "bar", "living"])
+        self.assertIsNone(hub.set_layout("spiral"))  # not a layout: nothing changes
+        self.assertEqual((hub.set_layout("island"), hub.cfg.overlay["layout"]), ("island", "island"))
+
     def test_every_session_has_its_own_name_color(self):
         import state
 

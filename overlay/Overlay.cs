@@ -166,7 +166,7 @@ namespace ClaudeSpeaks
         public string State = "idle";
         public bool Speaking;
         public Wave Wave, Listening;  // Listening: your own voice, while you hold the talk key for this session
-        public double Born = Ui.Now, Changed = -10, Hot;
+        public double Born = Ui.Now, Changed = -10, Hot, Scale = 1;
 
         public Orb() { Width = Height = Size; IsHitTestVisible = false; }
 
@@ -183,7 +183,7 @@ namespace ClaudeSpeaks
             Color tint = Listening != null ? Ui.Mic : Ui.Tint(State);
             Wave wave = Listening ?? Wave;
             double bump = age < 0.4 ? 0.2 * Math.Sin(Math.PI * age / 0.4) : 0;
-            double scale = Ui.Overshoot((t - Born) / 0.4) * (1 + bump + 0.14 * Hot);
+            double scale = Ui.Overshoot((t - Born) / 0.4) * (1 + bump + 0.14 * Hot) * Scale;
             dc.PushTransform(new ScaleTransform(scale, scale, c.X, c.Y));
             if (age < 0.8 && !Speaking && Listening == null && State != "idle" && State != "working")
             {
@@ -279,6 +279,42 @@ namespace ClaudeSpeaks
                 if (level <= 0.01) continue;
                 double tall = 2 + level * (h - 14), x = NewestRight ? w - 5 - k * 6 : 2 + k * 6;
                 dc.DrawRoundedRectangle(Ui.Alpha(Tint, 0.34 * (1 - k / (double)count)), null, new Rect(x, (h - tall) / 2, 3, tall), 1.5, 1.5);
+            }
+        }
+    }
+
+    // The "edge" layout at rest: a thin line of light against the side of the screen, one piece
+    // per session in that session's color. It breathes while the session works, flashes amber
+    // when it needs you, and swells with the voice while it speaks.
+    class EdgeStrip : FrameworkElement
+    {
+        public List<Row> Rows = new List<Row>();
+        public bool Right;
+
+        public EdgeStrip() { Width = 10; IsHitTestVisible = false; }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            double t = Ui.Now;
+            for (int i = 0; i < Rows.Count; i++)
+            {
+                Row row = Rows[i];
+                Color color = row.State == "needs_you" ? Ui.Amber : row.State == "failed" ? Ui.Tint("failed") : row.Tone;
+                double light, wide = 4;
+                Wave voice = row.Orb.Listening ?? (row.Speaking ? row.Wave : null);
+                if (voice != null)
+                {
+                    double level = voice.At(t - Wave.Lag);
+                    if (row.Orb.Listening != null) color = Ui.Mic;
+                    light = 0.6 + 0.4 * level;
+                    wide = 4 + 6 * level;
+                }
+                else if (row.State == "working") light = 0.55 + 0.35 * Math.Sin(t * 3 + i);
+                else if (row.State == "needs_you") { light = 0.4 + 0.6 * Math.Abs(Math.Sin(t * 4.5)); wide = 6; }
+                else if (row.State == "idle") light = 0.3;
+                else light = 0.9;
+                if (row.Focus) wide = Math.Max(wide, 6);
+                dc.DrawRoundedRectangle(Ui.Alpha(color, light), null, new Rect(Right ? Width - wide : 0, 3 + i * Row.High + 5, wide, Row.High - 10), 2, 2);
             }
         }
     }
@@ -530,6 +566,13 @@ namespace ClaudeSpeaks
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock line1 = new TextBlock(), line2 = new TextBlock(), meta = new TextBlock();
         public bool Speaking, Focus;
+        public System.Windows.Media.Color Tone = Colors.White;  // the session's own color
+        public double Size = 1;  // how big its light is drawn, where the layout sizes lights by importance
+        public Glass Tile;  // its own little window, in the "tiles" layout
+        public readonly Border Pip = new Border {  // a dash of its color under the light, where rows and lights are not side by side
+            Width = 16, Height = 3, CornerRadius = new CornerRadius(1.5), VerticalAlignment = VerticalAlignment.Bottom,
+            Margin = new Thickness(0, 0, 0, 1), Visibility = Visibility.Collapsed,
+        };
         public string Name = "", Color = "", Title = "", State = "", FlashText, TalkKind, TalkText = "";  // TalkKind: null unless push-to-talk is about this session
         public readonly Badge Badge = new Badge { Visibility = Visibility.Collapsed };
         bool talkDim;
@@ -541,6 +584,7 @@ namespace ClaudeSpeaks
             Wave = Orb.Wave = Strip.Wave = wave;
             Strip.NewestRight = right;
             Light.Children.Add(Orb);
+            Light.Children.Add(Pip);
             Strip.Margin = right ? new Thickness(8, 0, 0, 0) : new Thickness(0, 0, 8, 0);
             words.Margin = new Thickness(12, 5, 12, 6);
             words.RenderTransform = Slide;
@@ -574,6 +618,9 @@ namespace ClaudeSpeaks
             string before = State;
             Name = Overlay.Str(s, "name");
             Color = Overlay.Str(s, "color");
+            try { Tone = Color.Length > 0 ? (System.Windows.Media.Color)ColorConverter.ConvertFromString(Color) : Colors.White; }
+            catch (Exception) { Tone = Colors.White; }
+            Pip.Background = Ui.Named(Color);
             Title = Overlay.Str(s, "title");
             State = Orb.State = Overlay.Str(s, "state", "idle");
             Speaking = Orb.Speaking = s.ContainsKey("speaking") && Convert.ToBoolean(s["speaking"]);
@@ -593,6 +640,12 @@ namespace ClaudeSpeaks
         }
 
         public bool Saying { get { return FlashText != null && (Speaking || Ui.Now < FlashUntil); } }
+
+        // How much room it deserves right now, for layouts that size lights by importance.
+        public double Weight
+        {
+            get { return Focus || Speaking || TalkKind != null ? 1.22 : State == "needs_you" ? 1.15 : State == "working" ? 1.0 : State == "idle" ? 0.74 : 0.88; }
+        }
 
         // Something to read about it right now: what it says, or what you are saying to it.
         public bool Showing { get { return TalkKind != null || Saying; } }
@@ -718,6 +771,24 @@ namespace ClaudeSpeaks
         bool inFrame;
         int[] grabbedAt = new int[4];
         Row talker, hot;  // the session the speech bubble belongs to; the one under the mouse
+        // How the sessions are laid out: "bar" (a column of lights in one piece of glass),
+        // "living" (the same, with lights sized by importance and an edge that takes the color
+        // of the session in focus and pulses with the voice), "island" (a row of lights at the
+        // top middle of the screen, everything else dropping down from it), "edge" (a thin line
+        // of light at the side of the screen; the bar comes out when the mouse or Ctrl+Alt asks),
+        // "tiles" (every session its own small piece of glass, sized by importance).
+        string layout = "bar";
+        readonly Glass strip = new Glass(0);
+        readonly EdgeStrip stripArt = new EdgeStrip();
+        const double TileGap = 6, MaxTile = Row.High * 1.22 + 2;
+        double tileX, tileY;  // tiles: the screen edge side of the column, and its top (or bottom)
+        Rect tilesBox;
+        bool barShown;  // there is something of the overlay on screen
+        bool handling;
+        readonly Queue<string> waiting = new Queue<string>();
+        bool Tiled { get { return layout == "tiles"; } }
+        bool Island { get { return layout == "island"; } }
+        bool Edgy { get { return layout == "edge"; } }
         // Push-to-talk: what is going on (listening, transcribing, sent, ...), for which session,
         // the words, and your own voice as the microphone hears it.
         readonly Wave mic = new Wave();
@@ -775,6 +846,9 @@ namespace ClaudeSpeaks
             bubble.Body = layers;
 
             rail.SizeChanged += delegate { Place(); };
+            strip.SizeChanged += delegate { Place(); };
+            stripArt.Rows = order;
+            strip.Panel.Child = stripArt;
             bannerTimer.Tick += delegate { bannerTimer.Stop(); hasBanner = false; Render(); };
             // Clicks pass through, so "the mouse is on me" is found by watching where the cursor is.
             hoverTimer.Interval = TimeSpan.FromMilliseconds(30);
@@ -790,7 +864,10 @@ namespace ClaudeSpeaks
             };
             // Other always-on-top windows (and some games) push us down; climb back regularly.
             topTimer.Interval = TimeSpan.FromSeconds(2);
-            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); };
+            topTimer.Tick += delegate {
+                rail.Raise(); strip.Raise(); panel.Raise(); bubble.Raise();
+                foreach (Row row in order.ToArray()) if (row.Tile != null) row.Tile.Raise();
+            };
 
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
             SetGlass();
@@ -843,7 +920,22 @@ namespace ClaudeSpeaks
             rail.Dispatcher.BeginInvoke(new Action(delegate { Application.Current.Shutdown(); }));
         }
 
+        // Creating or showing a window can let the next message in before this one is done,
+        // which would change the list of sessions under the feet of whoever is walking it.
+        // So a message that arrives meanwhile waits its turn.
         void Handle(string line)
+        {
+            if (handling) { waiting.Enqueue(line); return; }
+            handling = true;
+            try
+            {
+                HandleOne(line);
+                while (waiting.Count > 0) HandleOne(waiting.Dequeue());
+            }
+            finally { handling = false; }
+        }
+
+        void HandleOne(string line)
         {
             Dictionary<string, object> msg;
             try { msg = (Dictionary<string, object>)json.DeserializeObject(line); }
@@ -862,6 +954,9 @@ namespace ClaudeSpeaks
                     opaque = msg.ContainsKey("opaque") && Convert.ToBoolean(msg["opaque"]);
                     still = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
                     glass = Str(msg, "glass", glass);
+                    string wanted = Str(msg, "layout", layout);
+                    if (wanted != "living" && wanted != "island" && wanted != "edge" && wanted != "tiles") wanted = "bar";
+                    if (wanted != layout) { layout = wanted; ApplyLayout(); }
                     if (msg.ContainsKey("focus_wheel")) wheelKeys = Keys(Str(msg, "focus_wheel"));
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
@@ -932,6 +1027,27 @@ namespace ClaudeSpeaks
             rail.Look(kind);
             panel.Look(kind);
             bubble.Look(kind);
+            foreach (Row row in order.ToArray()) if (row.Tile != null) row.Tile.Look(kind);
+            // The line of light at the screen edge is not glass: only the light shows.
+            strip.Look(opaque ? "solid" : "none");
+            strip.Panel.BorderThickness = new Thickness(0);
+            if (!opaque) strip.Panel.Background = Brushes.Transparent;
+        }
+
+        // A different layout: start again from nothing, so every light lands in its new home.
+        void ApplyLayout()
+        {
+            ForgetRows();
+            lights.Orientation = Island ? Orientation.Horizontal : Orientation.Vertical;
+            selector.HorizontalAlignment = Island ? HorizontalAlignment.Left : HorizontalAlignment.Center;
+            selector.VerticalAlignment = Island ? VerticalAlignment.Center : VerticalAlignment.Top;
+            selectorAt.X = selectorAt.Y = 0;
+            selectorShown = 0;
+            hover = peek = false;
+            if (catching) { catching = false; rail.CatchMouse(false); }
+            if (strip.IsVisible) strip.Hide();
+            if (rail.IsVisible) rail.Hide();
+            Edge();
         }
 
         // A block of text in the panel, with a hairline between it and the rows.
@@ -988,15 +1104,39 @@ namespace ClaudeSpeaks
                 if (talking && row.Name == talkName) row.SetTalk(TalkKind(), TalkWords(), TalkDim(), talkState == "listening" ? mic : null);
                 else row.SetTalk(null, "", false, null);
             bool show = isList || hasRequest || hasBanner || moving || talking || sessions.Length > 0;
-            if (show && !rail.IsVisible) rail.Show();
-            else if (!show && rail.IsVisible) rail.Hide();
+            barShown = show;
+            // The bar itself: not in "tiles" (each light has its own window), and in "edge" only
+            // when it has been called out; at rest there is just the line of light.
+            bool railOut = show && !Tiled && (!Edgy || open || dragging);
+            if (railOut && !rail.IsVisible)
+            {
+                if (Edgy) for (int i = 0; i < order.Count; i++) order[i].Orb.Born = Ui.Now + 0.035 * i;  // the lights pop in one by one
+                rail.Show();
+            }
+            else if (!railOut && rail.IsVisible) rail.Hide();
+            if (Edgy)
+            {
+                stripArt.Right = corner.EndsWith("right");
+                stripArt.Height = 6 + Math.Max(1, order.Count) * Row.High;
+                stripArt.InvalidateVisual();
+            }
+            if (Edgy && show && !strip.IsVisible) strip.Show();
+            else if ((!Edgy || !show) && strip.IsVisible) strip.Hide();
 
             double goal = open && show ? panel.Natural() : 0;
             if (goal > 0 && panel.Goal == 0) openedAt = Ui.Now;  // the rows come in one after another from now
             panel.Goal = goal;
-            // A row that says a long sentence is taller than a light; keep the two level.
-            foreach (Row row in order) row.Light.Height = goal > 0 && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
+            // A row that says a long sentence is taller than a light; keep the two level (where
+            // rows and lights sit side by side).
+            bool level = !Tiled && !Island;
+            foreach (Row row in order)
+            {
+                row.Pip.Visibility = Island ? Visibility.Visible : Visibility.Collapsed;
+                if (Tiled) { row.Tile.Panel.BorderBrush = row.Focus ? Ui.Alpha(row.Tone, 0.95) : Ui.GlassEdge; continue; }
+                row.Light.Height = level && goal > 0 && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
+            }
             UpdateBubble(show);
+            if (Tiled) PlaceTiles();
             PlaceSides();
             Fade();
             Run(true);
@@ -1024,19 +1164,37 @@ namespace ClaudeSpeaks
                 names.Add(name);
             }
             foreach (string gone in new List<string>(rows.Keys))
-                if (!names.Contains(gone)) { rows.Remove(gone); waves.Remove(gone); flashes.Remove(gone); }
+                if (!names.Contains(gone))
+                {
+                    if (rows[gone].Tile != null) rows[gone].Tile.Close();
+                    rows.Remove(gone); waves.Remove(gone); flashes.Remove(gone);
+                }
             if (hot != null && !rows.ContainsValue(hot)) hot = null;
-            bool same = rowsPanel.Children.Count == order.Count && lights.Children.Count == Math.Max(1, order.Count);
-            for (int i = 0; same && i < order.Count; i++) same = rowsPanel.Children[i] == order[i].Text && lights.Children[i] == order[i].Light;
+            if (Tiled)
+                foreach (Row row in order.ToArray())
+                {
+                    if (row.Tile != null) continue;
+                    row.Tile = new Glass(0);
+                    row.Tile.Panel.Child = row.Light;
+                    row.Tile.Look(opaque ? "solid" : glass);
+                    row.Tile.Cursor = Cursors.SizeAll;
+                    row.Tile.MouseLeftButtonDown += delegate { BeginDrag(); };
+                    row.Tile.MouseWheel += delegate(object sender, MouseWheelEventArgs e) { Wheel(e.Delta); };
+                    if (catching) row.Tile.CatchMouse(true);
+                }
+            int inBar = Tiled ? 1 : Math.Max(1, order.Count);
+            bool same = rowsPanel.Children.Count == order.Count && lights.Children.Count == inBar;
+            for (int i = 0; same && i < order.Count; i++) same = rowsPanel.Children[i] == order[i].Text && (Tiled || lights.Children[i] == order[i].Light);
             if (same) return;
             rowsPanel.Children.Clear();
             lights.Children.Clear();
-            foreach (Row row in order) { rowsPanel.Children.Add(row.Text); lights.Children.Add(row.Light); }
-            if (order.Count == 0) lights.Children.Add(spare);
+            foreach (Row row in order) { rowsPanel.Children.Add(row.Text); if (!Tiled) lights.Children.Add(row.Light); }
+            if (order.Count == 0 || Tiled) lights.Children.Add(spare);
         }
 
         void ForgetRows()
         {
+            foreach (Row row in new List<Row>(rows.Values)) if (row.Tile != null) row.Tile.Close();
             rows.Clear();
             order.Clear();
             rowsPanel.Children.Clear();
@@ -1151,10 +1309,14 @@ namespace ClaudeSpeaks
                 bubbleStrip.InvalidateVisual();
                 if (bubbleBadge.Moving) { bubbleBadge.InvalidateVisual(); again = true; }
             }
+            bool sized = layout == "living" || Tiled, resized = false;
             foreach (Row row in order)
             {
                 if (row.FlashText != null && !row.Speaking && now >= row.FlashUntil) { row.FlashText = null; row.Refresh(); expired = true; }
                 bool moved = Ui.Approach(ref row.Orb.Hot, row == hot ? 1 : 0, 16, dt);
+                if (Ui.Approach(ref row.Size, sized ? row.Weight : 1, still ? 1000 : 11, dt)) { moved = true; resized = true; }
+                row.Orb.Scale = row.Size;
+                if (Tiled && Math.Abs(row.Light.Width - Row.High * row.Size) > 0.01) { row.Light.Width = row.Light.Height = Row.High * row.Size; resized = true; }
                 row.Hot = row == hot ? 1 : 0;
                 moved |= row.Glow(dt);
                 if (moved || row.Orb.Moving)
@@ -1166,26 +1328,44 @@ namespace ClaudeSpeaks
                 if (row.TalkKind != null && row.Badge.Moving) { row.Badge.InvalidateVisual(); again = true; }
                 if (row.FlashText != null) again = true;  // so its end is noticed
             }
+            if (Tiled && (resized || dragging)) { PlaceTiles(); PlaceSides(); }
+            if (Edgy && strip.IsVisible && again) stripArt.InvalidateVisual();
+            if (layout == "living") LiveEdge(now);
             if (expired) Render();
             if (!again && !expired) Run(false);
+        }
+
+        // "living": the bar's edge takes the color of the session that is speaking, or else the
+        // one in focus, and brightens with the voice.
+        void LiveEdge(double now)
+        {
+            if (dragging || moving || catching) return;
+            Row focus = null, voice = null;
+            foreach (Row row in order) { if (row.Focus) focus = row; if (row.Speaking) voice = row; }
+            Row lead = voice ?? focus;
+            if (lead == null) { rail.Panel.BorderBrush = Ui.GlassEdge; return; }
+            rail.Panel.BorderBrush = Ui.Alpha(lead.Tone, voice != null ? 0.4 + 0.6 * voice.Wave.At(now - Wave.Lag) : 0.7);
         }
 
         // The frame around the light in focus glides from one light to the next.
         bool MoveSelector(double dt)
         {
-            double goal = 0, y = 3;
+            double goal = 0, at = 3;
             bool found = false;
-            foreach (Row row in order)
-            {
-                if (row.Focus) { goal = y + (row.Light.Height - selector.Height) / 2; found = true; break; }
-                y += row.Light.Height;
-            }
+            if (!Tiled)
+                foreach (Row row in order)
+                {
+                    double room = Island ? Row.High : row.Light.Height;
+                    if (row.Focus) { goal = at + (room - selector.Height) / 2; found = true; break; }
+                    at += room;
+                }
             if (found && selectorShown < 0.02) selectorY = goal;  // it appears in place instead of flying in
             bool moving = Ui.Approach(ref selectorShown, found ? 1 : 0, 12, dt);
             if (found && Math.Abs(goal - selectorY) > 0.05) { selectorY += (goal - selectorY) * (1 - Math.Exp(-20 * dt)); moving = true; }
             else if (found) selectorY = goal;
             selector.Opacity = selectorShown;
-            selectorAt.Y = selectorY;
+            selectorAt.X = Island ? selectorY : 0;
+            selectorAt.Y = Island ? 0 : selectorY;
             return moving;
         }
 
@@ -1212,26 +1392,112 @@ namespace ClaudeSpeaks
         void WatchCursor()
         {
             CursorPoint cursor;
-            if (peekForced || dragging || !rail.IsVisible || !GetCursorPos(out cursor)) return;
-            int[] bar = rail.Area();
-            bool onBar = Within(cursor, bar, 4);
+            if (peekForced || dragging || !barShown || !GetCursorPos(out cursor)) return;
+            bool resting = Edgy && !rail.IsVisible;
+            bool onBar = false;
+            foreach (int[] piece in BarAreas()) onBar |= Within(cursor, piece, resting ? 12 : 4);
+            int[] bar = BarArea();
             bool inside = onBar || (panel.IsVisible && panel.Goal > 0 && (Within(cursor, panel.Area(), 4) || Within(cursor, Between(bar, panel.Area()), 0)));
             if (inside) { insideTicks++; outsideTicks = 0; } else { outsideTicks++; insideTicks = 0; }
             bool wantHover = inside ? insideTicks >= 3 || hover : hover && outsideTicks < 9;  // 0.1 s to open, 0.3 s to close
             bool wantPeek = mode == "list" && (inside ? insideTicks >= 22 || peek : peek && outsideTicks < 9);
             Row under = null;
-            if (inside && rail.ActualHeight > 0)
+            if (Tiled)
             {
-                double y = (cursor.Y - bar[1]) * rail.ActualHeight / Math.Max(1, bar[3]) - 4;  // in the bar's own units, past its edge
-                foreach (Row row in order) { if (y >= 0 && y < row.Light.Height) under = row; y -= row.Light.Height; }
+                foreach (Row row in order) if (row.Tile != null && Within(cursor, row.Tile.Area(), 3)) under = row;
             }
-            bool wantCatch = (onBar || moving) && Ui.Now > passUntil;
-            if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); Edge(); }
+            else if (inside && rail.IsVisible && rail.ActualHeight > 0 && (onBar || !Island))
+            {
+                int[] area = rail.Area();
+                // In the bar's own units, past its edge: along it, whichever way it runs.
+                double along = Island ? (cursor.X - area[0]) * rail.ActualWidth / Math.Max(1, area[2]) - 4
+                                      : (cursor.Y - area[1]) * rail.ActualHeight / Math.Max(1, area[3]) - 4;
+                foreach (Row row in order)
+                {
+                    double room = Island ? Row.High : row.Light.Height;
+                    if (along >= 0 && along < room) under = row;
+                    along -= room;
+                }
+            }
+            bool wantCatch = ((onBar && !resting) || moving) && !Island && Ui.Now > passUntil;
+            if (wantCatch != catching) { catching = wantCatch; Catch(catching); Edge(); }
             if (under != hot) { hot = under; Run(true); }
             if (wantHover == hover && wantPeek == peek) return;
             hover = wantHover;
             peek = wantPeek;
             Render();
+        }
+
+        // The mouse is taken (so the bar can be dragged) or let through, by whatever holds the lights.
+        void Catch(bool on)
+        {
+            if (!Tiled) { rail.CatchMouse(on); return; }
+            foreach (Row row in order.ToArray()) if (row.Tile != null) row.Tile.CatchMouse(on);
+        }
+
+        // The pieces that hold the lights right now, in screen pixels.
+        List<int[]> BarAreas()
+        {
+            var pieces = new List<int[]>();
+            if (Tiled) { foreach (Row row in order) if (row.Tile != null && row.Tile.IsVisible) pieces.Add(row.Tile.Area()); }
+            else
+            {
+                if (rail.IsVisible) pieces.Add(rail.Area());
+                if (strip.IsVisible) pieces.Add(strip.Area());
+            }
+            return pieces;
+        }
+
+        // The box around all of them.
+        int[] BarArea()
+        {
+            int left = int.MaxValue, top = int.MaxValue, right = int.MinValue, bottom = int.MinValue;
+            foreach (int[] a in BarAreas())
+            {
+                left = Math.Min(left, a[0]); top = Math.Min(top, a[1]);
+                right = Math.Max(right, a[0] + a[2]); bottom = Math.Max(bottom, a[1] + a[3]);
+            }
+            return left == int.MaxValue ? new[] { 0, 0, 0, 0 } : new[] { left, top, right - left, bottom - top };
+        }
+
+        // The same box in the units WPF places windows in: where the panel and bubble attach.
+        Rect Bar()
+        {
+            if (Tiled) return tilesBox;
+            if (Edgy && !rail.IsVisible) return new Rect(strip.Left, strip.Top, strip.ActualWidth, strip.ActualHeight);
+            return new Rect(rail.Left, rail.Top, rail.ActualWidth > 0 ? rail.ActualWidth : Row.High + 8, rail.ActualHeight);
+        }
+
+        // How far down the screen a session's light is, for the bubble to sit level with it.
+        double Level(Row row)
+        {
+            Rect bar = Bar();
+            int index = row == null ? -1 : order.IndexOf(row);
+            if (index < 0) return bar.Top + bar.Height / 2;
+            if (Tiled) return row.Tile.Top + (row.Light.Height + 2) / 2;
+            if (Edgy && !rail.IsVisible) return strip.Top + 3 + index * Row.High + Row.High / 2;
+            try { return rail.Top + row.Light.TransformToAncestor(rail).Transform(new Point(0, row.Light.ActualHeight / 2)).Y; }
+            catch (InvalidOperationException) { return bar.Top + bar.Height / 2; }  // its light is not on screen yet
+        }
+
+        // "tiles": every session's own little window, one under the other, against the chosen side.
+        void PlaceTiles()
+        {
+            bool right = corner.EndsWith("right"), bottom = corner.StartsWith("bottom");
+            double total = -TileGap;
+            foreach (Row row in order) total += row.Light.Height + 2 + TileGap;
+            total = Math.Max(0, total);
+            double y = bottom ? tileY - total : tileY;
+            tilesBox = new Rect(right ? tileX - MaxTile : tileX, y, MaxTile, total);
+            foreach (Row row in order.ToArray())
+            {
+                if (row.Tile == null) continue;
+                row.Tile.Left = right ? tileX - row.Light.Width - 2 : tileX;
+                row.Tile.Top = y;
+                y += row.Light.Height + 2 + TileGap;
+                if (barShown && !row.Tile.IsVisible) row.Tile.Show();
+                else if (!barShown && row.Tile.IsVisible) row.Tile.Hide();
+            }
         }
 
         // --- the wheel ------------------------------------------------------------------------------
@@ -1242,7 +1508,7 @@ namespace ClaudeSpeaks
         // are down and there is more than one session to choose from.
         void WatchWheelKeys()
         {
-            bool held = wheelKeys.Length > 0 && rail.IsVisible && Held();
+            bool held = wheelKeys.Length > 0 && barShown && Held();
             // Holding those keys by themselves also brings the panel out. Not at once, so a quick
             // hotkey does not make it flicker, and not during push-to-talk, which has its bubble.
             if (!held) heldSince = 0;
@@ -1321,8 +1587,8 @@ namespace ClaudeSpeaks
         void BeginDrag()
         {
             CursorPoint cursor;
-            if (dragging || !GetCursorPos(out cursor)) return;
-            grabbedAt = rail.Area();
+            if (dragging || Island || !GetCursorPos(out cursor)) return;
+            grabbedAt = BarArea();
             grabX = cursor.X - grabbedAt[0];
             grabY = cursor.Y - grabbedAt[1];
             dragging = true;
@@ -1340,6 +1606,12 @@ namespace ClaudeSpeaks
             int button = GetSystemMetrics(SM_SWAPBUTTON) != 0 ? VK_RBUTTON : VK_LBUTTON;
             if ((GetAsyncKeyState(button) & 0x8000) == 0) { EndDrag(); return; }
             Point to = HwndSource.FromHwnd(hwnd).CompositionTarget.TransformFromDevice.Transform(new Point(cursor.X - grabX, cursor.Y - grabY));
+            if (Tiled)
+            {
+                tileX = corner.EndsWith("right") ? to.X + MaxTile : to.X;
+                tileY = corner.StartsWith("bottom") ? to.Y + tilesBox.Height : to.Y;
+                return;  // the tiles are put there by the frame that called this
+            }
             rail.Left = to.X;
             rail.Top = to.Y;
         }
@@ -1349,7 +1621,7 @@ namespace ClaudeSpeaks
         void EndDrag()
         {
             dragging = false;
-            int[] now = rail.Area();
+            int[] now = BarArea();
             if (Math.Abs(now[0] - grabbedAt[0]) + Math.Abs(now[1] - grabbedAt[1]) > 3)
             {
                 ReportMoved();
@@ -1359,7 +1631,7 @@ namespace ClaudeSpeaks
             {
                 passUntil = Ui.Now + 0.4;
                 catching = false;
-                rail.CatchMouse(false);
+                Catch(false);
                 mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, UIntPtr.Zero);
                 mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, UIntPtr.Zero);
             }
@@ -1372,7 +1644,9 @@ namespace ClaudeSpeaks
         // The bar's edge shows what the mouse can do: brighter when it can be grabbed, amber while held.
         void Edge()
         {
-            rail.Panel.BorderBrush = dragging || moving ? Ui.AmberEdge : catching ? Ui.BrightEdge : Ui.GlassEdge;
+            Brush edge = dragging || moving ? Ui.AmberEdge : catching ? Ui.BrightEdge : Ui.GlassEdge;
+            rail.Panel.BorderBrush = edge;
+            if (Tiled) foreach (Row row in order) if (row.Tile != null) row.Tile.Panel.BorderBrush = catching || dragging || moving || !row.Focus ? edge : Ui.Alpha(row.Tone, 0.95);
         }
 
         // "claude-speaks overlay move": the same dragging, announced, for when the bar is hard to find.
@@ -1380,7 +1654,7 @@ namespace ClaudeSpeaks
         {
             moving = true;
             catching = true;
-            rail.CatchMouse(true);
+            Catch(true);
             Edge();
             bannerTimer.Stop();
             hasBanner = true;
@@ -1406,7 +1680,7 @@ namespace ClaudeSpeaks
         // its place when its size changes.
         void ReportMoved()
         {
-            int[] area = rail.Area();
+            int[] area = BarArea();
             var centre = new System.Drawing.Point(area[0] + area[2] / 2, area[1] + area[3] / 2);
             System.Windows.Forms.Screen screen = System.Windows.Forms.Screen.FromPoint(centre);
             monitor = 0;
@@ -1419,7 +1693,8 @@ namespace ClaudeSpeaks
             }
             Rect work = WorkArea();
             string was = corner;
-            double left = rail.Left, top = rail.Top, wide = rail.ActualWidth, tall = rail.ActualHeight;
+            Rect box = Bar();
+            double left = box.Left, top = box.Top, wide = box.Width, tall = box.Height;
             bool right = left + wide / 2 > work.Left + work.Width / 2, bottom = top + tall / 2 > work.Top + work.Height / 2;
             corner = (bottom ? "bottom" : "top") + "-" + (right ? "right" : "left");
             offsetX = Math.Max(0, right ? work.Right - (left + wide) : left - work.Left);
@@ -1582,33 +1857,58 @@ namespace ClaudeSpeaks
             if (dragging) return;
             Rect work = WorkArea();
             bool right = corner.EndsWith("right"), bottom = corner.StartsWith("bottom");
-            rail.Left = right ? work.Right - rail.ActualWidth - offsetX : work.Left + offsetX;
-            rail.Top = bottom ? work.Bottom - rail.ActualHeight - offsetY : work.Top + offsetY;
+            if (Island)
+            {
+                // Top middle of the screen (bottom middle if the bar was put at the bottom).
+                rail.Left = work.Left + (work.Width - rail.ActualWidth) / 2;
+                rail.Top = bottom ? work.Bottom - rail.ActualHeight - 10 : work.Top + 10;
+            }
+            else if (Edgy)
+            {
+                // The line of light lies against the side of the screen; the bar comes out next to it.
+                double line = strip.ActualWidth > 0 ? strip.ActualWidth : stripArt.Width;
+                strip.Left = right ? work.Right - line : work.Left;
+                strip.Top = bottom ? work.Bottom - strip.ActualHeight - offsetY : work.Top + offsetY;
+                rail.Left = right ? work.Right - line - 2 - rail.ActualWidth : work.Left + line + 2;
+                rail.Top = bottom ? work.Bottom - rail.ActualHeight - offsetY : work.Top + offsetY;
+            }
+            else
+            {
+                rail.Left = right ? work.Right - rail.ActualWidth - offsetX : work.Left + offsetX;
+                rail.Top = bottom ? work.Bottom - rail.ActualHeight - offsetY : work.Top + offsetY;
+            }
+            tileX = right ? work.Right - offsetX : work.Left + offsetX;
+            tileY = bottom ? work.Bottom - offsetY : work.Top + offsetY;
+            if (Tiled) PlaceTiles();
             PlaceSides();
         }
 
-        // The panel and the bubble sit beside the bar, on the side with more room: the panel level
-        // with the bar, the bubble level with the light of the session that is talking. Their top
-        // left corners are set once per opening and stay there while they unfold.
+        // The panel and the bubble sit beside the lights, on the side with more room: the panel
+        // level with the bar, the bubble level with the light of the session that is talking. In
+        // the "island" layout both drop down from the middle of it instead. Their top left corners
+        // are set once per opening and stay there while they unfold.
         void PlaceSides()
         {
-            if (!rail.IsVisible) return;
-            Rect work = WorkArea();
+            if (!barShown) return;
+            Rect work = WorkArea(), bar = Bar();
             bool right = corner.EndsWith("right"), bottom = corner.StartsWith("bottom");
-            double width = rail.ActualWidth > 0 ? rail.ActualWidth : Row.High + 8, height = rail.ActualHeight;
+            if (Island)
+            {
+                double middle = bar.Left + bar.Width / 2;
+                if (panel.Goal > 0) { panel.Left = middle - PanelWidth / 2; panel.Top = bottom ? bar.Top - Gap - panel.Goal : bar.Bottom + Gap; }
+                if (bubble.Goal > 0) { bubble.Left = middle - BubbleWidth / 2; bubble.Top = bottom ? bar.Top - Gap - bubble.Goal : bar.Bottom + Gap; }
+                return;
+            }
             if (panel.Goal > 0)
             {
-                panel.Left = right ? rail.Left - PanelWidth - Gap : rail.Left + width + Gap;
-                double top = bottom ? rail.Top + height - panel.Goal : rail.Top;
+                panel.Left = right ? bar.Left - PanelWidth - Gap : bar.Right + Gap;
+                double top = bottom ? bar.Bottom - panel.Goal : bar.Top;
                 panel.Top = Math.Max(work.Top + 4, Math.Min(work.Bottom - panel.Goal - 4, top));
             }
             if (bubble.Goal > 0)
             {
-                double level = height / 2;
-                try { if (talker != null) level = talker.Light.TransformToAncestor(rail).Transform(new Point(0, talker.Light.ActualHeight / 2)).Y; }
-                catch (InvalidOperationException) { }  // its light is not on screen yet
-                bubble.Left = right ? rail.Left - BubbleWidth - Gap : rail.Left + width + Gap;
-                bubble.Top = Math.Max(work.Top + 4, Math.Min(work.Bottom - bubble.Goal - 4, rail.Top + level - bubble.Goal / 2));
+                bubble.Left = right ? bar.Left - BubbleWidth - Gap : bar.Right + Gap;
+                bubble.Top = Math.Max(work.Top + 4, Math.Min(work.Bottom - bubble.Goal - 4, Level(talker) - bubble.Goal / 2));
             }
         }
 
@@ -1673,15 +1973,17 @@ namespace ClaudeSpeaks
         void ReportBounds()
         {
             rail.UpdateLayout();
-            var reply = new Dictionary<string, object> { { "type", "bounds" }, { "visible", rail.IsVisible } };
-            if (rail.IsVisible)
+            var pieces = new List<object>();
+            foreach (int[] piece in BarAreas()) pieces.Add(piece);
+            var reply = new Dictionary<string, object> { { "type", "bounds" }, { "visible", barShown && pieces.Count > 0 } };
+            if (barShown && pieces.Count > 0)
             {
-                var pieces = new List<object> { rail.Area() };
                 if (panel.IsVisible) pieces.Add(panel.Area());
                 if (bubble.IsVisible) pieces.Add(bubble.Area());
-                int[] area = rail.Area();
+                int[] area = BarArea();
                 reply["x"] = area[0]; reply["y"] = area[1]; reply["w"] = area[2]; reply["h"] = area[3];
                 reply["pieces"] = pieces;
+                reply["layout"] = layout;
                 reply["open"] = IsOpen();
                 reply["opacity"] = lights.Opacity;
                 reply["monitor"] = monitor;

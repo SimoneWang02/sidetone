@@ -122,6 +122,21 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   **bubble** appears beside the light of the session that is talking while the panel is away:
   name, title, the sentence, and the voice flowing behind the text. Mode names are still
   `dots` (lights only) and `list` (panel kept out).
+- Layouts (2026-11-17: the author finds the bar intuitive but wondered about "a cooler way to
+  display the layout", was offered four ideas and said "let's try all of them ... I want to see
+  how they look"; **no choice made yet**): `overlay.layout` is `bar`, `living`, `island`, `edge`
+  or `tiles`; `Ctrl+Alt+K` or `claude-speaks overlay layout NAME|next` switches, and
+  `Hub.set_layout` saves it. In the overlay: `living` scales each `Orb` by `Row.Weight` and colors
+  the bar's edge (`LiveEdge`); `island` lays the lights out sideways at the top middle, with a
+  dash of the session's color under each light, and drops the panel and bubble from its middle
+  (no dragging); `edge` adds a fourth window, a 10 px line of light (`EdgeStrip`) flush with
+  the side of the screen, and shows the bar only when called out; `tiles` gives every row its
+  own `Glass` window (`Row.Tile`) sized by weight, and the bar window stays hidden (it still
+  owns the hotkeys). `Bar()`, `BarAreas()` and `Level()` hide those differences from the
+  placement and mouse code. Switching layout forgets the rows and rebuilds them.
+- Messages are handled strictly one at a time (`Handle` queues what arrives while one is being
+  handled): creating or showing a window lets WPF run the next queued message early, which
+  changed the list of sessions while it was being walked ("Collection was modified").
 - Motion (asked for by the author on 2026-11-17: "more fps, more animation ... when hovering
   the status the details pop out instantly with no animation"): one `Frame` step per
   `CompositionTarget.Rendering` (in step with the screen; about 150 to 190 a second on the
@@ -202,6 +217,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   every prompt and hotkey; `catch_up()` replays lines newer than it. The overlay gets the last 6
   with each `state` and shows them while the cursor rests on the list (found by polling the
   cursor position, since the window is click-through).
+- Follow-ups waiting for a busy session are also written to `followups.json` in the run folder
+  (owner-only, dropped when over an hour old), because a hub restart lost one for real: the
+  author asked a question by voice during a reply, and a restart made while working on the
+  overlay wiped it. The overlay shows such a message as waiting (`talk` step `queued`).
 - `hub/claude_sessions.py`: reads `~/.claude/sessions/<pid>.json` (pid, sessionId, status
   busy/idle). `Hub.reconcile()` runs every second: idle there but working here means the turn
   was interrupted; a session that had a file and lost it is gone. Undocumented files, so
@@ -220,7 +239,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 81 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 83 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

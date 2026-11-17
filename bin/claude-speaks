@@ -24,7 +24,8 @@ Usage: claude-speaks <command>
   talk start|stop|cancel     the talk key and the cancel key, from a shell
   target [PROJECT]           show or choose which session a spoken follow-up goes to
   overlay dots|list|toggle|restart   switch the on-screen overlay's view, or restart it
-  overlay move               make the overlay draggable for a few seconds; it stays where you drop it
+  overlay layout NAME|next   how sessions are shown: bar, living, island, edge, tiles
+  overlay move               make the overlay easy to find and drag (you can drag it any time)
   overlay monitor N          put it on monitor N (0 = primary)
   overlay corner top-right|top-left|bottom-right|bottom-left
   demo                       play three made-up sessions to see and hear every state
@@ -135,6 +136,9 @@ case ${1:-} in
       restart) echo '{"restart": true}' | hub_post /overlay >/dev/null ;;
       move) echo '{"move": true}' | hub_post /overlay >/dev/null && echo "drag the overlay now; it stays where you drop it" ;;
       monitor) jq -nc --arg n "${3:-0}" '{monitor: ($n | tonumber)}' | hub_post /overlay >/dev/null ;;
+      layout)
+        got=$(jq -nc --arg l "${3:-next}" '{layout: $l}' | hub_post /overlay | jq -r '.layout // empty')
+        [ -n "$got" ] && echo "layout: $got" || { echo "layouts: bar, living, island, edge, tiles (or: next)"; exit 2; } ;;
       corner)
         case ${3:-} in top-right|top-left|bottom-right|bottom-left) ;; *) usage; exit 2 ;; esac
         jq -nc --arg c "$3" '{corner: $c}' | hub_post /overlay >/dev/null ;;

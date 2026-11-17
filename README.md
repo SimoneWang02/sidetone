@@ -50,6 +50,21 @@ its own spoken line as the first line of its reply.
 - **Your own voices.** Pick a voice per project, blend two into a new one, or load a Kokoro
   voice file.
 
+### Layouts
+
+The sessions can be shown in five ways. `Ctrl+Alt+K` goes round them, and the voice says which
+one you are on.
+
+- **bar**: a column of lights in one piece of glass.
+- **living**: the bar, with each light sized by how much it matters right now, and an edge that
+  takes the color of the session in focus and pulses with the voice.
+- **island**: a row of lights at the top middle of the screen; the bubble and the details
+  drop down from it.
+- **edge**: at rest only a thin line of light against the side of the screen, one piece per
+  session in its color: breathing while it works, flashing amber when it needs you, swelling
+  with the voice. The bar comes out when the mouse reaches it or `Ctrl+Alt` is held.
+- **tiles**: every session its own small piece of glass, bigger when it matters more.
+
 ## Install
 
 Needs: Linux or WSL2, a recent [Claude Code](https://claude.com/claude-code) (built on 2.1.325;
@@ -77,6 +92,7 @@ work, run `cs demo` in a terminal.
 | Key (Windows) | Does |
 |---|---|
 | `Ctrl+Alt+L` | Overlay: keep the panel out ↔ only the lights |
+| `Ctrl+Alt+K` | Overlay: next layout (bar, living, island, edge, tiles) |
 | `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Allow / deny the permission prompt shown in the overlay |
 | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Answer the question shown in the overlay |
 | hold `Ctrl+Alt` | Show the details panel while held |
@@ -106,6 +122,7 @@ claude-speaks voice PROJECT VOICE    give a project a voice
 claude-speaks voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
 claude-speaks voice add NAME FILE    load your own Kokoro voice file (.npy)
 claude-speaks overlay dots|list|toggle|restart     only the lights, or kept open
+claude-speaks overlay layout NAME|next   bar, living, island, edge or tiles
 claude-speaks overlay move           makes the bar easy to find and drag (you can drag it any time)
 claude-speaks overlay monitor N | corner top-left|top-right|bottom-left|bottom-right
 claude-speaks demo                   three made-up sessions through every state
@@ -123,6 +140,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
   "followup_delay": 0,
   "followup_confirm": false,
   "overlay": {
+    "layout": "bar",
     "corner": "top-right",
     "glass": "blur",
     "opacity": 0.9,
@@ -189,7 +207,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-81 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+83 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
 `python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
 view. It captures only the overlay's own rectangles, and shows the see-through glass over a

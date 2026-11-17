@@ -556,6 +556,18 @@ class Hub:
         except OSError as e:
             log(self.cfg, "hub.log", f"could not save the overlay position: {e}")
 
+    def set_layout(self, name: str) -> str | None:
+        """Show the sessions in another layout ("next" goes round them) and remember the choice."""
+        names = overlay_mod.LAYOUTS
+        if name == "next":
+            current = self.cfg.overlay.get("layout", names[0])
+            name = names[(names.index(current) + 1) % len(names)] if current in names else names[0]
+        if name not in names:
+            return None
+        self.place_overlay(layout=name)
+        self.say(f"{name} layout", kind="notice")
+        return name
+
     def on_overlay(self, msg: dict) -> None:
         if msg.get("type") == "moved":  # dragged to a new place
             placed = {k: msg[k] for k in ("monitor", "corner", "offset_x", "offset_y") if k in msg}
@@ -582,6 +594,8 @@ class Hub:
             self.cancel()
         elif name in ("focus_next", "focus_prev"):
             self.focus(1 if name == "focus_next" else -1)
+        elif name == "layout":
+            self.set_layout("next")
 
     # --- push-to-talk ------------------------------------------------------------------------
 
@@ -1087,6 +1101,8 @@ class Handler(BaseHTTPRequestHandler):
                 hub.overlay.restart()
             elif body.get("move"):
                 hub.overlay.send({"type": "move"})
+            elif "layout" in body:
+                return self._reply({"layout": hub.set_layout(str(body["layout"]))})
             elif "monitor" in body or "corner" in body:
                 hub.place_overlay(**{k: body[k] for k in ("monitor", "corner") if k in body})
             else:

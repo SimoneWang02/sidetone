@@ -232,6 +232,21 @@ send(type="move")
 shot("move")
 send(type="move", on=False)
 
+# The other layouts: at rest, with a session speaking, and with the details out.
+send(type="move", on=False)
+for layout in ("living", "island", "edge", "tiles"):
+    send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout=layout, **HERE)
+    send(type="state", sessions=sessions(), history=HISTORY)
+    shot(f"{layout}-rest", 1.2)
+    say(3)
+    shot(f"{layout}-speaking", 1.2)
+    send(type="state", sessions=sessions(), history=HISTORY)
+    send(type="flash", name="api-server", text="", seconds=0)
+    send(type="peek", on=True)
+    shot(f"{layout}-open", 1.0)
+    send(type="peek", on=False)
+send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="bar", **HERE)
+
 if "--glass" in sys.argv:
     for kind in ("blur", "acrylic"):
         send(type="config", opaque=False, glass=kind, mode="dots", hotkeys=KEYS, monitor=0, corner="top-right", offset_x=60, offset_y=140)
