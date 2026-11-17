@@ -929,15 +929,20 @@ class PushToTalk(HubCase):
     def test_moving_the_focus_in_the_tail_of_the_recording_does_not_take_the_words_along(self):
         hub = self.make()
         hub.cfg.talk_tail = 0.3  # the recorder goes on for a moment after the key is up
-        tail = threading.Event()
-        stop = hub.recorder.stop
-        hub.recorder.stop = lambda tail_=0.0, **kw: (tail.set(), time.sleep(kw.get("tail", tail_)), stop())[-1]
+        in_tail, stop = threading.Event(), hub.recorder.stop
+
+        def slow_stop(tail=0.0):
+            in_tail.set()
+            time.sleep(tail)
+            return stop()
+
+        hub.recorder.stop = slow_stop
         hub.talk_target = "a"
         to_a, to_b = hub.listen("a"), hub.listen("b")
         hub.talk_start()
         ending = threading.Thread(target=hub.talk_end)
         ending.start()
-        self.assertTrue(tail.wait(3))
+        self.assertTrue(in_tail.wait(3))
         hub.focus(1)  # while the last word is still being recorded
         ending.join(3)
         self.assertTrue(to_a.wake.wait(3), "the follow-up never reached the session it was said to")
