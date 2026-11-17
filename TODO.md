@@ -39,8 +39,11 @@ real keys yet.
       2026-11-17, in that same spoken answer: "the choices are not in new lines. I see them
       all in a single line and it's not very readable"; changed at once, seen in pictures
       only).
-- [ ] A question answered in the terminal leaving the overlay at once (mended 2026-11-17
-      after the author saw it stay; checked with a real session).
+- [x] A question answered in the terminal leaving the overlay at once (mended 2026-11-17
+      after the author saw it stay; checked with a real session). The author answered the
+      next question in the VS Code terminal and the hub closed it in that second (the log
+      says "answered in the terminal" three seconds before the reply went on). They have
+      not said whether they watched it leave the overlay.
 - [x] `Ctrl+Alt+R` (repeat): the author, 2026-11-17: "good for replay".
 - [x] `Ctrl+Alt+R` again after the change they asked for the same day: it now says the last
       line of the session in focus (move the focus with `Ctrl+Alt` + wheel first), and the
@@ -108,7 +111,9 @@ real keys yet.
 
 ## To decide
 
-- [ ] Which of the two layouts (`bar`, `island`) is the default for new users. Today it is `bar`.
+- [x] Which of the two layouts (`bar`, `island`) is the default for new users. The author,
+      asked on 2026-11-17 with bar, island and "decide later" to choose from: bar. It
+      already was, so nothing changed.
 - [ ] Voice of this project: it speaks with `bf_isabella` since the voice pool changed. Pin
       the earlier `af_heart` back? (`claude-speaks voice claude-speaks af_heart`)
 - [ ] "Uploadable" voices: was that cloning a voice from a recording? Kokoro cannot do it; it
