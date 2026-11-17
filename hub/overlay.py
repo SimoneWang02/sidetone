@@ -32,6 +32,9 @@ DEFAULTS = {
     "flash_seconds": 4,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
+    # Where push-to-talk's sign (dots, paper plane, not sent) goes: light = inside the session's
+    # status light | line = at the right of its name in the details
+    "talk_sign": "light",
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",

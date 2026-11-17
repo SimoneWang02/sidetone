@@ -223,10 +223,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   loudness values from the recorder, drawn as a wave in the microphone's own color, and the
   light becomes voice bars in that color. `Hub.focus()` re-sends what is on screen for the new
   session, and a pending follow-up moves with it. `banner` is now only used by the overlay
-  itself (move mode). The step is shown as a small animated sign at the right of the session's
-  first line (`Badge`: microphone, moving dots, paper plane, cross) with words underneath; the
+  itself (move mode). The step is shown as a small animated sign with words underneath; the
   name and title stay where they always are (the author did not like "listening" and "sent"
-  taking the title's place and suggested moving it or using icons).
+  taking the title's place and suggested moving it or using icons). The sign first sat at the
+  right of the session's first line (`Badge`: microphone, moving dots, paper plane, cross).
+  Since 2026-11-17 it is inside the session's light (the author, by voice: "it would be better
+  if we put the icon inside the bowl instead of the details"; "bowl" was read as the round
+  light, **not confirmed**): `Orb.Sign`, drawn by `Badge.Draw`. While listening the light keeps
+  its voice bars; then pink with dots, green with a paper plane, red with a struck-out
+  microphone (a plain cross there already means the session failed). The words stay in the
+  bubble or row. `overlay.talk_sign` is `light` (default) or `line` (as before). With no
+  session to show it on, the sign is still in the bubble. Checked in pictures only.
 - Hotkeys (rebind or blank them under `overlay.hotkeys`): always claimed are `toggle` Ctrl+Alt+L,
   `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R and `missed` Ctrl+Alt+U (Ctrl+Alt+M is taken by
   another program on the author's machine). Claimed only while they can act: `allow` Ctrl+Alt+Y,
@@ -305,7 +312,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `label` (`auto`/`always`/`never`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
-  `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
+  `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
   `talk_tail`, `talk_feedback`, `sound_volume`. `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).

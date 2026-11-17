@@ -17,6 +17,10 @@ real keys yet.
       3.6 s. Slips: "push the talk" for "push-to-talk", "in futura" for "in futuro", and the
       first words of the recording may be missing (it starts at "the to-do list"). Not
       tried: a recording that is Italian from its first word.
+- [ ] Push-to-talk's sign inside the session's light (2026-11-17): dots while it works, a
+      paper plane when sent, a struck-out microphone when nothing went out. Is the light what
+      was meant by "inside the bowl", and do the signs read at that size?
+      `"talk_sign": "line"` under `overlay` puts the sign back beside the name.
 - [ ] Hold `Ctrl+Alt`: the details panel comes out while the keys are held
 - [ ] `Ctrl+Alt` + mouse wheel: the focus moves, and stops at the first and last session
 - [ ] `Ctrl+Alt+Y` / `Ctrl+Alt+N` on a real permission prompt

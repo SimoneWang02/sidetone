@@ -37,10 +37,12 @@ its own spoken line as the first line of its reply.
 - **Answer Claude's questions with a number key.** A multiple-choice question is shown with
   numbered options and read out; `Ctrl+Alt+1` to `4` picks one.
 - **Push-to-talk follow-ups.** Hold `Ctrl+Alt+Space`, say "also add a test for the empty case",
-  release. While you hold the key, a bubble next to that session's light shows a microphone
-  sign and your own voice as a wave, so you can see the microphone hears you. A local Whisper model transcribes it and
-  it is sent at once to the session in focus, even if that session is idle; the bubble then
-  shows what was sent, and a short sound tells you without looking: two notes going up for
+  release. While you hold the key, that session's light and the bubble next to it show your
+  own voice as a wave, so you can see the microphone hears you. A local Whisper model transcribes it and
+  it is sent at once to the session in focus, even if that session is idle; the light then
+  shows a paper plane (moving dots while it works, a struck-out microphone when nothing went
+  out; `"talk_sign": "line"` under `overlay` puts that sign beside the session's name
+  instead), the bubble shows what was sent, and a short sound tells you without looking: two notes going up for
   sent, the same note twice when it waits for a busy session, two notes going down when it was
   not sent (`talk_feedback` can be `sound`, `voice` or `none`; `sound_volume` is 0 to 1). The focus is on
   whichever session spoke last, shown by a frame around its light; hold `Ctrl+Alt` and turn the
@@ -145,6 +147,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "corner": "top-right",
     "glass": "blur",
     "opacity": 0.9,
+    "talk_sign": "light",
     "hotkeys": { "talk": "Ctrl+Alt+Space", "toggle": "Ctrl+Alt+L" }
   }
 }

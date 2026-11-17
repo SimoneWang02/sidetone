@@ -35,6 +35,7 @@ namespace ClaudeSpeaks
         public static readonly FontFamily Symbols = new FontFamily("Segoe UI Symbol");
         public static readonly Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00), Mic = Color.FromRgb(0xFF, 0x6E, 0x8A);
         public static readonly Brush Dim = Paint("#C8FFFFFF"), Faint = Paint("#8CFFFFFF"), MicInk = Paint("#FFFF8FA6");
+        public static bool SignInLight = true;  // where push-to-talk's sign goes: in the session's light, or at the right of its line
 
         // Shape differs as well as color (see Orb), so a state reads without color vision.
         public static Color Tint(string state)
@@ -158,37 +159,61 @@ namespace ClaudeSpeaks
 
     // The round status light of one session. It pops when the state changes, sends out a ring
     // when a turn ends or needs you, grows a little under the mouse, and becomes five bars that
-    // follow the voice while the session speaks.
+    // follow the voice while the session speaks. It can also carry push-to-talk's sign: your
+    // own voice as bars while it listens, then dots, a paper plane, or a struck-out microphone.
     class Orb : FrameworkElement
     {
         public const double Size = 36;
         static readonly double[] Weights = { 0.5, 0.8, 1.0, 0.8, 0.5 };
-        public string State = "idle";
+        public string State = "idle", Sign = "";  // Sign: where push-to-talk stands, while it is about this session and shown here
         public bool Speaking;
         public Wave Wave, Listening;  // Listening: your own voice, while you hold the talk key for this session
-        public double Born = Ui.Now, Changed = -10, Hot;
+        public double Born = Ui.Now, Changed = -10, Hot, SignSince;
 
         public Orb() { Width = Height = Size; IsHitTestVisible = false; }
+
+        public void ShowSign(string kind)
+        {
+            if (kind == Sign) return;
+            Sign = kind;
+            SignSince = Ui.Now;
+        }
+
+        // While you speak the bars already say it; every later step takes the light over.
+        bool Signed { get { return Sign.Length > 0 && Sign != "mic" && Listening == null; } }
 
         // Whether it has to be drawn again on the next frame.
         public bool Moving
         {
-            get { double t = Ui.Now; return Speaking || Listening != null || State == "working" || State == "needs_you" || t - Changed < 0.8 || t - Born < 0.45; }
+            get
+            {
+                double t = Ui.Now;
+                if (Signed && (Sign == "dots" || t - SignSince < 0.5)) return true;
+                return Speaking || Listening != null || State == "working" || State == "needs_you" || t - Changed < 0.8 || t - Born < 0.45;
+            }
         }
 
         protected override void OnRender(DrawingContext dc)
         {
             double t = Ui.Now, age = t - Changed;
             var c = new Point(Size / 2, Size / 2);
-            Color tint = Listening != null ? Ui.Mic : Ui.Tint(State);
+            bool signed = Signed;
+            Color tint = signed ? (Sign == "sent" ? Ui.Tint("done") : Sign == "failed" ? Ui.Tint("failed") : Ui.Mic) : Listening != null ? Ui.Mic : Ui.Tint(State);
             Wave wave = Listening ?? Wave;
             double bump = age < 0.4 ? 0.2 * Math.Sin(Math.PI * age / 0.4) : 0;
             double scale = Ui.Overshoot((t - Born) / 0.4) * (1 + bump + 0.14 * Hot);
             dc.PushTransform(new ScaleTransform(scale, scale, c.X, c.Y));
-            if (age < 0.8 && !Speaking && Listening == null && State != "idle" && State != "working")
+            if (age < 0.8 && Listening == null && (signed || (!Speaking && State != "idle" && State != "working")))
             {
                 double ring = Ui.EaseOut(age / 0.8);  // a ring that spreads and fades
                 dc.DrawEllipse(null, Ui.Line(tint, 0.7 * (1 - ring), 2), c, 13 + 9 * ring, 13 + 9 * ring);
+            }
+            if (signed)
+            {
+                dc.DrawEllipse(Ui.Alpha(tint, 0.30), Ui.Line(tint, 0.95, 1.5), c, 13, 13);
+                Badge.Draw(dc, Sign, c.X, c.Y, t, t - SignSince, true);
+                dc.Pop();
+                return;
             }
             if (Speaking || Listening != null)
             {
@@ -283,9 +308,10 @@ namespace ClaudeSpeaks
         }
     }
 
-    // A small sign at the right of a session's line for where push-to-talk stands: a microphone
-    // while it listens, three moving dots while the words are worked out or wait to go, a paper
-    // plane once they are sent, a cross when nothing went out.
+    // A small sign for where push-to-talk stands: a microphone while it listens, three moving
+    // dots while the words are worked out or wait to go, a paper plane once they are sent, a
+    // cross when nothing went out. It is drawn inside the session's light (see Orb), or by
+    // this element at the right of the session's line (the "talk_sign" setting).
     class Badge : FrameworkElement
     {
         public string Kind = "";  // "", mic, dots, sent, failed
@@ -310,26 +336,25 @@ namespace ClaudeSpeaks
 
         protected override void OnRender(DrawingContext dc)
         {
-            double t = Ui.Now, age = t - Since, cx = Width / 2, cy = Height / 2;
-            double pop = Ui.Overshoot(age / 0.35);
+            double age = Ui.Now - Since;
             settled = age >= 0.45;
+            Draw(dc, Kind, Width / 2, Height / 2, Ui.Now, age, false);
+        }
+
+        // The sign itself, around (cx, cy). At the right of a line it is in color; inside a
+        // session's light, which has the color already, it is white and a little smaller, and
+        // "nothing went out" is a struck-out microphone, since a plain cross there means that
+        // the session failed.
+        public static void Draw(DrawingContext dc, string kind, double cx, double cy, double t, double age, bool inLight)
+        {
+            double pop = Ui.Overshoot(age / 0.35) * (inLight ? 0.9 : 1);
             dc.PushTransform(new ScaleTransform(pop, pop, cx, cy));
-            switch (Kind)
+            switch (kind)
             {
                 case "mic":
                 {
                     double beat = 0.75 + 0.25 * Math.Sin(t * 5);
-                    Pen pen = Ui.Line(Ui.Mic, beat, 1.6);
-                    dc.DrawRoundedRectangle(Ui.Alpha(Ui.Mic, beat), null, new Rect(cx - 2.6, cy - 8, 5.2, 9.5), 2.6, 2.6);  // the capsule
-                    var cup = new StreamGeometry();
-                    using (StreamGeometryContext g = cup.Open())
-                    {
-                        g.BeginFigure(new Point(cx - 5.2, cy - 1.5), false, false);
-                        g.ArcTo(new Point(cx + 5.2, cy - 1.5), new Size(5.2, 5.2), 0, false, SweepDirection.Counterclockwise, true, false);
-                    }
-                    dc.DrawGeometry(null, pen, cup);
-                    dc.DrawLine(pen, new Point(cx, cy + 3.7), new Point(cx, cy + 7));
-                    dc.DrawLine(pen, new Point(cx - 3, cy + 7), new Point(cx + 3, cy + 7));
+                    Microphone(dc, cx, cy, Ui.Alpha(inLight ? Colors.White : Ui.Mic, beat));
                     break;
                 }
                 case "dots":
@@ -343,7 +368,7 @@ namespace ClaudeSpeaks
                 {
                     // A paper plane that flies in from the left.
                     double fly = (1 - Ui.EaseOut(age / 0.4)) * -9;
-                    Color green = Ui.Tint("done");
+                    Color ink = inLight ? Colors.White : Ui.Tint("done");
                     var plane = new StreamGeometry();
                     using (StreamGeometryContext g = plane.Open())
                     {
@@ -352,12 +377,20 @@ namespace ClaudeSpeaks
                         g.LineTo(new Point(cx + 2.5 + fly, cy + 7), true, true);
                         g.LineTo(new Point(cx - 0.5 + fly, cy + 1.8), true, true);
                     }
-                    dc.DrawGeometry(Ui.Alpha(green, 0.35), Ui.Line(green, 1, 1.5), plane);
-                    dc.DrawLine(Ui.Line(green, 1, 1.5), new Point(cx - 0.5 + fly, cy + 1.8), new Point(cx + 8 + fly, cy - 7));
+                    dc.DrawGeometry(Ui.Alpha(ink, 0.35), Ui.Line(ink, 1, 1.5), plane);
+                    dc.DrawLine(Ui.Line(ink, 1, 1.5), new Point(cx - 0.5 + fly, cy + 1.8), new Point(cx + 8 + fly, cy - 7));
                     break;
                 }
                 case "failed":
                 {
+                    if (inLight)
+                    {
+                        Microphone(dc, cx, cy, Ui.Alpha(Colors.White, 0.6));
+                        double reach = 7.5 * Ui.EaseOut(age / 0.3);  // the stroke through it is drawn last
+                        dc.DrawLine(Ui.Line(Ui.Tint("failed"), 1, 5), new Point(cx - reach, cy - reach), new Point(cx + reach, cy + reach));
+                        dc.DrawLine(Ui.Line(Colors.White, 1, 2), new Point(cx - reach, cy - reach), new Point(cx + reach, cy + reach));
+                        break;
+                    }
                     Pen pen = Ui.Line(Ui.Tint("failed"), 1, 2);
                     dc.DrawLine(pen, new Point(cx - 4.5, cy - 4.5), new Point(cx + 4.5, cy + 4.5));
                     dc.DrawLine(pen, new Point(cx + 4.5, cy - 4.5), new Point(cx - 4.5, cy + 4.5));
@@ -365,6 +398,21 @@ namespace ClaudeSpeaks
                 }
             }
             dc.Pop();
+        }
+
+        static void Microphone(DrawingContext dc, double cx, double cy, Brush ink)
+        {
+            var pen = new Pen(ink, 1.6) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+            dc.DrawRoundedRectangle(ink, null, new Rect(cx - 2.6, cy - 8, 5.2, 9.5), 2.6, 2.6);  // the capsule
+            var cup = new StreamGeometry();
+            using (StreamGeometryContext g = cup.Open())
+            {
+                g.BeginFigure(new Point(cx - 5.2, cy - 1.5), false, false);
+                g.ArcTo(new Point(cx + 5.2, cy - 1.5), new Size(5.2, 5.2), 0, false, SweepDirection.Counterclockwise, true, false);
+            }
+            dc.DrawGeometry(null, pen, cup);
+            dc.DrawLine(pen, new Point(cx, cy + 3.7), new Point(cx, cy + 7));
+            dc.DrawLine(pen, new Point(cx - 3, cy + 7), new Point(cx + 3, cy + 7));
         }
     }
 
@@ -612,7 +660,9 @@ namespace ClaudeSpeaks
             TalkText = text ?? "";
             talkInk = ink;
             Orb.Listening = mic;
-            Badge.Show(kind ?? "");
+            changed |= (Ui.SignInLight ? Orb.Sign : Badge.Kind) != (kind ?? "");  // the sign moved between light and line
+            Orb.ShowSign(Ui.SignInLight ? kind ?? "" : "");
+            Badge.Show(Ui.SignInLight ? "" : kind ?? "");
             if (changed) { Orb.Changed = Ui.Now; Refresh(); }
         }
 
@@ -905,6 +955,7 @@ namespace ClaudeSpeaks
                     if (wanted != "island") wanted = "bar";
                     if (wanted != layout) { layout = wanted; ApplyLayout(); }
                     if (msg.ContainsKey("focus_wheel")) wheelKeys = Keys(Str(msg, "focus_wheel"));
+                    if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
                     if (msg.ContainsKey("hotkeys"))
@@ -1133,12 +1184,12 @@ namespace ClaudeSpeaks
             bool mine = orphan || found.TalkKind != null, listening = mine && talkState == "listening";
             string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : found.FlashText;
             string kind = mine ? TalkKind() : "";
-            string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind;
+            string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind + Ui.SignInLight;
             if (shows != bubbleShows)
             {
                 bubbleShows = shows;
                 Heading(bubbleLine1, head, sub, orphan ? "" : found.Color);
-                bubbleBadge.Show(kind);
+                bubbleBadge.Show(Ui.SignInLight && !orphan ? "" : kind);  // with no session there is no light to put it in
                 bubbleLine2.Text = body;
                 bubbleLine2.Visibility = body.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
                 bubbleLine2.Foreground = mine ? TalkInk() : Brushes.White;
