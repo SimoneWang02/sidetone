@@ -35,10 +35,14 @@ real keys yet.
       could "send an audio instead of picking a choice"): while a session shows a question,
       hold the talk key and say the answer in your own words. Done by the author the same
       day on a real question: 17 s of speech came back as the answer, word for word.
-- [ ] The choices of a question each on a line of their own in the overlay (the author,
+- [x] The choices of a question each on a line of their own in the overlay (the author,
       2026-11-17, in that same spoken answer: "the choices are not in new lines. I see them
       all in a single line and it's not very readable"; changed at once, seen in pictures
-      only).
+      only). The author, that evening, asked about a question with three choices that was
+      on screen: "Yes, one per line." A first try had failed for another reason: the
+      overlay was restarted seconds after the question opened and the new window was not
+      told about it ("I don't see the prompt box anymore"). Mended the same hour; the hub
+      now shows an open question again when a window starts, from its next restart on.
 - [x] A question answered in the terminal leaving the overlay at once (mended 2026-11-17
       after the author saw it stay; checked with a real session). The author answered the
       next question in the VS Code terminal and the hub closed it in that second (the log
