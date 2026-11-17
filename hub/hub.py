@@ -711,6 +711,23 @@ class Hub:
         except OSError as e:
             log(self.cfg, "hub.log", f"could not save the {section} settings: {e}")
 
+    def reload_languages(self) -> dict:
+        """Take up the languages chosen with `claude-speaks languages` (written to config.json)
+        without a restart: the next push-to-talk loads the model for them."""
+        try:
+            with open(self.cfg.config_path) as f:
+                saved = json.load(f)
+        except (OSError, ValueError):
+            saved = {}
+        model = saved.get("whisper_model") or self.cfg.whisper_model
+        language = saved.get("whisper_language") or self.cfg.whisper_language
+        if (model, language) != (self.cfg.whisper_model, self.cfg.whisper_language):
+            self.cfg.whisper_model, self.cfg.whisper_language = model, language
+            if self.transcriber:
+                self.transcriber = stt.Transcriber(model, language)
+            log(self.cfg, "hub.log", f"push-to-talk now listens with {model} for: {language}")
+        return {"model": model, "languages": language, "push_to_talk": bool(self.transcriber)}
+
     def set_terminal(self, **changes) -> None:
         """Change how sessions' terminals are marked (see terminal.py), at once, and remember it."""
         self.cfg.terminal.update(changes)
@@ -1387,6 +1404,8 @@ class Handler(BaseHTTPRequestHandler):
             if changes:
                 hub.set_terminal(**changes)
             self._reply({"terminal": hub.cfg.terminal})
+        elif self.path == "/languages":
+            self._reply(hub.reload_languages())
         elif self.path == "/demo":
             threading.Thread(target=demo.run, args=(hub,), name="demo", daemon=True).start()
             self._reply({})

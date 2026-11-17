@@ -19,6 +19,7 @@ Usage: claude-speaks <command>
   allow | deny               answer the permission prompt the overlay is showing
   answer N                   pick option N of the question the overlay is showing
   sound sent|queued|failed   play one of the short sounds that answer push-to-talk
+  languages [CODES]          show or choose the languages push-to-talk listens for: en  or  en,it  or  auto
   repeat                     say the last line of the session in focus again
   missed                     replay what sessions said since you were last here
   follow-up [-s PROJECT] TEXT   send a follow-up to a session as if you had said it
@@ -138,6 +139,16 @@ case ${1:-} in
   sound)
     played=$(jq -nc --arg n "${2:-sent}" '{name: $n}' | hub_post /sound | jq -r .played) || { echo "hub is not running"; exit 1; }
     [ "$played" = true ] || { echo "no such sound, or sounds cannot be played here: ${2:-sent}"; exit 1; }
+    ;;
+  languages)
+    # English alone uses the English-only model (fastest); anything else the multilingual one.
+    py=$KOKORO_DIR/venv/bin/python
+    [ -x "$py" ] || py=$(command -v python3) || { echo "no Python found"; exit 1; }
+    shift
+    "$py" -I "$CS_ROOT/hub/stt.py" languages "${XDG_CONFIG_HOME:-$HOME/.config}/claude-speaks/config.json" "$@" || exit 2
+    if [ $# -gt 0 ] && [ -S "$CS_SOCK" ]; then  # a running hub takes it up at once
+      hub_post /languages </dev/null >/dev/null 2>&1 || echo "The running hub is older than this command: 'claude-speaks hub restart' applies it."
+    fi
     ;;
   repeat) echo '{"what": "last"}' | hub_post /replay >/dev/null || { echo "hub is not running"; exit 1; } ;;
   missed)

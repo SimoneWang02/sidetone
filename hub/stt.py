@@ -7,12 +7,24 @@ from __future__ import annotations
 import array
 import gc
 import importlib.util
+import json
+import os
 import shutil
 import subprocess
 import threading
 import time
 
 RATE = 16000  # what Whisper expects
+SIZES = ("tiny", "base", "small", "medium")  # the Whisper sizes that also come English-only (".en"), which is faster
+ANY = ("auto", "any", "all")
+# The languages Whisper has (the list in faster-whisper, kept here so a choice can be checked
+# without loading it; a test compares the two).
+LANGUAGES = frozenset("""
+    af am ar as az ba be bg bn bo br bs ca cs cy da de el en es et eu fa fi fo fr gl gu ha haw
+    he hi hr ht hu hy id is it ja jw ka kk km kn ko la lb ln lo lt lv mg mi mk ml mn mr ms mt my
+    ne nl nn no oc pa pl ps pt ro ru sa sd si sk sl sn so sq sr su sv sw ta te tg th tk tl tr tt
+    uk ur uz vi yi yo yue zh
+""".split())
 
 
 def loudness(pcm: bytes) -> float:
@@ -81,9 +93,7 @@ class Transcriber:
 
     def __init__(self, model: str = "small.en", language: str | list = "en"):
         self.name = model
-        codes = [c.strip().lower() for c in (language if isinstance(language, str) else ",".join(language)).split(",")]
-        codes = [c for c in codes if c and c != "auto"]
-        self.languages = ["en"] if model.endswith(".en") else codes  # empty: any language
+        self.languages = ["en"] if model.endswith(".en") else codes(language)  # empty: any language
         self.heard = ""  # the language of the last recording
         self._model = None
         self._lock = threading.Lock()
@@ -120,3 +130,71 @@ class Transcriber:
         text = " ".join(s.text.strip() for s in segments).strip()
         self.heard = getattr(info, "language", language or "")
         return text
+
+
+def codes(languages: str | list) -> list:
+    """`"en, IT"`, `"en it"` or a list, as lower-case codes. "auto" (any language) gives none."""
+    text = languages if isinstance(languages, str) else ",".join(languages)
+    found = [c.lower() for c in text.replace(",", " ").split()]
+    return [] if any(c in ANY for c in found) else list(dict.fromkeys(found))
+
+
+def setup(languages: str | list, model: str = "small.en") -> tuple:
+    """The `whisper_model` and `whisper_language` for someone who speaks `languages`.
+
+    English alone gets the English-only model of the same size, which is the fastest. Anything
+    else gets the multilingual one, told which languages to expect; "auto" lets it guess among
+    all of them. Raises ValueError for a code Whisper does not have.
+    """
+    text = languages if isinstance(languages, str) else ",".join(languages)
+    wanted = codes(text)
+    if not wanted and not any(c.lower() in ANY for c in text.replace(",", " ").split()):
+        raise ValueError("name at least one language, for example: en  or  en,it  (auto = any language)")
+    unknown = [c for c in wanted if c not in LANGUAGES]
+    if unknown:
+        raise ValueError(f"not a language code the speech model knows: {', '.join(unknown)}"
+                         "  (examples: en English, it Italian, es Spanish, fr French, de German, zh Chinese)")
+    size = model[:-3] if model.endswith(".en") else model
+    if wanted == ["en"]:
+        return (size + ".en" if size in SIZES else size), "en"
+    return size, ",".join(wanted) or "auto"
+
+
+def save_languages(path: str, languages: str | list) -> tuple:
+    """Write the choice into the user's config.json, keeping everything else in it."""
+    try:
+        with open(path) as f:
+            saved = json.load(f)
+    except FileNotFoundError:
+        saved = {}
+    model, language = setup(languages, saved.get("whisper_model") or "small.en")
+    saved.update(whisper_model=model, whisper_language=language)
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path + ".tmp", "w") as f:
+        json.dump(saved, f, indent=2)
+    os.replace(path + ".tmp", path)
+    return model, language
+
+
+def describe(model: str, language: str) -> str:
+    spoken = "English" if model.endswith(".en") else "any language" if not codes(language) else ", ".join(codes(language))
+    return f"push-to-talk listens for: {spoken}  (model {model})"
+
+
+if __name__ == "__main__":  # stt.py languages CONFIG [CODES]: show or choose; used by `claude-speaks languages`
+    import sys
+
+    if len(sys.argv) < 3 or sys.argv[1] != "languages":
+        sys.exit("usage: stt.py languages CONFIG [CODES]")
+    try:
+        if len(sys.argv) > 3:
+            print(describe(*save_languages(sys.argv[2], " ".join(sys.argv[3:]))))
+        else:
+            try:
+                with open(sys.argv[2]) as f:
+                    saved = json.load(f)
+            except FileNotFoundError:
+                saved = {}
+            print(describe(saved.get("whisper_model") or "small.en", saved.get("whisper_language") or "en"))
+    except ValueError as e:  # an unknown code, or a config.json that is not JSON (left untouched)
+        sys.exit(str(e))

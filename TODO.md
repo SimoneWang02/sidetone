@@ -158,10 +158,20 @@ real keys yet.
       author, 2026-11-17: "I prefer the American one." Pinned `af_heart` for the session
       named `claude-speaks`; the second to fourth sessions of the project keep the voices
       they were given (`af_bella`, `bm_fable`, `bf_emma`).
-- [ ] "Uploadable" voices: was that cloning a voice from a recording? Kokoro cannot do it; it
-      would need a second voice engine.
-- [ ] Should the repo default for push-to-talk be the multilingual model? Today the default is
-      English-only and the author's own settings switch it to English plus Italian.
+- [x] "Uploadable" voices: was that cloning a voice from a recording? Kokoro cannot do it; it
+      would need a second voice engine. Answered since, without the question being put
+      again: the author wants a realistic copy of one person's voice (see "Voice cloning"
+      under "Not started", where the building is still open).
+- [x] Should the repo default for push-to-talk be the multilingual model? The author,
+      2026-11-17, asked with three choices (English only, any language, ask at install):
+      "just selecting English it will mean faster answers right? ... What if we let the
+      people choose the language they speak? So ... we don't include all languages." Built
+      the same day: `install.sh` asks once which languages you will speak, and
+      `claude-speaks languages en,it` changes it later, also in a running hub. English
+      alone keeps the fast English-only model; other languages get the multilingual one,
+      told which to expect. Not tried by a person: the question in the install script
+      (answered by a script in a throwaway home folder), and no language other than
+      English and Italian has been spoken to it.
 - [x] Should a quick tap of the talk key also stop at the last session, like the wheel?
       Settled another way on 2026-11-17: the tap no longer moves the focus at all; the
       arrow keys do, and they stop at the ends.
@@ -197,6 +207,12 @@ real keys yet.
       spoken meanwhile wait until the question is answered in the terminal. A permission
       prompt cannot be answered by voice either (the words wait); "deny, and here is why"
       by voice would be possible, since a deny can carry a message.
+- [ ] Several questions in one dialog: answered by voice or number key, the overlay moves on
+      to the second question, but the terminal goes on showing the first until the last one
+      is answered (the author, 2026-11-17: "I sent an audio to answer the first question
+      but on the terminal I still view the first question"). Both answers did arrive. The
+      hook can only answer a whole dialog at once, so the terminal cannot be moved along;
+      what could be done: say and show "question 1 of 2" so it is clear more are coming.
 - [ ] The spoken project name is off while the overlay is up; with many sessions and eyes
       away from the screen, the voices alone may not be enough to tell them apart.
 - [ ] `hub/hub.py` is over 1,100 lines. Split it (permission requests, push-to-talk, the
@@ -245,9 +261,9 @@ Bigger pieces:
       dall'utente che lo scarica", so in the end every language). Listening is nearly there:
       `whisper_language` already takes any language codes, or `auto`, with a multilingual
       model. What is still tied to English:
-      - the start: the default model is English-only and nothing asks which languages you
-        speak (see "To decide"). `install.sh` could ask, and the settings window should
-        offer it.
+      - the start: done 2026-11-17 for listening. `install.sh` asks which languages you
+        speak and `claude-speaks languages` changes it; the settings window should offer
+        it too.
       - the spoken summaries: the reminder asks Claude for "plain spoken English", and
         `hub/tts.py` has Kokoro pronounce every line as American English (`lang="en-us"`)
       - the voices: the pool is 13 English ones. The installed Kokoro file also has Italian
