@@ -70,7 +70,7 @@ real keys yet.
       The author, 2026-11-17, asked to try exactly this: "It works. Seems to be working."
       Those words reached the session they spoke to; the log does not record the arrow
       keys, so the move right after letting go is on their word.
-- [ ] Take back what was just sent: speak to a session that is in the middle of a reply, and
+- [x] Take back what was just sent: speak to a session that is in the middle of a reply, and
       within four seconds of "sent" press `Ctrl+Alt+Backspace`. The light should show
       "Taken back" with the two notes going down, and the session should never get the
       words. Then the same to an idle session: it should be told to ignore them, and say
@@ -78,6 +78,11 @@ real keys yet.
       the author the same day with the real key and worked; the busy half is still open.
       Also to notice: the "sent" bubble now stays four seconds, and a press meant to cut a
       line being spoken in those seconds takes the words back instead.
+      The busy half, done by the author the same day against a session kept busy on
+      purpose: the words were queued for it at 14:54:27 and the hub logged "taken back
+      before the session got it" a second later; the session never received them. A first
+      try had Backspace land before "sent", which is the plain cancel. Not said: whether
+      the light showed "Taken back".
 - [ ] Taking words back while `Ctrl+Alt` stay held from talking: the overlay hides those
       keys from Windows during a hold and believes them held for 3 s after it (`MaskGrace`).
       After that, with the keys never let go, Windows takes them for up, so Backspace is a
