@@ -65,7 +65,8 @@ real keys yet.
 - [ ] Speak, let go, and move the focus at once (arrows, wheel or another terminal): the
       words should still reach the session that was listening, and "sent" should show on its
       light. Fixed 2026-11-17 after the author did exactly that and the words "went to
-      another session"; checked by tests only, not with the real keys.
+      another session". The first fix still lost the words when the focus moved in the first
+      0.4 s after letting go; the second one is checked by tests only, not with the real keys.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
       which was right, since nothing had been said since the last message. Not heard yet:
       a real replay, pressed after a session spoke while the author was away from it.

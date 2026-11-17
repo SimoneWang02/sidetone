@@ -290,7 +290,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (`talk_end` hands that session to `_transcribe`): the author let go, moved the focus at
   once, and the words followed the focus to another session ("it went to another session"),
   because the receiver was only looked up when the text came back from the speech model, one
-  to two seconds later. Moving the focus while the key is still held does move who gets
+  to two seconds later. A first fix picked the receiver after the tail of the recording
+  (`talk_tail`, 0.4 s), and it happened again within minutes ("I immediately switched ...
+  it redirected the audio to you"): the switch fell inside that tail. Now it is picked the
+  moment the key comes up, before the tail. Moving the focus while the key is still held does move who gets
   them, as the listening sign shows. If that session ends meanwhile, nothing is sent ("That
   session is gone, not sent"). Rows carry `target`; the overlay draws a frame that glides
   to that light and lights its row. `Ctrl+Alt` + wheel (`overlay.focus_wheel`, `""` turns it off)
