@@ -289,8 +289,11 @@ real keys yet.
       publish"). Likely because the recording goes through the first half of the model
       twice, once to find the language and once to write the text; not looked into. If
       that pass can be shared, several languages would cost about the same as one.
-- [ ] The spoken project name is off while the overlay is up; with many sessions and eyes
+- [x] The spoken project name is off while the overlay is up; with many sessions and eyes
       away from the screen, the voices alone may not be enough to tell them apart.
+      Asked on 2026-11-17 whether the name should be said again when many sessions are
+      open, the author said: "I don't think it should right now. It's pretty good, pretty
+      happy." So it stays off; `label: always` is there if that changes.
 - [ ] `hub/hub.py` is over 1,100 lines. Split it (permission requests, push-to-talk, the
       HTTP layer) before adding much more.
 - [x] The overlay gets in the way of a game (the author, 2026-11-17, by voice): when the
