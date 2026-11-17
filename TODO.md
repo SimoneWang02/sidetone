@@ -171,7 +171,7 @@ real keys yet.
       people choose the language they speak? So ... we don't include all languages." Built
       the same day: `install.sh` asks once which languages you will speak, and
       `claude-speaks languages en,it` changes it later, also in a running hub. English
-      alone keeps the fast English-only model; other languages get the multilingual one,
+      alone keeps the English-only model; other languages get the multilingual one,
       told which to expect. Not tried by a person: the question in the install script
       (answered by a script in a throwaway home folder), and no language other than
       English and Italian has been spoken to it.
@@ -216,6 +216,11 @@ real keys yet.
       but on the terminal I still view the first question"). Both answers did arrive. The
       hook can only answer a whole dialog at once, so the terminal cannot be moved along;
       what could be done: say and show "question 1 of 2" so it is clear more are coming.
+- [ ] With two or more languages, working out which one a recording is costs about 0.6 s,
+      nearly as much as writing the sentence down (measured 2026-11-17, see "Numbers to
+      publish"). Likely because the recording goes through the first half of the model
+      twice, once to find the language and once to write the text; not looked into. If
+      that pass can be shared, several languages would cost about the same as one.
 - [ ] The spoken project name is off while the overlay is up; with many sessions and eyes
       away from the screen, the voices alone may not be enough to tell them apart.
 - [ ] `hub/hub.py` is over 1,100 lines. Split it (permission requests, push-to-talk, the
@@ -282,6 +287,29 @@ Bigger pieces:
 - [ ] Packaging as a Claude Code plugin, so it installs in one step.
 - [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
       tools that only speak after the reply has ended.
+- [ ] Numbers to publish with it (the author, 2026-11-17: "in the future when I'll publish
+      this tool it'll be great to have some metrics"). Measured so far, to be done again on
+      the release and on a second, slower machine before any of it is quoted:
+      - Speech to text by choice of languages (`tests/stt_speed.py`, 2026-11-17, Core Ultra 7
+        270K with 24 threads, no graphics card, model `small`, median of 5 runs, sentences
+        spoken by Kokoro):
+
+        | You speak | 1 s of speech | 4 s | 12 s |
+        |---|---|---|---|
+        | English only | 0.6 s | 0.7 s | 0.9 s |
+        | Italian only | 0.6 s | 0.8 s | 1.0 s |
+        | English and Italian | 1.2 to 1.4 s | 1.4 to 1.5 s | 1.5 to 1.7 s |
+        | Five languages | 1.2 s | 1.4 s | 1.6 s |
+        | Any language | 1.2 to 1.3 s | 1.3 to 1.4 s | 1.5 to 1.6 s |
+
+        One language costs the same whichever it is, and the English-only model is no
+        quicker than the multilingual one told "English" (0.64 against 0.61 s). Two or more
+        cost about 0.6 s extra, the same for two, five or all. Every sentence was written
+        correctly under every choice, so accuracy is not measured: that needs real, short,
+        untidy recordings.
+      - Line written to first sound: about 0.3 s with the hub warm (in `CLAUDE.md`).
+      - Still to measure: real voices and a noisy room, the other model sizes, a slower
+        CPU, memory, and how often a short recording is taken for the wrong language.
 - [ ] Making the repo public.
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.

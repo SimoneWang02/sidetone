@@ -15,7 +15,7 @@ import threading
 import time
 
 RATE = 16000  # what Whisper expects
-SIZES = ("tiny", "base", "small", "medium")  # the Whisper sizes that also come English-only (".en"), which is faster
+SIZES = ("tiny", "base", "small", "medium")  # the Whisper sizes that also come English-only (".en")
 ANY = ("auto", "any", "all")
 # The languages Whisper has (the list in faster-whisper, kept here so a choice can be checked
 # without loading it; a test compares the two).
@@ -142,9 +142,11 @@ def codes(languages: str | list) -> list:
 def setup(languages: str | list, model: str = "small.en") -> tuple:
     """The `whisper_model` and `whisper_language` for someone who speaks `languages`.
 
-    English alone gets the English-only model of the same size, which is the fastest. Anything
-    else gets the multilingual one, told which languages to expect; "auto" lets it guess among
-    all of them. Raises ValueError for a code Whisper does not have.
+    English alone gets the English-only model of the same size. Anything else gets the
+    multilingual one, told which languages to expect; "auto" lets it guess among all of them.
+    Measured (tests/stt_speed.py): the two models are equally quick when told the language;
+    what costs time is working out which language a recording is, about 0.6 s with two or
+    more languages or "auto". Raises ValueError for a code Whisper does not have.
     """
     text = languages if isinstance(languages, str) else ",".join(languages)
     wanted = codes(text)

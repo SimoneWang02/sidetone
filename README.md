@@ -134,7 +134,7 @@ claude-speaks target [PROJECT]       who a spoken follow-up goes to
 claude-speaks missed | repeat        catch up, or hear the focused session's last line again
 claude-speaks sound sent|queued|failed   hear the short sounds that answer push-to-talk
 claude-speaks voices                 every voice, and which project has which
-claude-speaks languages en,it        the languages push-to-talk listens for (en alone is fastest)
+claude-speaks languages en,it        the languages push-to-talk listens for (one alone is fastest)
 claude-speaks voice PROJECT VOICE    give a project a voice
 claude-speaks voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
 claude-speaks voice add NAME FILE    load your own Kokoro voice file (.npy)
@@ -232,9 +232,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
   model is loaded (from the first push-to-talk until ten minutes after the last one). Each spoken
   line is a short burst of CPU.
 - Push-to-talk listens for the languages you name: `claude-speaks languages en,it` (the install
-  script asks the same question). English alone uses an English-only model, the fastest, about
-  0.7 s for a sentence. With other languages it uses the multilingual model of the same size
-  (about 1.2 s) and takes each recording as whichever of your languages it sounds most like.
+  script asks the same question). With one language, a sentence of four seconds is text in
+  about 0.7 s, in English as in Italian. With two or more, each recording is first taken as
+  whichever of your languages it sounds most like, which adds about 0.6 s however many you
+  name (measured with `tests/stt_speed.py` on a 24-thread desktop CPU, no graphics card).
+  English alone uses the English-only model, anything else the multilingual one of the same size.
   `auto` allows any language, but short sentences are easily mistaken for the wrong one. The
   command writes `whisper_model` and `whisper_language` in the settings, which you can also
   set by hand, for example to a larger model. Claude gets your words in the language you

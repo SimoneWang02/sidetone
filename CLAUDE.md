@@ -568,6 +568,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (`POST /languages`, `Hub.reload_languages`); the model loads on the next push-to-talk.
   Tests are in `tests/test_languages.py`. The question itself was tried with a pretend
   terminal in a throwaway home folder, not by a person.
+- What the choice of languages costs (measured 2026-11-17 with `tests/stt_speed.py`, asked
+  for by the author as numbers for when the tool is published: "it'll be great to have some
+  metrics"). Kokoro spoke English and Italian sentences of about 1, 4 and 12 s; median of 5
+  runs on the author's CPU (Core Ultra 7 270K, 24 threads, int8, no graphics card), model
+  already loaded. One language: 0.6 / 0.7 / 0.9 s for English with `small.en`, 0.6 / 0.8 /
+  1.0 s for Italian with `small`. Two languages (`en,it`): 1.2 to 1.4 / 1.4 to 1.5 / 1.5 to
+  1.7 s. Five languages and `auto`: the same as two. So working out the language costs about
+  0.6 s whatever the number of languages, and nothing else differs: `small` told "English"
+  was as quick as `small.en` on the same clips (0.61 / 0.70 / 0.88 against 0.64 / 0.73 /
+  0.91 s). Before measuring, the author was told the English-only model is the faster one;
+  that was wrong. Every clip was taken as the right language and written correctly under
+  every choice, so these clean, synthetic voices say nothing about how often a real short
+  recording is mistaken for another language. Loading a model takes 0.5 to 0.8 s once it is
+  on disk.
 - Speech-to-text facts: `small.en` (int8, CPU) transcribes 4.4 s of speech in about 0.7 s,
   `base.en` in 0.3 s but drops punctuation. The WSLg microphone works through `parec`. Without a
   tail after key release the last word is cut. After a hub restart idle sessions are unknown
