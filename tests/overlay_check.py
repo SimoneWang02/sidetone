@@ -37,6 +37,8 @@ threading.Thread(target=lambda: [replies.put(line.decode(errors="replace").strip
 
 
 def send(**message):
+    if message.get("type") == "config":  # the user may be holding Ctrl+Alt just now; that must not open the panel here
+        message.setdefault("focus_wheel", "")
     proc.stdin.write((json.dumps(message) + "\n").encode())
     proc.stdin.flush()
 
@@ -232,9 +234,9 @@ send(type="move")
 shot("move")
 send(type="move", on=False)
 
-# The other layouts: at rest, with a session speaking, and with the details out.
+# The island layout: at rest, with a session speaking, and with the details out.
 send(type="move", on=False)
-for layout in ("living", "island", "edge", "tiles"):
+for layout in ("island",):
     send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout=layout, **HERE)
     send(type="state", sessions=sessions(), history=HISTORY)
     shot(f"{layout}-rest", 1.2)

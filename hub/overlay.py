@@ -17,10 +17,8 @@ from typing import Callable
 DEFAULTS = {
     "enabled": True,
     "mode": "dots",  # dots = only the lights; the details come out under the mouse | list = details always out
-    # How the sessions are shown: bar (a column of lights) | living (the bar, with lights sized by
-    # importance and an edge in the color of the session in focus) | island (a row at the top middle
-    # of the screen) | edge (a thin line of light at the side; the bar comes out when asked) |
-    # tiles (every session its own small piece of glass)
+    # How the sessions are shown: bar (a column of lights at the side, details beside it) |
+    # island (a row of lights at the top middle of the screen, details dropping down from it)
     "layout": "bar",
     "monitor": 0,  # 0 = the primary monitor, 1 and up = the others in Windows' order
     "corner": "top-right",  # top-right | top-left | bottom-right | bottom-left
@@ -38,7 +36,7 @@ DEFAULTS = {
                 "repeat": "Ctrl+Alt+R", "missed": "Ctrl+Alt+U", "layout": "Ctrl+Alt+K",
                 "option1": "Ctrl+Alt+1", "option2": "Ctrl+Alt+2", "option3": "Ctrl+Alt+3", "option4": "Ctrl+Alt+4"},
 }
-LAYOUTS = ["bar", "living", "island", "edge", "tiles"]
+LAYOUTS = ["bar", "island"]
 RETRY_AFTER = 30.0  # seconds before a crashed overlay is started again
 ASSEMBLIES = ["PresentationFramework", "PresentationCore", "WindowsBase", "System.Xaml", "System.Web.Extensions",
               "System.Windows.Forms", "System.Drawing"]

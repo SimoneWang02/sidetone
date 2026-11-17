@@ -23,9 +23,7 @@ real keys yet.
 
 ## To decide
 
-- [ ] Which layout to keep as the default, or whether to keep several: `bar`, `living`, `island`,
-      `edge`, `tiles` (`Ctrl+Alt+K` goes round them). All five were only checked in pictures.
-
+- [ ] Which of the two layouts (`bar`, `island`) is the default for new users. Today it is `bar`.
 - [ ] Voice of this project: it speaks with `bf_isabella` since the voice pool changed. Pin
       the earlier `af_heart` back? (`claude-speaks voice claude-speaks af_heart`)
 - [ ] "Uploadable" voices: was that cloning a voice from a recording? Kokoro cannot do it; it
@@ -56,7 +54,18 @@ real keys yet.
 
 ## Not started
 
+The author's direction for all of this: people who download the tool should be able to customize
+as much of their experience as possible. New looks and behaviours come as settings, not as
+replacements.
+
 Bigger pieces:
+
+- [ ] Make more of the overlay a setting: sizes, colors (session palette, status colors, glass
+      tint), which keys do what, what the panel rows show, animation speed or none, where the
+      bubble goes. Much is fixed in `overlay/Overlay.cs` today.
+- [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
+      importance, a thin line of light at the screen edge, one small window per session); the
+      code is in commit `8558c4a`.
 
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
@@ -68,6 +77,36 @@ Bigger pieces:
       hub already takes plain events from anything that can send them.
 - [ ] An overlay for Linux and macOS. Today it is Windows only.
 - [ ] Voice cloning, if that is what "uploadable" meant (see above).
+
+Away from the PC (the author's idea, 2026-11-17: with sessions open and nobody at the desk,
+"is it possible to use like either phone or AirPods interaction to do stuff", for example an
+AirPods gesture that starts push-to-talk). Nothing below has been tried; the notes are
+guesses to check first.
+
+- [ ] AirPods paired with the PC: a press on the stem reaches Windows as a media key
+      (play/pause, next, previous). The overlay could claim one as a talk key: press to start
+      recording, press again to send, since a press cannot be held. To check: whether the
+      overlay can take the key away from the music player, how to keep it out of the way
+      while music plays (only claim it while a session is open?), and how bad the sound gets
+      when Windows switches the AirPods to their microphone mode (playback drops to phone
+      call quality while the microphone is open). Works only within Bluetooth range.
+- [ ] AirPods on the phone, PC out of range: the phone has to be the bridge, because the
+      gestures cannot be given to another program there. Candidates:
+      - a phone Shortcut ("Hey Siri, tell Claude ...", or the Action button) that dictates a
+        sentence and runs `claude-speaks follow-up` on the PC over SSH. Needs no new server,
+        only a private way to reach the PC (for example Tailscale).
+      - spoken summaries as phone notifications; the phone can read notifications aloud
+        into AirPods. This grows out of the "phone notification" idea below.
+      - allow and deny from the phone: buttons on the notification, or a Shortcut that runs
+        `claude-speaks allow|deny`.
+      - a small phone app of our own could read AirPods head movement (nod to allow, shake
+        to deny) and stream the voice. By far the most work.
+      - Claude Code's own remote control from the phone may already cover typing and
+        approving; check what it does before building any of this.
+- [ ] Decide the safety line first. The hub listens on a Unix socket on purpose, so that
+      nothing outside this machine can make it speak, approve or inject. Anything from a
+      phone opens that door a little: it should go through a login that already exists
+      (SSH), never a new open port, and approving from afar may deserve its own switch.
 
 Smaller ideas:
 

@@ -706,6 +706,8 @@ class Hub:
                 self._talk(None)
                 return
             self._talk("sent", s, pending.text, seconds=2.5)  # what went out, for a glance
+            if not s.named:  # a spoken prompt says what the session is about, like a typed one
+                s.title = short_title(pending.text) or s.title
             self.followups.setdefault(s.id, []).append(pending.text)
             self._keep_followups()
             listener = self.listeners.get(s.id)

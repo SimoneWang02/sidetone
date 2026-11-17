@@ -260,12 +260,12 @@ class OverlayFeed(HubCase):
     def test_the_layout_key_goes_round_the_layouts(self):
         hub = self.make()
         seen = []
-        for _ in range(6):
+        for _ in range(3):
             hub.on_overlay({"type": "hotkey", "name": "layout"})
             seen.append(hub.cfg.overlay["layout"])
-        self.assertEqual(seen, ["living", "island", "edge", "tiles", "bar", "living"])
+        self.assertEqual(seen, ["island", "bar", "island"])
         self.assertIsNone(hub.set_layout("spiral"))  # not a layout: nothing changes
-        self.assertEqual((hub.set_layout("island"), hub.cfg.overlay["layout"]), ("island", "island"))
+        self.assertEqual((hub.set_layout("bar"), hub.cfg.overlay["layout"]), ("bar", "bar"))
 
     def test_every_session_has_its_own_name_color(self):
         import state
@@ -862,6 +862,18 @@ class ClaudeCodesOwnRecords(HubCase):
         self.assertEqual(self.session()["title"], "Eyes free claude speaks")
         hub.on_event(ev("UserPromptSubmit", prompt="something else"))  # a later prompt does not replace the name
         self.assertEqual(self.session()["title"], "Eyes free claude speaks")
+
+    def test_a_placeholder_name_is_not_a_title(self):
+        hub = self.make()  # at start Claude Code calls a session after its folder plus two letters
+        hub.on_event(ev("UserPromptSubmit", prompt="what is this project about?"))
+        self.record("s1", "busy", name="proj-3f", nameSource="derived")
+        hub.reconcile()
+        self.assertEqual(self.session()["title"], "What is this project about?")
+        hub.follow_up("and how do I run the tests", delay=0)  # a spoken prompt is a prompt too
+        self.assertEqual(self.session()["title"], "And how do I run the tests")
+        self.record("s1", "busy", name="project-tour", nameSource="auto")
+        hub.reconcile()
+        self.assertEqual(self.session()["title"], "Project tour")
 
     def test_a_dead_process_counts_as_gone_and_sessions_without_a_file_are_kept(self):
         hub = self.make()

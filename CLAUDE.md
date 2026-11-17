@@ -122,18 +122,18 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   **bubble** appears beside the light of the session that is talking while the panel is away:
   name, title, the sentence, and the voice flowing behind the text. Mode names are still
   `dots` (lights only) and `list` (panel kept out).
-- Layouts (2026-11-17: the author finds the bar intuitive but wondered about "a cooler way to
-  display the layout", was offered four ideas and said "let's try all of them ... I want to see
-  how they look"; **no choice made yet**): `overlay.layout` is `bar`, `living`, `island`, `edge`
-  or `tiles`; `Ctrl+Alt+K` or `claude-speaks overlay layout NAME|next` switches, and
-  `Hub.set_layout` saves it. In the overlay: `living` scales each `Orb` by `Row.Weight` and colors
-  the bar's edge (`LiveEdge`); `island` lays the lights out sideways at the top middle, with a
-  dash of the session's color under each light, and drops the panel and bubble from its middle
-  (no dragging); `edge` adds a fourth window, a 10 px line of light (`EdgeStrip`) flush with
-  the side of the screen, and shows the bar only when called out; `tiles` gives every row its
-  own `Glass` window (`Row.Tile`) sized by weight, and the bar window stays hidden (it still
-  owns the hotkeys). `Bar()`, `BarAreas()` and `Level()` hide those differences from the
-  placement and mouse code. Switching layout forgets the rows and rebuilds them.
+- Layouts (2026-11-17): `overlay.layout` is `bar` or `island`; `Ctrl+Alt+K` or
+  `claude-speaks overlay layout NAME|next` switches, and `Hub.set_layout` saves it. `island` lays
+  the lights out sideways at the top middle of the screen, with a dash of the session's color
+  under each light, and drops the panel and bubble from its middle (no dragging). The author
+  asked to see four ideas ("living" with lights sized by importance, "island", "edge" as a thin
+  line of light at the side of the screen, "tiles" with a window per session), tried them, and
+  kept bar and island; the other three were removed again (they are in commit `8558c4a` if
+  wanted back). Switching layout forgets the rows and rebuilds them.
+- **Where this is heading** (the author, same day): "in the future I want the user that
+  downloads this tool to have maximum capability to customize their experience". So new looks
+  and behaviours should arrive as settings with sensible defaults, not as replacements, and a
+  settings window (see `TODO.md`) is the place they are meant to end up.
 - Messages are handled strictly one at a time (`Handle` queues what arrives while one is being
   handled): creating or showing a window lets WPF run the next queued message early, which
   changed the list of sessions while it was being walked ("Collection was modified").

@@ -38,6 +38,8 @@ def read(directory: str) -> dict[str, dict]:
             continue
         if isinstance(sid, str) and isinstance(pid, int) and alive(pid):
             name = data.get("name")
+            if not isinstance(name, str) or data.get("nameSource") == "derived":
+                name = ""  # "derived" is a placeholder made at start: the folder plus two letters ("my-project-3f")
             found[sid] = {"status": data.get("status"), "status_at": (data.get("statusUpdatedAt") or 0) / 1000,
-                          "name": name if isinstance(name, str) else ""}
+                          "name": name}
     return found

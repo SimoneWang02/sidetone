@@ -52,18 +52,13 @@ its own spoken line as the first line of its reply.
 
 ### Layouts
 
-The sessions can be shown in five ways. `Ctrl+Alt+K` goes round them, and the voice says which
-one you are on.
+The sessions can be shown in two ways. `Ctrl+Alt+K` switches between them, and the voice says
+which one you are on.
 
-- **bar**: a column of lights in one piece of glass.
-- **living**: the bar, with each light sized by how much it matters right now, and an edge that
-  takes the color of the session in focus and pulses with the voice.
-- **island**: a row of lights at the top middle of the screen; the bubble and the details
-  drop down from it.
-- **edge**: at rest only a thin line of light against the side of the screen, one piece per
-  session in its color: breathing while it works, flashing amber when it needs you, swelling
-  with the voice. The bar comes out when the mouse reaches it or `Ctrl+Alt` is held.
-- **tiles**: every session its own small piece of glass, bigger when it matters more.
+- **bar**: a column of lights in one piece of glass at the side of the screen, wherever you
+  drag it; the details unfold beside it.
+- **island**: a row of lights at the top middle of the screen, each with a dash of its
+  session's color; the bubble and the details drop down from it.
 
 ## Install
 
@@ -92,7 +87,7 @@ work, run `cs demo` in a terminal.
 | Key (Windows) | Does |
 |---|---|
 | `Ctrl+Alt+L` | Overlay: keep the panel out ↔ only the lights |
-| `Ctrl+Alt+K` | Overlay: next layout (bar, living, island, edge, tiles) |
+| `Ctrl+Alt+K` | Overlay: switch layout (bar ↔ island) |
 | `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Allow / deny the permission prompt shown in the overlay |
 | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Answer the question shown in the overlay |
 | hold `Ctrl+Alt` | Show the details panel while held |
@@ -122,7 +117,7 @@ claude-speaks voice PROJECT VOICE    give a project a voice
 claude-speaks voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
 claude-speaks voice add NAME FILE    load your own Kokoro voice file (.npy)
 claude-speaks overlay dots|list|toggle|restart     only the lights, or kept open
-claude-speaks overlay layout NAME|next   bar, living, island, edge or tiles
+claude-speaks overlay layout NAME|next   bar or island
 claude-speaks overlay move           makes the bar easy to find and drag (you can drag it any time)
 claude-speaks overlay monitor N | corner top-left|top-right|bottom-left|bottom-right
 claude-speaks demo                   three made-up sessions through every state
