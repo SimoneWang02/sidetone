@@ -102,9 +102,11 @@ real keys yet.
 - [x] The last lines the sessions said, shown under the rows while the details are kept out
       with `Ctrl+Alt+L` and the mouse rests on them. The author, 2026-11-17: "that works",
       but hovering another session lit it up without showing its history.
-- [ ] The history of the session under the mouse (changed 2026-11-17 on that remark, seen
+- [x] The history of the session under the mouse (changed 2026-11-17 on that remark, seen
       in pictures only): with the details kept out, rest the mouse on one session and
       then on another; the lines under the rows should change to that session's.
+      The author, later that day: "hovering each session it says the details of each
+      session, which is good."
 - [x] A quick tap of the talk key: the focus goes to the next session, without recording.
       The author, 2026-11-17, on trying it: not intuitive, since that key is for talking;
       "better solution might be using the arrow keys". The tap now does nothing unless
