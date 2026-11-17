@@ -263,6 +263,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   plays a short sound (see the next point). Target: the session that spoke last; a quick tap of the talk key picks the next one.
   A busy session gets the follow-up right after its current reply. With no listener yet, the
   text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
+- Taking words back after they went out (2026-11-17, `Hub._take_back`, `unsend_seconds`, 4;
+  0 = off). The author wanted an easier way to cancel; offered a spoken ending ("never mind")
+  and an unsend key, they pointed out that the spoken one could throw away a message they
+  meant ("maybe I don't want to cancel it even though I say never mind") and chose the key:
+  "I like the backspace". For that long after "sent", the cancel key acts on the words that
+  just went out (`Hub._sent`), before it would cut a line being spoken: words still waiting
+  in the hub for a busy session are removed ("Taken back"); words the session already has
+  cannot be, so it gets `hub.TAKE_BACK` as a follow-up ("Ignore the last thing I said by
+  voice ... do not undo it unless I ask"), which Claude Code hands over after the reply it is
+  in. That text goes through the listener's usual wrapper, so listeners started before this
+  change deliver it too. The "sent" bubble stays for those 4 s (it was 2.5), the cancel key
+  is claimed for them, and holding the talk key again ends them. Checked by tests only:
+  **nobody has pressed the real key, and no real session has been told to ignore words yet**.
 - Sounds instead of "Sent." (2026-11-17; the author, in Italian: the word waits in the queue
   behind a line being spoken, so it comes late and is of little use; they suggested a sound or
   a visual effect and agreed to this): `hub/sounds.py` makes three short sounds in code and
@@ -494,7 +507,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
-  `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
+  `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
   `talk_tail`, `talk_feedback`, `sound_volume`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays

@@ -67,6 +67,13 @@ real keys yet.
       light. Fixed 2026-11-17 after the author did exactly that and the words "went to
       another session". The first fix still lost the words when the focus moved in the first
       0.4 s after letting go; the second one is checked by tests only, not with the real keys.
+- [ ] Take back what was just sent: speak to a session that is in the middle of a reply, and
+      within four seconds of "sent" press `Ctrl+Alt+Backspace`. The light should show
+      "Taken back" with the two notes going down, and the session should never get the
+      words. Then the same to an idle session: it should be told to ignore them, and say
+      what it already did instead of undoing it. Built 2026-11-17, checked by tests only.
+      Also to notice: the "sent" bubble now stays four seconds, and a press meant to cut a
+      line being spoken in those seconds takes the words back instead.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
       which was right, since nothing had been said since the last message. Not heard yet:
       a real replay, pressed after a session spoke while the author was away from it.
@@ -451,7 +458,10 @@ Smaller ideas:
 
 - [ ] Easier ways to take back what you said (the author, 2026-11-17: "it would be really
       cool to somehow cancel with a shortcut"; today it is `Ctrl+Alt+Backspace` while the talk
-      key is still held, a four-key grip). Ideas offered, none chosen yet:
+      key is still held, a four-key grip). Built the same day: the same key within four
+      seconds after sending takes the words back (see "To try by hand"). The spoken ending
+      below was turned down by the author: it could throw away a message they meant.
+      The other ideas, none chosen:
       - `Esc` while recording throws it away (claimed only while the talk key is down)
       - a short take-back window after letting go: the words show for a second or two and
         `Esc` or `Backspace` alone stops them; no key means sent (`followup_delay` already

@@ -50,7 +50,9 @@ its own spoken line as the first line of its reply.
   sent, the same note twice when it waits for a busy session, two notes going down when it was
   not sent (`talk_feedback` can be `sound`, `voice` or `none`; `sound_volume` is 0 to 1). The focus is on
   whichever session spoke last, shown by a frame around its light; hold `Ctrl+Alt` and turn the
-  mouse wheel to move it to another session. If you would rather check the text first, set
+  mouse wheel to move it to another session. Sent the wrong thing? `Ctrl+Alt+Backspace` within
+  four seconds takes it back: words still waiting for a busy session are removed, and a session
+  that already has them is told to ignore them (`unsend_seconds`; 0 turns it off). If you would rather check the text first, set
   `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
   `followup_confirm` to `true` (nothing is sent until you tap the talk key again).
 - **Which terminal is which.** With several sessions open, the terminal of the session in focus
@@ -166,6 +168,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
   "whisper_model": "small.en",
   "followup_delay": 0,
   "followup_confirm": false,
+  "unsend_seconds": 4,
   "talk_feedback": "sound",
   "sound_volume": 0.3,
   "overlay": {
