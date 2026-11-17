@@ -155,16 +155,17 @@ def voice(seconds, step=0.04):
             for i in range(int(seconds / step))]
 
 
-def sessions(speaking=None):
+def sessions(speaking=None, focus="api-server"):
     rows = [
         dict(name="claude-speaks", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta=""),
-        dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="\U0001F3A4 · 3/5 · 6m"),
+        dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="3/5 · 6m"),
         dict(name="web-app", title="Dark mode for settings", state="needs_you", text="asks: Which drink would you like?", meta=""),
         dict(name="data-pipeline", title="Nightly export", state="failed", text="error: rate limit", meta=""),
         dict(name="notes", title="", state="idle", text="", meta=""),
     ]
     for row in rows:
         row["speaking"] = row["name"] == speaking
+        row["target"] = row["name"] == focus
     return rows
 
 

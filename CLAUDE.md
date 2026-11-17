@@ -161,6 +161,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R and `missed` Ctrl+Alt+U (Ctrl+Alt+M is taken by
   another program on the author's machine). Claimed only while they can act: `allow` Ctrl+Alt+Y,
   `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace.
+- Focus (asked for by the author on 2026-11-17: "combine ctrl+alt and the mouse wheel to decide
+  which session to focus on. also whichever spoke last gets focused"): the focus is the hub's
+  `talk_target`, the session a spoken follow-up goes to. It moves to whoever speaks, and
+  `Hub.focus(step)` moves it by hand. Rows carry `target`; the overlay draws a frame that glides
+  to that light and lights its row. `Ctrl+Alt` + wheel (`overlay.focus_wheel`, `""` turns it off)
+  sends `focus_prev` / `focus_next` and brings the panel out for 1.6 s. Windows only reports
+  the wheel to a background program through a low-level mouse hook, which sits in the path of
+  all mouse input, so the overlay installs it only while those keys are down and there are at
+  least two sessions, and swallows only the wheel. The wheel alone works while the mouse is on
+  the bar. **Not tried with a real mouse yet.**
 - Questions: `PermissionRequest` also fires for `AskUserQuestion`, with the questions and options
   in `tool_input`. Single-choice questions with 2 to 4 options become a `Request` with
   `questions`; `choose(n)` records the label and, after the last one, the hook returns allow
@@ -187,7 +197,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 73 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 74 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

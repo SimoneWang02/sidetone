@@ -436,7 +436,7 @@ namespace ClaudeSpeaks
         readonly Grid row2 = new Grid();
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock line1 = new TextBlock(), line2 = new TextBlock(), meta = new TextBlock();
-        public bool Speaking;
+        public bool Speaking, Focus;
         public string Name = "", Title = "", State = "", FlashText;
         public double FlashUntil, Hot, Lit;
         string rowText = "", metaText = "";
@@ -475,6 +475,7 @@ namespace ClaudeSpeaks
             Title = Overlay.Str(s, "title");
             State = Orb.State = Overlay.Str(s, "state", "idle");
             Speaking = Orb.Speaking = s.ContainsKey("speaking") && Convert.ToBoolean(s["speaking"]);
+            Focus = s.ContainsKey("target") && Convert.ToBoolean(s["target"]);
             if (before.Length > 0 && (before != State || was != Speaking)) Orb.Changed = Ui.Now;  // the light pops
             Wave.Synthetic = s.ContainsKey("synth") && Convert.ToBoolean(s["synth"]);
             if (Speaking && !was) Wave.Since = Ui.Now;
@@ -506,10 +507,11 @@ namespace ClaudeSpeaks
             Strip.Visibility = Speaking ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        // The soft highlight behind the line: under the mouse, and while it is being said.
+        // The soft highlight behind the line: under the mouse, while it is being said, and
+        // (fainter) on the session in focus, the one a spoken follow-up goes to.
         public bool Glow(double dt)
         {
-            bool moving = Ui.Approach(ref Lit, Math.Max(Hot > 0.5 ? 0.10 : 0, Saying ? 0.085 : 0), 14, dt);
+            bool moving = Ui.Approach(ref Lit, Math.Max(Hot > 0.5 ? 0.11 : 0, Math.Max(Saying ? 0.085 : 0, Focus ? 0.06 : 0)), 14, dt);
             glow.Opacity = Lit;
             return moving;
         }
@@ -521,6 +523,7 @@ namespace ClaudeSpeaks
         const uint MOD_ALT = 1, MOD_CONTROL = 2, MOD_SHIFT = 4, MOD_WIN = 8, MOD_NOREPEAT = 0x4000;
         const uint MOUSEEVENTF_LEFTDOWN = 2, MOUSEEVENTF_LEFTUP = 4;
         const int VK_LBUTTON = 1, VK_RBUTTON = 2, SM_SWAPBUTTON = 23;
+        const int WH_MOUSE_LL = 14, WM_MOUSEWHEEL = 0x020A, VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B;
         const double PanelWidth = 340, BubbleWidth = 340, Gap = 6, Wide = PanelWidth - 32;
 
         [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
@@ -529,6 +532,12 @@ namespace ClaudeSpeaks
         [DllImport("user32.dll")] static extern bool GetCursorPos(out CursorPoint point);
         [StructLayout(LayoutKind.Sequential)] struct CursorPoint { public int X; public int Y; }
         [DllImport("user32.dll")] static extern int GetSystemMetrics(int index);
+        delegate IntPtr HookProc(int code, IntPtr wParam, IntPtr lParam);
+        [DllImport("user32.dll")] static extern IntPtr SetWindowsHookEx(int kind, HookProc proc, IntPtr module, uint thread);
+        [DllImport("user32.dll")] static extern bool UnhookWindowsHookEx(IntPtr hook);
+        [DllImport("user32.dll")] static extern IntPtr CallNextHookEx(IntPtr hook, int code, IntPtr wParam, IntPtr lParam);
+        [DllImport("kernel32.dll")] static extern IntPtr GetModuleHandle(string name);
+        [StructLayout(LayoutKind.Sequential)] struct MouseHookData { public CursorPoint Point; public uint Data, Flags, Time; public IntPtr Extra; }
         [DllImport("user32.dll")] static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extra);
 
         readonly JavaScriptSerializer json = new JavaScriptSerializer();
@@ -536,6 +545,18 @@ namespace ClaudeSpeaks
         // The bar of lights, the panel that unfolds beside it, and the speech bubble.
         readonly Glass rail = new Glass(0), panel = new Glass(PanelWidth), bubble = new Glass(BubbleWidth);
         readonly StackPanel lights = new StackPanel { Margin = new Thickness(3) };
+        // A soft frame that slides to the light of the session in focus.
+        readonly Border selector = new Border {
+            Width = 40, Height = 40, CornerRadius = new CornerRadius(11), Background = Ui.Paint("#26FFFFFF"), BorderBrush = Ui.Paint("#70FFFFFF"),
+            BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Top, Opacity = 0, IsHitTestVisible = false,
+        };
+        readonly TranslateTransform selectorAt = new TranslateTransform();
+        readonly HookProc wheelProc;
+        IntPtr wheelHook;
+        int[] wheelKeys = { VK_CONTROL, VK_MENU };  // held together with the wheel to change the focus
+        int wheelTurned;
+        double wheelUntil, selectorY, selectorShown;
+        bool wheeling;
         readonly Grid spare = new Grid { Width = Row.High, Height = Row.High };  // a dim light shown when there is no session
         readonly StackPanel sections = new StackPanel { Margin = new Thickness(3) };
         readonly StackPanel rowsPanel = new StackPanel();
@@ -583,7 +604,13 @@ namespace ClaudeSpeaks
             this.output = output;
             hwnd = rail.Handle;
             spare.Children.Add(new Orb());
-            rail.Panel.Child = lights;
+            selector.RenderTransform = selectorAt;
+            var layers0 = new Grid();
+            layers0.Children.Add(selector);
+            layers0.Children.Add(lights);
+            rail.Panel.Child = layers0;
+            wheelProc = OnMouse;  // kept in a field so it stays alive while Windows holds it
+            rail.MouseWheel += delegate(object sender, MouseWheelEventArgs e) { Wheel(e.Delta); };
             rail.Cursor = Cursors.SizeAll;
 
             requestTitle.TextWrapping = requestKeys.TextWrapping = requestDetail.TextWrapping = TextWrapping.Wrap;
@@ -620,7 +647,7 @@ namespace ClaudeSpeaks
             bannerTimer.Tick += delegate { bannerTimer.Stop(); hasBanner = false; Render(); };
             // Clicks pass through, so "the mouse is on me" is found by watching where the cursor is.
             hoverTimer.Interval = TimeSpan.FromMilliseconds(30);
-            hoverTimer.Tick += delegate { WatchCursor(); };
+            hoverTimer.Tick += delegate { WatchWheelKeys(); WatchCursor(); };
             moveTimer.Tick += delegate { EndMove(); };
             rail.MouseLeftButtonDown += delegate { BeginDrag(); };
             // Hold-to-talk: a hotkey only reports the press, so watch the key until it comes back up.
@@ -704,6 +731,7 @@ namespace ClaudeSpeaks
                     opaque = msg.ContainsKey("opaque") && Convert.ToBoolean(msg["opaque"]);
                     still = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
                     glass = Str(msg, "glass", glass);
+                    if (msg.ContainsKey("focus_wheel")) wheelKeys = Keys(Str(msg, "focus_wheel"));
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
                     if (msg.ContainsKey("hotkeys"))
@@ -805,7 +833,7 @@ namespace ClaudeSpeaks
 
         // The panel (names, titles, what each session is doing) is out in list mode, under the
         // mouse, and while there is something to ask or show. Otherwise there are only the lights.
-        bool IsOpen() { return !dragging && (mode == "list" || hover || moving || hasRequest || hasBanner); }
+        bool IsOpen() { return !dragging && (mode == "list" || hover || moving || hasRequest || hasBanner || Ui.Now < wheelUntil); }
 
         // Brings everything in line with what there is to show. What moves is then moved by Frame.
         void Render()
@@ -936,6 +964,9 @@ namespace ClaudeSpeaks
             frames++;
             bool again = false, expired = false, right = corner.EndsWith("right");
             if (dragging) { DragStep(); again = true; }
+            if (now < wheelUntil) again = true;
+            else if (wheeling) { wheeling = false; expired = true; }  // the panel that came out for the wheel goes back
+            again |= MoveSelector(dt);
 
             again |= panel.Step(dt, still);
             again |= bubble.Step(dt, still);
@@ -976,6 +1007,25 @@ namespace ClaudeSpeaks
             }
             if (expired) Render();
             if (!again && !expired) Run(false);
+        }
+
+        // The frame around the light in focus glides from one light to the next.
+        bool MoveSelector(double dt)
+        {
+            double goal = 0, y = 3;
+            bool found = false;
+            foreach (Row row in order)
+            {
+                if (row.Focus) { goal = y + (row.Light.Height - selector.Height) / 2; found = true; break; }
+                y += row.Light.Height;
+            }
+            if (found && selectorShown < 0.02) selectorY = goal;  // it appears in place instead of flying in
+            bool moving = Ui.Approach(ref selectorShown, found ? 1 : 0, 12, dt);
+            if (found && Math.Abs(goal - selectorY) > 0.05) { selectorY += (goal - selectorY) * (1 - Math.Exp(-20 * dt)); moving = true; }
+            else if (found) selectorY = goal;
+            selector.Opacity = selectorShown;
+            selectorAt.Y = selectorY;
+            return moving;
         }
 
         // What sessions said lately, shown in the panel while the cursor rests on it in list mode.
@@ -1021,6 +1071,67 @@ namespace ClaudeSpeaks
             hover = wantHover;
             peek = wantPeek;
             Render();
+        }
+
+        // --- the wheel ------------------------------------------------------------------------------
+
+        // Ctrl+Alt and the mouse wheel move the focus from one session to the next, wherever
+        // the mouse is. Windows only tells a program about the wheel through a mouse hook, and a
+        // hook sits in the path of every mouse movement, so it is put in only while those keys
+        // are down and there is more than one session to choose from.
+        void WatchWheelKeys()
+        {
+            bool want = wheelKeys.Length > 0 && order.Count > 1 && rail.IsVisible && Held();
+            if (want && wheelHook == IntPtr.Zero) wheelHook = SetWindowsHookEx(WH_MOUSE_LL, wheelProc, GetModuleHandle(null), 0);
+            else if (!want && wheelHook != IntPtr.Zero) { UnhookWindowsHookEx(wheelHook); wheelHook = IntPtr.Zero; wheelTurned = 0; }
+        }
+
+        bool Held()
+        {
+            foreach (int key in wheelKeys) if ((GetAsyncKeyState(key) & 0x8000) == 0) return false;
+            return true;
+        }
+
+        // Called by Windows for every mouse event while the hook is in. The wheel is taken (the
+        // app under the mouse does not scroll or zoom); everything else is passed on untouched.
+        IntPtr OnMouse(int code, IntPtr wParam, IntPtr lParam)
+        {
+            if (code < 0 || wParam.ToInt32() != WM_MOUSEWHEEL || !Held()) return CallNextHookEx(wheelHook, code, wParam, lParam);
+            var data = (MouseHookData)Marshal.PtrToStructure(lParam, typeof(MouseHookData));
+            int turned = (short)(data.Data >> 16);
+            rail.Dispatcher.BeginInvoke(new Action(delegate { Wheel(turned); }));
+            return new IntPtr(1);
+        }
+
+        // One notch up is the session above, one notch down the session below. The panel comes
+        // out for a moment so the choice can be seen.
+        void Wheel(int turned)
+        {
+            if (order.Count < 2) return;
+            wheelTurned += turned;
+            while (Math.Abs(wheelTurned) >= 120)  // smooth wheels send a notch in small parts
+            {
+                Send("hotkey", "name", wheelTurned > 0 ? "focus_prev" : "focus_next");
+                wheelTurned -= 120 * Math.Sign(wheelTurned);
+            }
+            wheelUntil = Ui.Now + 1.6;
+            wheeling = true;
+            Render();
+        }
+
+        // "Ctrl+Alt" -> the keys to watch. Empty turns the wheel off.
+        static int[] Keys(string combo)
+        {
+            var keys = new List<int>();
+            foreach (string raw in combo.Split('+'))
+                switch (raw.Trim().ToLowerInvariant())
+                {
+                    case "ctrl": case "control": keys.Add(VK_CONTROL); break;
+                    case "alt": keys.Add(VK_MENU); break;
+                    case "shift": keys.Add(VK_SHIFT); break;
+                    case "win": keys.Add(VK_LWIN); break;
+                }
+            return keys.ToArray();
         }
 
         static bool Within(CursorPoint p, int[] area, int slack)

@@ -573,6 +573,8 @@ class Hub:
             self.talk_end()
         elif name == "cancel":
             self.cancel()
+        elif name in ("focus_next", "focus_prev"):
+            self.focus(1 if name == "focus_next" else -1)
 
     # --- push-to-talk ------------------------------------------------------------------------
 
@@ -739,6 +741,17 @@ class Hub:
             old.released = True
             old.wake.set()
 
+    def focus(self, step: int) -> str | None:
+        """Move the focus (who a spoken follow-up goes to) to the next or previous session."""
+        with self.lock:
+            ids = list(self.sessions.by_id)
+            if not ids:
+                return None
+            self.talk_target = ids[(ids.index(self._target().id) + step) % len(ids)]
+            name = self.sessions.by_id[self.talk_target].name
+        self.publish()
+        return name
+
     def _target(self):
         """Who a follow-up goes to: the chosen session, else the one that spoke last, else the newest."""
         s = self.sessions.by_id.get(self.talk_target or "")
@@ -779,11 +792,11 @@ class Hub:
                 "title": s.title,
                 "text": s.activity if s.state == "working" else s.note,
                 "meta": " \u00b7 ".join(filter(None, [
-                    "\U0001F3A4" if len(self.sessions.by_id) > 1 and self._target() is s else "",  # talk target
                     f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
                 ])),
                 "speaking": s.id == speaking,
+                "target": len(self.sessions.by_id) > 1 and self._target() is s,  # in focus: follow-ups go here
                 "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
             } for s in self.sessions.by_id.values()]
             asking = self.requests[0].question if self.requests else None

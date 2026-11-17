@@ -652,8 +652,25 @@ class PushToTalk(HubCase):
         hub = self.make()
         hub.talk_target = "b"
         hub.publish()
-        rows = {r["name"]: r["meta"] for r in self.overlay.of("state")[-1]["sessions"]}
-        self.assertEqual((rows["a"], rows["b"]), ("", "\U0001F3A4"))
+        self.assertEqual(self.in_focus(), "b")
+
+    def in_focus(self):
+        marked = [r["name"] for r in self.overlay.of("state")[-1]["sessions"] if r["target"]]
+        self.assertEqual(len(marked), 1)
+        return marked[0]
+
+    def test_the_wheel_moves_the_focus_and_whoever_speaks_takes_it(self):
+        hub = self.make()
+        hub.talk_target = "a"
+        hub.on_overlay({"type": "hotkey", "name": "focus_next"})
+        self.assertEqual(self.in_focus(), "b")
+        hub.on_overlay({"type": "hotkey", "name": "focus_next"})  # past the last one: round to the first
+        self.assertEqual(self.in_focus(), "a")
+        hub.on_overlay({"type": "hotkey", "name": "focus_prev"})
+        self.assertEqual(self.in_focus(), "b")
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("Done here.")))
+        self.assertTrue(hub.speech.wait_idle(5))
+        self.assertEqual(self.in_focus(), "a")  # it spoke last, so a follow-up answers it
 
     def test_overlay_claims_keys_only_while_they_can_act(self):
         hub = self.make()

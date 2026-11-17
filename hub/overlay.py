@@ -25,6 +25,7 @@ DEFAULTS = {
     "list_opacity": 1.0,
     "glass": "blur",  # blur = Windows blurs what is behind | acrylic = heavier blur | none = plain dark glass
     "flash_seconds": 4,
+    "focus_wheel": "Ctrl+Alt",  # held with the mouse wheel: which session is in focus. "" turns it off
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",
