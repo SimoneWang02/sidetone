@@ -215,7 +215,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   normal weight; `Ui.MicInk` is the bold one for "Release to send"). "More": the glint is
   wider (150 px), the resting white softer so it shows, it is back 0.3 s after it left,
   and it travels at one speed over the real length of the words (`Ui.GlintFor`, estimated
-  from the number of letters). Seen in pictures; **the author has not seen this round**.
+  from the number of letters). The author on seeing it: "It works, I like it. Yeah, that's
+  perfect."
 - Titles: `Session.title` is Claude Code's own name for the session (the `name` field of its
   session file, a slug such as `eyes-free-claude-speaks`, turned into words). Claude Code
   writes that name within a second of the first typed prompt, but a session started by voice

@@ -135,11 +135,11 @@ real keys yet.
       the action label"). `"talk_text_color": "#RRGGBB"` gives them another color.
       The author looked at both the same day, the glint and the white: "I think it's
       good. Yeah, I like it." The pulse and still styles they have not seen.
-- [ ] The glint on every push-to-talk label, and more of it (the author, 2026-11-17: "put
+- [x] The glint on every push-to-talk label, and more of it (the author, 2026-11-17: "put
       a glint to all action labels", such as "Working out what you said"; done the same
       day, also for "In focus" and for why nothing was sent; wider, brighter against a
-      softer white, and back sooner). To look at: is it enough now, or too much? Is it on
-      the lines that were meant? What a session is doing ("Running the tests") has none.
+      softer white, and back sooner). What a session is doing ("Running the tests") has
+      none. The author tried it at once: "It works, I like it. Yeah, that's perfect."
 - [ ] The bar over a game in borderless windowed mode
 - [x] A plain click on the bar reaching the window underneath (the author, 2026-11-17: "it
       lands on the window underneath")
