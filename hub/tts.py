@@ -165,10 +165,13 @@ class KokoroEngine:
                 pcm = self._pcm(part, voice)
                 if self._stop.is_set():
                     break
+                # Taken before the write: the player takes a sentence about as fast as it plays it,
+                # so the write of a long one only returns seconds after its sound has started.
+                ready = time.monotonic() - started
                 proc.stdin.write(self.GAP + pcm if i else pcm)
                 proc.stdin.flush()
                 if first is None:
-                    first = time.monotonic() - started
+                    first = ready
             proc.stdin.close()
             proc.wait()
         except OSError:  # the player was killed by stop()

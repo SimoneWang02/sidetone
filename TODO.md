@@ -253,10 +253,11 @@ real keys yet.
       `Ctrl+Alt` held (`overlay.drag_keys`). Still open: it unfolds whenever the mouse passes
       over it. A setting for that (unfold under the mouse: always, or only with the keys)
       has not been built; the author was not asked whether they want the unfolding gone.
-- [ ] `first_audio` in `voice.log` is too high for a line whose first sentence is long (3 to
+- [x] `first_audio` in `voice.log` is too high for a line whose first sentence is long (3 to
       8 s logged where the sound started within a second, as `heard` shows). The time is
       taken after the sentence was written to the player, and that write waits until the
-      player has taken most of it. Take the time before writing.
+      player has taken most of it. Take the time before writing. Done 2026-11-17
+      (`tests/test_timing.py`); the running hub logs the old way until its next restart.
 - [ ] A hub that is running old code keeps old faults: a fix only counts once the hub was
       restarted. On 2026-11-17 a reply was cut by the author's own voice message two minutes
       after that fault was fixed and committed, because the hub had not been restarted yet.
