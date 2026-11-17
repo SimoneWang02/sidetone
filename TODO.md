@@ -9,11 +9,14 @@ started. `CLAUDE.md` has the details of how things work.
 These work in the automated tests or in pictures taken from WSL, but nobody has pressed the
 real keys yet.
 
-- [ ] Push-to-talk in Italian with a real voice: a whole sentence in Italian. Tried by the
-      author on 2026-11-17 with one mixed sentence, English first and then "ciao Claude, mi
-      senti?": both halves arrived right, except "Claude" written as "cloud". The recording
-      was taken as Italian and took 3.5 s to transcribe (6.6 s of speech), against about
-      1.5 s for English ones of that length.
+- [x] Push-to-talk in Italian with a real voice. Done by the author on 2026-11-17, twice.
+      First a short mixed sentence, English and then "ciao Claude, mi senti?": both halves
+      right, except "Claude" written as "cloud" (3.5 s to transcribe 6.6 s of speech, against
+      about 1.5 s for English of that length). Then 27 s that began in English and went on
+      with three whole sentences in Italian: all of it arrived and could be acted on, in
+      3.6 s. Slips: "push the talk" for "push-to-talk", "in futura" for "in futuro", and the
+      first words of the recording may be missing (it starts at "the to-do list"). Not
+      tried: a recording that is Italian from its first word.
 - [ ] Hold `Ctrl+Alt`: the details panel comes out while the keys are held
 - [ ] `Ctrl+Alt` + mouse wheel: the focus moves, and stops at the first and last session
 - [ ] `Ctrl+Alt+Y` / `Ctrl+Alt+N` on a real permission prompt
@@ -101,6 +104,24 @@ Bigger pieces:
       importance, a thin line of light at the screen edge, one small window per session); the
       code is in commit `8558c4a`.
 
+- [ ] Any language, chosen by the person who installs it (the author, 2026-11-17, said in
+      Italian: not only English and Italian, the program should be "customizzabile
+      dall'utente che lo scarica", so in the end every language). Listening is nearly there:
+      `whisper_language` already takes any language codes, or `auto`, with a multilingual
+      model. What is still tied to English:
+      - the start: the default model is English-only and nothing asks which languages you
+        speak (see "To decide"). `install.sh` could ask, and the settings window should
+        offer it.
+      - the spoken summaries: the reminder asks Claude for "plain spoken English", and
+        `hub/tts.py` has Kokoro pronounce every line as American English (`lang="en-us"`)
+      - the voices: the pool is 13 English ones. The installed Kokoro file also has Italian
+        (2), Spanish (3), French (1), Portuguese (3), Hindi (4), Japanese (5) and Chinese
+        (8); any other language needs a second voice engine or the system voice.
+      - the hub's own words ("Sent.", "Allowed.", "I need your input", "Permission needed")
+        and the words in the overlay
+      A first step that covers most of it: one `language` setting (or one per project) that
+      picks the reminder's language, Kokoro's pronunciation and a voice pool for it, and
+      falls back to English where Kokoro has no voice.
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
 - [ ] Packaging as a Claude Code plugin, so it installs in one step.
@@ -241,5 +262,6 @@ Smaller ideas:
         and can bring the speaking terminal to the front. The only way to color a tab, and
         it would also give the jump key above. The most work.
 - [ ] A phone notification when a session needs you and you are away
-- [ ] Spoken summaries in the language you spoke (they are always English today)
+- [ ] Spoken summaries in the language you spoke (they are always English today; part of
+      "Any language" above)
 - [ ] Running the speech model on the graphics card to make transcription faster
