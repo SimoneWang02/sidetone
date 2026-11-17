@@ -41,7 +41,8 @@ its own spoken line as the first line of its reply.
 - **Push-to-talk follow-ups.** Hold `Ctrl+Alt+Space`, say "also add a test for the empty case",
   release. While you hold the key, that session's light and the bubble next to it show your
   own voice as a wave, so you can see the microphone hears you, and a glint of light runs along
-  "Release to send" (`"talk_text"` under `overlay`: `shimmer`, `pulse` or `still`). A local Whisper model transcribes it and
+  "Release to send" (`"talk_text"` under `overlay`: `shimmer`, `pulse` or `still`;
+  `"talk_text_color"` gives the words a color of your own). A local Whisper model transcribes it and
   it is sent at once to the session in focus, even if that session is idle; the light then
   shows a paper plane (moving dots while it works, a struck-out microphone when nothing went
   out; `"talk_sign": "line"` under `overlay` puts that sign beside the session's name

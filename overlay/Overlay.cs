@@ -43,33 +43,56 @@ namespace ClaudeSpeaks
 
         // "Release to send" moves while you hold the talk key (the author asked for "an animation
         // on the text"): shimmer = a glint of light runs along the words, then rests a moment |
-        // pulse = the words breathe between the microphone's pink and a lighter one | still.
+        // pulse = the words breathe between soft and full | still.
+        // Its color is a soft white with a white glint, the color of no session: it was the
+        // microphone's pink until the author saw it look like the name of a session whose own
+        // color is nearly that pink, and chose to change the words and keep the name. A color of
+        // your own (talk_text_color, "#RRGGBB") is used as it is, with a lighter glint.
         public static string TalkText = "shimmer";
         public static bool Motionless;  // for pictures
-        static readonly Color micInk = Color.FromRgb(0xFF, 0x8F, 0xA6), micGlint = Color.FromRgb(0xFF, 0xF4, 0xF6);
+        static Color askInk = Color.FromArgb(0xA8, 0xFF, 0xFF, 0xFF), askGlint = Colors.White;
         static readonly LinearGradientBrush shine = MakeShine();
-        static readonly SolidColorBrush breath = new SolidColorBrush(micInk);
+        static readonly SolidColorBrush breath = new SolidColorBrush(askInk), plain = new SolidColorBrush(Colors.White);
 
         static LinearGradientBrush MakeShine()
         {
             var brush = new LinearGradientBrush { MappingMode = BrushMappingMode.Absolute, StartPoint = new Point(-90, 0), EndPoint = new Point(0, 0) };
-            brush.GradientStops.Add(new GradientStop(micInk, 0));
-            brush.GradientStops.Add(new GradientStop(micGlint, 0.5));
-            brush.GradientStops.Add(new GradientStop(micInk, 1));
+            brush.GradientStops.Add(new GradientStop(askInk, 0));
+            brush.GradientStops.Add(new GradientStop(askGlint, 0.5));
+            brush.GradientStops.Add(new GradientStop(askInk, 1));
             return brush;
+        }
+
+        public static void SetTalkColor(string hex)
+        {
+            Color soft = Color.FromArgb(0xA8, 0xFF, 0xFF, 0xFF), glint = Colors.White, full = Colors.White;
+            try
+            {
+                if (hex != null && hex.Length > 0)
+                {
+                    soft = full = (Color)ColorConverter.ConvertFromString(hex);
+                    glint = Mix(soft, Colors.White, 0.85);
+                }
+            }
+            catch (Exception) { }  // not a color: the default
+            askInk = soft;
+            askGlint = glint;
+            shine.GradientStops[0].Color = shine.GradientStops[2].Color = breath.Color = soft;
+            shine.GradientStops[1].Color = glint;
+            plain.Color = full;
         }
 
         // The ink for words that ask you to do something while the microphone is open.
         public static Brush MicLive
         {
-            get { return Motionless || TalkText == "still" ? MicInk : TalkText == "pulse" ? (Brush)breath : shine; }
+            get { return Motionless || TalkText == "still" ? plain : TalkText == "pulse" ? breath : (Brush)shine; }
         }
 
         // One frame of that motion. The glint takes a second to cross the words and stays away for half of one.
         public static void MoveMicInk(double now)
         {
             if (Motionless) return;
-            if (TalkText == "pulse") breath.Color = Mix(micInk, micGlint, 0.5 - 0.5 * Math.Cos(now * 2 * Math.PI / 1.4));
+            if (TalkText == "pulse") breath.Color = Mix(askInk, askGlint, 0.5 - 0.5 * Math.Cos(now * 2 * Math.PI / 1.4));
             else if (TalkText == "shimmer")
             {
                 double at = -90 + 240 * Clamp((now % 1.5) / 1.0);  // left edge of the glint, in pixels from the start of the line
@@ -80,7 +103,8 @@ namespace ClaudeSpeaks
 
         public static Color Mix(Color a, Color b, double share)
         {
-            return Color.FromRgb((byte)(a.R + (b.R - a.R) * share), (byte)(a.G + (b.G - a.G) * share), (byte)(a.B + (b.B - a.B) * share));
+            return Color.FromArgb((byte)(a.A + (b.A - a.A) * share), (byte)(a.R + (b.R - a.R) * share),
+                                  (byte)(a.G + (b.G - a.G) * share), (byte)(a.B + (b.B - a.B) * share));
         }
 
         // Shape differs as well as color (see Orb), so a state reads without color vision.
@@ -1020,6 +1044,7 @@ namespace ClaudeSpeaks
                     opaque = msg.ContainsKey("opaque") && Convert.ToBoolean(msg["opaque"]);
                     still = Ui.Motionless = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
+                    if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     glass = Str(msg, "glass", glass);
                     islandX = Num(msg, "island_x", islandX);
                     islandY = Num(msg, "island_y", islandY);
@@ -1908,8 +1933,8 @@ namespace ClaudeSpeaks
             }
         }
 
-        // How those words are written: what to do stands out in the microphone's color, your
-        // own words are white, and a note about what happened is dim.
+        // How those words are written: what to do stands out (Ui.MicInk stands for "the ink of
+        // Ui.MicLive", which moves), your own words are white, and a note about what happened is dim.
         Brush TalkInk()
         {
             if (talkState == "listening") return Ui.MicInk;

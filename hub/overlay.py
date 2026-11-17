@@ -54,6 +54,9 @@ DEFAULTS = {
     # How "Release to send" moves while the talk key is held: shimmer = a glint of light runs
     # along the words | pulse = they breathe between two pinks | still = no motion
     "talk_text": "shimmer",
+    # The color of those words: "" = a soft white with a white glint, the color of no session |
+    # "#RRGGBB" = your own ("#FF8FA6" is the microphone's pink they had at first)
+    "talk_text_color": "",
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",

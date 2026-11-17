@@ -1305,9 +1305,9 @@ class AcrossARestart(HubCase):
         path = hub._sessions_file()
         with open(path) as f:
             kept = json.load(f)
-        for entry in kept["sessions"] + kept["history"]:  # as written by a hub that still had the pink
+        for entry in kept["sessions"] + kept["history"]:  # as written by a hub with another list of colors
             if entry.get("session", entry.get("id")) == "b":
-                entry["color"] = "#FF8FA3"
+                entry["color"] = "#F27FFF"
         with open(path, "w") as f:
             json.dump(kept, f)
         again = self.restart()

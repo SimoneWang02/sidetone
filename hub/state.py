@@ -15,11 +15,10 @@ VOICE_POOL = [
 ]
 
 # One color per session for its name in the overlay. Soft, easy to tell apart on dark glass,
-# and none of them the plain blue, amber, green or red the status lights use, nor the pink of
-# the microphone: the fifth was "#FF8FA3" until the author saw "Release to send", written in
-# the microphone's color, look like the name of the session that had it. Its replacement is
-# the soft color farthest (in Lab) from the other nine, the microphone and the status lights.
-COLORS = ["#8AB4FF", "#FFB86B", "#C6A0F6", "#7FDBCA", "#F27FFF", "#F9E27D", "#B9F27C", "#F5A97F", "#91D7E3", "#F5BDE6"]
+# and none of them the plain blue, amber, green or red the status lights use. The fifth is
+# nearly the microphone's pink; it was an orchid ("#F27FFF") for an hour on 2026-11-17, until
+# the author asked for the pink back and for the words that clashed with it to change instead.
+COLORS = ["#8AB4FF", "#FFB86B", "#C6A0F6", "#7FDBCA", "#FF8FA3", "#F9E27D", "#B9F27C", "#F5A97F", "#91D7E3", "#F5BDE6"]
 
 ACTIVE_WINDOW = 15 * 60  # a session counts as active this long after its last event
 FORGET_AFTER = 6 * 3600  # sessions killed without a SessionEnd are dropped after this

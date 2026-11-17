@@ -189,17 +189,24 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   to send", the one line written in the microphone's color because it asks you to do
   something, looked like the name of the session that had it; the author, 2026-11-17: "very
   similar to the brand color, especially of the first terminal, which is not really great".
-  That name color is now an orchid (`#F27FFF`), and a session kept across a restart with a
-  color that is no longer in the list gets a new one (`Sessions.keep`), its old lines too.
+  First the name color was changed, to an orchid (`#F27FFF`); an hour later the author
+  said: "I kind of like the pink that was before for the first terminal. I think what you
+  should change is the action label." So the pink is a name color again and the words
+  changed instead: a soft white with a white glint, the color of no session
+  (`overlay.talk_text_color`, `""` by default; `"#FF8FA6"` brings the pink words back). The
+  microphone's wave, light and sign are still pink. Left from the first try: a session
+  kept across a restart with a color that is not in the list gets a new one
+  (`Sessions.keep`), its old lines too.
 - "Release to send" moves (2026-11-17; the author, right after the color talk: "putting an
   animation on the text ... would be great"; which animation was not said, so it is a
   setting with three choices). `overlay.talk_text`: `shimmer` (default; a glint of light
   crosses the words in a second and stays away for half of one), `pulse` (the words breathe
-  between the microphone's pink and a lighter one) or `still`. `Ui.MicLive` is the brush for
+  between soft and full) or `still`. `Ui.MicLive` is the brush for
   it, shared by the bubble and the row and moved once per frame by `Ui.MoveMicInk` while the
   step is `listening`; the glint is a gradient placed in pixels from the start of the line,
   240 px of travel, which fits these words and would need measuring for longer ones. Seen in
-  pictures taken while it ran, all three styles; **not seen by the author yet**.
+  pictures taken while it ran, all three styles, in the white and in a color of one's own;
+  **not seen by the author yet**.
 - Titles: `Session.title` is Claude Code's own name for the session (the `name` field of its
   session file, a slug such as `eyes-free-claude-speaks`, turned into words). Claude Code
   writes that name within a second of the first typed prompt, but a session started by voice
