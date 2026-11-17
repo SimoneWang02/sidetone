@@ -76,10 +76,11 @@ real keys yet.
 - [ ] The bar over a game in borderless windowed mode
 - [x] A plain click on the bar reaching the window underneath (the author, 2026-11-17: "it
       lands on the window underneath")
-- [ ] Dragging the bar, which since the same day needs `Ctrl+Alt` held (the author's wish on
+- [x] Dragging the bar, which since the same day needs `Ctrl+Alt` held (the author's wish on
       seeing the move cursor whenever the mouse was on the bar): with the keys held the
       move cursor shows on the bar and it can be dragged; without them there is no move
-      cursor and clicks and the wheel go to the window underneath.
+      cursor and clicks and the wheel go to the window underneath. The author, 2026-11-17:
+      "Oh yes, it works. Now perfect." The new place was saved to `config.json`.
 - [ ] Sessions started from the VS Code extension showing up in the bar
 - [ ] The bar no longer getting taller when the mouse is on it while a long sentence is
       said: since 2026-11-17 the sentence is cut to one line in the details (`row_lines`).

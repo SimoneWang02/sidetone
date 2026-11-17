@@ -178,7 +178,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   alt and control". Without the keys nothing of the bar is in the mouse's way now (no move
   cursor, no brighter edge, no wheel on the bar); it still unfolds under the mouse, which
   only needs the cursor's position. `claude-speaks overlay move` works without the keys.
-  **The drag itself has not been confirmed by the author yet.**
+  The author dragged it with the keys held the same day ("it works. Now perfect"), and the
+  new place was saved.
 - Name colors (asked for by voice on 2026-11-17: "if ... either the session title or the folder
   name could be different color, would be ... much easier to read"; read as: the name should
   stand apart from the title, and sessions from each other): `Session.color`, one of
