@@ -221,6 +221,7 @@ class Hub:
         self._mic_meter = Meter()  # turns microphone audio into a loudness for the overlay
         self._talking: float | None = None  # when the talk key went down
         self._transcribing = False  # the key is up and the words are not out of the speech model yet
+        self._heard: object | None = None  # that recording; the cancel key clears it, and its words are dropped
         self._pending: Pending | None = None  # the follow-up being shown
         self._sent: Sent | None = None  # the one that went out last, while it can still be taken back
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
@@ -849,7 +850,7 @@ class Hub:
                 return
             held, self._talking = time.monotonic() - self._talking, None
             confirming = self._pending if self._pending and self._pending.confirm else None
-            tap, said_to = held < TAP, None
+            tap, said_to, heard = held < TAP, None, None
             if not tap:
                 # Who was listening when the key came up gets the words. Decided here, before
                 # the tail of the recording and the second or two of turning it into text:
@@ -857,11 +858,12 @@ class Hub:
                 said_to = self._target()
                 self._cancel_pending()
                 self._transcribing = True
+                heard = self._heard = object()
                 self._talk("transcribing", said_to)
         try:
             pcm = self.recorder.stop(tail=0 if tap else self.cfg.talk_tail)
         except Exception:
-            self._transcribing = False
+            self._transcribing, self._heard = False, None
             raise
         # A line cut by the key is said again, unless you held the key to answer that very session.
         self.speech.resume(answering=said_to.id if said_to else "")
@@ -874,11 +876,11 @@ class Hub:
                     self.talk_target = ids[(ids.index(self._target().id) + 1) % len(ids)]
                     self._talk("focus", self.sessions.by_id[self.talk_target], seconds=1.6)
         else:
-            threading.Thread(target=self._transcribe, args=(pcm, said_to.id if said_to else None),
+            threading.Thread(target=self._transcribe, args=(pcm, said_to.id if said_to else None, heard),
                              daemon=True).start()
         self.publish()
 
-    def _transcribe(self, pcm: bytes, session: str | None = None) -> None:
+    def _transcribe(self, pcm: bytes, session: str | None = None, job: object | None = None) -> None:
         started = time.monotonic()
         try:
             text = self.transcriber.transcribe(pcm) if self.transcriber else ""
@@ -895,6 +897,9 @@ class Hub:
             self._unload = threading.Timer(self.cfg.whisper_unload_minutes * 60, self.transcriber.unload)
             self._unload.daemon = True
             self._unload.start()
+        if job is not None and self._heard is not job:  # the cancel key, while this was being worked out
+            log(self.cfg, "hub.log", "talk: cancelled before it was sent")
+            return
         try:
             said_to = self.sessions.by_id.get(session or "")
             if not text:
@@ -907,7 +912,8 @@ class Hub:
             else:
                 self.follow_up(text, session)
         finally:
-            self._transcribing = False
+            if job is None or self._heard is job:
+                self._transcribing, self._heard = False, None
 
     def follow_up(self, text: str, session: str | None = None, delay: float | None = None) -> bool:
         """Show a follow-up, then send it to the session.
@@ -1017,14 +1023,17 @@ class Hub:
         self.publish()
 
     def cancel(self) -> None:
-        """The cancel key: stop recording, or take back a follow-up (one still on screen, or
-        one sent in the last few seconds), or cut the line being spoken."""
+        """The cancel key: stop recording, or take back a follow-up (one still being worked
+        out, one on screen, or one sent in the last few seconds), or cut the line being spoken."""
         with self.lock:
             talking, self._talking = self._talking, None
             about = self.sessions.by_id.get(self._pending.session) if self._pending else self._target()
             had_pending = self._cancel_pending()
-            took_back = False
-            if talking or had_pending:
+            # Let go already, the words not out of the speech model yet: they are dropped when they come.
+            hearing, took_back = self._transcribing and self._heard is not None, False
+            if hearing:
+                self._transcribing, self._heard = False, None
+            if talking or had_pending or hearing:
                 self._talk("failed", about, "Cancelled", seconds=1.5)
                 self._signal("failed")
             else:
@@ -1032,7 +1041,7 @@ class Hub:
         if talking:
             self.recorder.stop()
             self.speech.resume()
-        elif not (had_pending or took_back):
+        elif not (had_pending or took_back or hearing):
             self.speech.skip()
         self.publish()
 
@@ -1209,7 +1218,7 @@ class Hub:
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)] if asking
                            else ["allow", "deny"] if self.requests else [])
-                          + (["cancel"] if self._talking or self._pending or current or self._unsendable() else [])
+                          + (["cancel"] if self._talking or self._transcribing or self._pending or current or self._unsendable() else [])
                           + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else []))
             now = time.time()
             # Newest first, and up to four lines of each session: the overlay shows those of the

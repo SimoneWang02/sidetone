@@ -867,6 +867,25 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.followups, {})
         self.assertIn(("failed", "a", "Cancelled"), self.talks())
 
+    def test_cancel_while_the_words_are_being_worked_out_drops_them(self):
+        hub = self.make()
+        hub.transcriber.seconds = 0.3
+        hub.talk_target = "a"
+        listener = hub.listen("a")
+        hub.talk_start()
+        hub.talk_end()
+        self.assertIn("cancel", self.overlay.of("keys")[-1]["live"])  # the key stays claimed after letting go
+        hub.cancel()
+        self.assertEqual(self.talks()[-1], ("failed", "a", "Cancelled"))
+        time.sleep(0.6)
+        self.assertFalse(listener.wake.is_set())
+        self.assertEqual(hub.followups, {})
+        self.assertNotIn("sent", [step for step, _, _ in self.talks()])
+        hub.talk_start()  # and the next thing said goes out as usual
+        hub.talk_end()
+        self.assertTrue(listener.wake.wait(3))
+        self.assertEqual(hub.collect(listener), "also add a test")
+
     def test_cancel_right_after_sending_takes_waiting_words_back(self):
         hub = self.make()
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))  # "a" is in the middle of a reply
