@@ -75,6 +75,12 @@ real keys yet.
       the author the same day with the real key and worked; the busy half is still open.
       Also to notice: the "sent" bubble now stays four seconds, and a press meant to cut a
       line being spoken in those seconds takes the words back instead.
+- [ ] Taking words back while `Ctrl+Alt` stay held from talking: the overlay hides those
+      keys from Windows during a hold and believes them held for 3 s after it (`MaskGrace`).
+      After that, with the keys never let go, Windows takes them for up, so Backspace is a
+      plain Backspace for the program in front and takes nothing back, though the time to
+      take words back runs to about 6 s after letting go. Not fixed (read from the code
+      2026-11-17, not tried): keep believing them held while the cancel key can still act.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
       which was right, since nothing had been said since the last message. Not heard yet:
       a real replay, pressed after a session spoke while the author was away from it.

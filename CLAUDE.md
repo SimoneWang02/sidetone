@@ -274,7 +274,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   voice ... do not undo it unless I ask"), which Claude Code hands over after the reply it is
   in. That text goes through the listener's usual wrapper, so listeners started before this
   change deliver it too. The "sent" bubble stays for those 4 s (it was 2.5), the cancel key
-  is claimed for them, and holding the talk key again ends them. The author pressed the real key
+  is claimed for them, and holding the talk key again ends them. The key also works in the second or two between letting
+  go and "sent" (`Hub._heard`): the author's first try "wasn't immediate", most likely a
+  press in that gap, where the key was not even claimed; the words are now dropped when
+  they come back from the speech model. The author pressed the real key
   the same day right after speaking to an idle session: it had the words already, got the
   ignore message after its reply and answered that it had changed nothing. **Not tried by
   hand yet: a busy session, where the words are removed** (done once through
