@@ -266,7 +266,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - Hotkeys (rebind or blank them under `overlay.hotkeys`): always claimed are `toggle` Ctrl+Alt+L,
   `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R and `missed` Ctrl+Alt+U (Ctrl+Alt+M is taken by
   another program on the author's machine). Claimed only while they can act: `allow` Ctrl+Alt+Y,
-  `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace.
+  `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace, and
+  with two or more sessions `focus_prev` Ctrl+Alt+Up and `focus_next` Ctrl+Alt+Down.
+- The arrow keys move the focus (2026-11-17). Before, besides the wheel, a quick tap of the
+  talk key went to the next session; the author on being asked to try it: "I don't think
+  it's very intuitive ... control-alt-space, it's used for speaking ... better solution might
+  be using the arrow keys." Now the tap does nothing (`talk_tap: next` brings it back) and
+  Ctrl+Alt+Up/Down send the same `focus_prev`/`focus_next` as the wheel, stop at the ends
+  like it, and bring the panel out for a moment. While claimed they are taken from every
+  program, and VS Code uses these two in its editor to add a cursor above or below; they
+  can be bound to other keys or blanked. Left and Right are not claimed (VS Code moves an
+  editor between groups with them), so in the island layout it is still Up and Down.
 - Focus (asked for by the author on 2026-11-17: "combine ctrl+alt and the mouse wheel to decide
   which session to focus on. also whichever spoke last gets focused"): the focus is the hub's
   `talk_target`, the session a spoken follow-up goes to. It moves to whoever speaks, and
@@ -426,11 +436,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
   does not repeat the line once the hub is back.
 - `bin/claude-speaks` (linked by `install.sh` into `~/.local/bin` as `claude-speaks` and `cs`;
-  on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `voices`, `voice …`, `target [PROJECT]`,
+  on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `languages [CODES]`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 128 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 144 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
@@ -534,6 +544,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   with Kokoro's Italian voices as the speaker: `small` got Italian right, about 1.2 s per
   sentence with detection against 0.7 s for `small.en`; loudness down to a peak of 0.03 made no
   difference. The repo default stays `small.en`.
+- Choosing languages (2026-11-17): asked whether new installs should start with the
+  multilingual model, the author said: "What if we let the people choose the language they
+  speak? So ... we don't include all languages." So `install.sh` asks once, at a terminal,
+  which languages you will speak (`--languages en,it` answers in advance; a choice already in
+  `config.json` is kept), and `claude-speaks languages [CODES]` shows or changes it later.
+  Both go through `stt.setup` (run as `hub/stt.py languages CONFIG CODES`): English alone gives
+  the English-only model of the size already chosen, anything else the multilingual one with
+  `whisper_language` set to those codes, `auto` any language. Codes are checked against
+  `stt.LANGUAGES`, a copy of faster-whisper's list (a test compares the two), so the check
+  works before the Python environment exists. A running hub takes the choice up at once
+  (`POST /languages`, `Hub.reload_languages`); the model loads on the next push-to-talk.
+  Tests are in `tests/test_languages.py`. The question itself was tried with a pretend
+  terminal in a throwaway home folder, not by a person.
 - Speech-to-text facts: `small.en` (int8, CPU) transcribes 4.4 s of speech in about 0.7 s,
   `base.en` in 0.3 s but drops punctuation. The WSLg microphone works through `parec`. Without a
   tail after key release the last word is cut. After a hub restart idle sessions are unknown

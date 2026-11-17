@@ -1526,7 +1526,16 @@ namespace ClaudeSpeaks
         void Hotkey(string name)
         {
             if (name == "toggle") SetMode("toggle");
+            if (name == "focus_prev" || name == "focus_next") ShowChoice();
             Send("hotkey", "name", name);
+        }
+
+        // The focus is being moved by hand: the panel comes out for a moment so the choice can be seen.
+        void ShowChoice()
+        {
+            wheelUntil = Ui.Now + 1.6;
+            wheeling = true;
+            Render();
         }
 
         // Are the Ctrl, Alt, Shift and Win keys of a hotkey down? With `only`, and none of the others.
@@ -2010,7 +2019,7 @@ namespace ClaudeSpeaks
             int next = 1;
             foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
-                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key.StartsWith("option");
+                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
                 if (answers && !liveKeys.Contains(entry.Key)) continue;
                 string combo = entry.Value;
                 if (combo.Trim().Length == 0) continue;  // an empty combo turns that hotkey off

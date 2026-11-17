@@ -100,7 +100,15 @@ real keys yet.
 - [ ] The history of the session under the mouse (changed 2026-11-17 on that remark, seen
       in pictures only): with the details kept out, rest the mouse on one session and
       then on another; the lines under the rows should change to that session's.
-- [ ] A quick tap of the talk key: the focus goes to the next session, without recording
+- [x] A quick tap of the talk key: the focus goes to the next session, without recording.
+      The author, 2026-11-17, on trying it: not intuitive, since that key is for talking;
+      "better solution might be using the arrow keys". The tap now does nothing unless
+      `talk_tap: next` is set.
+- [ ] `Ctrl+Alt+Up` / `Ctrl+Alt+Down` move the focus (built on that remark; checked only as
+      far as the overlay accepting the keys): the frame goes to the session above or below,
+      stops at the first and last, and the details come out for a moment. To watch for:
+      VS Code's own use of these keys in the editor (a cursor above or below) no longer
+      works while two or more sessions are open.
 - [ ] `Ctrl+Alt+K`: switches between the bar and the island, and back
 - [ ] Push-to-talk in Italian from the first word (so far every Italian recording began in
       English)
@@ -154,8 +162,9 @@ real keys yet.
       would need a second voice engine.
 - [ ] Should the repo default for push-to-talk be the multilingual model? Today the default is
       English-only and the author's own settings switch it to English plus Italian.
-- [ ] Should a quick tap of the talk key also stop at the last session, like the wheel? It
-      still goes round.
+- [x] Should a quick tap of the talk key also stop at the last session, like the wheel?
+      Settled another way on 2026-11-17: the tap no longer moves the focus at all; the
+      arrow keys do, and they stop at the ends.
 
 ## Rough edges
 

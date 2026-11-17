@@ -96,6 +96,10 @@ class Config:
     # on, in its speak tag, and may change that as the work moves on. "auto": never asked; the
     # title is Claude Code's own name for the session, else the start of its first spoken line.
     titles: str = "ask"
+    # What a quick tap of the talk key does (a press too short to be speech). "none": nothing,
+    # the focus is moved with the arrow keys or the wheel. "next": the focus goes to the next
+    # session, as it did before those keys existed.
+    talk_tap: str = "none"
     repeat: str = "focus"  # what the repeat key says again: the last line of the session in focus | "last" (anyone's)
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
@@ -157,7 +161,7 @@ class Config:
             user = {}
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail",
-                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "titles",
+                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "titles",
                     "talk_feedback", "sound_volume",
                     "progress", "progress_after", "progress_interval"):
             if key in user:
@@ -806,7 +810,7 @@ class Hub:
             self._send(confirming)
         elif tap:
             with self.lock:
-                ids = list(self.sessions.by_id)
+                ids = list(self.sessions.by_id) if self.cfg.talk_tap == "next" else []
                 if ids:
                     self.talk_target = ids[(ids.index(self._target().id) + 1) % len(ids)]
                     self._talk("focus", self.sessions.by_id[self.talk_target], seconds=1.6)
@@ -1100,7 +1104,8 @@ class Hub:
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)] if asking
                            else ["allow", "deny"] if self.requests else [])
-                          + (["cancel"] if self._talking or self._pending or current else []))
+                          + (["cancel"] if self._talking or self._pending or current else [])
+                          + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else []))
             now = time.time()
             # Newest first, and up to four lines of each session: the overlay shows those of the
             # session under the mouse, so one that talks a lot must not push the others out.

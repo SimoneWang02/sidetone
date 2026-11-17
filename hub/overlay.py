@@ -55,6 +55,8 @@ DEFAULTS = {
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",
                 "repeat": "Ctrl+Alt+R", "missed": "Ctrl+Alt+U", "layout": "Ctrl+Alt+K",
+                # Move the focus to the session before or after; claimed only while there are two or more.
+                "focus_prev": "Ctrl+Alt+Up", "focus_next": "Ctrl+Alt+Down",
                 "option1": "Ctrl+Alt+1", "option2": "Ctrl+Alt+2", "option3": "Ctrl+Alt+3", "option4": "Ctrl+Alt+4"},
 }
 LAYOUTS = ["bar", "island"]

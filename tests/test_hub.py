@@ -867,8 +867,8 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.followups, {})
         self.assertIn(("failed", "a", "Cancelled"), self.talks())
 
-    def test_a_quick_tap_picks_the_next_session(self):
-        hub = self.make()
+    def test_a_quick_tap_can_be_set_to_pick_the_next_session(self):
+        hub = self.make(talk_tap="next")
         hub_module.TAP = 30
         hub.talk_target = "a"
         hub.talk_start()
@@ -876,6 +876,30 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.talk_target, "b")
         self.assertIn(("focus", "b", ""), self.talks())
         self.assertFalse(wait_for(lambda: hub.followups, 0.2))
+
+    def test_a_quick_tap_does_nothing_by_itself(self):
+        hub = self.make()
+        hub_module.TAP = 30
+        hub.talk_target = "a"
+        hub.talk_start()
+        hub.talk_end()
+        self.assertEqual(hub.talk_target, "a")
+        self.assertFalse(wait_for(lambda: hub.followups, 0.2))
+
+    def test_the_arrow_keys_move_the_focus_and_are_only_claimed_with_several_sessions(self):
+        hub = self.make()  # two sessions, a and b
+        hub.publish()
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["focus_next", "focus_prev"])
+        hub.talk_target = "a"
+        hub.on_overlay({"type": "hotkey", "name": "focus_next"})
+        self.assertEqual(hub.talk_target, "b")
+        hub.on_overlay({"type": "hotkey", "name": "focus_next"})  # the last one: it stops there
+        self.assertEqual(hub.talk_target, "b")
+        hub.on_overlay({"type": "hotkey", "name": "focus_prev"})
+        self.assertEqual(hub.talk_target, "a")
+        hub.on_event(ev("SessionEnd", sid="b", cwd="/w/b"))
+        hub.publish()
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], [])
 
     def test_what_is_on_screen_follows_the_focus(self):
         hub = self.make()
@@ -1042,11 +1066,12 @@ class PushToTalk(HubCase):
     def test_overlay_claims_keys_only_while_they_can_act(self):
         hub = self.make()
         hub.publish()
-        self.assertEqual(self.overlay.of("keys")[-1]["live"], [])
+        arrows = ["focus_next", "focus_prev"]  # there are two sessions to move between
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], arrows)
         hub.request_permission(ask(sid="a", cwd="/w/a"))
-        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "deny"])
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "deny"] + arrows)
         hub.talk_start()
-        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "cancel", "deny"])
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "cancel", "deny"] + arrows)
 
 
 class SpokenLanguages(unittest.TestCase):

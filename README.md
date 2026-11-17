@@ -93,9 +93,10 @@ git clone https://github.com/SimoneWang02/claude-speaks && cd claude-speaks
 `install.sh` creates a Python environment in `~/.local/share/kokoro/venv`, downloads the Kokoro
 voice model (about 350 MB), and adds the hooks to `~/.claude/settings.json`. Your existing
 hooks are kept and a backup of the file is written first. It also links the command into
-`~/.local/bin` as `claude-speaks` and the shorter `cs`. The Whisper model for push-to-talk
-(about 250 MB) is downloaded the first time you use the talk key. `./uninstall.sh` removes the
-hooks again.
+`~/.local/bin` as `claude-speaks` and the shorter `cs`. It asks once which languages you will
+speak to it (`./install.sh --languages en,it` answers in advance; `claude-speaks languages`
+changes it later). The Whisper model for push-to-talk (about 250 MB) is downloaded the first
+time you use the talk key. `./uninstall.sh` removes the hooks again.
 
 Start a new Claude Code session and it speaks. To see and hear everything without doing real
 work, run `cs demo` in a terminal.
@@ -109,8 +110,9 @@ work, run `cs demo` in a terminal.
 | `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Allow / deny the permission prompt shown in the overlay |
 | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Answer the question shown in the overlay |
 | hold `Ctrl+Alt` | Show the details panel while held |
-| `Ctrl+Alt` + mouse wheel | Move the focus to the session above or below (also: the wheel alone while the mouse is on the bar) |
-| hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send. A quick tap picks the next session |
+| `Ctrl+Alt+Up` / `Ctrl+Alt+Down` | Move the focus to the session above or below (claimed only while two or more are open) |
+| `Ctrl+Alt` + mouse wheel | The same with the wheel |
+| hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send |
 | `Ctrl+Alt+Backspace` | Take back a follow-up, stop recording, or cut the line being spoken |
 | `Ctrl+Alt+U` | Replay what was said since you were last there |
 | `Ctrl+Alt+R` | Repeat the last line of the session in focus |
@@ -132,6 +134,7 @@ claude-speaks target [PROJECT]       who a spoken follow-up goes to
 claude-speaks missed | repeat        catch up, or hear the focused session's last line again
 claude-speaks sound sent|queued|failed   hear the short sounds that answer push-to-talk
 claude-speaks voices                 every voice, and which project has which
+claude-speaks languages en,it        the languages push-to-talk listens for (en alone is fastest)
 claude-speaks voice PROJECT VOICE    give a project a voice
 claude-speaks voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
 claude-speaks voice add NAME FILE    load your own Kokoro voice file (.npy)
@@ -228,11 +231,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 - The hub uses about 0.5 GB of memory with the voice loaded, and about 1.2 GB while the Whisper
   model is loaded (from the first push-to-talk until ten minutes after the last one). Each spoken
   line is a short burst of CPU.
-- Push-to-talk understands English out of the box. For other languages set `whisper_model` to
-  a multilingual model such as `small`, and `whisper_language` to the ones you speak, for
-  example `"en,it"`: each recording is then taken as whichever of them it sounds most like.
-  (`"auto"` allows any language, but short sentences are easily mistaken for the wrong one.)
-  Claude gets your words in the language you spoke; its spoken summaries stay in English.
+- Push-to-talk listens for the languages you name: `claude-speaks languages en,it` (the install
+  script asks the same question). English alone uses an English-only model, the fastest, about
+  0.7 s for a sentence. With other languages it uses the multilingual model of the same size
+  (about 1.2 s) and takes each recording as whichever of your languages it sounds most like.
+  `auto` allows any language, but short sentences are easily mistaken for the wrong one. The
+  command writes `whisper_model` and `whisper_language` in the settings, which you can also
+  set by hand, for example to a larger model. Claude gets your words in the language you
+  spoke; its spoken summaries stay in English.
 - Own voices are Kokoro voice files or blends of existing voices. Cloning a voice from a
   recording is not something Kokoro can do.
 - Without Kokoro the hub falls back to the system voice (macOS `say`, speech-dispatcher or
