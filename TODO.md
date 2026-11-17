@@ -198,7 +198,9 @@ real keys yet.
       Not proven: a drag cannot be made from WSL without taking the author's mouse. Both
       monitors are at 100% scaling, so it was not that. The author tried it minutes
       later: "Perfect, it seems to be working."
-- [ ] The bar over a game in borderless windowed mode
+- [x] The bar over a game in borderless windowed mode. The author, asked on the evening of
+      2026-11-17: "It seems to be working." Which game, and whether the keys and
+      push-to-talk were used there, was not said.
 - [x] A plain click on the bar reaching the window underneath (the author, 2026-11-17: "it
       lands on the window underneath")
 - [x] Dragging the bar, which since the same day needs `Ctrl+Alt` held (the author's wish on
