@@ -27,7 +27,11 @@ real keys yet.
       (the author, 2026-11-17: works)
 - [ ] `Ctrl+Alt+Y` / `Ctrl+Alt+N` on a real permission prompt
 - [ ] `Ctrl+Alt+1` to `4` on a real multiple-choice question
-- [ ] `Ctrl+Alt+U` (what did I miss) and `Ctrl+Alt+R` (repeat)
+- [x] `Ctrl+Alt+R` (repeat): on 2026-11-17 at 11:51 the log shows the last line said again
+      (to be confirmed by the author that this was the key and not the command)
+- [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
+      which was right, since nothing had been said since the last message. Not heard yet:
+      a real replay, pressed after a session spoke while the author was away from it.
 - [ ] `Ctrl+Alt+Backspace` while recording
 - [ ] Hold the talk key with a video playing in the browser in front (YouTube): the video
       should neither pause nor change speed, also when Ctrl or Alt is let go before Space
