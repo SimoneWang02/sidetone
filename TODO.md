@@ -162,6 +162,14 @@ real keys yet.
       day, also for "In focus" and for why nothing was sent; wider, brighter against a
       softer white, and back sooner). What a session is doing ("Running the tests") has
       none. The author tried it at once: "It works, I like it. Yeah, that's perfect."
+- [ ] Dragging the bar: the cursor staying on the spot it took hold of (the author,
+      2026-11-17: "whenever I drag and move, sometimes the cursor is not aligned" with the
+      bar). Likely cause, mended the same day: the drag measured where the cursor was when
+      the press was handled, a moment after the press, so a quick start left the bar
+      following from beside the cursor. It now uses the place the press itself reported.
+      Not proven: a drag cannot be made from WSL without taking the author's mouse. Both
+      monitors are at 100% scaling, so it was not that. To try: grab the bar and pull away
+      fast, several times.
 - [ ] The bar over a game in borderless windowed mode
 - [x] A plain click on the bar reaching the window underneath (the author, 2026-11-17: "it
       lands on the window underneath")

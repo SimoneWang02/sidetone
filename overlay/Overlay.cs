@@ -974,7 +974,7 @@ namespace ClaudeSpeaks
             hoverTimer.Interval = TimeSpan.FromMilliseconds(30);
             hoverTimer.Tick += delegate { WatchWheelKeys(); WatchTalkKeys(); WatchCursor(); };
             moveTimer.Tick += delegate { EndMove(); };
-            rail.MouseLeftButtonDown += delegate { BeginDrag(); };
+            rail.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { BeginDrag(e.GetPosition(rail)); };
             // Hold-to-talk: a hotkey only reports the press, so watch the key until it comes back up.
             holdTimer.Interval = TimeSpan.FromMilliseconds(30);
             holdTimer.Tick += delegate { if (!Down((int)heldKey)) EndHold(); };
@@ -1753,13 +1753,17 @@ namespace ClaudeSpeaks
 
         // The left button went down on the bar: from now on it follows the mouse, frame by frame,
         // until the button comes up. The panel and bubble fold away while it travels.
-        void BeginDrag()
+        // `at` is where on the bar the button went down, as the press itself reported it. Asking
+        // where the cursor is now is not the same: by the time the press is handled the mouse has
+        // moved on, further the busier the overlay was, and the bar then followed the cursor from
+        // beside it (the author: "sometimes the cursor is not aligned").
+        void BeginDrag(Point at)
         {
-            CursorPoint cursor;
-            if (dragging || !GetCursorPos(out cursor)) return;
+            if (dragging) return;
             grabbedAt = rail.Area();
-            grabX = cursor.X - grabbedAt[0];
-            grabY = cursor.Y - grabbedAt[1];
+            Point held = HwndSource.FromHwnd(hwnd).CompositionTarget.TransformToDevice.Transform(at);
+            grabX = (int)Math.Round(held.X);
+            grabY = (int)Math.Round(held.Y);
             dragging = true;
             hover = peek = false;
             Edge();
