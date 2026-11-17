@@ -111,6 +111,18 @@ Bigger pieces:
       the order (by project, so it survives restarts) and new sessions join at the end. Fits
       the dragging the bar already has: with the keys held a drag moves one light, without
       them the whole bar.
+- [ ] Usage in the overlay (the author's idea, 2026-11-17: "customizable bar that shows the
+      usage, the five-hour window and the weekly usage"): a part of the overlay that shows how
+      much of the plan is used up, in the five-hour window and in the week, and when each
+      starts again. A setting like the rest: on or off, where it sits, what it shows.
+- [ ] Context window per session (same day: "for each session maybe something that indicates
+      the context window"): a sign of how full each session's context is, for example a thin
+      arc around its light and a figure in its row, with a warning color when it is nearly
+      full.
+      Nothing looked into yet for either. The hub has no source for these numbers today; to
+      check first: what Claude Code hands to a status line command (it gets a JSON about the
+      session, which may carry both), and whether context use can be counted from the
+      transcript a hook points to.
 
 Away from the PC (the author's idea, 2026-11-17: with sessions open and nobody at the desk,
 "is it possible to use like either phone or AirPods interaction to do stuff", for example an
