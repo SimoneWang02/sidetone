@@ -245,6 +245,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (owner-only, dropped when over an hour old), because a hub restart lost one for real: the
   author asked a question by voice during a reply, and a restart made while working on the
   overlay wiped it. The overlay shows such a message as waiting (`talk` step `queued`).
+- Who is who across a hub restart (2026-11-17): names ("claude-speaks 2"), colors and voices
+  are handed out in the order sessions turn up, and after a restart they turn up in another
+  order, so sessions of one project swapped them. The author noticed with five sessions open
+  ("the colors, like their status, might have influenced each other, especially when
+  claude-speaks reset"). `Hub._keep_sessions` writes `sessions.json` in the run folder
+  (owner-only; ignored when over 6 hours old) on every change: per session its id, name,
+  voice, color, title, state, note and place (`Session.order`), plus the focus.
+  `Hub._restore_sessions` reads it at start: a session Claude Code still lists is back at
+  once, working if it is busy there; one that had a session file and has none now is dropped;
+  the rest wait in `Sessions.kept` and get theirs back when they next report (for 15 minutes,
+  `state.KEPT_FOR`), and until then no new session is given their name, color or voice.
 - `hub/claude_sessions.py`: reads `~/.claude/sessions/<pid>.json` (pid, sessionId, status
   busy/idle). `Hub.reconcile()` runs every second: idle there but working here means the turn
   was interrupted; a session that had a file and lost it is gone. Undocumented files, so
@@ -263,7 +274,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 90 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 96 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

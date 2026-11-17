@@ -35,10 +35,11 @@ real keys yet.
 
 ## Rough edges
 
-- [ ] A hub restart forgets the order of the sessions in the bar (they come back in the order
-      they next report something) and the titles the hub made itself (a session Claude
-      Code has not named shows only its folder until its next reply). The author noticed
-      both on 2026-11-17. Keep order and titles in a small file, like the waiting follow-ups.
+- [ ] A hub restart still forgets a few things. Names, colors, voices, titles, the order in
+      the bar and the focus are kept since 2026-11-17 (`sessions.json`), but not the lines
+      sessions said (so catch-up and repeat start empty), the task counts of a running turn,
+      or a permission prompt that was open (it can then only be answered in the terminal).
+      A turn that ends in the second the hub is down comes back as idle, without its check.
 - [ ] A session Claude Code has not named (one started by voice) gets its title from the
       spoken line of its first reply, which is the start of a sentence, not a real title.
       Better: ask Claude for a title of a few words in that first reply.
