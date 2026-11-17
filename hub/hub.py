@@ -91,6 +91,7 @@ class Config:
     voices: dict = field(default_factory=dict)  # project name -> voice
     voice_pool: list = field(default_factory=lambda: list(VOICE_POOL))
     label: str = "auto"  # auto (several sessions and no overlay to show who talks) | always | never
+    repeat: str = "focus"  # what the repeat key says again: the last line of the session in focus | "last" (anyone's)
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
     # Claude Code sends a notification once a permission prompt has waited about 6 s. A request
@@ -149,7 +150,7 @@ class Config:
             return cfg
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail",
-                    "followup_confirm", "whisper_language", "whisper_unload_minutes",
+                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat",
                     "talk_feedback", "sound_volume",
                     "progress", "progress_after", "progress_interval"):
             if key in user:
@@ -406,15 +407,28 @@ class Hub:
     # --- catching up -------------------------------------------------------------------------
 
     def repeat(self) -> bool:
-        """Say the last line again."""
+        """Say again the last line of the session in focus (the one the wheel or the last speaker
+        chose), or with `repeat: last` the last line anyone said."""
         with self.lock:
             self.last_seen = time.time()
-            entry = self.history[-1] if self.history else None
+            s = self._target() if self.cfg.repeat != "last" else None
+            lines = [e for e in self.history if not s or e.get("session") == s.id]
+            entry = lines[-1] if lines else None
+            nothing = f"Nothing from {_spoken_name(s.name)} yet." if s else "Nothing to repeat."
         if not entry:
-            self.say("Nothing to repeat.", kind="notice")
+            self.say(nothing, kind="notice")
             return False
-        self.speech.put(Utterance(text=f"{entry['spoken_name']}. {entry['text']}", voice=entry["voice"], kind="notice", src="repeat"))
+        self._replay(entry, "repeat")
         return True
+
+    def _replay(self, entry: dict, src: str, named: bool = False) -> None:
+        """Say a line from the history again. It belongs to its session like the first time, so
+        the overlay shows it at that session's light; `named` says the session's name first."""
+        with self.lock:
+            live = entry.get("session", "") in self.sessions.by_id
+        self.speech.put(Utterance(text=entry["text"], voice=entry["voice"], session=entry["session"] if live else "",
+                                  kind="notice", src=src, entry=entry,
+                                  label=entry["spoken_name"] if named or not live else None))
 
     def catch_up(self, limit: int = 8) -> int:
         """Replay what sessions said since the user was last seen (a prompt, a hotkey, a catch-up)."""
@@ -426,7 +440,7 @@ class Hub:
             return 0
         self.say(f"You missed {len(missed)} update{'s' if len(missed) != 1 else ''}.", kind="notice")
         for entry in missed:
-            self.speech.put(Utterance(text=f"{entry['spoken_name']}. {entry['text']}", voice=entry["voice"], kind="notice", src="catch-up"))
+            self._replay(entry, "catch-up", named=True)
         return len(missed)
 
     def _maybe_say_progress(self, s) -> None:
@@ -1018,7 +1032,8 @@ class Hub:
                     # must not take them away from the session you were talking to.
                     if u.kind not in ("allowed", "denied", "progress") and not (self._talking or self._transcribing):
                         self.talk_target = s.id
-                    self._flash(s, u.text, FLASH_LOOK.get(u.kind, u.kind))
+                    kind = u.entry["kind"] if u.kind == "notice" and u.entry else u.kind  # said again: as it first looked
+                    self._flash(s, u.text, FLASH_LOOK.get(kind, kind))
         self.publish()
 
     # --- helpers -----------------------------------------------------------------------------
@@ -1040,8 +1055,8 @@ class Hub:
         s.last_speech = text
         entry = None
         if kind in ("done", "failed", "needs_you", "progress"):  # what a session said, not our own feedback
-            entry = {"time": time.time(), "name": s.name, "color": s.color, "spoken_name": re.sub(r"[-_.]+", " ", s.name).strip(),
-                     "voice": s.voice, "text": text, "kind": kind, "heard": False}
+            entry = {"time": time.time(), "session": s.id, "name": s.name, "color": s.color,
+                     "spoken_name": _spoken_name(s.name), "voice": s.voice, "text": text, "kind": kind, "heard": False}
             self.history.append(entry)
         if self._muted():
             self._flash(s, text, FLASH_LOOK.get(kind, kind))  # voice is off
@@ -1068,7 +1083,7 @@ class Hub:
         shown = bool(self.overlay) and getattr(self.overlay, "ready", True)
         if s is None or self.cfg.label == "never" or (self.cfg.label == "auto" and (shown or not several)):
             return ""
-        return re.sub(r"[-_.]+", " ", s.name).strip()
+        return _spoken_name(s.name)
 
     def _log_speech(self, u: Utterance, label: str, waited: float, first: float | None, outcome: str) -> None:
         if u.entry is not None and outcome == "spoken" and first is not None:
@@ -1080,6 +1095,11 @@ class Hub:
             timing += f" heard={u.heard * 1000:.0f}ms"
         said = f"{label}. {u.text}" if label else u.text
         log(self.cfg, "voice.log", f"[{u.session[:8] or 'cli'}] src={u.src} {outcome} voice={u.voice} {timing} speech={said}")
+
+
+def _spoken_name(name: str) -> str:
+    """A session's name as it is said aloud: "api-server" becomes "api server"."""
+    return re.sub(r"[-_.]+", " ", name).strip()
 
 
 FLASH_LOOK = {"allowed": "done", "denied": "failed", "progress": "working"}  # speech kind -> overlay glyph

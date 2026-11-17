@@ -538,7 +538,56 @@ class CatchingUp(HubCase):
         self.spoken()
         self.assertTrue(hub.repeat())
         self.spoken()
-        self.assertEqual(self.engine.spoken[-1], ("alpha. All done.", self.session()["voice"]))
+        self.assertEqual(self.engine.spoken[-1], ("All done.", self.session()["voice"]))
+
+    def two_sessions_spoke(self, **cfg):
+        hub = self.make(label="never", **cfg)
+        hub.overlay = self.overlay = FakeOverlay()
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/api-server", delta=tag("Tests pass.")))
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/web", delta=tag("Page built.")))
+        self.spoken()
+        self.engine.spoken.clear()
+        return hub
+
+    def test_repeat_is_about_the_session_in_focus(self):
+        hub = self.two_sessions_spoke()
+        self.assertTrue(hub.repeat())  # whoever spoke last has the focus
+        self.assertEqual(self.spoken(), ["Page built."])
+        hub.focus(-1)  # the wheel moves it to the other one
+        self.assertTrue(hub.repeat())
+        self.assertEqual(self.spoken()[-1], "Tests pass.")
+        self.assertEqual(self.engine.spoken[-1][1], self.session("a")["voice"])
+
+    def test_repeat_shows_at_the_session_like_the_first_time(self):
+        hub = self.two_sessions_spoke()
+        hub.focus(-1)
+        self.overlay.sent.clear()
+        hub.repeat()
+        self.spoken()
+        flash = self.overlay.of("flash")[-1]
+        self.assertEqual((flash["name"], flash["text"], flash["state"]), ("api-server", "Tests pass.", "done"))
+        self.assertTrue(any(row["speaking"] for m in self.overlay.of("state") for row in m["sessions"]
+                            if row["name"] == "api-server"))
+
+    def test_repeat_with_nothing_said_by_the_session_in_focus(self):
+        hub = self.two_sessions_spoke()
+        hub.on_event(ev("SessionStart", sid="c", cwd="/w/docs"))
+        hub.focus(1)
+        self.assertEqual(self.hub._target().name, "docs")
+        self.assertFalse(hub.repeat())
+        self.assertEqual(self.spoken(), ["Nothing from docs yet."])
+
+    def test_repeat_can_be_set_to_the_last_line_anyone_said(self):
+        hub = self.two_sessions_spoke(repeat="last")
+        hub.focus(-1)
+        self.assertTrue(hub.repeat())
+        self.assertEqual(self.spoken(), ["Page built."])
+
+    def test_a_replayed_line_of_a_session_that_left_names_it(self):
+        hub = self.two_sessions_spoke(repeat="last")
+        hub.on_event(ev("SessionEnd", sid="b", cwd="/w/web"))
+        self.assertTrue(hub.repeat())
+        self.assertEqual(self.spoken(), ["web. Page built."])
 
     def test_progress_is_spoken_in_long_turns_but_not_often(self):
         hub = self.make(progress_after=0, progress_interval=60)

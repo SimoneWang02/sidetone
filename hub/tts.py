@@ -29,6 +29,7 @@ class Utterance:
     kind: str = "done"  # needs_you | failed | done
     src: str = ""  # where the line came from, for the log
     entry: dict | None = None  # its record in the hub's history, marked once it was actually spoken
+    label: str | None = None  # the name to say before it; None leaves that to `label_for`
     heard: float | None = None  # seconds from starting to speak it until sound really came out, if measured
     created: float = field(default_factory=time.monotonic)
 
@@ -426,7 +427,7 @@ class SpeechQueue:
             if stale:
                 self.on_done(u, "", waited, None, "dropped-stale")
                 continue
-            label = self.label_for(u)
+            label = self.label_for(u) if u.label is None else u.label
             self.on_change(u)
             parts = ([label + "."] if label else []) + sentences(u.text)
             meter = self.meter

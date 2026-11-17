@@ -50,7 +50,7 @@ its own spoken line as the first line of its reply.
   `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
   `followup_confirm` to `true` (nothing is sent until you tap the talk key again).
 - **Catch up.** `Ctrl+Alt+U` replays what your sessions said since you were last there;
-  `Ctrl+Alt+R` repeats the last line. Long turns say "3 of 5 steps done" along the way.
+  `Ctrl+Alt+R` repeats the last line of the session in focus. Long turns say "3 of 5 steps done" along the way.
 - **Your own voices.** Pick a voice per project, blend two into a new one, or load a Kokoro
   voice file.
 
@@ -100,7 +100,7 @@ work, run `cs demo` in a terminal.
 | hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send. A quick tap picks the next session |
 | `Ctrl+Alt+Backspace` | Take back a follow-up, stop recording, or cut the line being spoken |
 | `Ctrl+Alt+U` | Replay what was said since you were last there |
-| `Ctrl+Alt+R` | Repeat the last line |
+| `Ctrl+Alt+R` | Repeat the last line of the session in focus |
 
 The keys that answer something (allow, deny, the numbers, cancel) are only claimed while they
 can act, so other programs keep those combinations the rest of the time. Every key can be
@@ -116,7 +116,7 @@ claude-speaks allow | deny           answer the permission prompt on screen
 claude-speaks answer N               pick option N of the question on screen
 claude-speaks follow-up [-s PROJECT] TEXT
 claude-speaks target [PROJECT]       who a spoken follow-up goes to
-claude-speaks missed | repeat        catch up, or hear the last line again
+claude-speaks missed | repeat        catch up, or hear the focused session's last line again
 claude-speaks sound sent|queued|failed   hear the short sounds that answer push-to-talk
 claude-speaks voices                 every voice, and which project has which
 claude-speaks voice PROJECT VOICE    give a project a voice
@@ -137,6 +137,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
 {
   "voices": { "my-project": "bm_george" },
   "label": "auto",
+  "repeat": "focus",
   "whisper_model": "small.en",
   "followup_delay": 0,
   "followup_confirm": false,

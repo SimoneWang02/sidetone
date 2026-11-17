@@ -261,7 +261,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `questions`; `choose(n)` records the label and, after the last one, the hook returns allow
   with `updatedInput.answers` (question text → label). Others are only announced.
 - History and catching up: the hub keeps the last 100 lines sessions said. `last_seen` moves on
-  every prompt and hotkey; `catch_up()` replays lines newer than it. The overlay gets the last 6
+  every prompt and hotkey; `catch_up()` replays lines newer than it. `repeat()` says again the
+  last line of the session in focus (the author, 2026-11-17, after trying the key: "it would be
+  better to have it replay the selected session, also i noticed the detail box doesnt come
+  out"); `repeat: last` in the settings brings back the last line anyone said. A replayed line
+  is tied to its session (`Hub._replay`), so its bubble, voice bars and wave show as they did
+  the first time; before, it belonged to no session and nothing showed. Catch-up still says
+  each session's name first (`Utterance.label`). The overlay gets the last 6
   with each `state` and shows them while the cursor rests on the list (found by polling the
   cursor position, since the window is click-through).
 - Follow-ups waiting for a busy session are also written to `followups.json` in the run folder
@@ -308,11 +314,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 100 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 105 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
-  `voice_pool`, `label` (`auto`/`always`/`never`), `max_age`, `idle_exit`, `default_voice`, `speed`,
+  `voice_pool`, `label` (`auto`/`always`/`never`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
   `talk_tail`, `talk_feedback`, `sound_volume`. `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
