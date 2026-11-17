@@ -110,6 +110,15 @@ real keys yet.
       `Ctrl+Alt`, without Space, and click the video. If that does not pause it either, it
       is the browser. Since the same day the hold goes on with Space alone, so letting go
       of Ctrl and Alt while talking should give plain clicks.
+      The author tried it the same day: with `Ctrl+Alt` held, with or without Space, a
+      left click does not pause the video. So it is not the recording. The overlay's mouse
+      hook, in while those keys are down, passes on everything but the wheel (read again
+      in `OnMouse`), which leaves the video player ignoring a click made with Ctrl and
+      Alt down; not proven, since nobody has clicked with the overlay switched off.
+      Suggested to the author, not tried yet: let go of Ctrl and Alt once the recording has
+      begun and keep Space. If they want clicks while all three are held, the choices are a
+      talk key without Ctrl or Alt (`keep_talk_key: always`), or having the overlay hide
+      those two keys from other programs during a hold, which risks leaving them stuck.
 
 ## To decide
 
