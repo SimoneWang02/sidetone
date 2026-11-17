@@ -24,10 +24,12 @@ its own spoken line as the first line of its reply.
   project has its own voice, and its name is spoken first when more than one session is active.
 - **A glass overlay** (Windows): a slim bar of frosted glass with one status light per session:
   a spinner while it works, a pulsing amber light when it needs you, a check when it is done.
-  Rest the mouse on it and it opens to show each session's name, a short title, what it is
-  doing, its task progress and elapsed time. While a session talks, a bubble next to its light
-  shows the sentence, and bars follow the real sound of the voice. `Ctrl+Alt+L` keeps the bar
-  open. Clicks pass through it and it never takes focus.
+  Move the mouse onto it and a panel unfolds beside it with each session's name, a short
+  title, what it is doing, its task progress and elapsed time. While a session talks, a bubble
+  next to its light shows the sentence, and bars follow the real sound of the voice.
+  `Ctrl+Alt+L` keeps the panel out. Grab the bar with the mouse to drag it anywhere, on any
+  monitor; it stays there. A plain click still goes to whatever is underneath, and it never
+  takes focus. Everything that moves is drawn in step with your screen's refresh rate.
 - **Answer permission prompts from anywhere.** The overlay shows what a session wants to run.
   `Ctrl+Alt+Y` allows, `Ctrl+Alt+N` denies. The dialog in the terminal keeps working too;
   whichever you use first wins.
@@ -69,7 +71,7 @@ work, run `cs demo` in a terminal.
 
 | Key (Windows) | Does |
 |---|---|
-| `Ctrl+Alt+L` | Overlay: keep the bar open ↔ only the lights |
+| `Ctrl+Alt+L` | Overlay: keep the panel out ↔ only the lights |
 | `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Allow / deny the permission prompt shown in the overlay |
 | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Answer the question shown in the overlay |
 | hold `Ctrl+Alt+Space` | Talk to the session that spoke last; a quick tap picks the next session, or confirms a follow-up waiting for it |
@@ -79,8 +81,8 @@ work, run `cs demo` in a terminal.
 
 The keys that answer something (allow, deny, the numbers, cancel) are only claimed while they
 can act, so other programs keep those combinations the rest of the time. Every key can be
-changed or switched off in the settings file. Rest the mouse on the open bar for a moment to
-see the last few lines that were spoken.
+changed or switched off in the settings file. With the panel kept out, rest the mouse on it
+for a moment to see the last few lines that were spoken.
 
 ```
 claude-speaks status                 what each session is doing, and what is queued
@@ -97,7 +99,7 @@ claude-speaks voice PROJECT VOICE    give a project a voice
 claude-speaks voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
 claude-speaks voice add NAME FILE    load your own Kokoro voice file (.npy)
 claude-speaks overlay dots|list|toggle|restart     only the lights, or kept open
-claude-speaks overlay move           drag it somewhere else; it stays there
+claude-speaks overlay move           makes the bar easy to find and drag (you can drag it any time)
 claude-speaks overlay monitor N | corner top-left|top-right|bottom-left|bottom-right
 claude-speaks demo                   three made-up sessions through every state
 claude-speaks hub start|stop|restart

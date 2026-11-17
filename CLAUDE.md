@@ -63,7 +63,8 @@ seen it yet**):
 - a compiled Windows program (built by the hub with Windows' own `csc.exe`), not a script
 - a vertical glass bar with one animated status light per session; real blur by Windows
 - opens under the mouse ("on focus" was read as hover; `Ctrl+Alt+L` pins it open) to show
-  name, a short title and activity per session
+  name, a short title and activity per session. The author saw this version and said it
+  "looks" right, then asked for direct dragging and more animation (built the same night)
 - while a session talks: a speech bubble beside its light, and bars driven by the real sound
 - `claude-speaks` and `cs` are linked into `~/.local/bin` by `install.sh`
 
@@ -111,13 +112,29 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   seconds, sent when it starts being spoken, or instead of speech when the voice is off) and
   `wave` (loudness values while a line plays); the program sends `ready`, `hotkey`, `mode`,
   `moved`, `bounds`, `error`. All logic lives in the hub so it can be tested; the C# only draws.
-- What it draws: two glass windows. The **bar** is a column of status lights (`Orb`: spinner
-  = working, pulsing amber "!" = needs you, check = done, cross = failed, small ring = idle,
-  five voice bars = speaking). It is "open" (each row also shows name, title, activity, meta) in
-  list mode, under the mouse, while moving, and while a request or banner is showing; requests,
-  banners and the history are sections inside the open bar. The **bubble** appears beside the
-  light of the session that is talking while the bar is closed: name, title, the sentence, and
-  the voice flowing behind the text. Mode names are still `dots` (closed) and `list` (open).
+- What it draws: three glass windows (`Glass`). The **bar** is a column of status lights
+  (`Orb`: spinner = working, pulsing amber "!" = needs you, check = done, cross = failed, small
+  ring = idle, five voice bars = speaking). The **panel** unfolds beside the bar, each row level
+  with its light: name, title, activity, meta; below the rows (above them for a bar at the
+  bottom of the screen) come the request, the push-to-talk banner and the history. It is out
+  in list mode, under the mouse, while moving, and while a request or banner is showing. The
+  **bubble** appears beside the light of the session that is talking while the panel is away:
+  name, title, the sentence, and the voice flowing behind the text. Mode names are still
+  `dots` (lights only) and `list` (panel kept out).
+- Motion (asked for by the author on 2026-11-17: "more fps, more animation ... when hovering
+  the status the details pop out instantly with no animation"): one `Frame` step per
+  `CompositionTarget.Rendering` (in step with the screen; about 150 to 190 a second on the
+  author's machine), running only while something moves. The panel and bubble unfold by
+  growing their window's height on a soft spring; rows slide in one after another; lights pop
+  on a state change, send out a ring, draw their check stroke by stroke, grow under the mouse.
+  `still: true` in `config` turns motion off for pictures. `bounds` replies carry `clock` and
+  `frames`, so the frame rate can be measured from outside.
+- Dragging (asked for the same day: "i just want it to be drag and move"): while the mouse is
+  on the bar, the bar takes the mouse (move cursor, brighter edge). Left button down starts a
+  drag that follows the cursor frame by frame until the button is up; a press that did not
+  move it is re-sent as a click to whatever is underneath, so plain clicks still pass through.
+  The drop is reported as `moved` (monitor, nearest corner, offsets) and saved to `config.json`.
+  **Not tried with a real mouse yet** (it cannot be done from WSL without moving the user's cursor).
 - Titles: `Session.title` is Claude Code's own name for the session (the `name` field of its
   session file, a slug such as `eyes-free-claude-speaks`, turned into words) and, until that
   exists, the first line of the last prompt, cut to 44 characters (`state.short_title`).
@@ -158,9 +175,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   sessions that never had one are left alone.
 - Voices: `voices.json` remembers project → voice; own voices are `.npy` style arrays of shape
   (510, 1, 256) in `~/.local/share/claude-speaks/voices/`, passed to Kokoro as arrays.
-- Overlay placement: `monitor`, `corner`, `offset_x`, `offset_y`. Dragging (after
-  `claude-speaks overlay move`) reports the nearest corner and offsets, which the hub saves into
-  `config.json`.
+- Overlay placement: `monitor`, `corner`, `offset_x`, `offset_y` of the bar. Dragging it reports
+  the nearest corner and offsets, which the hub saves into `config.json`. The panel and bubble
+  go on the side of the bar that faces the middle of the screen.
 - `tests/overlay_check.py OUT_DIR [--glass]`: manual check that saves a picture of every overlay view.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
@@ -209,6 +226,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   WPF removes `WS_EX_LAYERED` from a window without `AllowsTransparency`, so click-through
   needs `AllowsTransparency`. A `/target:winexe` program started from WSL still gets its
   stdin and stdout pipes.
+- Motion facts (measured 2026-11-17): the blur does not fade with the window's opacity (at
+  opacity 0.35 the content is faint and the blur is still full), so a fade-in would pop.
+  Growing the window is the only smooth way to bring glass in, and a see-through WPF window
+  only resizes cleanly while its top left corner stays put (the picture is drawn from that
+  corner; moving and resizing in one go shows the old picture in the new place for a frame).
+  Showing or resizing a window makes WPF render at once, which fires `Rendering` again from
+  inside the handler: without a re-entry guard the steps nested about thirty deep and the
+  motion froze for 0.2 s at the start of every opening. Measuring a size right after changing
+  text needs `UpdateLayout()` first, or the old size comes back.
 - Taking pictures of the overlay without the user's screen in them: ask for `bounds` (real
   window rectangles from `GetWindowRect`), capture, ask again and retake if they changed (a
   row that shrinks between the two leaves a strip of screen in the picture; this happened
