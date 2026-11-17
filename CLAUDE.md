@@ -416,7 +416,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   still work without letting go first, as does a second press of the talk key and the
   focus wheel. Windows is only ever told "up", never "down", so nothing can be left stuck
   for other programs. Not hidden: AltGr and the Windows key. `tests/keys_check.py` checks
-  it with left Shift standing in for Ctrl and Alt. Not checked: the real keys and a real click.
+  it with left Shift standing in for Ctrl and Alt. The author tried the real keys the same day:
+  the click pauses the video, and Backspace with the keys still down cancels.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event

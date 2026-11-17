@@ -124,8 +124,8 @@ real keys yet.
       all three down, click the video (it should pause), and with the keys still down
       press Backspace (it should cancel the recording).
       The author, minutes later, by voice with the keys held: "It does pause." Sending
-      still works too, since that message arrived. Not reported yet: Backspace with the
-      keys still down, which the overlay now has to recognise itself.
+      still works too, since that message arrived. Backspace with the keys still down,
+      which the overlay now has to recognise itself: "Oh yeah, it works."
 
 ## To decide
 
