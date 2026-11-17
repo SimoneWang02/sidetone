@@ -10,9 +10,9 @@ LOG="$CS_STATE/voice.log"
 
 speak_from() {  # prefer the last line that is exactly a <speak> tag; else the last tag anywhere
   local t; t=$(cat)
-  local s; s=$(printf '%s\n' "$t" | grep -E '^[[:space:]]*<speak>.*</speak>[[:space:]]*$' | tail -n 1 |
-    sed 's/^[[:space:]]*<speak>[[:space:]]*//; s/[[:space:]]*<\/speak>[[:space:]]*$//')
-  [ -n "$s" ] || s=$(printf '%s' "$t" | tr '\r\n' '  ' | sed -n 's/.*<speak>\(.*\)<\/speak>.*/\1/p' |
+  local s; s=$(printf '%s\n' "$t" | grep -E '^[[:space:]]*<speak( [^>]*)?>.*</speak>[[:space:]]*$' | tail -n 1 |
+    sed -E 's/^[[:space:]]*<speak( [^>]*)?>[[:space:]]*//; s/[[:space:]]*<\/speak>[[:space:]]*$//')
+  [ -n "$s" ] || s=$(printf '%s' "$t" | tr '\r\n' '  ' | sed -n -E 's/.*<speak( [^>]*)?>(.*)<\/speak>.*/\2/p' |
     sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
   printf '%s' "$s"
 }

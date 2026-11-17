@@ -31,7 +31,7 @@ import sounds as sounds_mod  # noqa: E402
 import stt  # noqa: E402
 import terminal as terminal_mod  # noqa: E402
 from state import (FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
-                   speech_from_message, split_display)
+                   speech_from_message, split_display, title_from_message)
 from tts import Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
 
 NEEDS_INPUT = ("permission_prompt", "elicitation_dialog")  # Notification types worth interrupting for
@@ -92,6 +92,10 @@ class Config:
     voices: dict = field(default_factory=dict)  # project name -> voice
     voice_pool: list = field(default_factory=lambda: list(VOICE_POOL))
     label: str = "auto"  # auto (several sessions and no overlay to show who talks) | always | never
+    # Where a session's title comes from. "ask": each session is asked to name what it is working
+    # on, in its speak tag, and may change that as the work moves on. "auto": never asked; the
+    # title is Claude Code's own name for the session, else the start of its first spoken line.
+    titles: str = "ask"
     repeat: str = "focus"  # what the repeat key says again: the last line of the session in focus | "last" (anyone's)
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
@@ -153,7 +157,7 @@ class Config:
             user = {}
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail",
-                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat",
+                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "titles",
                     "talk_feedback", "sound_volume",
                     "progress", "progress_after", "progress_interval"):
             if key in user:
@@ -264,9 +268,10 @@ class Hub:
                         self._say(s, "I need your input", "needs_you", "notify")
             elif event == "Stop":
                 s.state, s.activity, s.turn_started = "done", "", None
-                speech = speech_from_message(str(ev.get("last_assistant_message") or ""))
+                message = str(ev.get("last_assistant_message") or "")
+                speech = speech_from_message(message)
                 s.note = speech or "done"
-                self._title_from(s, reply=speech)
+                self._title_from(s, reply=speech, given=title_from_message(message))
                 if speech and speech != s.spoken and not self._spoken_without_hub(sid, speech):
                     self._say(s, speech, "done", "stop")
                 elif not speech:
@@ -359,7 +364,9 @@ class Hub:
                     if s.tty is None:  # the terminal it runs in, to mark it (see terminal.py)
                         s.tty = terminal_mod.tty_of(info["pid"])
                     if info.get("name") and info["name"] != s.named:  # Claude Code's own name for the session
-                        s.title, s.named = short_title(info["name"]), info["name"]
+                        s.named = info["name"]
+                        if not s.given:  # its own words for what it is doing say more than that name
+                            s.title = short_title(info["name"])
                     if (info["status"] == "idle" and s.state in ("working", "needs_you") and quiet > 3
                             and time.time() - info["status_at"] > 2):
                         self._settle(s.id, "interrupted")
@@ -373,7 +380,7 @@ class Hub:
 
     def on_display(self, ev: dict) -> dict | None:
         """MessageDisplay: speak a speak-tag line as soon as it streams in; return the rewrite."""
-        speech, shown = split_display(str(ev.get("delta") or ""))
+        speech, shown, title = split_display(str(ev.get("delta") or ""))
         sid = ev.get("session_id")
         if not speech or not sid:
             return None
@@ -381,15 +388,21 @@ class Hub:
             self.last_event = time.monotonic()
             s = self.sessions.touch(sid, ev.get("cwd", ""))
             s.spoken = speech
-            self._title_from(s, reply=speech)
+            self._title_from(s, reply=speech, given=title)
             self._say(s, speech, "done", "stream")
         self.publish()
         return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
 
-    @staticmethod
-    def _title_from(s, prompt: str = "", reply: str = "") -> None:
-        """Our own title for a session Claude Code has not named (it names one within a second of
-        the first typed prompt, but never one that was started by voice).
+    def _title_from(self, s, prompt: str = "", reply: str = "", given: str = "") -> None:
+        """What a session is called beside its name.
+
+        Best is `given`: the title the session wrote into the speak tag of a reply (the hook
+        asks for one, see `Config.titles`). It says what the session is working on, in its own
+        words, follows the work as it moves on, and from the first one nothing else replaces it.
+
+        Without one: Claude Code's own name for the session (see reconcile), and failing that
+        our own title, for a session Claude Code has not named (it names one within a second
+        of the first typed prompt, but never one that was started by voice).
 
         The first reply decides: its spoken line says what the session turned out to be about,
         and that title then stays. Until then a typed prompt stands in. A prompt that opens with
@@ -397,7 +410,9 @@ class Hub:
         "<task-notification>"), and the follow-up itself is not used either: the author asked
         to wait for the reply instead of naming a session from the start of a spoken ramble.
         """
-        if s.named or s.settled:
+        if given and self.cfg.titles != "auto":
+            s.title, s.given = short_title(given), True
+        if s.given or s.named or s.settled:
             return
         if reply:
             s.title, s.settled = short_title(reply), True

@@ -150,6 +150,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
   "voices": { "my-project": "bm_george" },
   "label": "auto",
   "repeat": "focus",
+  "titles": "ask",
   "whisper_model": "small.en",
   "followup_delay": 0,
   "followup_confirm": false,
@@ -193,7 +194,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 
 - A `UserPromptSubmit` hook asks Claude to open its final message with one line inside a speak
   tag. A `MessageDisplay` hook sees that line the moment it streams in, hands it to the hub and
-  shows it as "🔊 …".
+  shows it as "🔊 …". The same tag carries a title of a few words that Claude gives the session,
+  which is what the overlay shows beside the project name (`"titles": "auto"` turns that off).
 - The **hub** is one small background process. It keeps the Kokoro voice loaded, speaks one
   line at a time, and tracks what every session is doing from the other hooks. It listens on a
   Unix socket that only your user can open, never on a network port.

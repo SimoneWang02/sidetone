@@ -195,8 +195,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   to come out from Claude and then decide what to name the session?") after seeing
   `<task-notification>` as a title: a voice follow-up reaches Claude wrapped in that markup,
   and the `UserPromptSubmit` event carries the wrapper as the prompt, so prompts that open
-  with `<` are never used. Not built: asking Claude itself for a short title in its first
-  reply, which would read better than the start of a sentence.
+  with `<` are never used.
+- Titles written by the session itself (2026-11-17): all of the above gave titles such as
+  "Your Italian came through, so I ticked the…", and with four sessions in one folder the
+  author could not tell them apart ("the title ... is not very fitting ... it doesn't give
+  me immediately the idea of what session you are specifically"). Now the reminder asks for
+  the title inside the speak tag, `<speak title="Login page redesign">...</speak>`: 2 to 5
+  words naming the task, kept from turn to turn and changed only when the work moves on.
+  `state.split_display` and `title_from_message` read it, `Hub._title_from(given=...)` sets
+  it and marks the session `given`, after which neither Claude Code's name nor a first
+  sentence replaces it; it survives a hub restart with the rest. A tag without a title
+  still works. `titles: auto` in `config.json` turns the asking off (the hook reads that
+  file itself) and makes the hub ignore titles in tags. With the voice off nothing is
+  asked, so titles stay as they were. The hooks and the hub must be changed together:
+  a hub from before this change does not speak a line whose tag has a title.
 - Voice wave: `tts.Meter` runs `parec` on the default sink's monitor while a line plays, turns
   each 40 ms into a loudness from 0 to 1 and the hub forwards it as `wave`. It is the real
   output, so it is in step with the sound for every engine. Without `parec` the row says
@@ -381,11 +393,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off]`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 116 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 120 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
-  `voice_pool`, `label` (`auto`/`always`/`never`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
+  `voice_pool`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
   `talk_tail`, `talk_feedback`, `sound_volume`, and `terminal` (`tint`, `strength`, `background`,

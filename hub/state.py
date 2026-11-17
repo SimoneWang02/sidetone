@@ -22,33 +22,41 @@ ACTIVE_WINDOW = 15 * 60  # a session counts as active this long after its last e
 FORGET_AFTER = 6 * 3600  # sessions killed without a SessionEnd are dropped after this
 KEPT_FOR = 15 * 60  # after a hub restart, a session that has not reported yet keeps its name, color and voice this long
 
-_SPEAK_LINE = re.compile(r"^\s*<speak>\s*(.*?)\s*</speak>\s*$")
-_SPEAK_LAST = re.compile(r".*<speak>(.*)</speak>")
+# The spoken line. Its tag may carry the session's own title: <speak title="Login page redesign">...</speak>
+_TITLE = r"""(?:\s+title\s*=\s*(?:"([^"]*)"|'([^']*)'))?"""
+_SPEAK_LINE = re.compile(r"^\s*<speak" + _TITLE + r"\s*>\s*(.*?)\s*</speak>\s*$")
+_SPEAK_LAST = re.compile(r".*<speak" + _TITLE + r"\s*>(.*)</speak>")
 
 
-def split_display(delta: str) -> tuple[str | None, str]:
-    """Return (speech, display) for one streamed batch.
+def split_display(delta: str) -> tuple[str | None, str, str]:
+    """Return (speech, display, title) for one streamed batch; the title is "" when the tag has none.
 
     Only a line that is nothing but a speak tag counts, so prose that mentions the tag is left alone.
     """
-    speech, shown = None, []
+    speech, shown, title = None, [], ""
     for line in delta.split("\n"):
         m = _SPEAK_LINE.match(line)
         if m:
-            speech = m.group(1)
+            speech, title = m.group(3), (m.group(1) or m.group(2) or "").strip()
             line = f"🔊 {speech}"
         shown.append(line)
-    return speech, "\n".join(shown)
+    return speech, "\n".join(shown), title
 
 
 def speech_from_message(message: str) -> str:
     """The speak line of a finished reply: the last own-line tag, else the last tag anywhere."""
-    for line in reversed(message.splitlines()):
-        m = _SPEAK_LINE.match(line)
-        if m:
-            return m.group(1)
-    m = _SPEAK_LAST.match(re.sub(r"[\r\n]", " ", message))
-    return m.group(1).strip() if m else ""
+    return _spoken(message)[0]
+
+
+def title_from_message(message: str) -> str:
+    """The title a finished reply gives its session in its speak tag, or ""."""
+    return _spoken(message)[1]
+
+
+def _spoken(message: str) -> tuple[str, str]:
+    m = next((m for m in map(_SPEAK_LINE.match, reversed(message.splitlines())) if m), None)
+    m = m or _SPEAK_LAST.match(re.sub(r"[\r\n]", " ", message))
+    return (m.group(3).strip(), (m.group(1) or m.group(2) or "").strip()) if m else ("", "")
 
 
 def short_title(text: str, limit: int = 44) -> str:
@@ -111,6 +119,7 @@ class Session:
     title: str = ""  # a few words on what it is about: Claude Code's name for it, else see Hub._title_from
     named: str = ""  # that name as Claude Code has it; empty while the title is our own
     settled: bool = False  # our own title came from the first reply and stays; before that it follows the prompt
+    given: bool = False  # the title is the session's own, written in its replies; nothing else replaces it
     activity: str = ""  # what it is doing, while working
     note: str = ""  # how the last turn ended, shown when not working
     tasks: dict[str, bool] = field(default_factory=dict)  # task id -> completed
@@ -175,7 +184,7 @@ class Sessions:
             if was:  # known before the hub restarted: the same name, color, voice and place as then
                 s = Session(id=sid, cwd=cwd or was["cwd"], name=was["name"],
                             voice=self.pinned.get(was["name"], was["voice"]), color=was["color"],
-                            title=was["title"], named=was["named"], settled=was["settled"],
+                            title=was["title"], named=was["named"], settled=was["settled"], given=was["given"],
                             state=was["state"], note=was["note"], order=was["order"])
             else:
                 name = self._unique_name(os.path.basename(cwd.rstrip("/")) or "session")
@@ -199,7 +208,8 @@ class Sessions:
         after a restart. Includes the ones an earlier hub knew that have not reported yet, so a
         second restart soon after the first does not lose them."""
         back = [{"id": s.id, "cwd": s.cwd, "name": s.name, "voice": s.voice, "color": s.color,
-                 "title": s.title, "named": s.named, "settled": s.settled, "state": s.state, "note": s.note,
+                 "title": s.title, "named": s.named, "settled": s.settled, "given": s.given,
+                 "state": s.state, "note": s.note,
                  "seen_file": s.seen_file, "order": s.order} for s in self.by_id.values()]
         return sorted(back + list(self.kept.values()), key=lambda entry: entry["order"])
 
@@ -220,7 +230,8 @@ class Sessions:
                     "id": sid, "cwd": str(entry.get("cwd") or ""), "name": str(entry["name"]),
                     "voice": str(entry["voice"]), "color": str(entry["color"]),
                     "title": str(entry.get("title") or ""), "named": str(entry.get("named") or ""),
-                    "settled": bool(entry.get("settled")), "state": state if ended else "idle",
+                    "settled": bool(entry.get("settled")), "given": bool(entry.get("given")),
+                    "state": state if ended else "idle",
                     "note": str(entry.get("note") or "") if ended else "",
                     "seen_file": bool(entry.get("seen_file")), "order": order,
                 }

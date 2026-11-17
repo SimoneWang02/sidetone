@@ -313,6 +313,42 @@ class OverlayFeed(HubCase):
         row = self.overlay.of("state")[-1]["sessions"][0]
         self.assertEqual(row["title"], "Fix the flaky login test, then run the\u2026")
 
+    def title(self):
+        self.spoken()
+        return self.overlay.of("state")[-1]["sessions"][0]["title"]
+
+    def test_a_session_names_itself_in_its_speak_tag(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", prompt="look at the to-do list with me"))
+        out = hub.on_display(ev("MessageDisplay", delta='<speak title="To-do list walkthrough">I ticked the first item.</speak>\nMore.\n'))
+        self.assertEqual(out["hookSpecificOutput"]["displayContent"], "🔊 I ticked the first item.\nMore.\n")  # the title is not shown
+        self.assertEqual(self.spoken(), ["I ticked the first item."])
+        self.assertEqual(self.title(), "To-do list walkthrough")
+        hub.on_display(ev("MessageDisplay", delta=tag("Second item done.")))  # a reply without one keeps it
+        self.assertEqual(self.title(), "To-do list walkthrough")
+        hub.on_display(ev("MessageDisplay", delta="<speak title='Talk key over video'>Fixed the release.</speak>"))
+        self.assertEqual(self.title(), "Talk key over video")  # the work moved on, and so does the title
+
+    def test_its_own_title_is_not_replaced_by_claude_codes_name(self):
+        hub = self.make()
+        os.makedirs(self.cfg.sessions_dir, exist_ok=True)
+        hub.on_display(ev("MessageDisplay", delta='<speak title="Overlay key checks">Done.</speak>'))
+        with open(os.path.join(self.cfg.sessions_dir, "1.json"), "w") as f:
+            json.dump({"pid": os.getpid(), "sessionId": "s1", "status": "idle", "name": "look-at-the-list"}, f)
+        hub.reconcile()
+        self.assertEqual(self.title(), "Overlay key checks")
+
+    def test_the_title_is_also_read_when_streaming_missed_the_line(self):
+        hub = self.make()
+        hub.on_event(ev("Stop", last_assistant_message='<speak title="Nightly export">The export ran.</speak>\nDetails.'))
+        self.assertEqual(self.spoken(), ["The export ran."])
+        self.assertEqual(self.title(), "Nightly export")
+
+    def test_titles_can_be_left_to_the_hub(self):
+        hub = self.make(titles="auto")
+        hub.on_display(ev("MessageDisplay", delta='<speak title="Overlay key checks">All done here.</speak>'))
+        self.assertEqual(self.title(), "All done here.")
+
     def test_no_spoken_label_while_the_overlay_shows_who_talks(self):
         hub = self.make()
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/alpha"))
