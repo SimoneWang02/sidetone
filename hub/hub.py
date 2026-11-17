@@ -27,6 +27,7 @@ import collections  # noqa: E402
 import claude_sessions  # noqa: E402
 import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
+import sounds as sounds_mod  # noqa: E402
 import stt  # noqa: E402
 from state import (FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
                    speech_from_message, split_display)
@@ -103,6 +104,12 @@ class Config:
     # after followup_delay unless cancelled), True, or "auto" (only for sessions that would act
     # on it without asking, i.e. not in default or plan mode).
     followup_confirm: bool | str = False
+    # How the hub answers a spoken follow-up: "sound" (a short sound the moment it goes out, a
+    # different one when it has to wait for a busy session or was not sent), "voice" ("Sent."
+    # in the session's voice, which waits its turn behind a line being spoken) or "none".
+    # Without a way to play sounds, "sound" falls back to the voice.
+    talk_feedback: str = "sound"
+    sound_volume: float = 0.3  # 0 to 1
     whisper_language: str = "en"  # for multilingual models such as "small": "it", "en,it" (the ones you speak), or "auto"
     whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
@@ -143,6 +150,7 @@ class Config:
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes",
+                    "talk_feedback", "sound_volume",
                     "progress", "progress_after", "progress_interval"):
             if key in user:
                 setattr(cfg, key, user[key])
@@ -165,6 +173,7 @@ class Hub:
         self.requests: list[Request] = []  # open permission prompts, oldest first
         self.recorder = None  # stt.Recorder, set by main() or the tests
         self.transcriber = None  # stt.Transcriber
+        self.sounds = None  # sounds.Sounds, set by main() or the tests
         self.listeners: dict[str, Listener] = {}  # session id -> its waiting hook
         # session id -> text not yet picked up. Kept on disk too (in the run folder, owner-only),
         # so what was said to a busy session is not lost when the hub restarts.
@@ -755,6 +764,7 @@ class Hub:
                 self.follow_up(text)
             else:
                 self._talk("failed", self._target(), "Didn't catch that", seconds=2)
+                self._signal("failed")
         finally:
             self._transcribing = False
 
@@ -804,7 +814,7 @@ class Hub:
             else:  # it is in the middle of a reply and gets this right after
                 self._talk("queued", s, pending.text, seconds=3.5)
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
-            self._say(s, "Sent.", "allowed", "follow-up")
+            self._signal("sent" if listener else "queued", s, "Sent." if listener else "Queued.")
         self.publish()
 
     def _expire(self, pending: Pending) -> None:
@@ -814,6 +824,7 @@ class Hub:
                 return
             self._pending = None
             self._talk("failed", self.sessions.by_id.get(pending.session), "Not sent", seconds=2)
+            self._signal("failed")
         self.publish()
 
     def cancel(self) -> None:
@@ -824,6 +835,7 @@ class Hub:
             had_pending = self._cancel_pending()
             if talking or had_pending:
                 self._talk("failed", about, "Cancelled", seconds=1.5)
+                self._signal("failed")
         if talking:
             self.recorder.stop()
             self.speech.resume()
@@ -1014,6 +1026,16 @@ class Hub:
     def _muted(self) -> bool:
         return os.path.exists(self.cfg.mute_file)
 
+    def _signal(self, name: str, s=None, words: str = "") -> None:
+        """Answer something the user did by voice: with a sound, played at once beside whatever
+        is being spoken, or with `words` in the session's voice (see `Config.talk_feedback`)."""
+        mode = self.cfg.talk_feedback
+        if mode == "sound" and self.sounds:
+            if not self._muted():
+                self.sounds.play(name)
+        elif mode != "none" and s and words:
+            self._say(s, words, "allowed", "follow-up")
+
     def _say(self, s, text: str, kind: str, src: str) -> None:
         s.last_speech = text
         entry = None
@@ -1180,6 +1202,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._reply({"ok": hub.talk_start()})
             hub.talk_end() if action == "stop" else hub.cancel()
             self._reply({"ok": True})
+        elif self.path == "/sound":  # to hear what a sound is like
+            self._reply({"played": bool(hub.sounds and hub.sounds.play(str(body.get("name", ""))))})
         elif self.path == "/answer":
             self._reply({"answered": hub.choose(int(body.get("option") or 0))})
         elif self.path == "/replay":
@@ -1296,6 +1320,8 @@ def main() -> int:
         if Meter.available() and not isinstance(hub.speech.engine, NullEngine):
             hub.speech.meter = Meter()  # the overlay's voice wave follows the real sound
         hub.publish()  # starts the window now, so it is ready before the first session speaks
+    if sounds_mod.Sounds.available() and not isinstance(hub.speech.engine, NullEngine):
+        hub.sounds = sounds_mod.Sounds(cfg.sound_volume)
     if stt.Recorder.available() and stt.Transcriber.available():
         hub.recorder = stt.Recorder(cfg.mic_source)
         hub.recorder.on_chunk = hub._mic_heard

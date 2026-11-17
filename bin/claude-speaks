@@ -18,6 +18,7 @@ Usage: claude-speaks <command>
   on | off                   turn the voice on or off for every session
   allow | deny               answer the permission prompt the overlay is showing
   answer N                   pick option N of the question the overlay is showing
+  sound sent|queued|failed   play one of the short sounds that answer push-to-talk
   repeat                     say the last line again
   missed                     replay what sessions said since you were last here
   follow-up [-s PROJECT] TEXT   send a follow-up to a session as if you had said it
@@ -124,6 +125,10 @@ case ${1:-} in
   answer)
     answered=$(jq -nc --arg n "${2:-0}" '{option: ($n | tonumber? // 0)}' | hub_post /answer | jq -r .answered)
     [ "$answered" = true ] && echo "answered" || { echo "no question is waiting, or it has no option ${2:-}"; exit 1; }
+    ;;
+  sound)
+    played=$(jq -nc --arg n "${2:-sent}" '{name: $n}' | hub_post /sound | jq -r .played) || { echo "hub is not running"; exit 1; }
+    [ "$played" = true ] || { echo "no such sound, or sounds cannot be played here: ${2:-sent}"; exit 1; }
     ;;
   repeat) echo '{"what": "last"}' | hub_post /replay >/dev/null || { echo "hub is not running"; exit 1; } ;;
   missed)

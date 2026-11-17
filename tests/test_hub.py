@@ -2,6 +2,7 @@
 
 Run: ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests   (any Python 3.10+ works)
 """
+import array
 import json
 import os
 import subprocess
@@ -16,6 +17,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
 import hub as hub_module  # noqa: E402
 from hub import Config, Hub, serve  # noqa: E402
+import sounds  # noqa: E402
 from tts import CommandEngine, NullEngine  # noqa: E402
 
 
@@ -568,6 +570,15 @@ class FakeRecorder:
         return b"\0\0" * 1600
 
 
+class FakeSounds:
+    def __init__(self):
+        self.played = []
+
+    def play(self, name):
+        self.played.append(name)
+        return True
+
+
 class FakeTranscriber:
     text = "also add a test"
     seconds = 0.0
@@ -630,7 +641,7 @@ class PushToTalk(HubCase):
         hub.talk_start()
         time.sleep(0.05)
         hub.talk_end()
-        self.assertEqual(self.spoken(), ["A is talking.", "A is talking.", "Sent.", "B waits."])
+        self.assertEqual(self.spoken(), ["A is talking.", "A is talking.", "Queued.", "B waits."])
         self.engine.spoken.clear()
         hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("A again.")))
         time.sleep(0.05)
@@ -638,7 +649,51 @@ class PushToTalk(HubCase):
         time.sleep(0.05)
         hub.talk_end()
         self.assertTrue(wait_for(lambda: len(self.engine.spoken) > 1))
-        self.assertEqual(self.spoken(), ["A again.", "Sent."])
+        self.assertEqual(self.spoken(), ["A again.", "Queued."])  # nobody is listening for A: it waits
+
+    def test_a_sound_answers_at_once_instead_of_the_word(self):
+        hub = self.make(duration=0.3)
+        hub.sounds = FakeSounds()
+        to_a = hub.listen("a")
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B talks for a while.")))
+        time.sleep(0.05)
+        self.assertTrue(hub.follow_up("to a", "a", delay=0))
+        self.assertTrue(to_a.wake.wait(3))
+        self.assertTrue(wait_for(lambda: hub.sounds.played == ["sent"]))
+        self.assertFalse(hub.speech.wait_idle(0.05), "the sound should not have waited for B's line to end")
+        self.assertTrue(hub.follow_up("to b", "b", delay=0))  # nobody is listening for B: it waits
+        self.assertTrue(wait_for(lambda: hub.sounds.played == ["sent", "queued"]))
+        hub.talk_start()
+        hub.cancel()
+        self.assertEqual(hub.sounds.played, ["sent", "queued", "failed"])
+        self.assertEqual(set(self.spoken()), {"B talks for a while."})  # no "Sent." or "Queued." in words
+
+    def test_feedback_can_be_the_word_or_nothing_and_is_quiet_when_the_voice_is_off(self):
+        hub = self.make(talk_feedback="voice")
+        hub.sounds = FakeSounds()
+        hub.listen("a")
+        hub.follow_up("one", "a", delay=0)
+        self.assertTrue(wait_for(lambda: self.engine.spoken))
+        self.assertEqual(self.spoken(), ["Sent."])
+        hub.cfg.talk_feedback = "none"
+        hub.follow_up("two", "a", delay=0)
+        self.assertTrue(wait_for(lambda: len(hub.followups.get("a", [])) == 2))
+        hub.cfg.talk_feedback = "sound"
+        open(self.cfg.mute_file, "w").close()
+        hub.follow_up("three", "a", delay=0)
+        self.assertTrue(wait_for(lambda: len(hub.followups.get("a", [])) == 3))
+        self.assertEqual((self.spoken(), hub.sounds.played), (["Sent."], []))
+
+    def test_the_sounds_are_short_and_differ(self):
+        made = {name: sounds.tone(notes, 0.3) for name, notes in sounds.TONES.items()}
+        self.assertEqual(len(set(made.values())), 3)
+        for name, pcm in made.items():
+            samples = array.array("h", pcm)
+            self.assertLess(len(samples) / sounds.RATE, 0.3, name)
+            self.assertLess(max(abs(v) for v in samples), 32767 * 0.31, name)
+            self.assertGreater(max(abs(v) for v in samples), 32767 * 0.1, name)
+            self.assertEqual((abs(samples[0]) < 200, abs(samples[-1]) < 200), (True, True), name)  # no click
+        self.assertFalse(sounds.Sounds().play("nothing"))
 
     def test_a_line_that_starts_while_you_talk_does_not_take_your_words(self):
         hub = self.make(duration=0.3)

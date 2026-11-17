@@ -40,7 +40,9 @@ its own spoken line as the first line of its reply.
   release. While you hold the key, a bubble next to that session's light shows a microphone
   sign and your own voice as a wave, so you can see the microphone hears you. A local Whisper model transcribes it and
   it is sent at once to the session in focus, even if that session is idle; the bubble then
-  shows what was sent. The focus is on
+  shows what was sent, and a short sound tells you without looking: two notes going up for
+  sent, the same note twice when it waits for a busy session, two notes going down when it was
+  not sent (`talk_feedback` can be `sound`, `voice` or `none`; `sound_volume` is 0 to 1). The focus is on
   whichever session spoke last, shown by a frame around its light; hold `Ctrl+Alt` and turn the
   mouse wheel to move it to another session. If you would rather check the text first, set
   `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
@@ -113,6 +115,7 @@ claude-speaks answer N               pick option N of the question on screen
 claude-speaks follow-up [-s PROJECT] TEXT
 claude-speaks target [PROJECT]       who a spoken follow-up goes to
 claude-speaks missed | repeat        catch up, or hear the last line again
+claude-speaks sound sent|queued|failed   hear the short sounds that answer push-to-talk
 claude-speaks voices                 every voice, and which project has which
 claude-speaks voice PROJECT VOICE    give a project a voice
 claude-speaks voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
@@ -135,6 +138,8 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
   "whisper_model": "small.en",
   "followup_delay": 0,
   "followup_confirm": false,
+  "talk_feedback": "sound",
+  "sound_volume": 0.3,
   "overlay": {
     "layout": "bar",
     "corner": "top-right",

@@ -54,8 +54,8 @@ real keys yet.
 - [ ] Something said to a busy session waits until its reply ends, and a turn stuck on an
       unanswered dialog in the terminal holds it back for as long as the dialog is open. The
       overlay shows "waiting" for 3.5 s only; the author took it as not heard (2026-11-17).
-      Keep the waiting sign on that session's light until the words are delivered, and say
-      "Queued." instead of "Sent.".
+      Keep the waiting sign on that session's light until the words are delivered. (Done
+      2026-11-17: a waiting message has its own sound, or "Queued." with `talk_feedback: voice`.)
 - [ ] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next
@@ -245,7 +245,9 @@ Smaller ideas:
       far: only the held talk key is kept back. Off by default if built, because it would
       also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
       with those keys, and it needs a keyboard hook for as long as the keys are down.
-- [ ] Short sounds for states (done, needs you) for when a full sentence is too much
+- [ ] Short sounds for states (done, needs you) for when a full sentence is too much. Push-to-talk
+      has them since 2026-11-17 (`hub/sounds.py`: sent, waiting, not sent); the author has
+      not said yet whether they sound right. "Allowed." and "Denied." are still spoken.
 - [ ] Left or right ear per session
 - [ ] Stay quiet for the session whose terminal is in front
 - [ ] A key that jumps to the terminal of the session in focus

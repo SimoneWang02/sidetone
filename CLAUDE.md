@@ -200,10 +200,21 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `faster-whisper` `small.en` transcribes it. It is sent at once (the author, 2026-11-17: "too many
   clicks ... it's ctrl+alt+space and then again to confirm", and chose "send at once" over a
   pause): `followup_delay` is 0 and `followup_confirm` is off by default; both can be turned
-  back on. The hub hands it to that session's listener, shows "sent → name: text" for 2.5 s and says
-  "Sent.". Target: the session that spoke last; a quick tap of the talk key picks the next one.
+  back on. The hub hands it to that session's listener, shows "sent → name: text" for 2.5 s and
+  plays a short sound (see the next point). Target: the session that spoke last; a quick tap of the talk key picks the next one.
   A busy session gets the follow-up right after its current reply. With no listener yet, the
   text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
+- Sounds instead of "Sent." (2026-11-17; the author, in Italian: the word waits in the queue
+  behind a line being spoken, so it comes late and is of little use; they suggested a sound or
+  a visual effect and agreed to this): `hub/sounds.py` makes three short sounds in code and
+  plays each through its own `paplay`, beside the voice and not through its queue: two notes
+  going up = sent, the same note twice = waiting for a busy session, two notes going down =
+  not heard, not sent or cancelled. `Hub._signal` picks by `talk_feedback`: `sound` (default),
+  `voice` ("Sent." or "Queued." as before; also used when there is no `paplay`), `none`.
+  `sound_volume` is 0 to 1 (0.3). Quiet while the voice is off. `claude-speaks sound NAME`
+  plays one. Measured on the sink's monitor: sound within a few hundredths of a second, about
+  0.2 s long. "Allowed." and "Denied." are still spoken. **The author has not said yet
+  whether the sounds are right**; the pitches are in `sounds.TONES`.
 - What push-to-talk shows (changed 2026-11-17: the author did not like the text line with
   arrows, "listening → name", and it kept the old name when the focus moved): the hub sends
   `talk` with a step (`listening`, `transcribing`, `ready`, `sent`, `failed`, `focus`), the
@@ -285,17 +296,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
   does not repeat the line once the hub is back.
 - `bin/claude-speaks` (linked by `install.sh` into `~/.local/bin` as `claude-speaks` and `cs`;
-  on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
+  on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 97 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 100 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `label` (`auto`/`always`/`never`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
-  `talk_tail`. `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
+  `talk_tail`, `talk_feedback`, `sound_volume`. `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
 - Toggle: voice is off while `~/.claude/voice-off` exists (the hub still tracks state).
