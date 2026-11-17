@@ -99,8 +99,10 @@ real keys yet.
       cursor and clicks and the wheel go to the window underneath. The author, 2026-11-17:
       "Oh yes, it works. Now perfect." The new place was saved to `config.json`.
 - [ ] Sessions started from the VS Code extension showing up in the bar
-- [ ] The bar no longer getting taller when the mouse is on it while a long sentence is
+- [x] The bar no longer getting taller when the mouse is on it while a long sentence is
       said: since 2026-11-17 the sentence is cut to one line in the details (`row_lines`).
+      The author the same day: "It works. It's only one row. I mean you can make it two.
+      No, one is fine." So one line stays; two is there as `row_lines: 2` if wanted.
 - [ ] Clicking while talking (the author, 2026-11-17: "while I talk I cannot right click, so
       for instance I cannot pause the YouTube video"). Not looked into beyond a guess: with
       `Ctrl+Alt` still down the click reaches the browser as Ctrl+Alt+click, which a video
