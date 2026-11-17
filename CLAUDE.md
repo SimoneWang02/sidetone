@@ -173,7 +173,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   loudness values from the recorder, drawn as a wave in the microphone's own color, and the
   light becomes voice bars in that color. `Hub.focus()` re-sends what is on screen for the new
   session, and a pending follow-up moves with it. `banner` is now only used by the overlay
-  itself (move mode).
+  itself (move mode). The step is shown as a small animated sign at the right of the session's
+  first line (`Badge`: microphone, moving dots, paper plane, cross) with words underneath; the
+  name and title stay where they always are (the author did not like "listening" and "sent"
+  taking the title's place and suggested moving it or using icons).
 - Hotkeys (rebind or blank them under `overlay.hotkeys`): always claimed are `toggle` Ctrl+Alt+L,
   `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R and `missed` Ctrl+Alt+U (Ctrl+Alt+M is taken by
   another program on the author's machine). Claimed only while they can act: `allow` Ctrl+Alt+Y,

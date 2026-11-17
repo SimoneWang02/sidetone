@@ -283,6 +283,91 @@ namespace ClaudeSpeaks
         }
     }
 
+    // A small sign at the right of a session's line for where push-to-talk stands: a microphone
+    // while it listens, three moving dots while the words are worked out or wait to go, a paper
+    // plane once they are sent, a cross when nothing went out.
+    class Badge : FrameworkElement
+    {
+        public string Kind = "";  // "", mic, dots, sent, failed
+        public double Since;
+
+        public Badge() { Width = 20; Height = 18; IsHitTestVisible = false; VerticalAlignment = VerticalAlignment.Center; HorizontalAlignment = HorizontalAlignment.Right; }
+
+        public void Show(string kind)
+        {
+            if (kind == Kind) return;
+            Kind = kind;
+            Since = Ui.Now;
+            settled = false;
+            Visibility = kind.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+            InvalidateVisual();
+        }
+
+        bool settled;  // drawn at least once after its entrance was over
+
+        // Whether it has to be drawn again on the next frame.
+        public bool Moving { get { return Kind == "mic" || Kind == "dots" || (Kind.Length > 0 && !settled); } }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            double t = Ui.Now, age = t - Since, cx = Width / 2, cy = Height / 2;
+            double pop = Ui.Overshoot(age / 0.35);
+            settled = age >= 0.45;
+            dc.PushTransform(new ScaleTransform(pop, pop, cx, cy));
+            switch (Kind)
+            {
+                case "mic":
+                {
+                    double beat = 0.75 + 0.25 * Math.Sin(t * 5);
+                    Pen pen = Ui.Line(Ui.Mic, beat, 1.6);
+                    dc.DrawRoundedRectangle(Ui.Alpha(Ui.Mic, beat), null, new Rect(cx - 2.6, cy - 8, 5.2, 9.5), 2.6, 2.6);  // the capsule
+                    var cup = new StreamGeometry();
+                    using (StreamGeometryContext g = cup.Open())
+                    {
+                        g.BeginFigure(new Point(cx - 5.2, cy - 1.5), false, false);
+                        g.ArcTo(new Point(cx + 5.2, cy - 1.5), new Size(5.2, 5.2), 0, false, SweepDirection.Counterclockwise, true, false);
+                    }
+                    dc.DrawGeometry(null, pen, cup);
+                    dc.DrawLine(pen, new Point(cx, cy + 3.7), new Point(cx, cy + 7));
+                    dc.DrawLine(pen, new Point(cx - 3, cy + 7), new Point(cx + 3, cy + 7));
+                    break;
+                }
+                case "dots":
+                    for (int i = 0; i < 3; i++)
+                    {
+                        double up = Math.Max(0, Math.Sin(t * 6 - i * 0.9));
+                        dc.DrawEllipse(Ui.Alpha(Colors.White, 0.45 + 0.5 * up), null, new Point(cx + (i - 1) * 6, cy + 2 - 4 * up), 2, 2);
+                    }
+                    break;
+                case "sent":
+                {
+                    // A paper plane that flies in from the left.
+                    double fly = (1 - Ui.EaseOut(age / 0.4)) * -9;
+                    Color green = Ui.Tint("done");
+                    var plane = new StreamGeometry();
+                    using (StreamGeometryContext g = plane.Open())
+                    {
+                        g.BeginFigure(new Point(cx - 8 + fly, cy - 1), true, true);
+                        g.LineTo(new Point(cx + 8 + fly, cy - 7), true, true);
+                        g.LineTo(new Point(cx + 2.5 + fly, cy + 7), true, true);
+                        g.LineTo(new Point(cx - 0.5 + fly, cy + 1.8), true, true);
+                    }
+                    dc.DrawGeometry(Ui.Alpha(green, 0.35), Ui.Line(green, 1, 1.5), plane);
+                    dc.DrawLine(Ui.Line(green, 1, 1.5), new Point(cx - 0.5 + fly, cy + 1.8), new Point(cx + 8 + fly, cy - 7));
+                    break;
+                }
+                case "failed":
+                {
+                    Pen pen = Ui.Line(Ui.Tint("failed"), 1, 2);
+                    dc.DrawLine(pen, new Point(cx - 4.5, cy - 4.5), new Point(cx + 4.5, cy + 4.5));
+                    dc.DrawLine(pen, new Point(cx + 4.5, cy - 4.5), new Point(cx - 4.5, cy + 4.5));
+                    break;
+                }
+            }
+            dc.Pop();
+        }
+    }
+
     // One see-through piece of the overlay. Windows blurs what is behind a whole window and rounds
     // its corners, and cannot do that for a free shape, so every piece of glass is its own window
     // exactly as big as what it shows. Clicks pass through and it never takes focus.
@@ -445,7 +530,9 @@ namespace ClaudeSpeaks
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock line1 = new TextBlock(), line2 = new TextBlock(), meta = new TextBlock();
         public bool Speaking, Focus;
-        public string Name = "", Color = "", Title = "", State = "", FlashText, TalkLabel, TalkText = "";  // TalkLabel: null unless push-to-talk is about this session
+        public string Name = "", Color = "", Title = "", State = "", FlashText, TalkKind, TalkText = "";  // TalkKind: null unless push-to-talk is about this session
+        public readonly Badge Badge = new Badge { Visibility = Visibility.Collapsed };
+        bool talkDim;
         public double FlashUntil, Hot, Lit;
         string rowText = "", metaText = "";
 
@@ -468,7 +555,13 @@ namespace ClaudeSpeaks
             Grid.SetColumn(meta, 1);
             row2.Children.Add(line2);
             row2.Children.Add(meta);
-            words.Children.Add(line1);
+            var row1 = new Grid();  // the name and title, and at the right the push-to-talk sign
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(Badge, 1);
+            row1.Children.Add(line1);
+            row1.Children.Add(Badge);
+            words.Children.Add(row1);
             words.Children.Add(row2);
             Text.Children.Add(glow);
             Text.Children.Add(Strip);
@@ -502,15 +595,18 @@ namespace ClaudeSpeaks
         public bool Saying { get { return FlashText != null && (Speaking || Ui.Now < FlashUntil); } }
 
         // Something to read about it right now: what it says, or what you are saying to it.
-        public bool Showing { get { return TalkLabel != null || Saying; } }
+        public bool Showing { get { return TalkKind != null || Saying; } }
 
-        // Push-to-talk is about this session (label such as "listening", and words), or no longer.
-        public void SetTalk(string label, string text, Wave mic)
+        // Push-to-talk is about this session (which sign to show, the words under the name, and
+        // whether those words are only a hint), or no longer (kind is null).
+        public void SetTalk(string kind, string text, bool dim, Wave mic)
         {
-            bool changed = label != TalkLabel || text != TalkText || (Orb.Listening != null) != (mic != null);
-            TalkLabel = label;
+            bool changed = kind != TalkKind || text != TalkText || (Orb.Listening != null) != (mic != null);
+            TalkKind = kind;
             TalkText = text ?? "";
+            talkDim = dim;
             Orb.Listening = mic;
+            Badge.Show(kind ?? "");
             if (changed) { Orb.Changed = Ui.Now; Refresh(); }
         }
 
@@ -518,10 +614,10 @@ namespace ClaudeSpeaks
         // otherwise what the session is doing.
         public void Refresh()
         {
-            bool saying = Showing, talk = TalkLabel != null;
-            line2.Text = talk ? (TalkText.Length > 0 ? TalkLabel + "  \u00b7  " + TalkText : TalkLabel) : saying ? FlashText : rowText;
+            bool saying = Showing, talk = TalkKind != null;
+            line2.Text = talk ? TalkText : saying ? FlashText : rowText;
             line2.TextWrapping = saying ? TextWrapping.Wrap : TextWrapping.NoWrap;
-            line2.Foreground = saying ? Brushes.White : Ui.Dim;
+            line2.Foreground = saying && !(talk && talkDim) ? Brushes.White : Ui.Dim;
             meta.Text = metaText;
             meta.Visibility = saying || metaText.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
             row2.Visibility = line2.Text.Length == 0 && meta.Visibility != Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
@@ -592,6 +688,7 @@ namespace ClaudeSpeaks
         readonly StackPanel bubbleWords = new StackPanel { Margin = new Thickness(14, 8, 14, 10) };
         readonly TranslateTransform bubbleSlide = new TranslateTransform();
         readonly WaveStrip bubbleStrip = new WaveStrip();
+        readonly Badge bubbleBadge = new Badge { Visibility = Visibility.Collapsed };
         readonly Dictionary<string, Row> rows = new Dictionary<string, Row>();
         readonly List<Row> order = new List<Row>();  // the rows from top to bottom
         readonly Dictionary<string, Wave> waves = new Dictionary<string, Wave>();
@@ -664,7 +761,13 @@ namespace ClaudeSpeaks
             bubbleLine2.MaxHeight = 68;  // four lines
             bubbleLine2.Margin = new Thickness(0, 2, 0, 0);
             bubbleWords.RenderTransform = bubbleSlide;
-            bubbleWords.Children.Add(bubbleLine1);
+            var bubbleRow1 = new Grid();
+            bubbleRow1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            bubbleRow1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(bubbleBadge, 1);
+            bubbleRow1.Children.Add(bubbleLine1);
+            bubbleRow1.Children.Add(bubbleBadge);
+            bubbleWords.Children.Add(bubbleRow1);
             bubbleWords.Children.Add(bubbleLine2);
             var layers = new Grid();
             layers.Children.Add(bubbleStrip);
@@ -881,10 +984,9 @@ namespace ClaudeSpeaks
             historyBox.Visibility = showHistory ? Visibility.Visible : Visibility.Collapsed;
             if (showHistory) BuildHistory();
             bool talking = talkState.Length > 0;
-            string label = TalkLabel(), words = TalkWords();
             foreach (Row row in order)
-                if (talking && row.Name == talkName) row.SetTalk(label, words, talkState == "listening" ? mic : null);
-                else row.SetTalk(null, "", null);
+                if (talking && row.Name == talkName) row.SetTalk(TalkKind(), TalkWords(), TalkDim(), talkState == "listening" ? mic : null);
+                else row.SetTalk(null, "", false, null);
             bool show = isList || hasRequest || hasBanner || moving || talking || sessions.Length > 0;
             if (show && !rail.IsVisible) rail.Show();
             else if (!show && rail.IsVisible) rail.Hide();
@@ -958,22 +1060,26 @@ namespace ClaudeSpeaks
             if (away)
                 foreach (Row row in order)
                 {
-                    if (row.TalkLabel != null) { found = row; break; }  // what you are saying comes first
+                    if (row.TalkKind != null) { found = row; break; }  // what you are saying comes first
                     if (row.Saying && (found == null || row.Speaking || (!found.Speaking && row.FlashUntil > found.FlashUntil))) found = row;
                 }
-            bool orphan = away && talking && (found == null || found.TalkLabel == null);  // push-to-talk with no session to show it on
+            bool orphan = away && talking && (found == null || found.TalkKind == null);  // push-to-talk with no session to show it on
             if (found == null && !orphan) { bubble.Goal = 0; return; }
             talker = orphan ? null : found;
-            bool mine = orphan || found.TalkLabel != null, listening = mine && talkState == "listening";
-            string head = orphan ? "" : found.Name, sub = mine ? TalkLabel() : found.Title, body = mine ? TalkWords() : found.FlashText;
-            string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening;
+            // The first line is always the session's name and title; push-to-talk shows as a sign
+            // at its right and as words underneath.
+            bool mine = orphan || found.TalkKind != null, listening = mine && talkState == "listening";
+            string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : found.FlashText;
+            string kind = mine ? TalkKind() : "";
+            string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind;
             if (shows != bubbleShows)
             {
                 bubbleShows = shows;
-                Heading(bubbleLine1, head.Length > 0 ? head : sub, head.Length > 0 ? sub : "", orphan ? "" : found.Color);
+                Heading(bubbleLine1, head, sub, orphan ? "" : found.Color);
+                bubbleBadge.Show(kind);
                 bubbleLine2.Text = body;
                 bubbleLine2.Visibility = body.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-                bubbleLine2.Foreground = listening ? Ui.Dim : Brushes.White;
+                bubbleLine2.Foreground = mine && TalkDim() ? Ui.Dim : Brushes.White;
                 bubbleStrip.Wave = listening ? mic : orphan ? mic : found.Wave;
                 bubbleStrip.Tint = mine ? Ui.Mic : Ui.Tint(found.State);
                 bubbleStrip.NewestRight = corner.EndsWith("right");
@@ -1043,6 +1149,7 @@ namespace ClaudeSpeaks
                 bubbleSlide.X = (1 - shown) * (right ? 18 : -18);
                 if (shown < 1 && bubble.Goal > 0) again = true;
                 bubbleStrip.InvalidateVisual();
+                if (bubbleBadge.Moving) { bubbleBadge.InvalidateVisual(); again = true; }
             }
             foreach (Row row in order)
             {
@@ -1055,7 +1162,8 @@ namespace ClaudeSpeaks
                     row.Orb.InvalidateVisual();
                     again = true;
                 }
-                if (row.Speaking && panel.IsVisible) row.Strip.InvalidateVisual();
+                if ((row.Speaking || row.Orb.Listening != null) && panel.IsVisible) row.Strip.InvalidateVisual();
+                if (row.TalkKind != null && row.Badge.Moving) { row.Badge.InvalidateVisual(); again = true; }
                 if (row.FlashText != null) again = true;  // so its end is noticed
             }
             if (expired) Render();
@@ -1381,29 +1489,35 @@ namespace ClaudeSpeaks
             Render();
         }
 
-        string TalkLabel()
+        // The sign for each step.
+        string TalkKind()
         {
             switch (talkState)
             {
-                case "listening": return "listening";
-                case "transcribing": return "transcribing\u2026";
-                case "ready": return "ready to send";
+                case "listening": return "mic";
+                case "transcribing": case "ready": return "dots";
                 case "sent": return "sent";
-                case "focus": return "in focus";
-                default: return talkText;  // failed: the text says what happened
+                case "failed": return "failed";
+                default: return "";
             }
         }
 
+        // The words under the session's name for each step.
         string TalkWords()
         {
             switch (talkState)
             {
                 case "listening": return "release to send";
+                case "transcribing": return "working out what you said\u2026";
                 case "ready": return "\u201c" + talkText + "\u201d" + (talkHint.Length > 0 ? "\n" + talkHint : "");
                 case "sent": return "\u201c" + talkText + "\u201d";
-                default: return "";
+                case "focus": return "in focus";
+                default: return talkText;  // failed: the text says what happened
             }
         }
+
+        // Whether those words are a hint (shown dim) and not something you said.
+        bool TalkDim() { return talkState != "ready" && talkState != "sent"; }
 
         // A permission prompt or question stays on screen until it is answered: the hotkeys act on it.
         void ShowRequest(Dictionary<string, object> msg)
