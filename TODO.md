@@ -110,12 +110,12 @@ real keys yet.
       sessions said (so catch-up and repeat start empty), the task counts of a running turn,
       or a permission prompt that was open (it can then only be answered in the terminal).
       A turn that ends in the second the hub is down comes back as idle, without its check.
-- [ ] Titles that say what a session is doing (the author, 2026-11-17, could not tell four
+- [x] Titles that say what a session is doing (the author, 2026-11-17, could not tell four
       sessions in one folder apart by their titles, which were the start of each one's
       first spoken sentence). Changed the same day: each session now writes its own title
-      of a few words into its speak tag and updates it when the work moves on. To be seen
-      by the author: whether the titles in the details now tell the sessions apart, and
-      whether they change too often or too rarely.
+      of a few words into its speak tag and updates it when the work moves on. The author
+      on seeing the first one: "that's perfect. Yeah, it's clear now." Still to watch over
+      a longer day: whether titles change too often or too rarely.
 - [ ] Something said to a busy session waits until its reply ends, and a turn stuck on an
       unanswered dialog in the terminal holds it back for as long as the dialog is open. The
       overlay shows "waiting" for 3.5 s only; the author took it as not heard (2026-11-17).
