@@ -140,6 +140,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (1 to 3, default 1) brings the wrapping and the stretching back. The bubble still shows the
   whole sentence. They then asked by voice what the choices meant, so the choice may not
   have been an informed one; ask again if they do not like what they see.
+- The mode is remembered (2026-11-17): the overlay reports `mode` when the list key or the
+  command changes it, and `Hub.on_overlay` saves it to `config.json` (`overlay.mode`), so
+  details that were kept out are out again after a hub restart. Before, every restart went
+  back to `dots`, and since the history under the rows only shows in `list`, the author
+  missed it after one ("I don't see the history anymore").
 - Layouts (2026-11-17): `overlay.layout` is `bar` or `island`; `Ctrl+Alt+K` or
   `claude-speaks overlay layout NAME|next` switches, and `Hub.set_layout` saves it. `island` lays
   the lights out sideways at the top middle of the screen, with a dash of the session's color

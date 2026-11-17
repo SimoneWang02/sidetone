@@ -1,10 +1,11 @@
-"""Whether the mouse alone brings the overlay's details out is a setting."""
+"""Overlay choices that are settings: what brings the details out, and whether they are kept out."""
 import json
 import os
 import subprocess
 import sys
 import tempfile
 import threading
+from unittest import mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
@@ -35,3 +36,22 @@ class Hover(HubCase):
         wrong = run("hover", "sometimes")
         self.assertEqual(wrong.returncode, 2)
         self.assertEqual(hub.cfg.overlay["hover"], "keys")
+
+
+class KeptOut(HubCase):
+    def test_details_kept_out_are_still_out_after_a_hub_restart(self):
+        # The author hovered a session and missed its history: a hub restart had put the overlay
+        # back to lights only, and the history only shows while the details are kept out.
+        from hub import Config
+
+        folder = tempfile.mkdtemp(prefix="cs-test-")
+        config = os.path.join(folder, "claude-speaks", "config.json")
+        hub = self.make(config_path=config)
+        hub.on_overlay({"type": "mode", "mode": "list"})
+        with open(config) as f:
+            self.assertEqual(json.load(f)["overlay"]["mode"], "list")
+        with mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": folder, "CS_RUN": self.tmp, "CS_STATE": self.tmp}):
+            again = Config.load()
+        self.assertEqual(again.overlay["mode"], "list")
+        hub.on_overlay({"type": "mode", "mode": "sideways"})  # not a mode: ignored
+        self.assertEqual(hub.cfg.overlay["mode"], "list")

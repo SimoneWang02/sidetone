@@ -252,6 +252,10 @@ real keys yet.
       restart and got "Nothing from ... yet"), but not the task counts of a running turn,
       or a permission prompt that was open (it can then only be answered in the terminal).
       A turn that ends in the second the hub is down comes back as idle, without its check.
+      Also forgotten until 2026-11-17: whether the details were kept out (`Ctrl+Alt+L`).
+      The author, after a hub restart: "when hovering ... I don't see the history
+      anymore"; the history only shows while the details are kept out, and the restart
+      had put the overlay back to lights only. The mode is now saved like the layout.
 - [x] Titles that say what a session is doing (the author, 2026-11-17, could not tell four
       sessions in one folder apart by their titles, which were the start of each one's
       first spoken sentence). Changed the same day: each session now writes its own title
