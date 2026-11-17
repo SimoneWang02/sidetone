@@ -137,6 +137,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   move it is re-sent as a click to whatever is underneath, so plain clicks still pass through.
   The drop is reported as `moved` (monitor, nearest corner, offsets) and saved to `config.json`.
   **Not tried with a real mouse yet** (it cannot be done from WSL without moving the user's cursor).
+- Name colors (asked for by voice on 2026-11-17: "if ... either the session title or the folder
+  name could be different color, would be ... much easier to read"; read as: the name should
+  stand apart from the title, and sessions from each other): `Session.color`, one of
+  `state.COLORS`, stable per project name and not shared by two live sessions. Rows, history
+  lines and requests carry `color`; the overlay writes the name in it and leaves the title white.
 - Titles: `Session.title` is Claude Code's own name for the session (the `name` field of its
   session file, a slug such as `eyes-free-claude-speaks`, turned into words) and, until that
   exists, the first line of the last prompt, cut to 44 characters (`state.short_title`).
@@ -213,7 +218,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 80 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 81 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

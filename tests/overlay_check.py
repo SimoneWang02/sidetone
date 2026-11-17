@@ -163,15 +163,16 @@ def sessions(speaking=None, focus="api-server"):
         dict(name="data-pipeline", title="Nightly export", state="failed", text="error: rate limit", meta=""),
         dict(name="notes", title="", state="idle", text="", meta=""),
     ]
-    for row in rows:
+    for row, color in zip(rows, ["#8AB4FF", "#FFB86B", "#C6A0F6", "#7FDBCA", "#FF8FA3"]):
+        row["color"] = color
         row["speaking"] = row["name"] == speaking
         row["target"] = row["name"] == focus
     return rows
 
 
-HISTORY = [dict(ago="now", name="api-server", text="All forty two tests pass."),
-           dict(ago="3m", name="web-app", text="The login page is fixed and ready for review."),
-           dict(ago="12m", name="data-pipeline", text="I hit an error: rate limit")]
+HISTORY = [dict(ago="now", name="api-server", color="#FFB86B", text="All forty two tests pass."),
+           dict(ago="3m", name="web-app", color="#C6A0F6", text="The login page is fixed and ready for review."),
+           dict(ago="12m", name="data-pipeline", color="#7FDBCA", text="I hit an error: rate limit")]
 KEYS = {"toggle": "Ctrl+Alt+F9"}
 SAID = "All forty two tests pass. The flaky one was a race in the login mock, which I fixed."
 
@@ -199,7 +200,7 @@ send(type="state", sessions=sessions(), history=HISTORY)
 time.sleep(2.5)
 shot("open", 0.3)
 send(type="peek", on=False)
-send(type="request", name="web-app", text="asks: Which drink would you like?", detail="1  Tea   2  Coffee   3  Water",
+send(type="request", name="web-app", color="#C6A0F6", text="asks: Which drink would you like?", detail="1  Tea   2  Coffee   3  Water",
      keys="Ctrl+Alt+1 to Ctrl+Alt+3 answers  \u00b7  question 1 of 2")
 shot("question")
 send(type="request", name="web-app", text="wants to: Push to the remote", detail="git push origin main",

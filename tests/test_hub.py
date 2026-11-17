@@ -257,6 +257,20 @@ class OverlayFeed(HubCase):
         self.spoken()
         self.assertFalse(self.overlay.of("state")[-1]["sessions"][0]["speaking"])
 
+    def test_every_session_has_its_own_name_color(self):
+        import state
+
+        hub = self.make()
+        for i in range(4):
+            hub.on_event(ev("SessionStart", sid=f"s{i}", cwd=f"/w/project-{i}"))
+        colors = [r["color"] for r in self.overlay.of("state")[-1]["sessions"]]
+        self.assertEqual(len(set(colors)), 4)
+        self.assertTrue(set(colors) <= set(state.COLORS))
+        again = Hub(self.cfg, NullEngine())  # the same project gets the same color next time
+        self.addCleanup(again.speech.close)
+        again.on_event(ev("SessionStart", sid="x", cwd="/w/project-0"))
+        self.assertEqual(again.snapshot()["sessions"][0]["color"], colors[0])
+
     def test_rows_carry_a_short_title_from_the_prompt(self):
         hub = self.make()
         hub.on_event(ev("UserPromptSubmit", prompt="fix the flaky login test, then run the whole suite again and tell me\nmore"))

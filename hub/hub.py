@@ -519,7 +519,8 @@ class Hub:
         if req.question:
             options, total = req.question["options"], len(req.questions)
             self.overlay.send({
-                "type": "request", "name": s.name if s else "", "text": f"asks: {req.question['question']}",
+                "type": "request", "name": s.name if s else "", "color": s.color if s else "",
+                "text": f"asks: {req.question['question']}",
                 "detail": "   ".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
                 "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} answers"
                         + (f"  \u00b7  question {len(req.answers) + 1} of {total}" if total > 1 else "")
@@ -527,7 +528,7 @@ class Hub:
             })
             return
         self.overlay.send({
-            "type": "request", "name": s.name if s else "", "text": f"wants to: {req.summary}",
+            "type": "request", "name": s.name if s else "", "color": s.color if s else "", "text": f"wants to: {req.summary}",
             "detail": req.detail[:300],
             "keys": f"{keys.get('allow', '')} allow  \u00b7  {keys.get('deny', '')} deny" + (f"  \u00b7  {more} more waiting" if more else ""),
         })
@@ -810,6 +811,7 @@ class Hub:
         with self.lock:
             rows = [{
                 "name": s.name,
+                "color": s.color,
                 "state": s.state,
                 "title": s.title,
                 "text": s.activity if s.state == "working" else s.note,
@@ -826,7 +828,7 @@ class Hub:
                            else ["allow", "deny"] if self.requests else [])
                           + (["cancel"] if self._talking or self._pending or current else []))
             now = time.time()
-            history = [{"ago": _ago(now - e["time"]), "name": e["name"], "text": e["text"]}
+            history = [{"ago": _ago(now - e["time"]), "name": e["name"], "color": e.get("color", ""), "text": e["text"]}
                        for e in list(self.history)[-6:][::-1]]
             new_keys, self._keys = keys != self._keys, keys
             new_rows, self._shown = (rows, history) != self._shown, (rows, history)
@@ -871,7 +873,7 @@ class Hub:
         s.last_speech = text
         entry = None
         if kind in ("done", "failed", "needs_you", "progress"):  # what a session said, not our own feedback
-            entry = {"time": time.time(), "name": s.name, "spoken_name": re.sub(r"[-_.]+", " ", s.name).strip(),
+            entry = {"time": time.time(), "name": s.name, "color": s.color, "spoken_name": re.sub(r"[-_.]+", " ", s.name).strip(),
                      "voice": s.voice, "text": text, "kind": kind, "heard": False}
             self.history.append(entry)
         if self._muted():

@@ -14,6 +14,10 @@ VOICE_POOL = [
     "af_nicole", "am_puck", "bf_isabella", "af_kore", "af_sarah", "af_aoede",
 ]
 
+# One color per session for its name in the overlay. Soft, easy to tell apart on dark glass,
+# and none of them the plain blue, amber, green or red the status lights use.
+COLORS = ["#8AB4FF", "#FFB86B", "#C6A0F6", "#7FDBCA", "#FF8FA3", "#F9E27D", "#B9F27C", "#F5A97F", "#91D7E3", "#F5BDE6"]
+
 ACTIVE_WINDOW = 15 * 60  # a session counts as active this long after its last event
 FORGET_AFTER = 6 * 3600  # sessions killed without a SessionEnd are dropped after this
 
@@ -101,6 +105,7 @@ class Session:
     cwd: str
     name: str
     voice: str
+    color: str = COLORS[0]  # its name is written in this color in the overlay
     state: str = "idle"  # idle | working | needs_you | done | failed
     title: str = ""  # a few words on what it is about: Claude Code's name for it, else the last prompt
     named: str = ""  # that name as Claude Code has it; empty while the title comes from a prompt
@@ -120,6 +125,7 @@ class Session:
             "id": self.id,
             "name": self.name,
             "voice": self.voice,
+            "color": self.color,
             "state": self.state,
             "title": self.title,
             "activity": self.activity,
@@ -157,7 +163,8 @@ class Sessions:
         s = self.by_id.get(sid)
         if s is None:
             name = self._unique_name(os.path.basename(cwd.rstrip("/")) or "session")
-            s = self.by_id[sid] = Session(id=sid, cwd=cwd, name=name, voice=self._voice_for(name))
+            s = self.by_id[sid] = Session(id=sid, cwd=cwd, name=name, voice=self._voice_for(name),
+                                          color=self._color_for(name))
         s.updated = now
         return s
 
@@ -175,6 +182,13 @@ class Sessions:
             n += 1
             name = f"{base} {n}"
         return name
+
+    def _color_for(self, name: str) -> str:
+        """Same project, same color every time, unless a live session already has it."""
+        start = zlib.crc32(name.encode()[::-1]) % len(COLORS)
+        order = [COLORS[(start + i) % len(COLORS)] for i in range(len(COLORS))]
+        live = {s.color for s in self.by_id.values()}
+        return next((c for c in order if c not in live), order[0])
 
     def _voice_for(self, name: str) -> str:
         """Same project, same voice every time. A new project gets one nobody else has, if any is left."""

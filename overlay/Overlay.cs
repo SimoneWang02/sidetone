@@ -72,6 +72,13 @@ namespace ClaudeSpeaks
             return true;
         }
 
+        // A session's own color, as the hub names it ("#8AB4FF"); white when there is none.
+        public static Brush Named(string hex)
+        {
+            try { return hex.Length > 0 ? Paint(hex) : Brushes.White; }
+            catch (Exception) { return Brushes.White; }
+        }
+
         public static SolidColorBrush Alpha(Color c, double a)
         {
             return new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Max(0, Math.Min(1, a))), c.R, c.G, c.B));
@@ -438,7 +445,7 @@ namespace ClaudeSpeaks
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock line1 = new TextBlock(), line2 = new TextBlock(), meta = new TextBlock();
         public bool Speaking, Focus;
-        public string Name = "", Title = "", State = "", FlashText, TalkLabel, TalkText = "";  // TalkLabel: null unless push-to-talk is about this session
+        public string Name = "", Color = "", Title = "", State = "", FlashText, TalkLabel, TalkText = "";  // TalkLabel: null unless push-to-talk is about this session
         public double FlashUntil, Hot, Lit;
         string rowText = "", metaText = "";
 
@@ -473,6 +480,7 @@ namespace ClaudeSpeaks
             bool was = Speaking;
             string before = State;
             Name = Overlay.Str(s, "name");
+            Color = Overlay.Str(s, "color");
             Title = Overlay.Str(s, "title");
             State = Orb.State = Overlay.Str(s, "state", "idle");
             Speaking = Orb.Speaking = s.ContainsKey("speaking") && Convert.ToBoolean(s["speaking"]);
@@ -481,7 +489,7 @@ namespace ClaudeSpeaks
             Wave.Synthetic = s.ContainsKey("synth") && Convert.ToBoolean(s["synth"]);
             if (Speaking && !was) Wave.Since = Ui.Now;
             if (!Speaking && was) Wave.Clear();
-            Overlay.Heading(line1, Name, Title);
+            Overlay.Heading(line1, Name, Title, Color);
             string text = Overlay.Str(s, "text");
             if (text != rowText && rowText.Length > 0 && !Saying)  // what it is doing changed: the new words fade in
                 line2.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.15, 1, TimeSpan.FromMilliseconds(260)));
@@ -849,11 +857,11 @@ namespace ClaudeSpeaks
             }
         }
 
-        // "name   title", the name in bold.
-        internal static void Heading(TextBlock line, string name, string title)
+        // "name   title": the name in bold and in the session's own color, the title in white.
+        internal static void Heading(TextBlock line, string name, string title, string color)
         {
             line.Inlines.Clear();
-            line.Inlines.Add(new Run(name) { FontWeight = FontWeights.SemiBold });
+            line.Inlines.Add(new Run(name) { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(color) });
             if (title.Length > 0) line.Inlines.Add(new Run("   " + title) { Foreground = Ui.Dim });
         }
 
@@ -958,11 +966,11 @@ namespace ClaudeSpeaks
             talker = orphan ? null : found;
             bool mine = orphan || found.TalkLabel != null, listening = mine && talkState == "listening";
             string head = orphan ? "" : found.Name, sub = mine ? TalkLabel() : found.Title, body = mine ? TalkWords() : found.FlashText;
-            string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State) + listening;
+            string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening;
             if (shows != bubbleShows)
             {
                 bubbleShows = shows;
-                Heading(bubbleLine1, head.Length > 0 ? head : sub, head.Length > 0 ? sub : "");
+                Heading(bubbleLine1, head.Length > 0 ? head : sub, head.Length > 0 ? sub : "", orphan ? "" : found.Color);
                 bubbleLine2.Text = body;
                 bubbleLine2.Visibility = body.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
                 bubbleLine2.Foreground = listening ? Ui.Dim : Brushes.White;
@@ -1082,7 +1090,7 @@ namespace ClaudeSpeaks
                 var h = (Dictionary<string, object>)o;
                 var line = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 2), FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
                 line.Inlines.Add(new Run(Str(h, "ago") + "  ") { Foreground = Ui.Faint });
-                line.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold });
+                line.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
                 line.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Dim });
                 historyLines.Children.Add(line);
             }
@@ -1405,7 +1413,7 @@ namespace ClaudeSpeaks
             {
                 requestTitle.Inlines.Clear();
                 requestTitle.Inlines.Add(new Run("\u25B2  ") { Foreground = Ui.AmberEdge, FontFamily = Ui.Symbols });
-                requestTitle.Inlines.Add(new Run(Str(msg, "name") + "  ") { FontWeight = FontWeights.SemiBold });
+                requestTitle.Inlines.Add(new Run(Str(msg, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(msg, "color")) });
                 requestTitle.Inlines.Add(new Run(Str(msg, "text")));
                 requestDetail.Text = Str(msg, "detail");
                 requestDetail.Visibility = requestDetail.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;

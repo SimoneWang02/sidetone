@@ -25,8 +25,8 @@ its own spoken line as the first line of its reply.
   project's name is spoken first when more than one session is active.
 - **A glass overlay** (Windows): a slim bar of frosted glass with one status light per session:
   a spinner while it works, a pulsing amber light when it needs you, a check when it is done.
-  Move the mouse onto it and a panel unfolds beside it with each session's name, a short
-  title, what it is doing, its task progress and elapsed time. While a session talks, a bubble
+  Move the mouse onto it and a panel unfolds beside it with each session's name (each in its
+  own color), a short title, what it is doing, its task progress and elapsed time. While a session talks, a bubble
   next to its light shows the sentence, and bars follow the real sound of the voice.
   `Ctrl+Alt+L` keeps the panel out. Grab the bar with the mouse to drag it anywhere, on any
   monitor; it stays there. A plain click still goes to whatever is underneath, and it never
@@ -189,7 +189,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-80 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+81 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
 `python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
 view. It captures only the overlay's own rectangles, and shows the see-through glass over a
