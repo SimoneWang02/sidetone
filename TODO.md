@@ -71,7 +71,8 @@ real keys yet.
       within four seconds of "sent" press `Ctrl+Alt+Backspace`. The light should show
       "Taken back" with the two notes going down, and the session should never get the
       words. Then the same to an idle session: it should be told to ignore them, and say
-      what it already did instead of undoing it. Built 2026-11-17, checked by tests only.
+      what it already did instead of undoing it. Built 2026-11-17. The idle half was done by
+      the author the same day with the real key and worked; the busy half is still open.
       Also to notice: the "sent" bubble now stays four seconds, and a press meant to cut a
       line being spoken in those seconds takes the words back instead.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,

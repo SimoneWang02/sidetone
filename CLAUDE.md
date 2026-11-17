@@ -274,8 +274,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   voice ... do not undo it unless I ask"), which Claude Code hands over after the reply it is
   in. That text goes through the listener's usual wrapper, so listeners started before this
   change deliver it too. The "sent" bubble stays for those 4 s (it was 2.5), the cancel key
-  is claimed for them, and holding the talk key again ends them. Checked by tests only:
-  **nobody has pressed the real key, and no real session has been told to ignore words yet**.
+  is claimed for them, and holding the talk key again ends them. The author pressed the real key
+  the same day right after speaking to an idle session: it had the words already, got the
+  ignore message after its reply and answered that it had changed nothing. **Not tried by
+  hand yet: a busy session, where the words are removed** (done once through
+  `claude-speaks follow-up` and `talk cancel` on the live hub).
 - Sounds instead of "Sent." (2026-11-17; the author, in Italian: the word waits in the queue
   behind a line being spoken, so it comes late and is of little use; they suggested a sound or
   a visual effect and agreed to this): `hub/sounds.py` makes three short sounds in code and
