@@ -21,7 +21,7 @@ def alive(pid: int) -> bool:
 
 
 def read(directory: str) -> dict[str, dict]:
-    """session id -> {"status": "busy" | "idle", "status_at": epoch seconds} for running sessions."""
+    """session id -> {"status": "busy" | "idle", "status_at": epoch seconds, "name": its title} for running sessions."""
     found: dict[str, dict] = {}
     try:
         names = os.listdir(directory)
@@ -37,5 +37,7 @@ def read(directory: str) -> dict[str, dict]:
         except (OSError, ValueError, KeyError, TypeError):
             continue
         if isinstance(sid, str) and isinstance(pid, int) and alive(pid):
-            found[sid] = {"status": data.get("status"), "status_at": (data.get("statusUpdatedAt") or 0) / 1000}
+            name = data.get("name")
+            found[sid] = {"status": data.get("status"), "status_at": (data.get("statusUpdatedAt") or 0) / 1000,
+                          "name": name if isinstance(name, str) else ""}
     return found

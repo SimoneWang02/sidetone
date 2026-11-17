@@ -54,6 +54,19 @@ Second round, same day, on the author's request (all built and pushed; verified 
 - **Still to be checked by the author** in addition to the list above: dragging the overlay,
   hovering the list, the number keys, `Ctrl+Alt+U`/`R`, and the confirming tap.
 
+Third round, 2026-11-17: the author ran `cs demo` and said the overlay was not what they had
+pictured: "i was expecting an executable that create the overlay with glass like design. for
+each session a status, and overall vertical so when on focus, each session display a quick
+title and if a session is speaking make a 'wave'-like vfx like someone speaking and the audio
+is visualized". Rebuilt to that (verified from WSL by pictures only; **the author has not
+seen it yet**):
+- a compiled Windows program (built by the hub with Windows' own `csc.exe`), not a script
+- a vertical glass bar with one animated status light per session; real blur by Windows
+- opens under the mouse ("on focus" was read as hover; `Ctrl+Alt+L` pins it open) to show
+  name, a short title and activity per session
+- while a session talks: a speech bubble beside its light, and bars driven by the real sound
+- `claude-speaks` and `cs` are linked into `~/.local/bin` by `install.sh`
+
 Decisions: overlay is Windows-native (must be usable over games; no browser chrome);
 sessions are told apart by a spoken label plus a stable voice per project.
 Later: plugin packaging, a demo video with sound for the README, short sounds, stereo placement,
@@ -88,12 +101,31 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
   was active in the last 15 min. Voice = stable hash of the name over a pool of 13 clearer
   English Kokoro voices, never one a live session already uses.
-- `hub/overlay.py` + `overlay/overlay.ps1` + `overlay/Overlay.cs`: the on-screen overlay, a child
-  process of the hub (only where `powershell.exe` exists). The hub sends `config`, `state` (one
-  ready-to-draw row per session) and `flash` (one line for a few seconds, sent when a line starts
-  being spoken, or instead of speech when the voice is off); the window sends `ready`, `hotkey`,
-  `mode`, `error`. All logic lives in the hub so it can be tested; the C# only draws.
-  Glyphs: ● working, ▲ needs you, ✔ done, ✖ failed, ○ idle, 🔊 on the row being spoken.
+- `hub/overlay.py` + `overlay/Overlay.cs` (+ `overlay/overlay.ps1` as fallback): the on-screen
+  overlay, a child process of the hub (only where `powershell.exe` exists). `overlay.build()`
+  compiles `Overlay.cs` with `csc.exe` of .NET Framework 4 (ships with Windows; about 0.2 s)
+  into `%LOCALAPPDATA%\claude-speaks\claude-speaks-overlay-<hash of the source>.exe`, once per
+  version of the source; if that fails the same source runs through PowerShell `Add-Type`
+  (`CLAUDE_SPEAKS_OVERLAY=script` forces that). The hub sends `config`, `state` (one
+  ready-to-draw row per session, with `title` and `synth`), `flash` (a line shown for a few
+  seconds, sent when it starts being spoken, or instead of speech when the voice is off) and
+  `wave` (loudness values while a line plays); the program sends `ready`, `hotkey`, `mode`,
+  `moved`, `bounds`, `error`. All logic lives in the hub so it can be tested; the C# only draws.
+- What it draws: two glass windows. The **bar** is a column of status lights (`Orb`: spinner
+  = working, pulsing amber "!" = needs you, check = done, cross = failed, small ring = idle,
+  five voice bars = speaking). It is "open" (each row also shows name, title, activity, meta) in
+  list mode, under the mouse, while moving, and while a request or banner is showing; requests,
+  banners and the history are sections inside the open bar. The **bubble** appears beside the
+  light of the session that is talking while the bar is closed: name, title, the sentence, and
+  the voice flowing behind the text. Mode names are still `dots` (closed) and `list` (open).
+- Titles: `Session.title` is Claude Code's own name for the session (the `name` field of its
+  session file, a slug such as `eyes-free-claude-speaks`, turned into words) and, until that
+  exists, the first line of the last prompt, cut to 44 characters (`state.short_title`).
+- Voice wave: `tts.Meter` runs `parec` on the default sink's monitor while a line plays, turns
+  each 40 ms into a loudness from 0 to 1 and the hub forwards it as `wave`. It is the real
+  output, so it is in step with the sound for every engine. Without `parec` the row says
+  `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
+  time from starting to speak a line until sound really came out.
 - Permission prompts (`Request` in `hub/hub.py`): the overlay shows the oldest open request at once
   (what, the exact command, the keys) and keeps it solid until answered. The voice waits for
   Claude Code's own "still waiting" notification (about 6 s) so it does not nag someone answering
@@ -129,7 +161,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - Overlay placement: `monitor`, `corner`, `offset_x`, `offset_y`. Dragging (after
   `claude-speaks overlay move`) reports the nearest corner and offsets, which the hub saves into
   `config.json`.
-- `tests/overlay_check.py`: manual check that saves a picture of every overlay view.
+- `tests/overlay_check.py OUT_DIR [--glass]`: manual check that saves a picture of every overlay view.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
@@ -138,13 +170,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 69 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 73 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `label` (`auto`/`always`/`never`), `max_age`, `idle_exit`, `default_voice`, `speed`,
-  and `overlay` (`enabled`, `mode`, `corner`, `offset_x`, `offset_y`, `opacity`, `list_opacity`,
-  `flash_seconds`, `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
+  and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
+  `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
   `talk_tail`. `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -162,7 +194,26 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - Stop input has `last_assistant_message`. The transcript can lag, so it's only a fallback.
 - Only own-line tags are spoken, so inline mentions of the tag in prose are ignored.
 - Latency, line written → first audio handed to the player: about 0.2 s with the warm hub,
-  about 1.2 s without it (model reloaded per call).
+  about 1.2 s without it (model reloaded per call). Measured on the sink's monitor
+  (2026-11-17), real sound followed 0.4 s later for a labelled line, because `paplay` waits for
+  more audio before it starts; with `--latency-msec=50` it follows within 0.07 s, so sound is
+  out about 0.3 s after the line is written. `paplay`'s exit time says nothing reliable about
+  when the sound ended on the WSLg sink.
+- Glass facts (measured 2026-11-17 on Windows 11 build 26300 with a throwaway WPF window):
+  `SetWindowCompositionAttribute` with accent state 3 (blur) or 4 (acrylic) blurs behind a
+  WPF `AllowsTransparency` window, but always the whole window rectangle: `SetWindowRgn`
+  clips the window's own drawing and not the blur, and a `DwmEnableBlurBehindWindow` region
+  changes nothing. `DwmSetWindowAttribute(33 /*corner preference*/, 2)` rounds the window
+  (about 8 px) and does clip the blur, and adds a soft shadow. So every piece of glass is its
+  own window exactly as big as what it shows; free shapes such as capsules cannot be blurred.
+  WPF removes `WS_EX_LAYERED` from a window without `AllowsTransparency`, so click-through
+  needs `AllowsTransparency`. A `/target:winexe` program started from WSL still gets its
+  stdin and stdout pipes.
+- Taking pictures of the overlay without the user's screen in them: ask for `bounds` (real
+  window rectangles from `GetWindowRect`), capture, ask again and retake if they changed (a
+  row that shrinks between the two leaves a strip of screen in the picture; this happened
+  once). For the see-through look, put a test card window behind it first and only capture
+  once that card reported it was drawn.
 - `Kokoro.create_stream` batches by phoneme count, not by sentence, so the hub splits sentences
   itself. With a label, the label is the first (very short) piece.
 - Edits to `~/.claude/settings.json` hooks are picked up by running sessions at once.
@@ -189,10 +240,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   need `--dangerously-load-development-channels` at every start.
 - Overlay facts: it is ready about 0.6 s after launch. `Add-Type` in PowerShell 5.1 compiles
   C# 5 only (no `$""`, `?.`, `nameof`, `out var`), and the source is kept ASCII. Running the
-  script from the `\\wsl.localhost\...` path with `-ExecutionPolicy Bypass` works here. The default
-  position leaves 150 px on the right so it does not cover a maximized window's buttons.
-  To see it from WSL without capturing the user's screen: send `config` with `opaque: true`, ask
-  for `bounds`, and capture exactly that rectangle with `Graphics.CopyFromScreen`.
+  script from the `\\wsl.localhost\...` path with `-ExecutionPolicy Bypass` works here. `csc.exe`
+  has the same C# 5 limit. The default position is the top right, 96 px down, below the title
+  bar and tabs of a maximized window. `opaque: true` in `config` draws it without see-through
+  and without rounded corners, for pictures.
 - Session-file facts (measured): `status` is only `busy` or `idle`; it stays `busy` during a
   permission dialog and flips to `idle` within 0.2 s of Esc. The file is removed when the
   session exits. The Bash tool's process is not a child of the session's pid, so "approved in

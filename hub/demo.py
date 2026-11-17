@@ -7,7 +7,12 @@ A, B, C = "demo-api", "demo-web", "demo-data"
 CWD = {A: "/demo/api-server", B: "/demo/web-app", C: "/demo/data-pipeline"}
 
 
+PROMPT = {A: "Fix the flaky login test", B: "Dark mode for the settings page", C: "Push the nightly export job"}
+
+
 def _ev(event: str, sid: str, **extra) -> dict:
+    if event == "UserPromptSubmit":
+        extra.setdefault("prompt", PROMPT[sid])
     return {"hook_event_name": event, "session_id": sid, "cwd": CWD[sid], **extra}
 
 

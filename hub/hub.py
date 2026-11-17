@@ -28,9 +28,9 @@ import claude_sessions  # noqa: E402
 import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
 import stt  # noqa: E402
-from state import (VOICE_POOL, Sessions, describe, permission_summary,  # noqa: E402
+from state import (VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
                    speech_from_message, split_display)
-from tts import SpeechQueue, Utterance, make_engine  # noqa: E402
+from tts import Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
 
 NEEDS_INPUT = ("permission_prompt", "elicitation_dialog")  # Notification types worth interrupting for
 OWN_DIALOG = ("AskUserQuestion", "ExitPlanMode")  # tools whose prompt is a question, not a yes/no
@@ -175,7 +175,8 @@ class Hub:
         self._progress_said: dict[str, float] = {}  # session id -> when it last announced progress
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
-                                  on_change=self._speech_changed, on_done=self._log_speech)
+                                  on_change=self._speech_changed, on_done=self._log_speech,
+                                  on_audio=self._voice_levels)
 
     # --- hook events -------------------------------------------------------------------------
 
@@ -201,6 +202,8 @@ class Hub:
 
             if event == "UserPromptSubmit":
                 self.last_seen = time.time()
+                if not s.named:  # until Claude Code names the session, the prompt says what it is about
+                    s.title = short_title(ev.get("prompt") or "") or s.title
                 s.state, s.activity, s.note = "working", "Thinking", ""
                 s.turn_started, s.spoken = time.monotonic(), None
                 if s.tasks and all(s.tasks.values()):
@@ -264,6 +267,8 @@ class Hub:
                 info, quiet = live.get(s.id), time.monotonic() - s.updated
                 if info:
                     s.seen_file = True
+                    if info.get("name") and info["name"] != s.named:  # Claude Code's own name for the session
+                        s.title, s.named = short_title(info["name"]), info["name"]
                     if (info["status"] == "idle" and s.state in ("working", "needs_you") and quiet > 3
                             and time.time() - info["status_at"] > 2):
                         self._settle(s.id, "interrupted")
@@ -771,6 +776,7 @@ class Hub:
             rows = [{
                 "name": s.name,
                 "state": s.state,
+                "title": s.title,
                 "text": s.activity if s.state == "working" else s.note,
                 "meta": " \u00b7 ".join(filter(None, [
                     "\U0001F3A4" if len(self.sessions.by_id) > 1 and self._target() is s else "",  # talk target
@@ -778,6 +784,7 @@ class Hub:
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
                 ])),
                 "speaking": s.id == speaking,
+                "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
             } for s in self.sessions.by_id.values()]
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)] if asking
@@ -798,6 +805,16 @@ class Hub:
         if self.overlay:
             self.overlay.send({"type": "flash", "state": state or s.state, "name": s.name, "text": text,
                                "seconds": self.cfg.overlay.get("flash_seconds", 4)})
+
+    def _voice_levels(self, u: Utterance, levels: list[float], step: float) -> None:
+        """How loud the line being spoken is right now: the overlay draws it as a wave."""
+        if not self.overlay or not u.session:
+            return
+        with self.lock:
+            s = self.sessions.by_id.get(u.session)
+            name = s.name if s else None
+        if name:
+            self.overlay.send({"type": "wave", "name": name, "levels": levels, "step": step})
 
     def _speech_changed(self, u: Utterance | None) -> None:
         """A line starts or ends: show it while it is heard, and mark which session is speaking."""
@@ -853,6 +870,8 @@ class Hub:
         timing = f"waited={waited * 1000:.0f}ms"
         if first is not None:
             timing += f" first_audio={first * 1000:.0f}ms"
+        if u.heard is not None:  # measured on the speakers' own output
+            timing += f" heard={u.heard * 1000:.0f}ms"
         said = f"{label}. {u.text}" if label else u.text
         log(self.cfg, "voice.log", f"[{u.session[:8] or 'cli'}] src={u.src} {outcome} voice={u.voice} {timing} speech={said}")
 
@@ -1088,6 +1107,8 @@ def main() -> int:
         script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "overlay", "overlay.ps1")
         hub.overlay = overlay_mod.Overlay(script, cfg.overlay, on_message=hub.on_overlay,
                                           log=lambda line: log(cfg, "hub.log", line))
+        if Meter.available() and not isinstance(hub.speech.engine, NullEngine):
+            hub.speech.meter = Meter()  # the overlay's voice wave follows the real sound
         hub.publish()  # starts the window now, so it is ready before the first session speaks
     if stt.Recorder.available() and stt.Transcriber.available():
         hub.recorder = stt.Recorder(cfg.mic_source)

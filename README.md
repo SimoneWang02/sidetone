@@ -17,14 +17,17 @@ its own spoken line as the first line of its reply.
 ## What you get
 
 - **A spoken line per turn.** "Tests pass, ready for your review." Never the whole reply.
-- **It starts early.** The line is spoken as soon as it streams in, about 0.2 s after it is
-  written, often before the rest of the reply has finished printing.
+- **It starts early.** The line is spoken as soon as it streams in. Sound comes out about
+  0.3 s after the line is written (measured on the speakers' own output), often before the
+  rest of the reply has finished printing.
 - **Several sessions take turns.** One line at a time. "Needs you" goes before "done". Each
   project has its own voice, and its name is spoken first when more than one session is active.
-- **An overlay** (Windows): a faint dot per session in a screen corner. When something is said
-  it expands to one line for a few seconds. `Ctrl+Alt+L` switches to a full list with what each
-  session is doing, its task progress and elapsed time. It is see-through, click-through and
-  never takes focus.
+- **A glass overlay** (Windows): a slim bar of frosted glass with one status light per session:
+  a spinner while it works, a pulsing amber light when it needs you, a check when it is done.
+  Rest the mouse on it and it opens to show each session's name, a short title, what it is
+  doing, its task progress and elapsed time. While a session talks, a bubble next to its light
+  shows the sentence, and bars follow the real sound of the voice. `Ctrl+Alt+L` keeps the bar
+  open. Clicks pass through it and it never takes focus.
 - **Answer permission prompts from anywhere.** The overlay shows what a session wants to run.
   `Ctrl+Alt+Y` allows, `Ctrl+Alt+N` denies. The dialog in the terminal keeps working too;
   whichever you use first wins.
@@ -66,7 +69,7 @@ work, run `cs demo` in a terminal.
 
 | Key (Windows) | Does |
 |---|---|
-| `Ctrl+Alt+L` | Overlay: dots ↔ list |
+| `Ctrl+Alt+L` | Overlay: keep the bar open ↔ only the lights |
 | `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Allow / deny the permission prompt shown in the overlay |
 | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Answer the question shown in the overlay |
 | hold `Ctrl+Alt+Space` | Talk to the session that spoke last; a quick tap picks the next session, or confirms a follow-up waiting for it |
@@ -76,8 +79,8 @@ work, run `cs demo` in a terminal.
 
 The keys that answer something (allow, deny, the numbers, cancel) are only claimed while they
 can act, so other programs keep those combinations the rest of the time. Every key can be
-changed or switched off in the settings file. Rest the mouse on the list for a moment to see
-the last few lines that were spoken.
+changed or switched off in the settings file. Rest the mouse on the open bar for a moment to
+see the last few lines that were spoken.
 
 ```
 claude-speaks status                 what each session is doing, and what is queued
@@ -93,7 +96,7 @@ claude-speaks voices                 every voice, and which project has which
 claude-speaks voice PROJECT VOICE    give a project a voice
 claude-speaks voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
 claude-speaks voice add NAME FILE    load your own Kokoro voice file (.npy)
-claude-speaks overlay dots|list|toggle|restart
+claude-speaks overlay dots|list|toggle|restart     only the lights, or kept open
 claude-speaks overlay move           drag it somewhere else; it stays there
 claude-speaks overlay monitor N | corner top-left|top-right|bottom-left|bottom-right
 claude-speaks demo                   three made-up sessions through every state
@@ -111,7 +114,8 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
   "followup_confirm": "auto",
   "overlay": {
     "corner": "top-right",
-    "opacity": 0.35,
+    "glass": "blur",
+    "opacity": 0.9,
     "hotkeys": { "talk": "Ctrl+Alt+Space", "toggle": "Ctrl+Alt+L" }
   }
 }
@@ -130,8 +134,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 - The **hub** is one small background process. It keeps the Kokoro voice loaded, speaks one
   line at a time, and tracks what every session is doing from the other hooks. It listens on a
   Unix socket that only your user can open, never on a network port.
-- The **overlay** is a child of the hub, started through `powershell.exe`. The two talk over
-  the child's stdin and stdout.
+- The **overlay** is a small Windows program. The hub builds it on first start from
+  `overlay/Overlay.cs` with the C# compiler that ships with Windows (nothing to install; it
+  lands in `%LOCALAPPDATA%\claude-speaks`), runs it as a child, and talks to it over its
+  stdin and stdout. Windows itself blurs what is behind the glass. While a line plays, the hub
+  listens to the speakers' own output and sends its loudness, which is what the wave draws.
 - A `PermissionRequest` hook holds each permission prompt open on the hub until you answer it
   in either place. The voice only announces a prompt that has waited about six seconds, so it
   stays quiet when you are answering in the terminal anyway.
@@ -154,6 +161,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
   espeak-ng): one voice for every session, everything else the same.
 - The overlay does not show over games in exclusive fullscreen; use borderless windowed mode.
   The voice still works.
+- The glass has rounded corners on Windows 11 and square ones on Windows 10. `"glass": "none"`
+  gives plain dark glass without the blur; `"acrylic"` is a heavier blur.
 - A follow-up reaches Claude as a hook message, so in the terminal it reads "Stop hook
   feedback" instead of your words.
 - If a prompt waited more than six seconds and you then approve it in the terminal, the session
@@ -167,9 +176,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-69 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+73 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
-`python3 tests/overlay_check.py OUT_DIR` (Windows/WSL) saves a picture of each overlay view.
+`python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
+view. It captures only the overlay's own rectangles, and shows the see-through glass over a
+test card of its own, so nothing else on your screen ends up in a picture.
 
 ## License
 

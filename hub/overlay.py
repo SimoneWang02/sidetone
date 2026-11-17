@@ -5,6 +5,7 @@ no port to protect and the window disappears by itself when the hub exits.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -15,13 +16,14 @@ from typing import Callable
 
 DEFAULTS = {
     "enabled": True,
-    "mode": "dots",  # dots | list
+    "mode": "dots",  # dots = closed capsules that open under the mouse | list = always open
     "monitor": 0,  # 0 = the primary monitor, 1 and up = the others in Windows' order
     "corner": "top-right",  # top-right | top-left | bottom-right | bottom-left
-    "offset_x": 150,  # keeps clear of the window buttons of a maximized app
-    "offset_y": 8,
-    "opacity": 0.35,  # dots while nothing is happening
-    "list_opacity": 0.85,
+    "offset_x": 12,
+    "offset_y": 96,  # below the title bar and tabs of a maximized app
+    "opacity": 0.9,  # closed capsules while nothing is happening
+    "list_opacity": 1.0,
+    "glass": "blur",  # blur = Windows blurs what is behind | acrylic = heavier blur | none = plain dark glass
     "flash_seconds": 4,
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
@@ -30,6 +32,69 @@ DEFAULTS = {
                 "option1": "Ctrl+Alt+1", "option2": "Ctrl+Alt+2", "option3": "Ctrl+Alt+3", "option4": "Ctrl+Alt+4"},
 }
 RETRY_AFTER = 30.0  # seconds before a crashed overlay is started again
+ASSEMBLIES = ["PresentationFramework", "PresentationCore", "WindowsBase", "System.Xaml", "System.Web.Extensions",
+              "System.Windows.Forms", "System.Drawing"]
+
+
+def _windows_path(path: str) -> str:
+    return subprocess.run(["wslpath", "-w", path], capture_output=True, text=True, check=True).stdout.strip()
+
+
+def build(source: str, log: Callable[[str], None] = lambda line: None) -> str | None:
+    """Compile Overlay.cs into a Windows program and return its path (as WSL sees it).
+
+    Uses the C# compiler that ships with Windows, so nothing has to be installed. The program is
+    kept in %LOCALAPPDATA%\\claude-speaks under a name that changes with the source, so it is
+    built once per version. Returns None when that is not possible; the caller then falls back
+    to running the same source through PowerShell.
+    """
+    try:
+        powershell = shutil.which("powershell.exe") or ""
+        windows = powershell.split("/System32/")[0]  # .../Windows
+        compiler = next((c for c in (f"{windows}/Microsoft.NET/Framework64/v4.0.30319/csc.exe",
+                                     f"{windows}/Microsoft.NET/Framework/v4.0.30319/csc.exe") if os.path.isfile(c)), None)
+        if not compiler:
+            return None
+        with open(source, "rb") as f:
+            version = hashlib.sha1(f.read()).hexdigest()[:10]
+        appdata = subprocess.run(["cmd.exe", "/c", "echo %LOCALAPPDATA%"], capture_output=True, text=True, cwd=windows,
+                                 timeout=20).stdout.strip()
+        if not appdata or "%" in appdata:
+            return None
+        folder = subprocess.run(["wslpath", "-u", appdata], capture_output=True, text=True, check=True).stdout.strip()
+        folder = os.path.join(folder, "claude-speaks")
+        program = os.path.join(folder, f"claude-speaks-overlay-{version}.exe")
+        if os.path.isfile(program):
+            return program
+        os.makedirs(folder, exist_ok=True)
+        for old in os.listdir(folder):  # earlier versions; one still running cannot be deleted and is skipped
+            if old.startswith("claude-speaks-overlay-") and old.endswith(".exe"):
+                try:
+                    os.unlink(os.path.join(folder, old))
+                except OSError:
+                    pass
+        framework = _windows_path(os.path.dirname(compiler))
+        done = subprocess.run(
+            [compiler, "/nologo", "/target:winexe", "/optimize+", f"/out:{_windows_path(folder)}\\{os.path.basename(program)}",
+             f"/lib:{framework}\\WPF", *[f"/r:{name}.dll" for name in ASSEMBLIES], _windows_path(source)],
+            capture_output=True, text=True, cwd=windows, timeout=120)
+        if done.returncode != 0 or not os.path.isfile(program):
+            log("overlay could not be compiled: " + " ".join((done.stdout + done.stderr).split())[:400])
+            return None
+        log(f"overlay program built: {appdata}\\claude-speaks\\{os.path.basename(program)}")
+        return program
+    except (OSError, subprocess.SubprocessError) as e:
+        log(f"overlay could not be compiled: {e}")
+        return None
+
+
+def command(script: str, log: Callable[[str], None] = lambda line: None) -> list[str]:
+    """How to start the overlay: the compiled program, or else the PowerShell script next to it."""
+    if os.environ.get("CLAUDE_SPEAKS_OVERLAY") != "script":
+        program = build(os.path.join(os.path.dirname(script), "Overlay.cs"), log)
+        if program:
+            return [program]
+    return ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", _windows_path(script)]
 
 
 class Overlay:
@@ -83,11 +148,8 @@ class Overlay:
             return
         self._started = time.monotonic()
         try:
-            win_path = subprocess.run(["wslpath", "-w", self.script], capture_output=True, text=True,
-                                      check=True).stdout.strip()
             self.proc = subprocess.Popen(
-                ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", win_path],
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                command(self.script, self.log), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                 cwd="/mnt/c/Windows" if os.path.isdir("/mnt/c/Windows") else None,
             )
         except (OSError, subprocess.CalledProcessError) as e:

@@ -143,7 +143,15 @@ case ${1:-} in
     ;;
   demo)
     hub_get /health >/dev/null 2>&1 || { hub_start && hub_wait || exit 1; }
-    hub_post /demo </dev/null >/dev/null && echo "demo running for about 40 seconds"
+    hub_post /demo </dev/null >/dev/null || { echo "the hub did not answer; see $CS_STATE/hub.log" >&2; exit 1; }
+    cat <<'EOF'
+Demo: three made-up sessions for about 40 seconds.
+  Look    a glass bar with three status lights (top right of your main screen unless you moved it).
+          Rest the mouse on it and it opens to show each session's name and title.
+  Listen  the first voice comes after about 8 seconds, then three more. Each line shows in a
+          bubble next to the bar, with a wave that follows the voice.
+  Try     Ctrl+Alt+L keeps the bar open; press it again to close it.
+EOF
     ;;
   hub)
     case ${2:-} in

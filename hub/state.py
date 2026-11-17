@@ -46,6 +46,17 @@ def speech_from_message(message: str) -> str:
     return m.group(1).strip() if m else ""
 
 
+def short_title(text: str, limit: int = 44) -> str:
+    """A few words that say what a session is about, from its name ("fix-login-test") or a prompt."""
+    line = next((ln.strip() for ln in str(text or "").splitlines() if ln.strip()), "")
+    if re.fullmatch(r"[\w.]+(?:[-_][\w.]+)+", line):  # a slug: make it words
+        line = re.sub(r"[-_]+", " ", line)
+    line = re.sub(r"\s+", " ", line)
+    if len(line) > limit:
+        line = line[:limit].rsplit(" ", 1)[0].rstrip(",.;:") + "\u2026"
+    return line[:1].upper() + line[1:]
+
+
 def describe(tool: str, tool_input: dict) -> str:
     """A short human line for what a tool call is doing."""
     file = os.path.basename(str(tool_input.get("file_path") or tool_input.get("notebook_path") or ""))
@@ -91,6 +102,8 @@ class Session:
     name: str
     voice: str
     state: str = "idle"  # idle | working | needs_you | done | failed
+    title: str = ""  # a few words on what it is about: Claude Code's name for it, else the last prompt
+    named: str = ""  # that name as Claude Code has it; empty while the title comes from a prompt
     activity: str = ""  # what it is doing, while working
     note: str = ""  # how the last turn ended, shown when not working
     tasks: dict[str, bool] = field(default_factory=dict)  # task id -> completed
@@ -108,6 +121,7 @@ class Session:
             "name": self.name,
             "voice": self.voice,
             "state": self.state,
+            "title": self.title,
             "activity": self.activity,
             "note": self.note,
             "tasks_done": sum(self.tasks.values()),

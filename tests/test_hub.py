@@ -256,6 +256,43 @@ class OverlayFeed(HubCase):
         self.spoken()
         self.assertFalse(self.overlay.of("state")[-1]["sessions"][0]["speaking"])
 
+    def test_rows_carry_a_short_title_from_the_prompt(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", prompt="fix the flaky login test, then run the whole suite again and tell me\nmore"))
+        row = self.overlay.of("state")[-1]["sessions"][0]
+        self.assertEqual(row["title"], "Fix the flaky login test, then run the\u2026")
+
+    def test_the_voice_wave_goes_to_the_session_that_speaks(self):
+        class FakeMeter:
+            def start(self, on_levels):
+                on_levels([0.1, 0.9, 0.4], 0.04)
+
+            def stop(self):
+                return 0.25
+
+        hub = self.make()
+        self.assertTrue(self.overlay_row(hub)["synth"])  # no meter: the overlay makes up a motion
+        hub.speech.meter = FakeMeter()
+        hub.on_display(ev("MessageDisplay", delta=tag("Tests pass.")))
+        self.spoken()
+        wave = self.overlay.of("wave")[-1]
+        self.assertEqual((wave["name"], wave["levels"], wave["step"]), ("alpha", [0.1, 0.9, 0.4], 0.04))
+        self.assertFalse(self.overlay.of("state")[-1]["sessions"][0]["synth"])
+        log, deadline = "", time.time() + 3  # the log line is written just after the queue goes idle
+        while "heard=" not in log and time.time() < deadline:
+            time.sleep(0.02)
+            if os.path.exists(os.path.join(self.tmp, "voice.log")):
+                with open(os.path.join(self.tmp, "voice.log")) as f:
+                    log = f.read()
+        self.assertIn("heard=250ms", log)
+        hub.say("Not from a session.")  # nothing to draw it on
+        self.spoken()
+        self.assertEqual(len(self.overlay.of("wave")), 1)
+
+    def overlay_row(self, hub):
+        hub.on_event(ev("SessionStart"))
+        return self.overlay.of("state")[-1]["sessions"][0]
+
     def test_muted_voice_still_flashes(self):
         hub = self.make()
         open(self.cfg.mute_file, "w").close()
@@ -628,15 +665,32 @@ class PushToTalk(HubCase):
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "cancel", "deny"])
 
 
+class Loudness(unittest.TestCase):
+    def test_loudness_is_relative_to_the_loudest_moment_lately(self):
+        import array
+        import math
+        from tts import Meter
+
+        def tone(amplitude):
+            return array.array("h", [int(amplitude * 32767 * math.sin(i / 3)) for i in range(320)]).tobytes()
+
+        meter = Meter()
+        self.assertEqual(meter.level(bytes(640)), 0.0)  # silence
+        self.assertEqual(meter.level(tone(0.3)), 1.0)  # the loudest so far
+        self.assertTrue(0.3 < meter.level(tone(0.1)) < 0.6)
+        self.assertEqual(meter.level(tone(0.3)), 1.0)
+        self.assertEqual(meter.level(tone(0.0005)), 0.0)  # hiss does not count as sound
+
+
 class ClaudeCodesOwnRecords(HubCase):
     """Claude Code's session files tell the hub what no hook reports."""
 
-    def record(self, sid, status, pid=None, seconds_ago=10):
+    def record(self, sid, status, pid=None, seconds_ago=10, **more):
         os.makedirs(self.cfg.sessions_dir, exist_ok=True)
         pid = pid or os.getpid()
         with open(os.path.join(self.cfg.sessions_dir, f"{pid}.json"), "w") as f:
             json.dump({"pid": pid, "sessionId": sid, "status": status,
-                       "statusUpdatedAt": (time.time() - seconds_ago) * 1000}, f)
+                       "statusUpdatedAt": (time.time() - seconds_ago) * 1000, **more}, f)
 
     def quiet_for(self, seconds, sid="s1"):
         self.hub.sessions.by_id[sid].updated -= seconds
@@ -670,6 +724,16 @@ class ClaudeCodesOwnRecords(HubCase):
         self.quiet_for(10)
         hub.reconcile()
         self.assertEqual(hub.snapshot()["sessions"], [])
+
+    def test_claude_codes_name_for_a_session_becomes_its_title(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", prompt="what is this project about?"))
+        self.assertEqual(self.session()["title"], "What is this project about?")
+        self.record("s1", "busy", name="eyes-free-claude-speaks")
+        hub.reconcile()
+        self.assertEqual(self.session()["title"], "Eyes free claude speaks")
+        hub.on_event(ev("UserPromptSubmit", prompt="something else"))  # a later prompt does not replace the name
+        self.assertEqual(self.session()["title"], "Eyes free claude speaks")
 
     def test_a_dead_process_counts_as_gone_and_sessions_without_a_file_are_kept(self):
         hub = self.make()
