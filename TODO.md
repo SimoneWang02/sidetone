@@ -120,7 +120,9 @@ real keys yet.
       The author, 2026-11-17, after the mending, asked to press an arrow while talking and
       go on talking: "It seems to be working. That's good." Repeat after a hub restart the
       same hour: "the replay worked". Not said yet: Left and Right in the island layout.
-- [ ] `Ctrl+Alt+K`: switches between the bar and the island, and back
+- [x] `Ctrl+Alt+K`: switches between the bar and the island, and back. The author,
+      2026-11-17, asked to switch and to try Left and Right there: "It works fine. Yeah,
+      it's perfect."
 - [ ] Push-to-talk in Italian from the first word (so far every Italian recording began in
       English)
 - [x] "Release to send" with a glint of light running along it while the talk key is held
