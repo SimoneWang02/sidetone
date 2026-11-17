@@ -365,6 +365,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the bar. Holding the same keys for 0.2 s also brings the panel out while they are held (the
   author: "ctrl+alt should open the details"), except during push-to-talk, which shows in its
   bubble. AltGr (right Alt, which Windows reports as Ctrl+Alt) is ignored for both.
+- The talk key reaches back (2026-11-17, `focus_reach_back`, 1 s): a session that starts to
+  speak takes the focus, also in the split second before the talk key goes down, and the
+  words then went to it instead of the session the author meant (three times that day; the
+  last report: "If I start speaking when another Claude session starts speaking as well, the
+  icon I see, it's not the recording icon"). `_speech_changed` notes whom a speaker took the
+  focus from and when (`_focus_lost`); `talk_start` goes back to that session if it was
+  under a second ago. A focus chosen by hand clears the note. What the overlay draws in
+  that moment was checked in pictures and is right (`talk-while-another-speaks`): the
+  listening sign stays on the session spoken to, the other light shows its voice.
 - Questions: `PermissionRequest` also fires for `AskUserQuestion`, with the questions and options
   in `tool_input`. Single-choice questions with 2 to 4 options become a `Request` with
   `questions`; `choose(n)` records the label and, after the last one, the hook returns allow

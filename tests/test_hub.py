@@ -761,7 +761,7 @@ class PushToTalk(HubCase):
         self.assertEqual(self.spoken(), ["A is done.", "Sent."])
 
     def test_a_line_cut_by_the_talk_key_is_said_again_unless_you_were_answering_it(self):
-        hub = self.make(duration=0.3)
+        hub = self.make(duration=0.3, focus_reach_back=0)  # the key is pressed 50 ms into a line here, and means that line
         hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("A is talking.")))
         time.sleep(0.05)
         hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B waits.")))
@@ -1185,6 +1185,26 @@ class PushToTalk(HubCase):
         hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("Done here.")))
         self.assertTrue(hub.speech.wait_idle(5))
         self.assertEqual(self.in_focus(), "a")  # it spoke last, so a follow-up answers it
+
+    def test_a_session_that_starts_speaking_as_the_key_goes_down_does_not_get_the_words(self):
+        hub = self.make(duration=0.3)
+        hub.talk_target = "a"  # you are about to speak to A
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B is done.")))
+        self.assertTrue(wait_for(lambda: hub.talk_target == "b"))  # B began to speak and took the focus
+        hub.talk_start()  # your finger was already on its way
+        self.assertEqual(self.talks()[-1][:2], ("listening", "a"))
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: hub.followups.get("a") or ("sent", "a", "also add a test") in self.talks()))
+        self.assertFalse(hub.followups.get("b"))
+
+    def test_after_a_moment_the_talk_key_goes_to_the_session_that_spoke(self):
+        hub = self.make(focus_reach_back=0.05)
+        hub.talk_target = "a"
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B is done.")))
+        self.assertTrue(hub.speech.wait_idle(5))
+        time.sleep(0.1)  # long enough to have heard who is speaking
+        hub.talk_start()
+        self.assertEqual(self.talks()[-1][:2], ("listening", "b"))
 
     def test_overlay_claims_keys_only_while_they_can_act(self):
         hub = self.make()

@@ -117,6 +117,11 @@ class Config:
     # the focus is moved with the arrow keys or the wheel. "next": the focus goes to the next
     # session, as it did before those keys existed.
     talk_tap: str = "none"
+    # A session that starts to speak takes the focus. When the talk key goes down within this
+    # many seconds of that, you cannot have meant the new speaker: nobody reacts that fast. The
+    # words then go to the session that had the focus before. 0 = the key always goes to
+    # whoever has the focus in that instant.
+    focus_reach_back: float = 1.0
     repeat: str = "focus"  # what the repeat key says again: the last line of the session in focus | "last" (anyone's)
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
@@ -179,7 +184,7 @@ class Config:
             user = {}
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds",
-                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "titles",
+                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume",
                     "progress", "progress_after", "progress_interval"):
             if key in user:
@@ -226,6 +231,7 @@ class Hub:
         self._sent: Sent | None = None  # the one that went out last, while it can still be taken back
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
         self.last_seen = time.time()  # last sign the user was there: a prompt, a hotkey, a catch-up
+        self._focus_lost: tuple[str, float] = ("", 0.0)  # the session a speaker last took the focus from, and when
         self._progress_said: dict[str, float] = {}  # session id -> when it last announced progress
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
@@ -826,6 +832,12 @@ class Hub:
             if self._talking or not self.recorder:
                 return False
             s = self._target()
+            before, since = self._focus_lost
+            if time.monotonic() - since < self.cfg.focus_reach_back and before in self.sessions.by_id:
+                # Another session began to speak in the moment the key went down and took the
+                # focus: the words are for the one that had it when you decided to speak.
+                s = self.sessions.by_id[before]
+            self._focus_lost = ("", 0.0)
             if not s:
                 self._talk("failed", None, "No Claude session to talk to", seconds=2)
                 return False
@@ -1123,6 +1135,7 @@ class Hub:
     def _focus_on(self, s) -> None:
         """Give this session the focus because the user chose it. Call with the lock held."""
         self.talk_target = s.id
+        self._focus_lost = ("", 0.0)  # chosen by hand: nothing to reach back to
         if self._talk_shown:  # what is on screen for push-to-talk follows the focus
             if self._pending:
                 self._pending.session = s.id
@@ -1261,6 +1274,8 @@ class Hub:
                     # a line that starts between the key going down and your words being sent
                     # must not take them away from the session you were talking to.
                     if u.kind not in ("allowed", "denied", "progress") and not (self._talking or self._transcribing):
+                        if self.talk_target and self.talk_target != s.id:  # who had it, and since when it is gone
+                            self._focus_lost = (self.talk_target, time.monotonic())
                         self.talk_target = s.id
                     kind = u.entry["kind"] if u.kind == "notice" and u.entry else u.kind  # said again: as it first looked
                     self._flash(s, u.text, FLASH_LOOK.get(kind, kind))

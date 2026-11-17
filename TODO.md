@@ -62,6 +62,11 @@ real keys yet.
       built: the focus following the terminal you click (see below, needs a VS Code
       extension); the focus moving to a session when you type to it; saying the session's
       name when the talk key goes down and the focus is not where you last typed.
+      Later that day: the focus now follows the terminal in front, and since the author
+      also saw the wrong sign when another session began to speak as they started talking,
+      the talk key reaches back: pressed within a second of a session starting to speak,
+      it still goes to the session that had the focus before (`focus_reach_back`). Tests
+      only; to be watched in use, since the moment cannot be staged.
 - [x] Speak, let go, and move the focus at once (arrows, wheel or another terminal): the
       words should still reach the session that was listening, and "sent" should show on its
       light. Fixed 2026-11-17 after the author did exactly that and the words "went to
