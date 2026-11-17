@@ -266,6 +266,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the nearest corner and offsets, which the hub saves into `config.json`. The panel and bubble
   go on the side of the bar that faces the middle of the screen.
 - `tests/overlay_check.py OUT_DIR [--glass]`: manual check that saves a picture of every overlay view.
+- The held talk key is kept from other programs (2026-11-17; the author held `Ctrl+Alt+Space`
+  while watching YouTube and the video paused). A hotkey only keeps a key to itself while its
+  Ctrl and Alt are down too; over a long hold one of them is let go, and the key then repeats
+  into whatever has the keyboard. From the hotkey until the key is up, `KeepKey` puts in a
+  keyboard hook that takes every further press of that one key (`OnKey`); the release is passed
+  on, since Windows saw the key go down and would think it still held. The hook is in only
+  during a hold. `tests/keys_check.py` checks it from WSL with a spare key (F20, no Ctrl or
+  Alt). Not checked: what a browser does with the lone release, and the real keys.
+  The author's wider idea, that holding Ctrl+Alt switches off every other key, was not built:
+  it would also take the Ctrl+Alt shortcuts of other programs and, on keyboards such as the
+  Italian one, characters typed with those keys. It is in `TODO.md` as a possible setting.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event

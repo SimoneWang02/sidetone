@@ -649,6 +649,7 @@ namespace ClaudeSpeaks
         const uint MOD_ALT = 1, MOD_CONTROL = 2, MOD_SHIFT = 4, MOD_WIN = 8, MOD_NOREPEAT = 0x4000;
         const uint MOUSEEVENTF_LEFTDOWN = 2, MOUSEEVENTF_LEFTUP = 4;
         const int VK_LBUTTON = 1, VK_RBUTTON = 2, SM_SWAPBUTTON = 23;
+        const int WH_KEYBOARD_LL = 13, WM_KEYDOWN = 0x0100, WM_SYSKEYDOWN = 0x0104;
         const int WH_MOUSE_LL = 14, WM_MOUSEWHEEL = 0x020A, VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B, VK_RMENU = 0xA5;
         const double PanelWidth = 340, BubbleWidth = 340, Gap = 6, Wide = PanelWidth - 32;
 
@@ -677,8 +678,8 @@ namespace ClaudeSpeaks
             BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Top, Opacity = 0, IsHitTestVisible = false,
         };
         readonly TranslateTransform selectorAt = new TranslateTransform();
-        readonly HookProc wheelProc;
-        IntPtr wheelHook;
+        readonly HookProc wheelProc, keyProc;
+        IntPtr wheelHook, keyHook;
         int[] wheelKeys = { VK_CONTROL, VK_MENU };  // held together with the wheel to change the focus
         int wheelTurned;
         double wheelUntil, selectorY, selectorShown, heldSince;
@@ -754,6 +755,7 @@ namespace ClaudeSpeaks
             layers0.Children.Add(lights);
             rail.Panel.Child = layers0;
             wheelProc = OnMouse;  // kept in a field so it stays alive while Windows holds it
+            keyProc = OnKey;
             rail.MouseWheel += delegate(object sender, MouseWheelEventArgs e) { Wheel(e.Delta); };
             rail.Cursor = Cursors.SizeAll;
 
@@ -805,6 +807,7 @@ namespace ClaudeSpeaks
             holdTimer.Tick += delegate {
                 if ((GetAsyncKeyState((int)heldKey) & 0x8000) != 0) return;
                 holdTimer.Stop();
+                KeepKey(false);
                 Send("hotkey", "name", "talk_end");
             };
             // Other always-on-top windows (and some games) push us down; climb back regularly.
@@ -1342,6 +1345,30 @@ namespace ClaudeSpeaks
             return new IntPtr(1);
         }
 
+        // --- the held talk key ----------------------------------------------------------------------
+
+        // A hotkey keeps a key from other programs only while its Ctrl and Alt are down too. Over
+        // a long hold a finger comes off one of them, or they are let go a moment before the key,
+        // and from then on the key repeats into whatever has the keyboard: Space paused the video
+        // the author was watching. So from the press until the key is up, a keyboard hook takes
+        // every further press of that one key. The release is passed on: Windows has seen the
+        // key go down, and would think it still held if it never saw it come up.
+        void KeepKey(bool keep)
+        {
+            if (keep && keyHook == IntPtr.Zero) keyHook = SetWindowsHookEx(WH_KEYBOARD_LL, keyProc, GetModuleHandle(null), 0);
+            else if (!keep && keyHook != IntPtr.Zero) { UnhookWindowsHookEx(keyHook); keyHook = IntPtr.Zero; }
+        }
+
+        // Called by Windows for every key event while the hook is in. The key code is the first
+        // number of what lParam points to.
+        IntPtr OnKey(int code, IntPtr wParam, IntPtr lParam)
+        {
+            int message = wParam.ToInt32();
+            bool down = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+            if (code < 0 || !down || (uint)Marshal.ReadInt32(lParam) != heldKey) return CallNextHookEx(keyHook, code, wParam, lParam);
+            return new IntPtr(1);
+        }
+
         // One notch up is the session above, one notch down the session below. The panel comes
         // out for a moment so the choice can be seen.
         void Wheel(int turned)
@@ -1776,7 +1803,7 @@ namespace ClaudeSpeaks
             if (message == WM_HOTKEY && hotkeys.TryGetValue(wParam.ToInt32(), out name))
             {
                 if (name == "toggle") SetMode("toggle");
-                if (name == "talk") { heldKey = hotkeyKeys[wParam.ToInt32()]; holdTimer.Start(); }
+                if (name == "talk") { heldKey = hotkeyKeys[wParam.ToInt32()]; holdTimer.Start(); KeepKey(true); }
                 Send("hotkey", "name", name);
                 handled = true;
             }

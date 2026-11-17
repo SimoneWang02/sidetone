@@ -17,6 +17,8 @@ real keys yet.
 - [ ] `Ctrl+Alt+1` to `4` on a real multiple-choice question
 - [ ] `Ctrl+Alt+U` (what did I miss) and `Ctrl+Alt+R` (repeat)
 - [ ] `Ctrl+Alt+Backspace` while recording
+- [ ] Hold the talk key with a video playing in the browser in front (YouTube): the video
+      should neither pause nor change speed, also when Ctrl or Alt is let go before Space
 - [ ] The bar over a game in borderless windowed mode
 - [ ] A plain click on the bar reaching the window underneath
 - [ ] Sessions started from the VS Code extension showing up in the bar
@@ -198,6 +200,11 @@ Smaller ideas:
       - tap the talk key twice right after sending to unsend; if the session already has
         the words, send "ignore my last message" after them
       - the same single key cuts the line being spoken when nothing is being recorded
+- [ ] A setting that keeps every key from other programs while `Ctrl+Alt` is held (the
+      author's idea, 2026-11-17, after Space paused a video during push-to-talk). Built so
+      far: only the held talk key is kept back. Off by default if built, because it would
+      also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
+      with those keys, and it needs a keyboard hook for as long as the keys are down.
 - [ ] Short sounds for states (done, needs you) for when a full sentence is too much
 - [ ] Left or right ear per session
 - [ ] Stay quiet for the session whose terminal is in front
