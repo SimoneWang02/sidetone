@@ -343,7 +343,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   ("the colors, like their status, might have influenced each other, especially when
   claude-speaks reset"). `Hub._keep_sessions` writes `sessions.json` in the run folder
   (owner-only; ignored when over 6 hours old) on every change: per session its id, name,
-  voice, color, title, state, note and place (`Session.order`), plus the focus.
+  voice, color, title, state, note and place (`Session.order`), plus the focus and the last
+  40 lines said (`KEPT_LINES`), so repeat and the history under the rows still have
+  something after a restart.
   `Hub._restore_sessions` reads it at start: a session Claude Code still lists is back at
   once, working if it is busy there; one that had a session file and has none now is dropped;
   the rest wait in `Sessions.kept` and get theirs back when they next report (for 15 minutes,
@@ -451,7 +453,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 133 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 148 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

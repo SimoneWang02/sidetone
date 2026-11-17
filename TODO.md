@@ -186,8 +186,9 @@ real keys yet.
 ## Rough edges
 
 - [ ] A hub restart still forgets a few things. Names, colors, voices, titles, the order in
-      the bar and the focus are kept since 2026-11-17 (`sessions.json`), but not the lines
-      sessions said (so catch-up and repeat start empty), the task counts of a running turn,
+      the bar and the focus are kept since 2026-11-17 (`sessions.json`), and since later
+      that day the last 40 lines the sessions said (the author pressed repeat after a
+      restart and got "Nothing from ... yet"), but not the task counts of a running turn,
       or a permission prompt that was open (it can then only be answered in the terminal).
       A turn that ends in the second the hub is down comes back as idle, without its check.
 - [x] Titles that say what a session is doing (the author, 2026-11-17, could not tell four

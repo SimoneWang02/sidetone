@@ -926,6 +926,26 @@ class PushToTalk(HubCase):
         self.assertIn(("sent", "a", "also add a test"), self.talks())
         self.assertEqual(self.in_focus(), "b")  # the focus stays where you put it
 
+    def test_moving_the_focus_in_the_tail_of_the_recording_does_not_take_the_words_along(self):
+        hub = self.make()
+        hub.cfg.talk_tail = 0.3  # the recorder goes on for a moment after the key is up
+        tail = threading.Event()
+        stop = hub.recorder.stop
+        hub.recorder.stop = lambda tail_=0.0, **kw: (tail.set(), time.sleep(kw.get("tail", tail_)), stop())[-1]
+        hub.talk_target = "a"
+        to_a, to_b = hub.listen("a"), hub.listen("b")
+        hub.talk_start()
+        ending = threading.Thread(target=hub.talk_end)
+        ending.start()
+        self.assertTrue(tail.wait(3))
+        hub.focus(1)  # while the last word is still being recorded
+        ending.join(3)
+        self.assertTrue(to_a.wake.wait(3), "the follow-up never reached the session it was said to")
+        self.assertEqual(hub.collect(to_a), "also add a test")
+        self.assertFalse(to_b.wake.is_set())
+        self.assertNotIn(("listening", "b", ""), self.talks())
+        self.assertEqual(self.in_focus(), "b")
+
     def test_words_for_a_session_that_ended_meanwhile_go_to_nobody(self):
         hub = self.make()
         hub.transcriber.seconds = 0.15
@@ -1268,6 +1288,20 @@ class AcrossARestart(HubCase):
         for sid in "abc":
             hub.on_event(ev("SessionStart", sid=sid))
         return hub
+
+    def test_what_was_said_can_still_be_repeated_after_a_restart(self):
+        hub = self.make()
+        hub.on_display(ev("MessageDisplay", sid="a", delta=tag("Tests pass.")))
+        hub.on_display(ev("MessageDisplay", sid="b", delta=tag("Page built.")))
+        self.spoken()
+        hub.publish()
+        again = self.restart()
+        again.on_event(ev("SessionStart", sid="a"))
+        again.on_event(ev("SessionStart", sid="b"))
+        again.talk_target = "a"
+        self.assertTrue(again.repeat())
+        self.assertTrue(again.speech.wait_idle(5))
+        self.assertEqual([e["text"] for e in again.history], ["Tests pass.", "Page built."])
 
     def test_sessions_of_one_project_do_not_swap_names_colors_and_voices(self):
         self.three()

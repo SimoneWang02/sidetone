@@ -197,6 +197,7 @@ class Hub:
         self.talk_target: str | None = None  # session a spoken follow-up goes to
         self._kept_sessions: dict | None = None  # what sessions.json last said (see _keep_sessions)
         self._front = ""  # the terminal the editor last said you were in (see terminal_in_front)
+        self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
         self._restore_sessions()
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
         self._mic_meter = Meter()  # turns microphone audio into a loudness for the overlay
@@ -204,7 +205,6 @@ class Hub:
         self._transcribing = False  # the key is up and the words are not out of the speech model yet
         self._pending: Pending | None = None  # the follow-up being shown
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
-        self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
         self.last_seen = time.time()  # last sign the user was there: a prompt, a hotkey, a catch-up
         self._progress_said: dict[str, float] = {}  # session id -> when it last announced progress
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
@@ -322,6 +322,10 @@ class Hub:
             self.sessions.keep(kept.get("sessions"))
         except (OSError, ValueError, AttributeError):
             return
+        for e in kept.get("history") or []:  # what was said before the restart, for repeat and the history
+            if (isinstance(e, dict) and isinstance(e.get("time"), (int, float))
+                    and all(isinstance(e.get(k), str) for k in ("session", "name", "spoken_name", "voice", "text", "kind"))):
+                self.history.append({**e, "color": str(e.get("color") or ""), "heard": bool(e.get("heard"))})
         live = claude_sessions.read(self.cfg.sessions_dir)
         can_tell = os.path.isdir(self.cfg.sessions_dir)
         for sid, was in list(self.sessions.kept.items()):
@@ -344,7 +348,10 @@ class Hub:
     def _keep_sessions(self) -> None:
         """Write down who is who whenever that changed (owner-only, in the run folder: titles can
         hold words from a prompt). Call with the lock held."""
-        kept = {"sessions": self.sessions.identities(), "focus": self.talk_target}
+        # The last lines said go along, so that repeat and the history have something after a
+        # restart (the author pressed repeat after one and got "Nothing from ... yet").
+        kept = {"sessions": self.sessions.identities(), "focus": self.talk_target,
+                "history": [dict(e) for e in list(self.history)[-KEPT_LINES:]]}
         if kept == self._kept_sessions:
             return
         self._kept_sessions = kept
@@ -819,10 +826,22 @@ class Hub:
                 return
             held, self._talking = time.monotonic() - self._talking, None
             confirming = self._pending if self._pending and self._pending.confirm else None
-        tap = held < TAP
-        pcm = self.recorder.stop(tail=0 if tap else self.cfg.talk_tail)
+            tap, said_to = held < TAP, None
+            if not tap:
+                # Who was listening when the key came up gets the words. Decided here, before
+                # the tail of the recording and the second or two of turning it into text:
+                # the focus may move on in that time, and the words must not follow it.
+                said_to = self._target()
+                self._cancel_pending()
+                self._transcribing = True
+                self._talk("transcribing", said_to)
+        try:
+            pcm = self.recorder.stop(tail=0 if tap else self.cfg.talk_tail)
+        except Exception:
+            self._transcribing = False
+            raise
         # A line cut by the key is said again, unless you held the key to answer that very session.
-        self.speech.resume(answering="" if tap else self.talk_target or "")
+        self.speech.resume(answering=said_to.id if said_to else "")
         if tap and confirming:
             self._send(confirming)
         elif tap:
@@ -832,13 +851,6 @@ class Hub:
                     self.talk_target = ids[(ids.index(self._target().id) + 1) % len(ids)]
                     self._talk("focus", self.sessions.by_id[self.talk_target], seconds=1.6)
         else:
-            with self.lock:
-                self._cancel_pending()
-                self._transcribing = True
-                # Who was listening when the key came up gets the words: turning them into
-                # text takes a second or two, and the focus may move on in that time.
-                said_to = self._target()
-                self._talk("transcribing", said_to)
             threading.Thread(target=self._transcribe, args=(pcm, said_to.id if said_to else None),
                              daemon=True).start()
         self.publish()
@@ -1244,6 +1256,7 @@ def _spoken_name(name: str) -> str:
     return re.sub(r"[-_.]+", " ", name).strip()
 
 
+KEPT_LINES = 40  # how many of the last lines said are kept across a restart
 BUSY = ("working", "needs_you")  # states of a session in the middle of a turn
 FLASH_LOOK = {"allowed": "done", "denied": "failed", "progress": "working"}  # speech kind -> overlay glyph
 NUMBER_WORDS = ("One", "Two", "Three", "Four")
