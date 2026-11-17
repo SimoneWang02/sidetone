@@ -1496,7 +1496,7 @@ namespace ClaudeSpeaks
             {
                 case "listening": return "mic";
                 case "transcribing": case "ready": return "dots";
-                case "sent": return "sent";
+                case "sent": case "queued": return "sent";
                 case "failed": return "failed";
                 default: return "";
             }
@@ -1511,13 +1511,14 @@ namespace ClaudeSpeaks
                 case "transcribing": return "working out what you said\u2026";
                 case "ready": return "\u201c" + talkText + "\u201d" + (talkHint.Length > 0 ? "\n" + talkHint : "");
                 case "sent": return "\u201c" + talkText + "\u201d";
+                case "queued": return "\u201c" + talkText + "\u201d\nit gets this right after its current reply";
                 case "focus": return "in focus";
                 default: return talkText;  // failed: the text says what happened
             }
         }
 
         // Whether those words are a hint (shown dim) and not something you said.
-        bool TalkDim() { return talkState != "ready" && talkState != "sent"; }
+        bool TalkDim() { return talkState != "ready" && talkState != "sent" && talkState != "queued"; }
 
         // A permission prompt or question stays on screen until it is answered: the hotkeys act on it.
         void ShowRequest(Dictionary<string, object> msg)

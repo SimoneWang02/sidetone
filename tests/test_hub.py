@@ -634,6 +634,20 @@ class PushToTalk(HubCase):
         hub._mic_heard(bytes(1600))
         self.assertEqual(self.overlay.of("mic")[-1], {"type": "mic", "levels": [0.0], "step": 0.05})
 
+    def test_what_was_said_to_a_busy_session_survives_a_hub_restart(self):
+        hub = self.make()
+        hub.talk_target = "a"
+        hub.talk_start()
+        hub.talk_end()  # nobody is listening for "a": it is in the middle of a reply
+        self.assertTrue(wait_for(lambda: hub.followups.get("a") == ["also add a test"]))
+        self.assertIn(("queued", "a", "also add a test"), self.talks())
+        again = Hub(self.cfg, NullEngine())  # the hub is restarted before that reply ends
+        self.addCleanup(again.speech.close)
+        listener = again.listen("a")
+        self.assertTrue(listener.wake.is_set())
+        self.assertEqual(again.collect(listener), "also add a test")
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "followups.json")))  # delivered: nothing left on disk
+
     def test_silence_sends_nothing(self):
         hub = self.make()
         hub.transcriber.text = ""

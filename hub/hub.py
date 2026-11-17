@@ -166,7 +166,9 @@ class Hub:
         self.recorder = None  # stt.Recorder, set by main() or the tests
         self.transcriber = None  # stt.Transcriber
         self.listeners: dict[str, Listener] = {}  # session id -> its waiting hook
-        self.followups: dict[str, list[str]] = {}  # session id -> text not yet picked up
+        # session id -> text not yet picked up. Kept on disk too (in the run folder, owner-only),
+        # so what was said to a busy session is not lost when the hub restarts.
+        self.followups: dict[str, list[str]] = self._kept_followups()
         self.talk_target: str | None = None  # session a spoken follow-up goes to
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
         self._mic_meter = Meter()  # turns microphone audio into a loudness for the overlay
@@ -255,6 +257,7 @@ class Hub:
         self._settle(sid, why)
         self._release(sid)
         self.followups.pop(sid, None)
+        self._keep_followups()
         if self.talk_target == sid:
             self.talk_target = None
         self.sessions.remove(sid)
@@ -690,9 +693,12 @@ class Hub:
                 return
             self._talk("sent", s, pending.text, seconds=2.5)  # what went out, for a glance
             self.followups.setdefault(s.id, []).append(pending.text)
+            self._keep_followups()
             listener = self.listeners.get(s.id)
             if listener:
                 listener.wake.set()
+            else:  # it is in the middle of a reply and gets this right after
+                self._talk("queued", s, pending.text, seconds=3.5)
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
             self._say(s, "Sent.", "allowed", "follow-up")
         self.publish()
@@ -737,12 +743,42 @@ class Hub:
             if listener.released or self.listeners.get(listener.session) is not listener:
                 return None
             del self.listeners[listener.session]
-            return " ".join(self.followups.pop(listener.session, [])) or None
+            text = " ".join(self.followups.pop(listener.session, [])) or None
+            self._keep_followups()
+            return text
 
     def stop_listening(self, listener: Listener) -> None:
         with self.lock:
             if self.listeners.get(listener.session) is listener:
                 del self.listeners[listener.session]
+
+    def _followups_file(self) -> str:
+        return os.path.join(self.cfg.run, "followups.json")
+
+    def _kept_followups(self) -> dict[str, list[str]]:
+        """Follow-ups an earlier hub had not delivered yet, unless they are stale (over an hour old)."""
+        try:
+            path = self._followups_file()
+            if time.time() - os.path.getmtime(path) > 3600:
+                return {}
+            with open(path) as f:
+                kept = json.load(f)
+            return {str(sid): [str(t) for t in texts] for sid, texts in kept.items() if texts}
+        except (OSError, ValueError, AttributeError):
+            return {}
+
+    def _keep_followups(self) -> None:
+        try:
+            path = self._followups_file()
+            if not self.followups:
+                if os.path.exists(path):
+                    os.unlink(path)
+                return
+            with os.fdopen(os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+                json.dump(self.followups, f)
+            os.replace(path + ".tmp", path)
+        except OSError:
+            pass
 
     def _release(self, sid: str) -> None:
         old = self.listeners.pop(sid, None)
