@@ -97,11 +97,12 @@ class Config:
     permission_grace: float = 9.0
     whisper_model: str = "small.en"
     mic_source: str = ""  # PulseAudio source for push-to-talk; empty = the default microphone
-    followup_delay: float = 2.0  # seconds a transcript is shown (and can be cancelled) before it is sent
+    followup_delay: float = 0.0  # seconds a transcript is shown (and can be cancelled) before it is sent; 0 = at once
     talk_tail: float = 0.4  # seconds to keep recording after the talk key is released
-    # Ask for a confirming tap before sending a spoken follow-up: True, False, or "auto" (only
-    # for sessions that would act on it without asking, i.e. not in default or plan mode).
-    followup_confirm: bool | str = "auto"
+    # Ask for a confirming tap before sending a spoken follow-up: False (the default; it is sent
+    # after followup_delay unless cancelled), True, or "auto" (only for sessions that would act
+    # on it without asking, i.e. not in default or plan mode).
+    followup_confirm: bool | str = False
     whisper_language: str = "en"  # for multilingual models such as "small": a code, or "auto"
     whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
@@ -647,8 +648,8 @@ class Hub:
     def follow_up(self, text: str, session: str | None = None, delay: float | None = None) -> bool:
         """Show a follow-up, then send it to the session.
 
-        A heard follow-up (no `delay` given) goes out after `followup_delay` unless cancelled, or,
-        when the session would act on it without asking, only after a confirming tap of the talk key.
+        A heard follow-up (no `delay` given) goes out after `followup_delay` (at once by default),
+        or, with `followup_confirm` on, only after a confirming tap of the talk key.
         """
         with self.lock:
             s = self.sessions.by_id.get(session) if session else self._target()
@@ -677,10 +678,11 @@ class Hub:
                 return  # cancelled or replaced meanwhile
             pending.timer.cancel()
             self._pending = None
-            self._banner(None)
             s = self.sessions.by_id.get(pending.session)
             if not s:
+                self._banner(None)
                 return
+            self._banner(f"sent \u2192 {s.name}: \u201c{pending.text}\u201d", seconds=2.5)  # what went out, for a glance
             self.followups.setdefault(s.id, []).append(pending.text)
             listener = self.listeners.get(s.id)
             if listener:

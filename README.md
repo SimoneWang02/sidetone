@@ -37,11 +37,12 @@ its own spoken line as the first line of its reply.
 - **Answer Claude's questions with a number key.** A multiple-choice question is shown with
   numbered options and read out; `Ctrl+Alt+1` to `4` picks one.
 - **Push-to-talk follow-ups.** Hold `Ctrl+Alt+Space`, say "also add a test for the empty case",
-  release. A local Whisper model transcribes it, the overlay shows the text for two seconds
-  (`Ctrl+Alt+Backspace` takes it back), and it goes to the session in focus, even if that
-  session is idle. The focus is on whichever session spoke last, shown by a frame around its
-  light; hold `Ctrl+Alt` and turn the mouse wheel to move it to another session. A session that acts
-  without asking (auto, accept-edits or bypass mode) only gets it after a confirming tap.
+  release. A local Whisper model transcribes it and it is sent at once to the session in
+  focus, even if that session is idle; the overlay shows what was sent. The focus is on
+  whichever session spoke last, shown by a frame around its light; hold `Ctrl+Alt` and turn the
+  mouse wheel to move it to another session. If you would rather check the text first, set
+  `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
+  `followup_confirm` to `true` (nothing is sent until you tap the talk key again).
 - **Catch up.** `Ctrl+Alt+U` replays what your sessions said since you were last there;
   `Ctrl+Alt+R` repeats the last line. Long turns say "3 of 5 steps done" along the way.
 - **Your own voices.** Pick a voice per project, blend two into a new one, or load a Kokoro
@@ -77,7 +78,7 @@ work, run `cs demo` in a terminal.
 | `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Allow / deny the permission prompt shown in the overlay |
 | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Answer the question shown in the overlay |
 | `Ctrl+Alt` + mouse wheel | Move the focus to the session above or below (also: the wheel alone while the mouse is on the bar) |
-| hold `Ctrl+Alt+Space` | Talk to the session in focus; a quick tap picks the next session, or confirms a follow-up waiting for it |
+| hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send. A quick tap picks the next session |
 | `Ctrl+Alt+Backspace` | Take back a follow-up, stop recording, or cut the line being spoken |
 | `Ctrl+Alt+U` | Replay what was said since you were last there |
 | `Ctrl+Alt+R` | Repeat the last line |
@@ -116,7 +117,8 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
   "voices": { "my-project": "bm_george" },
   "label": "auto",
   "whisper_model": "small.en",
-  "followup_confirm": "auto",
+  "followup_delay": 0,
+  "followup_confirm": false,
   "overlay": {
     "corner": "top-right",
     "glass": "blur",
@@ -181,7 +183,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-75 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+76 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
 `python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
 view. It captures only the overlay's own rectangles, and shows the see-through glass over a

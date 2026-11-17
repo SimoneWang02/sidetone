@@ -625,8 +625,19 @@ class PushToTalk(HubCase):
         self.assertIsNone(hub.collect(old))
         self.assertFalse(new.wake.is_set())
 
-    def test_unattended_session_needs_a_confirming_tap(self):
+    def test_a_follow_up_is_sent_without_a_second_tap(self):
         hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", permission_mode="bypassPermissions"))
+        hub.talk_target = "a"
+        listener = hub.listen("a")
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(listener.wake.wait(2))
+        self.assertEqual(hub.collect(listener), "also add a test")
+        self.assertIn("sent \u2192 a: \u201calso add a test\u201d", self.banners())  # a receipt to glance at
+
+    def test_with_confirming_on_an_unattended_session_needs_a_tap(self):
+        hub = self.make(followup_confirm="auto")
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", permission_mode="bypassPermissions"))
         hub.talk_target = "a"
         listener = hub.listen("a")

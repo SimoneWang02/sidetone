@@ -154,8 +154,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Questions and plan approvals (`AskUserQuestion`, `ExitPlanMode`) are never offered to the hotkeys.
 - Push-to-talk (`hub/stt.py` and the talk methods in `hub/hub.py`): while the talk key is held
   the voice goes quiet and `parec` records the default microphone; on release (plus a 0.4 s tail)
-  `faster-whisper` `small.en` transcribes it. The overlay shows the text for `followup_delay`
-  (2 s, `Ctrl+Alt+Backspace` cancels), then the hub hands it to that session's listener and says
+  `faster-whisper` `small.en` transcribes it. It is sent at once (the author, 2026-11-17: "too many
+  clicks ... it's ctrl+alt+space and then again to confirm", and chose "send at once" over a
+  pause): `followup_delay` is 0 and `followup_confirm` is off by default; both can be turned
+  back on. The hub hands it to that session's listener, shows "sent → name: text" for 2.5 s and says
   "Sent.". Target: the session that spoke last; a quick tap of the talk key picks the next one.
   A busy session gets the follow-up right after its current reply. With no listener yet, the
   text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
@@ -200,7 +202,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 75 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 76 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
