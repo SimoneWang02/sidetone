@@ -132,8 +132,10 @@ real keys yet.
 - [x] Which of the two layouts (`bar`, `island`) is the default for new users. The author,
       asked on 2026-11-17 with bar, island and "decide later" to choose from: bar. It
       already was, so nothing changed.
-- [ ] Voice of this project: it speaks with `bf_isabella` since the voice pool changed. Pin
-      the earlier `af_heart` back? (`claude-speaks voice claude-speaks af_heart`)
+- [x] Voice of this project: it spoke with `bf_isabella` since the voice pool changed. The
+      author, 2026-11-17: "I prefer the American one." Pinned `af_heart` for the session
+      named `claude-speaks`; the second to fourth sessions of the project keep the voices
+      they were given (`af_bella`, `bm_fable`, `bf_emma`).
 - [ ] "Uploadable" voices: was that cloning a voice from a recording? Kokoro cannot do it; it
       would need a second voice engine.
 - [ ] Should the repo default for push-to-talk be the multilingual model? Today the default is
