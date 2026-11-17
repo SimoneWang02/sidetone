@@ -867,6 +867,59 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.followups, {})
         self.assertIn(("failed", "a", "Cancelled"), self.talks())
 
+    def test_cancel_right_after_sending_takes_waiting_words_back(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))  # "a" is in the middle of a reply
+        hub.followups["a"] = ["said earlier"]
+        hub.talk_target = "a"
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: hub.followups.get("a") == ["said earlier", "also add a test"]))
+        self.assertIn("cancel", self.overlay.of("keys")[-1]["live"])
+        hub.cancel()
+        self.assertEqual(hub.followups, {"a": ["said earlier"]})
+        self.assertEqual(self.talks()[-1], ("failed", "a", "Taken back"))
+        hub.cancel()  # a second press has nothing left to take back
+        self.assertEqual(hub.followups, {"a": ["said earlier"]})
+
+    def test_cancel_after_the_session_got_the_words_tells_it_to_ignore_them(self):
+        hub = self.make()
+        hub.talk_target = "a"
+        listener = hub.listen("a")
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(listener.wake.wait(3))
+        self.assertEqual(hub.collect(listener), "also add a test")
+        again = hub.listen("a")
+        hub.cancel()
+        self.assertTrue(again.wake.wait(3), "the session was not told")
+        self.assertEqual(hub.collect(again), hub_module.TAKE_BACK)
+        self.assertEqual(self.talks()[-1][:2], ("failed", "a"))
+
+    def test_words_can_only_be_taken_back_for_a_few_seconds(self):
+        hub = self.make(unsend_seconds=0.2)
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        hub.talk_target = "a"
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: hub.followups.get("a") == ["also add a test"]))
+        self.assertTrue(wait_for(lambda: "cancel" not in self.overlay.of("keys")[-1]["live"]),
+                        "the cancel key was not given back")
+        hub.cancel()
+        self.assertEqual(hub.followups, {"a": ["also add a test"]})
+
+    def test_speaking_again_ends_the_time_to_take_words_back(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        hub.talk_target = "a"
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: hub.followups.get("a") == ["also add a test"]))
+        hub.talk_start()
+        hub.cancel()  # throws away the new recording, not what went out before
+        hub.cancel()
+        self.assertEqual(hub.followups, {"a": ["also add a test"]})
+
     def test_a_quick_tap_can_be_set_to_pick_the_next_session(self):
         hub = self.make(talk_tap="next")
         hub_module.TAP = 30

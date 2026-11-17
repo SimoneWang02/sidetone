@@ -43,6 +43,22 @@ PROMPTING_MODES = ("", "default", "plan")  # permission modes in which Claude as
 
 
 @dataclass
+class Sent:
+    """The follow-up that went out last: for a few seconds the cancel key takes it back."""
+    session: str
+    text: str
+    at: float
+    answer: bool = False  # it was given as the answer to a question, so it cannot be waiting
+
+
+# What a session is told when words it already has are taken back. It reaches Claude through
+# the listener like spoken words, so it is written as the user would say it.
+TAKE_BACK = ("Ignore the last thing I said by voice: it was misheard or sent by mistake, and I took it back. "
+             "Stop acting on it. If you already changed something because of it, tell me what in one line, "
+             "and do not undo it unless I ask.")
+
+
+@dataclass
 class Pending:
     """A follow-up on screen, not sent yet."""
     session: str
@@ -110,6 +126,7 @@ class Config:
     mic_source: str = ""  # PulseAudio source for push-to-talk; empty = the default microphone
     followup_delay: float = 0.0  # seconds a transcript is shown (and can be cancelled) before it is sent; 0 = at once
     talk_tail: float = 0.4  # seconds to keep recording after the talk key is released
+    unsend_seconds: float = 4.0  # how long after sending the cancel key still takes the words back; 0 = never
     # Ask for a confirming tap before sending a spoken follow-up: False (the default; it is sent
     # after followup_delay unless cancelled), True, or "auto" (only for sessions that would act
     # on it without asking, i.e. not in default or plan mode).
@@ -160,7 +177,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "titles",
                     "talk_feedback", "sound_volume",
                     "progress", "progress_after", "progress_interval"):
@@ -204,6 +221,7 @@ class Hub:
         self._talking: float | None = None  # when the talk key went down
         self._transcribing = False  # the key is up and the words are not out of the speech model yet
         self._pending: Pending | None = None  # the follow-up being shown
+        self._sent: Sent | None = None  # the one that went out last, while it can still be taken back
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
         self.last_seen = time.time()  # last sign the user was there: a prompt, a hotkey, a catch-up
         self._progress_said: dict[str, float] = {}  # session id -> when it last announced progress
@@ -809,6 +827,7 @@ class Hub:
                 self._talk("failed", None, "No Claude session to talk to", seconds=2)
                 return False
             self._talking = time.monotonic()
+            self._sent = None  # speaking again: what went out before stays out
             self.talk_target = s.id  # the session shown as listening is the one that gets it
             if not (self._pending and self._pending.confirm):  # that one may be about to get its confirming tap
                 self._cancel_pending()
@@ -925,25 +944,65 @@ class Hub:
             if not s:
                 self._talk(None)
                 return
-            self._talk("sent", s, pending.text, seconds=2.5)  # what went out, for a glance
+            shown = max(2.5, self.cfg.unsend_seconds)  # what went out, for as long as it can be taken back
+            self._talk("sent", s, pending.text, seconds=shown)
             asking = next((r for r in self.requests if r.session == s.id and r.question), None)
             if asking:  # it is waiting on a question, so these words are the answer to it
                 self._answer(asking, pending.text, "voice", echo=False)
                 log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] given as the answer to its question")
                 self._signal("sent", s, "Sent.")
             else:
-                self.followups.setdefault(s.id, []).append(pending.text)
-                self._keep_followups()
-                # A session has a listener all the time (see listen.sh), also in the middle of
-                # a reply; then the words wait and it gets them right after (see reconcile).
-                listener = self.listeners.get(s.id) if s.state not in BUSY else None
-                if listener:
-                    listener.wake.set()
-                else:
-                    self._talk("queued", s, pending.text, seconds=3.5)
+                listener = self._deliver(s, pending.text)
+                if not listener:
+                    self._talk("queued", s, pending.text, seconds=max(3.5, shown))
                 log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
                 self._signal("sent" if listener else "queued", s, "Sent." if listener else "Queued.")
+            if self.cfg.unsend_seconds > 0:
+                self._sent = Sent(s.id, pending.text, time.monotonic(), answer=bool(asking))
+                done = threading.Timer(self.cfg.unsend_seconds + 0.05, self.publish)  # gives the cancel key back
+                done.daemon = True
+                done.start()
         self.publish()
+
+    def _deliver(self, s, text: str) -> bool:
+        """Hand words to a session. True: its listener has them now. False: they wait in the
+        hub. Call with the lock held."""
+        self.followups.setdefault(s.id, []).append(text)
+        self._keep_followups()
+        # A session has a listener all the time (see listen.sh), also in the middle of
+        # a reply; then the words wait and it gets them right after (see reconcile).
+        listener = self.listeners.get(s.id) if s.state not in BUSY else None
+        if listener:
+            listener.wake.set()
+        return bool(listener)
+
+    def _unsendable(self) -> Sent | None:
+        """The follow-up the cancel key would take back right now, if any."""
+        sent = self._sent
+        return sent if sent and time.monotonic() - sent.at < self.cfg.unsend_seconds else None
+
+    def _take_back(self) -> bool:
+        """The cancel key shortly after sending: words still waiting in the hub are removed;
+        words the session already has cannot be, so it is told to ignore them. Call with the
+        lock held."""
+        sent, self._sent = self._unsendable(), None
+        s = self.sessions.by_id.get(sent.session) if sent else None
+        if not s:
+            return False
+        waiting = self.followups.get(s.id, [])
+        if not sent.answer and sent.text in waiting:
+            del waiting[len(waiting) - 1 - waiting[::-1].index(sent.text)]
+            if not waiting:
+                self.followups.pop(s.id, None)
+            self._keep_followups()
+            self._talk("failed", s, "Taken back", seconds=2)
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back before the session got it")
+        else:
+            self._deliver(s, TAKE_BACK)
+            self._talk("failed", s, "Taken back: it is told to ignore that", seconds=3)
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back after the session got it: told to ignore it")
+        self._signal("failed")
+        return True
 
     def _expire(self, pending: Pending) -> None:
         """Nobody confirmed it in time: better dropped than sent late and out of context."""
@@ -956,18 +1015,22 @@ class Hub:
         self.publish()
 
     def cancel(self) -> None:
-        """The cancel key: stop recording, or take back a follow-up, or cut the line being spoken."""
+        """The cancel key: stop recording, or take back a follow-up (one still on screen, or
+        one sent in the last few seconds), or cut the line being spoken."""
         with self.lock:
             talking, self._talking = self._talking, None
             about = self.sessions.by_id.get(self._pending.session) if self._pending else self._target()
             had_pending = self._cancel_pending()
+            took_back = False
             if talking or had_pending:
                 self._talk("failed", about, "Cancelled", seconds=1.5)
                 self._signal("failed")
+            else:
+                took_back = self._take_back()
         if talking:
             self.recorder.stop()
             self.speech.resume()
-        elif not had_pending:
+        elif not (had_pending or took_back):
             self.speech.skip()
         self.publish()
 
@@ -1144,7 +1207,7 @@ class Hub:
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)] if asking
                            else ["allow", "deny"] if self.requests else [])
-                          + (["cancel"] if self._talking or self._pending or current else [])
+                          + (["cancel"] if self._talking or self._pending or current or self._unsendable() else [])
                           + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else []))
             now = time.time()
             # Newest first, and up to four lines of each session: the overlay shows those of the
