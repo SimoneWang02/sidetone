@@ -293,12 +293,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   "use this background color", OSC 111 "use your own again", OSC 2 "this is your title".
   `Hub.publish` hands `Terminals.show` one `Mark` (color, in focus, title) per terminal and it
   writes only what changed. Default `tint: focus`: with two or more sessions, the terminal of
-  the one in focus has `strength` (0.14) of its overlay color mixed into `background`
+  the one in focus has `strength` (0.08; it was 0.14 until the author said "less tint maybe") of its overlay color mixed into `background`
   (`#181818`, VS Code's dark theme; the real background cannot be asked for from outside, the
   answer would land in Claude Code's input). `all` tints every terminal (the others at half
   strength), `off` none. `Hub.focus` (wheel, tap) also calls `Terminals.pulse`: 14 steps over
-  0.7 s from `pulse_strength` down to the resting tint (0.24 since the author, having seen
-  it at 0.42, said "maybe the flash might be too much"; `terminal pulse off` removes it). `claude-speaks terminal find
+  0.7 s from `pulse_strength` down to the resting tint (0.15; the author, having seen
+  it at 0.42, said "maybe the flash might be too much", and it came down with the tint;
+  `terminal pulse off` removes it). `claude-speaks terminal find
   [PROJECT]` does the same on request. Stopping the hub gives every terminal its own
   background back, and a terminal seen for the first time is reset, which clears what a hub
   that died left. `title` (off by default) writes "name · title"; control characters are

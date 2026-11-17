@@ -23,10 +23,10 @@ from typing import NamedTuple
 
 DEFAULTS = {
     "tint": "focus",  # whose terminal wears its session's color: focus | all (the focus stronger) | off
-    "strength": 0.14,  # how much of the color goes into the background, 0 to 1
+    "strength": 0.08,  # how much of the color goes into the background, 0 to 1
     "background": "#181818",  # the terminal's own background, which the color is mixed into
     "pulse": True,  # moving the focus by hand lights its terminal up brighter for a moment
-    "pulse_strength": 0.24,  # how much of the color at the top of that moment, 0 to 1
+    "pulse_strength": 0.15,  # how much of the color at the top of that moment, 0 to 1
     "title": False,  # also write the session's name and title into the terminal's title
 }
 TINTS = ("focus", "all", "off")

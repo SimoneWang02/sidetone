@@ -277,9 +277,10 @@ Smaller ideas:
       the terminal of the session in focus takes a faint tint of its overlay color and
       lights up brighter when the focus is moved to it (`hub/terminal.py`, `claude-speaks
       terminal`). Open:
-      - the author saw it and said only "maybe the flash might be too much"; it went
-        from 0.42 to 0.24 of the color (`terminal pulse N`, or `pulse off`). Not said yet:
-        whether the softer one and the resting tint are right, focus only or every terminal
+      - the author saw it and said "maybe the flash might be too much", then "less tint
+        maybe". The tint went from 0.14 to 0.08 of the color and the flash from 0.42 to
+        0.15 (`terminal strength N`, `terminal pulse N` or `pulse off`). Not said yet:
+        whether these are right, and focus only or every terminal
       - tab names. The hub can write "name · title" as the terminal's title (`terminal
         title on`), but a VS Code tab only shows it with `"terminal.integrated.tabs.title":
         "${sequence}"`, and Claude Code overwrites it unless started with

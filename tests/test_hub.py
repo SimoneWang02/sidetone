@@ -1357,7 +1357,7 @@ class OwnTerminals(HubCase):
         self.assertEqual(self.written, [("/dev/pts/91", terminal.RESET)])  # alone: nothing to tell apart
         self.open("b", other, "/dev/pts/92")
         self.assertEqual(self.hub._target().id, "b")
-        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.14))
+        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.08))
         self.assertEqual(self.last("/dev/pts/91"), terminal.RESET)
         count = len(self.written)
         self.hub.publish()
@@ -1373,9 +1373,9 @@ class OwnTerminals(HubCase):
             if thread.name == "terminal-pulse":
                 thread.join(5)
         to_a = [data for tty, data in self.written if tty == "/dev/pts/91"]
-        self.assertEqual(to_a[0], self.tint("a", 0.14))  # at once
-        self.assertEqual(to_a[1], self.tint("a", 0.24))  # then a little brighter
-        self.assertEqual(to_a[-1], self.tint("a", 0.14))  # and back to its resting tint
+        self.assertEqual(to_a[0], self.tint("a", 0.08))  # at once
+        self.assertEqual(to_a[1], self.tint("a", 0.15))  # then a little brighter
+        self.assertEqual(to_a[-1], self.tint("a", 0.08))  # and back to its resting tint
         self.assertEqual(len(to_a), terminal.PULSE_STEPS + 2)
         self.assertEqual([data for tty, data in self.written if tty == "/dev/pts/92"], [terminal.RESET])
 
@@ -1392,8 +1392,8 @@ class OwnTerminals(HubCase):
         self.open("a", os.getpid(), "/dev/pts/91")
         self.open("b", os.getppid(), "/dev/pts/92")
         hub.set_terminal(tint="all")
-        self.assertEqual(self.last("/dev/pts/91"), self.tint("a", 0.07))
-        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.14))
+        self.assertEqual(self.last("/dev/pts/91"), self.tint("a", 0.04))
+        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.08))
         hub.set_terminal(tint="off", pulse=False)
         self.assertEqual(self.last("/dev/pts/91"), terminal.RESET)
         self.assertEqual(self.last("/dev/pts/92"), terminal.RESET)

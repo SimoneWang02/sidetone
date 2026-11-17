@@ -163,10 +163,10 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
   },
   "terminal": {
     "tint": "focus",
-    "strength": 0.14,
+    "strength": 0.08,
     "background": "#181818",
     "pulse": true,
-    "pulse_strength": 0.24,
+    "pulse_strength": 0.15,
     "title": false
   }
 }
