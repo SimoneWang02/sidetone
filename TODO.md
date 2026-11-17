@@ -271,26 +271,27 @@ Smaller ideas:
 - [ ] Left or right ear per session
 - [ ] Stay quiet for the session whose terminal is in front
 - [ ] A key that jumps to the terminal of the session in focus
-- [ ] Tell the terminals apart (the author, 2026-11-17, with four terminals open in VS Code:
+- [x] Tell the terminals apart (the author, 2026-11-17, with four terminals open in VS Code:
       "I cannot distinguish which", and later "is there a possibility to highlight the
       terminal" of the session selected in the overlay). Built the same day, no extension:
       the terminal of the session in focus takes a faint tint of its overlay color and
       lights up brighter when the focus is moved to it (`hub/terminal.py`, `claude-speaks
-      terminal`). Open:
-      - the author saw it and said "maybe the flash might be too much", then "less tint
-        maybe". The tint went from 0.14 to 0.08 of the color and the flash from 0.42 to
-        0.15 (`terminal strength N`, `terminal pulse N` or `pulse off`). Not said yet:
-        whether these are right, and focus only or every terminal
-      - tab names. The hub can write "name · title" as the terminal's title (`terminal
-        title on`), but a VS Code tab only shows it with `"terminal.integrated.tabs.title":
-        "${sequence}"`, and Claude Code overwrites it unless started with
-        `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`. Both are the author's to turn on; not tried.
-      - light themes: the color is mixed into `terminal.background`, which defaults to VS
-        Code's dark theme. Read the editor's theme, or offer a light default.
-      - a small VS Code extension is still the only way to color the tab itself and to
-        bring a terminal to the front (the jump key above).
-      - not tried: ringing that terminal's bell, which VS Code can show as a small sign
-        on the tab for a moment (its visual bell setting is off by default).
+      terminal`). The author saw it and said "maybe the flash might be too much", then
+      "less tint maybe"; at 0.08 of the color for the tint and 0.15 for the flash (from
+      0.14 and 0.42) they said "looks good". Not asked: whether every terminal should
+      wear its color all the time (`terminal tint all`).
+- [ ] Session names in the terminal's tab. The hub can write "name · title" as the
+      terminal's title (`terminal title on`), but a VS Code tab only shows it with
+      `"terminal.integrated.tabs.title": "${sequence}"`, and Claude Code overwrites it
+      unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`. Both are the author's to
+      turn on; offered on 2026-11-17, not answered, not tried.
+- [ ] The terminal tint on a light theme: the color is mixed into `terminal.background`,
+      which defaults to VS Code's dark theme. Read the editor's theme, or offer a light
+      default.
+- [ ] A small VS Code extension: the only way to color the tab itself and to bring a
+      terminal to the front (the jump key above).
+- [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
+      as a small sign on the tab for a moment (its visual bell setting is off by default).
 - [ ] A phone notification when a session needs you and you are away
 - [ ] Spoken summaries in the language you spoke (they are always English today; part of
       "Any language" above)

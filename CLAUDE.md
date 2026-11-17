@@ -306,8 +306,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   taken out, since a title can hold words from a prompt. `CLAUDE_SPEAKS_TERMINAL=off` writes
   to no terminal (the tests that start a real hub use it; the others record the writes).
   Checked: VS Code's terminal (xterm.js, in its `node_modules.asar`) handles OSC 11 and 111;
-  the live hub found all four terminals. **Not seen by anyone yet**: how the tint looks, and
-  whether Claude Code's own screen drawing leaves it alone. Tab names are not solved: VS Code
+  the live hub found all four terminals. The author saw the tint and the flash at these strengths
+  in their four terminals and said "looks good". Tab names are not solved: VS Code
   shows a written title only with `"terminal.integrated.tabs.title": "${sequence}"`, and Claude
   Code writes its own title unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`; neither
   is set on the author's machine, and nobody has checked which title wins.
