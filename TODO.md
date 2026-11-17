@@ -69,6 +69,14 @@ real keys yet.
       always, only with the keys held, and (an idea, not asked for) only with the keys held
       while a full-screen program is in front. The keys already bring the panel out, so
       nothing is lost; dragging the bar would then also need the keys.
+- [ ] `first_audio` in `voice.log` is too high for a line whose first sentence is long (3 to
+      8 s logged where the sound started within a second, as `heard` shows). The time is
+      taken after the sentence was written to the player, and that write waits until the
+      player has taken most of it. Take the time before writing.
+- [ ] A hub that is running old code keeps old faults: a fix only counts once the hub was
+      restarted. On 2026-11-17 a reply was cut by the author's own voice message 8 minutes
+      after that fault was fixed and committed, because the hub had not been restarted yet.
+      Say in `claude-speaks status` when the running hub is older than the code on disk.
 - [ ] The picture check can catch the live overlay when the two overlap on screen.
 - [ ] `install.sh` has only been run in throwaway folders, never on a clean machine with the
       model download.
