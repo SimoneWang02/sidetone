@@ -7,6 +7,7 @@ from __future__ import annotations
 import array
 import gc
 import importlib.util
+import inspect
 import json
 import os
 import shutil
@@ -82,6 +83,32 @@ class Recorder:
         return b"".join(self._chunks)
 
 
+class Named:
+    """The speech model, asked which of the user's languages a recording is.
+
+    Working out the language used to be a pass of its own through the first half of the model,
+    about 0.6 s, before the pass that writes the words down (measured: 1.4 s for a sentence with
+    two languages named, 0.7 s with one). faster-whisper can also take the language from the pass
+    it makes anyway (`multilingual=True`), but then it takes the likeliest of all hundred. This
+    stands in for the model inside it and puts the likeliest of the named languages first, so
+    one pass does both. With no languages named it only notes what was heard.
+    """
+
+    def __init__(self, model, languages: list):
+        self._model, self._languages, self.heard = model, set(languages), ""
+
+    def __getattr__(self, name):  # everything else is the model's own
+        return getattr(self._model, name)
+
+    def detect_language(self, encoder_output):
+        results = self._model.detect_language(encoder_output)  # per recording: [("<|en|>", 0.9), ...], likeliest first
+        if self._languages:
+            results = [sorted(one, key=lambda pair: pair[0][2:-2] not in self._languages) for one in results]
+        if results and results[0]:
+            self.heard = results[0][0][0][2:-2]
+        return results
+
+
 class Transcriber:
     """Whisper kept loaded after its first use. `small.en` reads a short sentence in under a second on CPU.
 
@@ -96,6 +123,7 @@ class Transcriber:
         self.languages = ["en"] if model.endswith(".en") else codes(language)  # empty: any language
         self.heard = ""  # the language of the last recording
         self._model = None
+        self._named = None  # Named, when the language is found in the same pass as the words
         self._lock = threading.Lock()
 
     @staticmethod
@@ -107,12 +135,17 @@ class Transcriber:
             if self._model is None:
                 from faster_whisper import WhisperModel  # slow import, and downloads the model once
 
-                self._model = WhisperModel(self.name, device="cpu", compute_type="int8")
+                model = WhisperModel(self.name, device="cpu", compute_type="int8")
+                # Several languages, or any: find the language in the pass that writes the words.
+                # Needs a faster-whisper that can do that (1.1 or later); older ones go the long way.
+                if len(self.languages) != 1 and "multilingual" in inspect.signature(model.transcribe).parameters:
+                    self._named = model.model = Named(model.model, self.languages)
+                self._model = model
 
     def unload(self) -> None:
         """Give the model's memory back; the next use loads it again."""
         with self._lock:
-            self._model = None
+            self._model = self._named = None
         gc.collect()
 
     def transcribe(self, pcm: bytes) -> str:
@@ -120,15 +153,18 @@ class Transcriber:
 
         self.load()
         audio = np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768.0
+        named, options = self._named, {}
         language = self.languages[0] if len(self.languages) == 1 else None
-        if len(self.languages) > 1:  # which of the user's languages is this?
+        if named:  # the language is decided inside, half a minute at a time; the one given here is only a start
+            named.heard, language, options = "", (self.languages or ["en"])[0], {"multilingual": True}
+        elif len(self.languages) > 1:  # which of the user's languages is this? (a pass of its own)
             likely = dict(self._model.detect_language(audio)[2])
             language = max(self.languages, key=lambda code: likely.get(code, 0.0))
         # The voice filter drops silence first; without it Whisper invents words for an empty recording.
         segments, info = self._model.transcribe(audio, language=language, beam_size=1, vad_filter=True,
-                                                condition_on_previous_text=False)
-        text = " ".join(s.text.strip() for s in segments).strip()
-        self.heard = getattr(info, "language", language or "")
+                                                condition_on_previous_text=False, **options)
+        text = " ".join(s.text.strip() for s in segments).strip()  # the work happens here, as the pieces are read
+        self.heard = named.heard if named else getattr(info, "language", language or "")
         return text
 
 
@@ -144,9 +180,10 @@ def setup(languages: str | list, model: str = "small.en") -> tuple:
 
     English alone gets the English-only model of the same size. Anything else gets the
     multilingual one, told which languages to expect; "auto" lets it guess among all of them.
-    Measured (tests/stt_speed.py): the two models are equally quick when told the language;
-    what costs time is working out which language a recording is, about 0.6 s with two or
-    more languages or "auto". Raises ValueError for a code Whisper does not have.
+    Measured (tests/stt_speed.py): the two models are equally quick, and several languages
+    cost no more than one since the language is found in the same pass (see Named). What
+    naming them buys is that a short recording is not taken for a language you never speak.
+    Raises ValueError for a code Whisper does not have.
     """
     text = languages if isinstance(languages, str) else ",".join(languages)
     wanted = codes(text)

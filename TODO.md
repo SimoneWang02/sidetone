@@ -284,11 +284,15 @@ real keys yet.
       but on the terminal I still view the first question"). Both answers did arrive. The
       hook can only answer a whole dialog at once, so the terminal cannot be moved along;
       what could be done: say and show "question 1 of 2" so it is clear more are coming.
-- [ ] With two or more languages, working out which one a recording is costs about 0.6 s,
+- [x] With two or more languages, working out which one a recording is costs about 0.6 s,
       nearly as much as writing the sentence down (measured 2026-11-17, see "Numbers to
       publish"). Likely because the recording goes through the first half of the model
       twice, once to find the language and once to write the text; not looked into. If
       that pass can be shared, several languages would cost about the same as one.
+      Done the same day: that was the cause, and the pass is now shared (`stt.Named`). A
+      sentence of four seconds with English and Italian named went from 1.4 to 0.8 s. It
+      leans on how faster-whisper 1.2 works inside; with an older one the hub goes the
+      long way as before.
 - [x] The spoken project name is off while the overlay is up; with many sessions and eyes
       away from the screen, the voices alone may not be enough to tell them apart.
       Asked on 2026-11-17 whether the name should be said again when many sessions are
@@ -381,15 +385,16 @@ Bigger pieces:
         |---|---|---|---|
         | English only | 0.6 s | 0.7 s | 0.9 s |
         | Italian only | 0.6 s | 0.8 s | 1.0 s |
-        | English and Italian | 1.2 to 1.4 s | 1.4 to 1.5 s | 1.5 to 1.7 s |
-        | Five languages | 1.2 s | 1.4 s | 1.6 s |
-        | Any language | 1.2 to 1.3 s | 1.3 to 1.4 s | 1.5 to 1.6 s |
+        | English and Italian | 0.7 s | 0.8 s | 1.0 s |
+        | Five languages | 0.7 s | 0.8 s | 1.0 s |
+        | Any language | 0.7 s | 0.8 s | 1.0 s |
 
         One language costs the same whichever it is, and the English-only model is no
         quicker than the multilingual one told "English" (0.64 against 0.61 s). Two or more
-        cost about 0.6 s extra, the same for two, five or all. Every sentence was written
-        correctly under every choice, so accuracy is not measured: that needs real, short,
-        untidy recordings.
+        cost about 0.05 s extra. Before the language was found in the same pass as the
+        words (same day) they cost 0.6 s extra: 1.2 to 1.4, 1.4 to 1.5 and 1.5 to 1.7 s.
+        Every sentence was written correctly under every choice, so accuracy is not
+        measured: that needs real, short, untidy recordings.
       - Line written to first sound: about 0.3 s with the hub warm (in `CLAUDE.md`).
       - Still to measure: real voices and a noisy room, the other model sizes, a slower
         CPU, memory, and how often a short recording is taken for the wrong language.

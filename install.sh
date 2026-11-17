@@ -48,14 +48,13 @@ if [ $hooks_only = 0 ]; then
 fi
 
 # Which languages push-to-talk listens for. The speech model is told which ones to expect, so
-# only the languages you speak are in play; with two or more it first has to work out which one
-# a recording is (about 0.6 s, see tests/stt_speed.py). Asked once, of a person at a terminal:
-# a choice already in config.json (or --languages) is kept.
+# a short recording is not taken for a language you never speak. Asked once, of a person at a
+# terminal: a choice already in config.json (or --languages) is kept.
 if [ -n "$languages" ]; then
   "$ROOT/bin/claude-speaks" languages "$languages" || exit 2
 elif [ $hooks_only = 0 ] && [ -t 0 ] && [ -t 1 ] &&
      ! jq -e 'has("whisper_model") or has("whisper_language")' "$CONFIG" >/dev/null 2>&1; then
-  echo "Which languages will you speak to it? Name only those: with two or more, each recording takes about half a second longer."
+  echo "Which languages will you speak to it? Name only those, so a short recording is not taken for another language."
   for _ in 1 2 3; do
     read -r -p "Language codes, for example en or en,it (Enter = en): " languages || languages=
     "$ROOT/bin/claude-speaks" languages "${languages:-en}" && break

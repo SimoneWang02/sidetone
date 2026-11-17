@@ -655,6 +655,18 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   every choice, so these clean, synthetic voices say nothing about how often a real short
   recording is mistaken for another language. Loading a model takes 0.5 to 0.8 s once it is
   on disk.
+- The language is found in the same pass as the words (2026-11-17, `stt.Named`). The 0.6 s
+  above was the recording going through the model's first half twice: faster-whisper's
+  `detect_language` encodes it, and `transcribe` encodes it again. Its `multilingual=True`
+  option takes the language of each half minute from the pass it makes anyway, but picks
+  the likeliest of all languages; `Named` stands in for the model inside `WhisperModel`
+  (`model.model`) and puts the likeliest of the user's languages first. Measured after: two
+  languages, five or `auto` take 0.7 / 0.8 / 1.0 s for 1, 4 and 12 s of speech, about 0.05 s
+  more than one language. It relies on faster-whisper 1.2's insides (`generate_segments`
+  reading `results[0][0]`); `Transcriber.load` checks that `transcribe` has the
+  `multilingual` option and otherwise goes the old way. The voice filter now runs before
+  the language is found, not after. A side effect: a recording longer than half a minute
+  can change language between its halves.
 - Speech-to-text facts: `small.en` (int8, CPU) transcribes 4.4 s of speech in about 0.7 s,
   `base.en` in 0.3 s but drops punctuation. The WSLg microphone works through `parec`. Without a
   tail after key release the last word is cut. After a hub restart idle sessions are unknown

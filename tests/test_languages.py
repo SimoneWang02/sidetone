@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import types
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,6 +44,45 @@ class TheRule(unittest.TestCase):
         except ImportError:
             self.skipTest("faster-whisper is not installed here")
         self.assertEqual(stt.LANGUAGES, set(_LANGUAGE_CODES))
+
+
+class OnePass(unittest.TestCase):
+    """The language is found in the pass that writes the words, among the named languages only."""
+
+    class Inside:  # what faster-whisper keeps as its model
+        is_multilingual = True
+
+        def detect_language(self, encoder_output):  # a short clip mistaken for Welsh
+            return [[("<|cy|>", 0.5), ("<|it|>", 0.3), ("<|en|>", 0.1)]]
+
+    def test_the_likeliest_of_the_named_languages_comes_first(self):
+        named = stt.Named(self.Inside(), ["en", "it"])
+        self.assertEqual([token for token, _ in named.detect_language(None)[0]], ["<|it|>", "<|en|>", "<|cy|>"])
+        self.assertEqual(named.heard, "it")
+        self.assertTrue(named.is_multilingual)  # everything else is the model's own
+
+    def test_with_any_language_the_order_is_left_alone(self):
+        named = stt.Named(self.Inside(), [])
+        self.assertEqual(named.detect_language(None)[0][0][0], "<|cy|>")
+        self.assertEqual(named.heard, "cy")
+
+    def test_a_recording_is_written_down_in_one_go(self):
+        asked = {}
+        listener = stt.Transcriber("small", "en,it")
+        named = listener._named = stt.Named(self.Inside(), listener.languages)
+
+        class Whisper:
+            def detect_language(self, audio):
+                raise AssertionError("a pass of its own to find the language")
+
+            def transcribe(self, audio, language, **options):
+                asked.update(options, language=language)
+                first = named.detect_language(None)[0][0][0][2:-2]  # as the library does for each half minute
+                return [types.SimpleNamespace(text=" Ciao Claude. ")], types.SimpleNamespace(language=first)
+
+        listener._model = Whisper()
+        self.assertEqual(listener.transcribe(bytes(3200)), "Ciao Claude.")
+        self.assertEqual((asked["multilingual"], listener.heard), (True, "it"))
 
 
 class TheCommand(unittest.TestCase):
