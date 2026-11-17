@@ -21,8 +21,10 @@ real keys yet.
       and the paper plane and, after the plane was redrawn to sit in the middle, said "that's
       good". Not seen by them yet: the struck-out microphone for "not heard" or cancelled.
       `"talk_sign": "line"` under `overlay` puts the sign back beside the name.
-- [ ] Hold `Ctrl+Alt`: the details panel comes out while the keys are held
-- [ ] `Ctrl+Alt` + mouse wheel: the focus moves, and stops at the first and last session
+- [x] Hold `Ctrl+Alt`: the details panel comes out while the keys are held (the author,
+      2026-11-17: works)
+- [x] `Ctrl+Alt` + mouse wheel: the focus moves, and stops at the first and last session
+      (the author, 2026-11-17: works)
 - [ ] `Ctrl+Alt+Y` / `Ctrl+Alt+N` on a real permission prompt
 - [ ] `Ctrl+Alt+1` to `4` on a real multiple-choice question
 - [ ] `Ctrl+Alt+U` (what did I miss) and `Ctrl+Alt+R` (repeat)
