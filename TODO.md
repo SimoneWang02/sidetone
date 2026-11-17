@@ -42,6 +42,11 @@ real keys yet.
       keyboard and mouse had been still for a minute or more (the overlay can ask Windows
       for that), plus lines that were cut or dropped unsaid (each line already carries a
       `heard` mark that catch-up does not use yet).
+      Built the same day and parked on the branch `away-catch-up` (commit `07c9ff9`, 121
+      tests pass, the overlay compiles; not live, never tried with real idle time). The
+      author asked whether it is worth it and has not said keep or drop. Keep: merge the
+      branch and restart the hub. Drop: the offer was to remove the key and the catch-up
+      code altogether, since the present version mostly says "Nothing new".
 - [ ] `Ctrl+Alt+Backspace` while recording
 - [ ] Hold the talk key with a video playing in the browser in front (YouTube): the video
       should neither pause nor change speed, also when Ctrl or Alt is let go before Space
