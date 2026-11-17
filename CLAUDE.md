@@ -285,6 +285,30 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   once, working if it is busy there; one that had a session file and has none now is dropped;
   the rest wait in `Sessions.kept` and get theirs back when they next report (for 15 minutes,
   `state.KEPT_FOR`), and until then no new session is given their name, color or voice.
+- Which terminal is which (2026-11-17; the author, by voice, with four sessions in four VS
+  Code terminals: "is there a possibility to highlight the terminal which is associated
+  with" the session selected in the overlay): `hub/terminal.py`. The hub finds the terminal
+  each session runs in (`tty_of`: what `/proc/<pid>/fd/0` of the pid in its session file points
+  to, `/dev/pts/N`; `Session.tty`) and writes requests to it that terminals understand: OSC 11
+  "use this background color", OSC 111 "use your own again", OSC 2 "this is your title".
+  `Hub.publish` hands `Terminals.show` one `Mark` (color, in focus, title) per terminal and it
+  writes only what changed. Default `tint: focus`: with two or more sessions, the terminal of
+  the one in focus has `strength` (0.14) of its overlay color mixed into `background`
+  (`#181818`, VS Code's dark theme; the real background cannot be asked for from outside, the
+  answer would land in Claude Code's input). `all` tints every terminal (the others at half
+  strength), `off` none. `Hub.focus` (wheel, tap) also calls `Terminals.pulse`: 14 steps over
+  0.7 s from `PULSE_PEAK` (0.42) down to the resting tint. `claude-speaks terminal find
+  [PROJECT]` does the same on request. Stopping the hub gives every terminal its own
+  background back, and a terminal seen for the first time is reset, which clears what a hub
+  that died left. `title` (off by default) writes "name · title"; control characters are
+  taken out, since a title can hold words from a prompt. `CLAUDE_SPEAKS_TERMINAL=off` writes
+  to no terminal (the tests that start a real hub use it; the others record the writes).
+  Checked: VS Code's terminal (xterm.js, in its `node_modules.asar`) handles OSC 11 and 111;
+  the live hub found all four terminals. **Not seen by anyone yet**: how the tint looks, and
+  whether Claude Code's own screen drawing leaves it alone. Tab names are not solved: VS Code
+  shows a written title only with `"terminal.integrated.tabs.title": "${sequence}"`, and Claude
+  Code writes its own title unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`; neither
+  is set on the author's machine, and nobody has checked which title wins.
 - `hub/claude_sessions.py`: reads `~/.claude/sessions/<pid>.json` (pid, sessionId, status
   busy/idle). `Hub.reconcile()` runs every second: idle there but working here means the turn
   was interrupted; a session that had a file and lost it is gone. Undocumented files, so
@@ -313,15 +337,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `bin/claude-speaks` (linked by `install.sh` into `~/.local/bin` as `claude-speaks` and `cs`;
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
-  `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 105 tests with a silent engine and fake microphone, including the real hook
+  `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off | title on|off]`,
+  `demo`, `hub start|stop|restart`, `log`.
+- `tests/test_hub.py`: 114 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `label` (`auto`/`always`/`never`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`,
-  `talk_tail`, `talk_feedback`, `sound_volume`. `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
+  `talk_tail`, `talk_feedback`, `sound_volume`, and `terminal` (`tint`, `strength`, `background`,
+  `pulse`, `title`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
 - Toggle: voice is off while `~/.claude/voice-off` exists (the hub still tracks state).

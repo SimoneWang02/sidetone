@@ -21,7 +21,7 @@ def alive(pid: int) -> bool:
 
 
 def read(directory: str) -> dict[str, dict]:
-    """session id -> {"status": "busy" | "idle", "status_at": epoch seconds, "name": its title} for running sessions."""
+    """session id -> {"pid", "status": "busy" | "idle", "status_at": epoch seconds, "name": its title} for running sessions."""
     found: dict[str, dict] = {}
     try:
         names = os.listdir(directory)
@@ -40,6 +40,6 @@ def read(directory: str) -> dict[str, dict]:
             name = data.get("name")
             if not isinstance(name, str) or data.get("nameSource") == "derived":
                 name = ""  # "derived" is a placeholder made at start: the folder plus two letters ("my-project-3f")
-            found[sid] = {"status": data.get("status"), "status_at": (data.get("statusUpdatedAt") or 0) / 1000,
+            found[sid] = {"pid": pid, "status": data.get("status"), "status_at": (data.get("statusUpdatedAt") or 0) / 1000,
                           "name": name}
     return found

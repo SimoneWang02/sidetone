@@ -49,6 +49,12 @@ its own spoken line as the first line of its reply.
   mouse wheel to move it to another session. If you would rather check the text first, set
   `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
   `followup_confirm` to `true` (nothing is sent until you tap the talk key again).
+- **Which terminal is which.** With several sessions open, the terminal of the session in focus
+  takes a faint tint of that session's color, the color its name has in the overlay, and lights
+  up brighter for a moment when you move the focus to it. No extension is needed: the hub
+  writes to the terminal each session runs in, which works in VS Code's terminal and most
+  others. `claude-speaks terminal tint all` lets every terminal wear its color all the time,
+  `tint off` none; `claude-speaks terminal find` lights up the one in focus again.
 - **Catch up.** `Ctrl+Alt+U` replays what your sessions said since you were last there;
   `Ctrl+Alt+R` repeats the last line of the session in focus. Long turns say "3 of 5 steps done" along the way.
 - **Your own voices.** Pick a voice per project, blend two into a new one, or load a Kokoro
@@ -126,6 +132,10 @@ claude-speaks overlay dots|list|toggle|restart     only the lights, or kept open
 claude-speaks overlay layout NAME|next   bar or island
 claude-speaks overlay move           makes the bar easy to find and drag (you can drag it any time)
 claude-speaks overlay monitor N | corner top-left|top-right|bottom-left|bottom-right
+claude-speaks terminal               how sessions' own terminals are marked
+claude-speaks terminal tint focus|all|off     whose terminal wears its session's color
+claude-speaks terminal find [PROJECT]         light a session's terminal up for a moment
+claude-speaks terminal strength N | background COLOR | pulse on|off | title on|off
 claude-speaks demo                   three made-up sessions through every state
 claude-speaks hub start|stop|restart
 claude-speaks log                    follow the speech log
@@ -150,9 +160,23 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "opacity": 0.9,
     "talk_sign": "light",
     "hotkeys": { "talk": "Ctrl+Alt+Space", "toggle": "Ctrl+Alt+L" }
+  },
+  "terminal": {
+    "tint": "focus",
+    "strength": 0.14,
+    "background": "#181818",
+    "pulse": true,
+    "title": false
   }
 }
 ```
+
+`terminal.background` is your terminal's own background color, which the session's color is
+mixed into; the default suits VS Code's dark theme, so set it if yours is light or different.
+`terminal.title` also writes the session's name into the terminal's title. A VS Code tab only
+shows that with `"terminal.integrated.tabs.title": "${sequence}"` in VS Code's settings, and
+Claude Code writes a title of its own unless it is started with
+`CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`.
 
 ## How it works
 
@@ -212,7 +236,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-90 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+114 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
 `python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
 view. It captures only the overlay's own rectangles, and shows the see-through glass over a

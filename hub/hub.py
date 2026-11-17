@@ -29,6 +29,7 @@ import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
 import sounds as sounds_mod  # noqa: E402
 import stt  # noqa: E402
+import terminal as terminal_mod  # noqa: E402
 from state import (FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
                    speech_from_message, split_display)
 from tts import Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
@@ -120,6 +121,8 @@ class Config:
     progress_after: float = 45.0  # only in turns that have already run this many seconds
     progress_interval: float = 60.0  # and at most this often per session
     overlay: dict = field(default_factory=lambda: {**overlay_mod.DEFAULTS, "hotkeys": dict(overlay_mod.DEFAULTS["hotkeys"])})
+    # How each session's own terminal is marked (see terminal.py): tint, strength, background, pulse, title.
+    terminal: dict = field(default_factory=lambda: dict(terminal_mod.DEFAULTS))
     mute_file: str = os.path.expanduser("~/.claude/voice-off")
 
     @property
@@ -147,7 +150,7 @@ class Config:
             with open(path) as f:
                 user = json.load(f)
         except FileNotFoundError:
-            return cfg
+            user = {}
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat",
@@ -160,6 +163,9 @@ class Config:
         cfg.overlay["hotkeys"].update(wanted.get("hotkeys") or {})
         if env.get("CLAUDE_SPEAKS_OVERLAY") == "off":
             cfg.overlay["enabled"] = False
+        cfg.terminal.update(user.get("terminal") or {})
+        if env.get("CLAUDE_SPEAKS_TERMINAL") == "off":  # write to no terminal at all
+            cfg.terminal.update(tint="off", pulse=False, title=False)
         return cfg
 
 
@@ -170,6 +176,7 @@ class Hub:
         self.sessions = Sessions(cfg.voice_pool, cfg.voices, os.path.join(cfg.state, "voices.json"))
         self.last_event = time.monotonic()
         self.overlay = None  # anything with send(dict); set by main() or the tests
+        self.terminals = terminal_mod.Terminals(cfg.terminal)  # marks each session's own terminal
         self._shown: dict | None = None  # last state sent to the overlay, to skip repeats
         self.requests: list[Request] = []  # open permission prompts, oldest first
         self.recorder = None  # stt.Recorder, set by main() or the tests
@@ -349,6 +356,8 @@ class Hub:
                 info, quiet = live.get(s.id), time.monotonic() - s.updated
                 if info:
                     s.seen_file = True
+                    if s.tty is None:  # the terminal it runs in, to mark it (see terminal.py)
+                        s.tty = terminal_mod.tty_of(info["pid"])
                     if info.get("name") and info["name"] != s.named:  # Claude Code's own name for the session
                         s.title, s.named = short_title(info["name"]), info["name"]
                     if (info["status"] == "idle" and s.state in ("working", "needs_you") and quiet > 3
@@ -649,6 +658,10 @@ class Hub:
         self.cfg.overlay.update(changes)
         if tell_window and self.overlay and hasattr(self.overlay, "reconfigure"):
             self.overlay.reconfigure()
+        self._save_settings("overlay", changes)
+
+    def _save_settings(self, section: str, changes: dict) -> None:
+        """Write settings chosen while running into that section of the user's config.json."""
         if not self.cfg.config_path:
             return
         try:
@@ -656,13 +669,32 @@ class Hub:
                 saved = json.load(f)
         except (OSError, ValueError):
             saved = {}
-        saved.setdefault("overlay", {}).update(changes)
+        saved.setdefault(section, {}).update(changes)
         try:
             os.makedirs(os.path.dirname(self.cfg.config_path), exist_ok=True)
             with open(self.cfg.config_path, "w") as f:
                 json.dump(saved, f, indent=2)
         except OSError as e:
-            log(self.cfg, "hub.log", f"could not save the overlay position: {e}")
+            log(self.cfg, "hub.log", f"could not save the {section} settings: {e}")
+
+    def set_terminal(self, **changes) -> None:
+        """Change how sessions' terminals are marked (see terminal.py), at once, and remember it."""
+        self.cfg.terminal.update(changes)
+        self.terminals.settings.update(changes)
+        self.publish()
+        self._save_settings("terminal", changes)
+
+    def find_terminal(self, name: str = "") -> str | None:
+        """Light up the terminal of the session called `name`, or of the one in focus. Returns
+        the session's name, or None when there is no such session or it has no terminal."""
+        with self.lock:
+            s = (next((x for x in self.sessions.by_id.values() if x.name == name), None) if name
+                 else self._target())
+            found = (s.name, s.tty, s.color) if s and s.tty else None
+        if not found:
+            return None
+        self.terminals.pulse(found[1], found[2], asked=True)
+        return found[0]
 
     def set_layout(self, name: str) -> str | None:
         """Show the sessions in another layout ("next" goes round them) and remember the choice."""
@@ -925,12 +957,14 @@ class Hub:
                 return None
             self.talk_target = ids[max(0, min(len(ids) - 1, ids.index(self._target().id) + step))]
             s = self.sessions.by_id[self.talk_target]
-            name = s.name
+            name, tty, color = s.name, s.tty, s.color
             if self._talk_shown:  # what is on screen for push-to-talk follows the focus
                 if self._pending:
                     self._pending.session = s.id
                 self._talk(self._talk_shown[0], s, *self._talk_shown[1:])
         self.publish()
+        if tty:  # chosen by hand: its terminal lights up for a moment, so it can be found
+            self.terminals.pulse(tty, color)
         return name
 
     def _target(self):
@@ -972,6 +1006,11 @@ class Hub:
         """Send the overlay what to draw, if it changed. Call without the lock held."""
         with self.lock:
             self._keep_sessions()
+            several = len(self.sessions.by_id) > 1
+            marks = {s.tty: terminal_mod.Mark(s.color, several and self._target() is s,
+                                              " \u00b7 ".join(filter(None, [s.name, s.title])))
+                     for s in self.sessions.by_id.values() if s.tty}
+        self.terminals.show(marks)
         if not self.overlay:
             return
         current = self.speech.current
@@ -1247,6 +1286,15 @@ class Handler(BaseHTTPRequestHandler):
             else:
                 hub.overlay.send({"type": "mode", "mode": body.get("mode", "toggle")})
             self._reply({})
+        elif self.path == "/terminal":
+            if "find" in body:  # light up one session's terminal, to see which it is
+                return self._reply({"found": hub.find_terminal(str(body["find"] or ""))})
+            changes = {k: body[k] for k in terminal_mod.DEFAULTS if k in body}
+            if changes.get("tint", "focus") not in terminal_mod.TINTS:
+                return self._reply({"error": "tint is one of: " + ", ".join(terminal_mod.TINTS)}, 400)
+            if changes:
+                hub.set_terminal(**changes)
+            self._reply({"terminal": hub.cfg.terminal})
         elif self.path == "/demo":
             threading.Thread(target=demo.run, args=(hub,), name="demo", daemon=True).start()
             self._reply({})
@@ -1374,6 +1422,7 @@ def main() -> int:
         server.serve_forever()
     finally:
         hub.speech.close()
+        hub.terminals.close()
         if hub.overlay:
             hub.overlay.stop()
         server.server_close()

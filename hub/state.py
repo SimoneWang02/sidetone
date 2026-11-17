@@ -119,6 +119,7 @@ class Session:
     last_speech: str = ""
     permission_mode: str = ""  # default | plan | acceptEdits | auto | ... as last reported by a hook
     seen_file: bool = False  # Claude Code's own session file was seen for it (see claude_sessions.py)
+    tty: str | None = None  # the terminal it runs in ("" = none); not looked for yet while None (see terminal.py)
     order: int = 0  # its place in the bar: lower comes first, and it keeps it across a hub restart
     updated: float = field(default_factory=time.monotonic)
 

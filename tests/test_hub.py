@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.join(ROOT, "hub"))
 import hub as hub_module  # noqa: E402
 from hub import Config, Hub, serve  # noqa: E402
 import sounds  # noqa: E402
+import terminal  # noqa: E402
 from tts import CommandEngine, NullEngine  # noqa: E402
 
 
@@ -38,6 +39,9 @@ class HubCase(unittest.TestCase):
                           sessions_dir=os.path.join(self.tmp, "claude-sessions"), **cfg)
         self.hub = Hub(self.cfg, self.engine)
         self.addCleanup(self.hub.speech.close)
+        self.written = []  # (terminal, bytes): what the hub wrote to sessions' terminals; no real one is touched
+        self.hub.terminals.write = lambda tty, data: self.written.append((tty, data)) or True
+        self.hub.terminals.sleep = lambda seconds: None
         return self.hub
 
     def spoken(self):
@@ -1144,11 +1148,13 @@ class AcrossARestart(HubCase):
         hub.talk_target = "b"
         self.record("a", "idle", os.getpid())
         self.record("b", "busy", os.getppid())
-        self.record("c", "idle", os.getpid() + 1)  # rewritten below as a session that has ended
+        # A third process that is surely running (the next process id only was by chance: the
+        # test failed once nothing happened to have it). Removed below: that session has ended.
+        self.record("c", "idle", 1)
         hub.reconcile()
         hub.publish()
         before = self.who()
-        os.unlink(os.path.join(self.cfg.sessions_dir, f"{os.getpid() + 1}.json"))
+        os.unlink(os.path.join(self.cfg.sessions_dir, "1.json"))
         hub = self.restart()
         self.assertEqual(self.who(), before[:2])  # "c" had a session file and has none now: it ended
         a, b = self.session("a"), self.session("b")
@@ -1316,6 +1322,138 @@ class ThroughTheHooks(HubCase):
         self.assertEqual(self.spoken(), ["I need your input"])
 
 
+class OwnTerminals(HubCase):
+    """Each session's terminal is marked, so the terminals can be told apart like the lights."""
+
+    def make(self, **kw):
+        hub = super().make(**kw)
+        self.ttys = {}  # pid -> the terminal that process is said to run in
+        real = terminal.tty_of
+        terminal.tty_of = lambda pid: self.ttys.get(pid, "")
+        self.addCleanup(setattr, terminal, "tty_of", real)
+        return hub
+
+    def open(self, sid, pid, tty, cwd="/work/alpha"):
+        """A session in its own terminal, known to Claude Code and to the hub."""
+        os.makedirs(self.cfg.sessions_dir, exist_ok=True)
+        with open(os.path.join(self.cfg.sessions_dir, f"{pid}.json"), "w") as f:
+            json.dump({"pid": pid, "sessionId": sid, "status": "idle", "statusUpdatedAt": time.time() * 1000}, f)
+        self.ttys[pid] = tty
+        self.hub.on_event(ev("SessionStart", sid=sid, cwd=cwd))
+        self.hub.reconcile()
+        self.hub.publish()
+
+    def tint(self, sid, amount):
+        color = self.hub.sessions.by_id[sid].color
+        return f"\x1b]11;{terminal.mix('#181818', color, amount)}\x1b\\".encode()
+
+    def last(self, tty):
+        return [data for t, data in self.written if t == tty][-1]
+
+    def test_the_session_in_focus_tints_its_terminal_and_the_others_stay_plain(self):
+        self.make()
+        me, other = os.getpid(), os.getppid()
+        self.open("a", me, "/dev/pts/91")
+        self.assertEqual(self.written, [("/dev/pts/91", terminal.RESET)])  # alone: nothing to tell apart
+        self.open("b", other, "/dev/pts/92")
+        self.assertEqual(self.hub._target().id, "b")
+        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.14))
+        self.assertEqual(self.last("/dev/pts/91"), terminal.RESET)
+        count = len(self.written)
+        self.hub.publish()
+        self.assertEqual(len(self.written), count, "nothing changed, so nothing is written")
+
+    def test_moving_the_focus_moves_the_tint_and_lights_the_new_terminal_up(self):
+        hub = self.make()
+        self.open("a", os.getpid(), "/dev/pts/91")
+        self.open("b", os.getppid(), "/dev/pts/92")
+        del self.written[:]
+        hub.focus(-1)
+        for thread in threading.enumerate():
+            if thread.name == "terminal-pulse":
+                thread.join(5)
+        to_a = [data for tty, data in self.written if tty == "/dev/pts/91"]
+        self.assertEqual(to_a[0], self.tint("a", 0.14))  # at once
+        self.assertEqual(to_a[1], self.tint("a", terminal.PULSE_PEAK))  # then bright
+        self.assertEqual(to_a[-1], self.tint("a", 0.14))  # and back to its resting tint
+        self.assertEqual(len(to_a), terminal.PULSE_STEPS + 2)
+        self.assertEqual([data for tty, data in self.written if tty == "/dev/pts/92"], [terminal.RESET])
+
+    def test_a_session_that_ends_gets_its_terminal_back(self):
+        hub = self.make()
+        self.open("a", os.getpid(), "/dev/pts/91")
+        self.open("b", os.getppid(), "/dev/pts/92")
+        hub.on_event(ev("SessionEnd", sid="b"))
+        self.assertEqual(self.last("/dev/pts/92"), terminal.RESET)
+        self.assertEqual(self.last("/dev/pts/91"), terminal.RESET)  # one session left: no tint
+
+    def test_every_terminal_can_wear_its_color_and_it_can_be_turned_off(self):
+        hub = self.make(config_path=os.path.join(tempfile.mkdtemp(prefix="cs-test-"), "config.json"))
+        self.open("a", os.getpid(), "/dev/pts/91")
+        self.open("b", os.getppid(), "/dev/pts/92")
+        hub.set_terminal(tint="all")
+        self.assertEqual(self.last("/dev/pts/91"), self.tint("a", 0.07))
+        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.14))
+        hub.set_terminal(tint="off", pulse=False)
+        self.assertEqual(self.last("/dev/pts/91"), terminal.RESET)
+        self.assertEqual(self.last("/dev/pts/92"), terminal.RESET)
+        with open(self.cfg.config_path) as f:
+            self.assertEqual(json.load(f)["terminal"], {"tint": "off", "pulse": False})
+        count = len(self.written)
+        hub.focus(-1)
+        self.assertEqual(len(self.written), count, "all off: no terminal is written to")
+        self.assertEqual(hub.find_terminal("alpha"), "alpha")  # asked for by name: shown all the same
+        self.assertIsNone(hub.find_terminal("nobody"))
+
+    def test_the_title_names_the_session_and_cannot_carry_control_characters(self):
+        hub = self.make(terminal={**terminal.DEFAULTS, "title": True})
+        self.open("a", os.getpid(), "/dev/pts/91")
+        self.assertEqual(self.last("/dev/pts/91"), terminal.RESET + b"\x1b]2;alpha\x1b\\")
+        hub.sessions.by_id["a"].title = "fix\x1b]11;#ff0000\x07 the\nlogin"
+        hub.publish()
+        self.assertEqual(self.last("/dev/pts/91"), "\x1b]2;alpha \u00b7 fix ]11;#ff0000  the login\x1b\\".encode())
+
+    def test_a_session_with_no_terminal_is_left_alone(self):
+        self.make()
+        self.open("a", os.getpid(), "")
+        self.open("b", os.getppid(), "")
+        self.assertEqual(self.written, [])
+
+    def test_the_hub_stopping_gives_the_terminals_back(self):
+        hub = self.make()
+        self.open("a", os.getpid(), "/dev/pts/91")
+        self.open("b", os.getppid(), "/dev/pts/92")
+        del self.written[:]
+        hub.terminals.close()
+        self.assertEqual(self.written, [("/dev/pts/92", terminal.RESET)])
+        hub.publish()
+        hub.focus(-1)
+        self.assertEqual(len(self.written), 1, "nothing is written after that")
+
+
+class ARealTerminal(unittest.TestCase):
+    def test_a_process_is_found_in_its_terminal_and_what_is_written_arrives_whole(self):
+        import pty
+        ours, theirs = pty.openpty()
+        self.addCleanup(os.close, ours)
+        proc = subprocess.Popen(["sleep", "30"], stdin=theirs)
+        self.addCleanup(proc.wait)
+        self.addCleanup(proc.kill)
+        tty = os.ttyname(theirs)
+        os.close(theirs)
+        self.assertEqual(terminal.tty_of(proc.pid), tty)
+        self.assertEqual(terminal.tty_of(os.getpid()) if not os.isatty(0) and not os.isatty(1) and not os.isatty(2) else "", "")
+        self.assertTrue(terminal.write(tty, terminal.RESET))
+        self.assertEqual(os.read(ours, 100), terminal.RESET)
+        self.assertFalse(terminal.write("/dev/pts/no-such-terminal", terminal.RESET))
+
+    def test_colors_mix(self):
+        self.assertEqual(terminal.mix("#000000", "#ffffff", 0.5), "rgb:80/80/80")
+        self.assertEqual(terminal.mix("#181818", "#C6A0F6", 0), "rgb:18/18/18")
+        self.assertEqual(terminal.mix("#181818", "#C6A0F6", 1), "rgb:c6/a0/f6")
+        self.assertEqual(terminal.mix("#181818", "purple", 0.5), "")
+
+
 class HubProcess(unittest.TestCase):
     """The hub as a real process, so it can die the way it would in real life."""
 
@@ -1323,6 +1461,7 @@ class HubProcess(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="cs-test-")
         self.env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp,
                     "XDG_CONFIG_HOME": self.tmp, "CLAUDE_SPEAKS_TTS": "null", "CLAUDE_SPEAKS_OVERLAY": "off",
+                    "CLAUDE_SPEAKS_TERMINAL": "off",
                     "CS_RETRY": "0.2"}
         self.sock = os.path.join(self.tmp, "hub.sock")
 
