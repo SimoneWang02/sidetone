@@ -58,7 +58,7 @@ real keys yet.
       Ctrl+C, hold the talk key and say something. Done by the author the same day: they
       interrupted a reply and their next words ("I stopped the previous audio, now I'm
       sending another one") arrived, carried by the listener that starts with a prompt.
-- [ ] Words going to the wrong session (the author, 2026-11-17: "i sent an audio to
+- [x] Words going to the wrong session (the author, 2026-11-17: "i sent an audio to
       claude-speaks 4 but somehow got here (i didnt notice at first)"). Nothing was broken:
       the voice goes to the session in focus, which is the one that spoke last, and this
       session had just spoken while they were looking at the other one's terminal. The
@@ -71,6 +71,9 @@ real keys yet.
       the talk key reaches back: pressed within a second of a session starting to speak,
       it still goes to the session that had the focus before (`focus_reach_back`). Tests
       only; to be watched in use, since the moment cannot be staged.
+      The author, asked that evening whether words had still gone to a session they did
+      not mean since those fixes: "No, not since." About three hours of use with two to
+      four sessions; the reach-back moment itself was never staged.
 - [x] Speak, let go, and move the focus at once (arrows, wheel or another terminal): the
       words should still reach the session that was listening, and "sent" should show on its
       light. Fixed 2026-11-17 after the author did exactly that and the words "went to
