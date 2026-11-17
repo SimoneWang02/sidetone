@@ -107,6 +107,22 @@ Bigger pieces:
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.
 - [ ] An overlay for Linux and macOS. Today it is Windows only.
+- [ ] A version that runs on Windows itself, without WSL (the author, 2026-11-17, on learning
+      that Claude Code started from PowerShell or cmd does not start any of this: it reads
+      `C:\Users\<name>\.claude\settings.json`, which has no hooks). This is what a program
+      other people download would need. What is tied to Linux today:
+      - the hooks are bash scripts with `curl` and `jq`
+      - the hub listens on a Unix socket, chosen so that no web page or other machine can
+        reach it; the Windows version needs something as closed (a named pipe, or a Unix
+        socket if Python on Windows supports it by then)
+      - one hub at a time is kept by `flock`
+      - sound goes out through `paplay`, and the microphone and the loudness meter read
+        through `parec`
+      - folders follow the Linux layout (`XDG_RUNTIME_DIR`, `~/.local/state`, `~/.config`)
+      - the hub finds and starts the overlay through `wslpath` and `/mnt/c`
+      Not tied to Linux: the overlay program, Kokoro and `faster-whisper` (both run on
+      Windows), and the hub's logic. A smaller step that was set aside for now: hooks in the
+      Windows settings file that call into WSL and run the existing scripts.
 - [ ] Voice cloning, if that is what "uploadable" meant (see above). The author asked on
       2026-11-17 how to get a voice of their own choosing ("they're all preset"). Researched
       the same day, nothing tried yet; all routes are free and local except the last:
