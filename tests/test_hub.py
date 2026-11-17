@@ -294,6 +294,8 @@ class OverlayFeed(HubCase):
         colors = [r["color"] for r in self.overlay.of("state")[-1]["sessions"]]
         self.assertEqual(len(set(colors)), 4)
         self.assertTrue(set(colors) <= set(state.COLORS))
+        for i in range(4):
+            hub.on_event(ev("SessionEnd", sid=f"s{i}", cwd=f"/w/project-{i}"))
         again = Hub(self.cfg, NullEngine())  # the same project gets the same color next time
         self.addCleanup(again.speech.close)
         again.on_event(ev("SessionStart", sid="x", cwd="/w/project-0"))
@@ -661,7 +663,7 @@ class PushToTalk(HubCase):
         hub.cancel()
         time.sleep(0.35)
         self.assertEqual(hub.followups, {})
-        self.assertIn(("failed", "a", "cancelled"), self.talks())
+        self.assertIn(("failed", "a", "Cancelled"), self.talks())
 
     def test_a_quick_tap_picks_the_next_session(self):
         hub = self.make()
@@ -708,7 +710,7 @@ class PushToTalk(HubCase):
         hub.transcriber.text = ""
         hub.talk_start()
         hub.talk_end()
-        self.assertTrue(wait_for(lambda: ("failed", "b", "did not catch that") in self.talks()))  # b: the newest session
+        self.assertTrue(wait_for(lambda: ("failed", "b", "Didn't catch that") in self.talks()))  # b: the newest session
         self.assertEqual(hub.followups, {})
 
     def test_follow_up_waits_for_a_session_with_no_listener_yet(self):
@@ -760,7 +762,7 @@ class PushToTalk(HubCase):
         hub_module.CONFIRM_WINDOW = 0.1
         hub.talk_start()
         hub.talk_end()
-        self.assertTrue(wait_for(lambda: "not sent" in [text for _, _, text in self.talks()]))
+        self.assertTrue(wait_for(lambda: "Not sent" in [text for _, _, text in self.talks()]))
         self.assertEqual(hub.followups, {})
 
     def test_typed_follow_up_and_prompting_session_send_without_a_tap(self):
@@ -1015,6 +1017,7 @@ class AcrossARestart(HubCase):
         hub.on_event(ev("UserPromptSubmit", sid="a", prompt="tidy the readme"))
         hub.on_event(ev("Stop", sid="a", last_assistant_message=tag("Readme tidied.")))
         hub.on_event(ev("UserPromptSubmit", sid="b", prompt="run the tests"))
+        self.spoken()  # "a" spoke last and has the focus, until it is moved by hand
         hub.talk_target = "b"
         self.record("a", "idle", os.getpid())
         self.record("b", "busy", os.getppid())
@@ -1023,7 +1026,6 @@ class AcrossARestart(HubCase):
         hub.publish()
         before = self.who()
         os.unlink(os.path.join(self.cfg.sessions_dir, f"{os.getpid() + 1}.json"))
-        self.spoken()
         hub = self.restart()
         self.assertEqual(self.who(), before[:2])  # "c" had a session file and has none now: it ended
         a, b = self.session("a"), self.session("b")

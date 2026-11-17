@@ -28,7 +28,7 @@ import claude_sessions  # noqa: E402
 import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
 import stt  # noqa: E402
-from state import (VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
+from state import (FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
                    speech_from_message, split_display)
 from tts import Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
 
@@ -170,6 +170,8 @@ class Hub:
         # so what was said to a busy session is not lost when the hub restarts.
         self.followups: dict[str, list[str]] = self._kept_followups()
         self.talk_target: str | None = None  # session a spoken follow-up goes to
+        self._kept_sessions: dict | None = None  # what sessions.json last said (see _keep_sessions)
+        self._restore_sessions()
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
         self._mic_meter = Meter()  # turns microphone audio into a loudness for the overlay
         self._talking: float | None = None  # when the talk key went down
@@ -267,6 +269,64 @@ class Hub:
             self.talk_target = None
         self.sessions.remove(sid)
         self.speech.drop_session(sid)
+
+    # --- who is who, across a restart ---------------------------------------------------------
+
+    def _sessions_file(self) -> str:
+        return os.path.join(self.cfg.run, "sessions.json")
+
+    def _restore_sessions(self) -> None:
+        """Bring back the sessions an earlier hub knew, each with its own name, color, voice,
+        title and place in the bar.
+
+        Those are handed out in the order sessions turn up, and after a restart they turn up in
+        another order, so sessions of the same project swapped them (the author, 2026-11-17: "the
+        colors, like their status, might have influenced each other"). A session Claude Code
+        still lists is back at once, working if it is busy there. One that had a session file
+        and has none now ended meanwhile. The rest get theirs back when they next report.
+        """
+        try:
+            path = self._sessions_file()
+            if time.time() - os.path.getmtime(path) > FORGET_AFTER:
+                return
+            with open(path) as f:
+                kept = json.load(f)
+            self.sessions.keep(kept.get("sessions"))
+        except (OSError, ValueError, AttributeError):
+            return
+        live = claude_sessions.read(self.cfg.sessions_dir)
+        can_tell = os.path.isdir(self.cfg.sessions_dir)
+        for sid, was in list(self.sessions.kept.items()):
+            info = live.get(sid)
+            if info:
+                s = self.sessions.touch(sid, was["cwd"])
+                s.seen_file = True
+                if info["status"] == "busy":
+                    s.state, s.activity, s.note = "working", "Thinking", ""
+                    if info["status_at"]:  # it became busy when its turn began
+                        s.turn_started = time.monotonic() - max(0.0, time.time() - info["status_at"])
+            elif was["seen_file"] and can_tell:
+                del self.sessions.kept[sid]
+        focus = kept.get("focus")
+        if isinstance(focus, str) and focus in self.sessions.by_id:
+            self.talk_target = focus
+        log(self.cfg, "hub.log", f"sessions from before the restart: {len(self.sessions.by_id)} back, "
+                                 f"{len(self.sessions.kept)} expected")
+
+    def _keep_sessions(self) -> None:
+        """Write down who is who whenever that changed (owner-only, in the run folder: titles can
+        hold words from a prompt). Call with the lock held."""
+        kept = {"sessions": self.sessions.identities(), "focus": self.talk_target}
+        if kept == self._kept_sessions:
+            return
+        self._kept_sessions = kept
+        try:
+            path = self._sessions_file()
+            with os.fdopen(os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+                json.dump(kept, f)
+            os.replace(path + ".tmp", path)
+        except OSError:
+            pass
 
     def reconcile(self) -> None:
         """Catch what hooks cannot report, from Claude Code's own session files: a turn you
@@ -630,7 +690,7 @@ class Hub:
                 return False
             s = self._target()
             if not s:
-                self._talk("failed", None, "no Claude session to talk to", seconds=2)
+                self._talk("failed", None, "No Claude session to talk to", seconds=2)
                 return False
             self._talking = time.monotonic()
             self.talk_target = s.id  # the session shown as listening is the one that gets it
@@ -691,7 +751,7 @@ class Hub:
         if text:
             self.follow_up(text)
         else:
-            self._talk("failed", self._target(), "did not catch that", seconds=2)
+            self._talk("failed", self._target(), "Didn't catch that", seconds=2)
 
     def follow_up(self, text: str, session: str | None = None, delay: float | None = None) -> bool:
         """Show a follow-up, then send it to the session.
@@ -748,7 +808,7 @@ class Hub:
             if self._pending is not pending:
                 return
             self._pending = None
-            self._talk("failed", self.sessions.by_id.get(pending.session), "not sent", seconds=2)
+            self._talk("failed", self.sessions.by_id.get(pending.session), "Not sent", seconds=2)
         self.publish()
 
     def cancel(self) -> None:
@@ -758,7 +818,7 @@ class Hub:
             about = self.sessions.by_id.get(self._pending.session) if self._pending else self._target()
             had_pending = self._cancel_pending()
             if talking or had_pending:
-                self._talk("failed", about, "cancelled", seconds=1.5)
+                self._talk("failed", about, "Cancelled", seconds=1.5)
         if talking:
             self.recorder.stop()
             self.speech.resume()
@@ -879,6 +939,8 @@ class Hub:
 
     def publish(self) -> None:
         """Send the overlay what to draw, if it changed. Call without the lock held."""
+        with self.lock:
+            self._keep_sessions()
         if not self.overlay:
             return
         current = self.speech.current

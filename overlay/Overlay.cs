@@ -34,7 +34,7 @@ namespace ClaudeSpeaks
 
         public static readonly FontFamily Symbols = new FontFamily("Segoe UI Symbol");
         public static readonly Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00), Mic = Color.FromRgb(0xFF, 0x6E, 0x8A);
-        public static readonly Brush Dim = Paint("#C8FFFFFF"), Faint = Paint("#8CFFFFFF");
+        public static readonly Brush Dim = Paint("#C8FFFFFF"), Faint = Paint("#8CFFFFFF"), MicInk = Paint("#FFFF8FA6");
 
         // Shape differs as well as color (see Orb), so a state reads without color vision.
         public static Color Tint(string state)
@@ -536,7 +536,7 @@ namespace ClaudeSpeaks
         };
         public string Name = "", Color = "", Title = "", State = "", FlashText, TalkKind, TalkText = "";  // TalkKind: null unless push-to-talk is about this session
         public readonly Badge Badge = new Badge { Visibility = Visibility.Collapsed };
-        bool talkDim;
+        Brush talkInk = Brushes.White;  // white for your words, dim for a note, the microphone's color for what to do
         public double FlashUntil, Hot, Lit;
         string rowText = "", metaText = "";
 
@@ -605,12 +605,12 @@ namespace ClaudeSpeaks
 
         // Push-to-talk is about this session (which sign to show, the words under the name, and
         // whether those words are only a hint), or no longer (kind is null).
-        public void SetTalk(string kind, string text, bool dim, Wave mic)
+        public void SetTalk(string kind, string text, Brush ink, Wave mic)
         {
             bool changed = kind != TalkKind || text != TalkText || (Orb.Listening != null) != (mic != null);
             TalkKind = kind;
             TalkText = text ?? "";
-            talkDim = dim;
+            talkInk = ink;
             Orb.Listening = mic;
             Badge.Show(kind ?? "");
             if (changed) { Orb.Changed = Ui.Now; Refresh(); }
@@ -623,7 +623,8 @@ namespace ClaudeSpeaks
             bool saying = Showing, talk = TalkKind != null;
             line2.Text = talk ? TalkText : saying ? FlashText : rowText;
             line2.TextWrapping = saying ? TextWrapping.Wrap : TextWrapping.NoWrap;
-            line2.Foreground = saying && !(talk && talkDim) ? Brushes.White : Ui.Dim;
+            line2.Foreground = talk ? talkInk : saying ? Brushes.White : Ui.Dim;
+            line2.FontWeight = talk && talkInk == Ui.MicInk ? FontWeights.SemiBold : FontWeights.Normal;
             meta.Text = metaText;
             meta.Visibility = saying || metaText.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
             row2.Visibility = line2.Text.Length == 0 && meta.Visibility != Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
@@ -689,7 +690,7 @@ namespace ClaudeSpeaks
         readonly StackPanel historyLines = new StackPanel();
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
         readonly TextBlock bannerTitle = new TextBlock(), bannerHint = new TextBlock();
-        readonly TextBlock emptyLine = new TextBlock { Text = "no Claude sessions", Foreground = Ui.Faint, Margin = new Thickness(12, 13, 12, 13) };
+        readonly TextBlock emptyLine = new TextBlock { Text = "No Claude sessions", Foreground = Ui.Faint, Margin = new Thickness(12, 13, 12, 13) };
         readonly TextBlock bubbleLine1 = new TextBlock(), bubbleLine2 = new TextBlock();
         readonly StackPanel bubbleWords = new StackPanel { Margin = new Thickness(14, 8, 14, 10) };
         readonly TranslateTransform bubbleSlide = new TranslateTransform();
@@ -1038,8 +1039,8 @@ namespace ClaudeSpeaks
             if (showHistory) BuildHistory();
             bool talking = talkState.Length > 0;
             foreach (Row row in order)
-                if (talking && row.Name == talkName) row.SetTalk(TalkKind(), TalkWords(), TalkDim(), talkState == "listening" ? mic : null);
-                else row.SetTalk(null, "", false, null);
+                if (talking && row.Name == talkName) row.SetTalk(TalkKind(), TalkWords(), TalkInk(), talkState == "listening" ? mic : null);
+                else row.SetTalk(null, "", Brushes.White, null);
             bool show = isList || hasRequest || hasBanner || moving || talking || sessions.Length > 0;
             if (show && !rail.IsVisible) rail.Show();
             else if (!show && rail.IsVisible) rail.Hide();
@@ -1137,7 +1138,8 @@ namespace ClaudeSpeaks
                 bubbleBadge.Show(kind);
                 bubbleLine2.Text = body;
                 bubbleLine2.Visibility = body.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-                bubbleLine2.Foreground = mine && TalkDim() ? Ui.Dim : Brushes.White;
+                bubbleLine2.Foreground = mine ? TalkInk() : Brushes.White;
+                bubbleLine2.FontWeight = mine && talkState == "listening" ? FontWeights.SemiBold : FontWeights.Normal;
                 bubbleStrip.Wave = listening ? mic : orphan ? mic : found.Wave;
                 bubbleStrip.Tint = mine ? Ui.Mic : Ui.Tint(found.State);
                 bubbleStrip.NewestRight = corner.EndsWith("right");
@@ -1453,8 +1455,8 @@ namespace ClaudeSpeaks
             bannerTimer.Stop();
             hasBanner = true;
             bannerTitle.Inlines.Clear();
-            bannerTitle.Inlines.Add(new Run("drag the bar to where you want it") { FontWeight = FontWeights.SemiBold });
-            bannerHint.Text = "any monitor \u00b7 you can drag it any time: just grab it with the mouse";
+            bannerTitle.Inlines.Add(new Run("Drag it to where you want it") { FontWeight = FontWeights.SemiBold });
+            bannerHint.Text = "Any monitor \u00b7 You can drag it any time: just grab it with the mouse";
             bannerHint.Visibility = Visibility.Visible;
             moveTimer.Stop(); moveTimer.Interval = TimeSpan.FromSeconds(15); moveTimer.Start();
             Render();
@@ -1586,18 +1588,23 @@ namespace ClaudeSpeaks
         {
             switch (talkState)
             {
-                case "listening": return "release to send";
-                case "transcribing": return "working out what you said\u2026";
+                case "listening": return "Release to send";
+                case "transcribing": return "Working out what you said\u2026";
                 case "ready": return "\u201c" + talkText + "\u201d" + (talkHint.Length > 0 ? "\n" + talkHint : "");
                 case "sent": return "\u201c" + talkText + "\u201d";
-                case "queued": return "\u201c" + talkText + "\u201d\nit gets this right after its current reply";
-                case "focus": return "in focus";
+                case "queued": return "\u201c" + talkText + "\u201d\nIt gets this right after its current reply";
+                case "focus": return "In focus";
                 default: return talkText;  // failed: the text says what happened
             }
         }
 
-        // Whether those words are a hint (shown dim) and not something you said.
-        bool TalkDim() { return talkState != "ready" && talkState != "sent" && talkState != "queued"; }
+        // How those words are written: what to do stands out in the microphone's color, your
+        // own words are white, and a note about what happened is dim.
+        Brush TalkInk()
+        {
+            if (talkState == "listening") return Ui.MicInk;
+            return talkState == "ready" || talkState == "sent" || talkState == "queued" ? Brushes.White : Ui.Dim;
+        }
 
         // A permission prompt or question stays on screen until it is answered: the hotkeys act on it.
         void ShowRequest(Dictionary<string, object> msg)
