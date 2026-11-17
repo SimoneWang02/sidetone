@@ -109,7 +109,7 @@ real keys yet.
       The author, 2026-11-17, on trying it: not intuitive, since that key is for talking;
       "better solution might be using the arrow keys". The tap now does nothing unless
       `talk_tap: next` is set.
-- [ ] `Ctrl+Alt+Up` / `Ctrl+Alt+Down` move the focus (built on that remark; checked only as
+- [x] `Ctrl+Alt+Up` / `Ctrl+Alt+Down` move the focus (built on that remark; checked only as
       far as the overlay accepting the keys): the frame goes to the session above or below,
       stops at the first and last, and the details come out for a moment. In the island
       layout it is `Ctrl+Alt+Left` / `Right` (the author's wish the same day). The author
@@ -117,6 +117,9 @@ real keys yet.
       mended the same day (any second key ended a hold after a second). To watch for:
       VS Code's own use of these keys in the editor (a cursor above or below) no longer
       works while two or more sessions are open.
+      The author, 2026-11-17, after the mending, asked to press an arrow while talking and
+      go on talking: "It seems to be working. That's good." Repeat after a hub restart the
+      same hour: "the replay worked". Not said yet: Left and Right in the island layout.
 - [ ] `Ctrl+Alt+K`: switches between the bar and the island, and back
 - [ ] Push-to-talk in Italian from the first word (so far every Italian recording began in
       English)
