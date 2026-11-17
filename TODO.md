@@ -88,7 +88,23 @@ Bigger pieces:
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.
 - [ ] An overlay for Linux and macOS. Today it is Windows only.
-- [ ] Voice cloning, if that is what "uploadable" meant (see above).
+- [ ] Voice cloning, if that is what "uploadable" meant (see above). The author asked on
+      2026-11-17 how to get a voice of their own choosing ("they're all preset"). Researched
+      the same day, nothing tried yet; all routes are free and local except the last:
+      - Pocket TTS (Kyutai, MIT, about 100M parameters): clones from a WAV file, runs on the
+        CPU, about 0.2 s to first sound by its own README, speaks English and Italian. The
+        closest fit as a second engine beside Kokoro; first one to measure.
+      - Chatterbox Turbo (Resemble, MIT, 350M, English): more expressive (`[laugh]` tags,
+        an exaggeration setting), wants the graphics card (RTX 5070 here). Its repo now says
+        it is no longer maintained, and the speed claims are the vendor's.
+      - KVoiceWalk (Apache 2.0): searches for a Kokoro voice vector that resembles a
+        recording, so no new engine and the result loads through `voice add`. About 4 hours
+        on a graphics card per voice, results vary, and it copies the tone, not the manner.
+      - ElevenLabs: best quality, about 5 to 6 dollars a month, but the text leaves the
+        machine and every line costs credits.
+      A cloned voice of a real person needs that person's consent under these tools' terms
+      (Pocket TTS and ElevenLabs say so outright), so the feature is "bring your own
+      recording" and no cloned voices ship in the repo.
 
 - [ ] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
       take a light with the mouse and drop it where it should sit in the bar. The hub keeps
