@@ -9,8 +9,11 @@ started. `CLAUDE.md` has the details of how things work.
 These work in the automated tests or in pictures taken from WSL, but nobody has pressed the
 real keys yet.
 
-- [ ] Push-to-talk in Italian with a real voice (tested only with synthesized Italian voices;
-      very short phrases such as "Ciao Claude, mi senti?" were the weak spot)
+- [ ] Push-to-talk in Italian with a real voice: a whole sentence in Italian. Tried by the
+      author on 2026-11-17 with one mixed sentence, English first and then "ciao Claude, mi
+      senti?": both halves arrived right, except "Claude" written as "cloud". The recording
+      was taken as Italian and took 3.5 s to transcribe (6.6 s of speech), against about
+      1.5 s for English ones of that length.
 - [ ] Hold `Ctrl+Alt`: the details panel comes out while the keys are held
 - [ ] `Ctrl+Alt` + mouse wheel: the focus moves, and stops at the first and last session
 - [ ] `Ctrl+Alt+Y` / `Ctrl+Alt+N` on a real permission prompt
