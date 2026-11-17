@@ -40,7 +40,8 @@ its own spoken line as the first line of its reply.
   the talk key and say something else: your words go back as the answer.
 - **Push-to-talk follow-ups.** Hold `Ctrl+Alt+Space`, say "also add a test for the empty case",
   release. While you hold the key, that session's light and the bubble next to it show your
-  own voice as a wave, so you can see the microphone hears you. A local Whisper model transcribes it and
+  own voice as a wave, so you can see the microphone hears you, and a glint of light runs along
+  "Release to send" (`"talk_text"` under `overlay`: `shimmer`, `pulse` or `still`). A local Whisper model transcribes it and
   it is sent at once to the session in focus, even if that session is idle; the light then
   shows a paper plane (moving dots while it works, a struck-out microphone when nothing went
   out; `"talk_sign": "line"` under `overlay` puts that sign beside the session's name
@@ -172,6 +173,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "glass": "blur",
     "opacity": 0.9,
     "talk_sign": "light",
+    "talk_text": "shimmer",
     "keep_talk_key": "held",
     "talk_frees_keys": true,
     "drag_keys": "Ctrl+Alt",

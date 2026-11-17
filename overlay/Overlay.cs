@@ -41,6 +41,48 @@ namespace ClaudeSpeaks
         public static int RowLines = 1;
         public static bool SignInLight = true;  // where push-to-talk's sign goes: in the session's light, or at the right of its line
 
+        // "Release to send" moves while you hold the talk key (the author asked for "an animation
+        // on the text"): shimmer = a glint of light runs along the words, then rests a moment |
+        // pulse = the words breathe between the microphone's pink and a lighter one | still.
+        public static string TalkText = "shimmer";
+        public static bool Motionless;  // for pictures
+        static readonly Color micInk = Color.FromRgb(0xFF, 0x8F, 0xA6), micGlint = Color.FromRgb(0xFF, 0xF4, 0xF6);
+        static readonly LinearGradientBrush shine = MakeShine();
+        static readonly SolidColorBrush breath = new SolidColorBrush(micInk);
+
+        static LinearGradientBrush MakeShine()
+        {
+            var brush = new LinearGradientBrush { MappingMode = BrushMappingMode.Absolute, StartPoint = new Point(-90, 0), EndPoint = new Point(0, 0) };
+            brush.GradientStops.Add(new GradientStop(micInk, 0));
+            brush.GradientStops.Add(new GradientStop(micGlint, 0.5));
+            brush.GradientStops.Add(new GradientStop(micInk, 1));
+            return brush;
+        }
+
+        // The ink for words that ask you to do something while the microphone is open.
+        public static Brush MicLive
+        {
+            get { return Motionless || TalkText == "still" ? MicInk : TalkText == "pulse" ? (Brush)breath : shine; }
+        }
+
+        // One frame of that motion. The glint takes a second to cross the words and stays away for half of one.
+        public static void MoveMicInk(double now)
+        {
+            if (Motionless) return;
+            if (TalkText == "pulse") breath.Color = Mix(micInk, micGlint, 0.5 - 0.5 * Math.Cos(now * 2 * Math.PI / 1.4));
+            else if (TalkText == "shimmer")
+            {
+                double at = -90 + 240 * Clamp((now % 1.5) / 1.0);  // left edge of the glint, in pixels from the start of the line
+                shine.StartPoint = new Point(at, 0);
+                shine.EndPoint = new Point(at + 90, 0);
+            }
+        }
+
+        public static Color Mix(Color a, Color b, double share)
+        {
+            return Color.FromRgb((byte)(a.R + (b.R - a.R) * share), (byte)(a.G + (b.G - a.G) * share), (byte)(a.B + (b.B - a.B) * share));
+        }
+
         // Shape differs as well as color (see Orb), so a state reads without color vision.
         public static Color Tint(string state)
         {
@@ -687,7 +729,7 @@ namespace ClaudeSpeaks
             line2.Text = talk ? TalkText : saying ? FlashText : rowText;
             line2.TextWrapping = saying && Ui.RowLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap;
             line2.MaxHeight = 16.7 * Ui.RowLines;
-            line2.Foreground = talk ? talkInk : saying ? Brushes.White : Ui.Dim;
+            line2.Foreground = talk ? (talkInk == Ui.MicInk ? Ui.MicLive : talkInk) : saying ? Brushes.White : Ui.Dim;
             line2.FontWeight = talk && talkInk == Ui.MicInk ? FontWeights.SemiBold : FontWeights.Normal;
             meta.Text = metaText;
             meta.Visibility = saying || metaText.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
@@ -976,7 +1018,8 @@ namespace ClaudeSpeaks
                     listOpacity = Num(msg, "list_opacity", listOpacity);
                     monitor = (int)Num(msg, "monitor", monitor);
                     opaque = msg.ContainsKey("opaque") && Convert.ToBoolean(msg["opaque"]);
-                    still = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
+                    still = Ui.Motionless = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
+                    if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     glass = Str(msg, "glass", glass);
                     islandX = Num(msg, "island_x", islandX);
                     islandY = Num(msg, "island_y", islandY);
@@ -1220,7 +1263,7 @@ namespace ClaudeSpeaks
             bool mine = orphan || found.TalkKind != null, listening = mine && talkState == "listening";
             string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : found.FlashText;
             string kind = mine ? TalkKind() : "";
-            string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind + Ui.SignInLight;
+            string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind + Ui.SignInLight + Ui.TalkText;
             if (shows != bubbleShows)
             {
                 bubbleShows = shows;
@@ -1228,7 +1271,7 @@ namespace ClaudeSpeaks
                 bubbleBadge.Show(Ui.SignInLight && !orphan ? "" : kind);  // with no session there is no light to put it in
                 bubbleLine2.Text = body;
                 bubbleLine2.Visibility = body.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
-                bubbleLine2.Foreground = mine ? TalkInk() : Brushes.White;
+                bubbleLine2.Foreground = !mine ? Brushes.White : listening ? Ui.MicLive : TalkInk();
                 bubbleLine2.FontWeight = mine && talkState == "listening" ? FontWeights.SemiBold : FontWeights.Normal;
                 bubbleStrip.Wave = listening ? mic : orphan ? mic : found.Wave;
                 bubbleStrip.Tint = mine ? Ui.Mic : Ui.Tint(found.State);
@@ -1271,6 +1314,7 @@ namespace ClaudeSpeaks
             if (talkState.Length > 0)
             {
                 again = true;
+                if (talkState == "listening") Ui.MoveMicInk(now);
                 if (now >= talkUntil) { talkState = ""; expired = true; }
             }
             if (now < wheelUntil) again = true;

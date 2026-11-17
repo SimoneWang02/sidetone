@@ -124,6 +124,11 @@ real keys yet.
       2026-11-17, so that only the microphone and "Release to send" are pink; needs a hub
       restart to show). To look at: is it far enough from the pink, and from the lilac
       another session can have?
+- [ ] "Release to send" with a glint of light running along it while the talk key is held
+      (asked for by the author on 2026-11-17 as "an animation on the text"; which one was
+      left open). To look at: is the glint what was meant? The other choices are
+      `"talk_text": "pulse"` (the words breathe) and `"still"`, under `overlay` in the
+      settings.
 - [ ] The bar over a game in borderless windowed mode
 - [x] A plain click on the bar reaching the window underneath (the author, 2026-11-17: "it
       lands on the window underneath")

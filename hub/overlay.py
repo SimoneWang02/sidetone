@@ -51,6 +51,9 @@ DEFAULTS = {
     # Where push-to-talk's sign (dots, paper plane, not sent) goes: light = inside the session's
     # status light | line = at the right of its name in the details
     "talk_sign": "light",
+    # How "Release to send" moves while the talk key is held: shimmer = a glint of light runs
+    # along the words | pulse = they breathe between two pinks | still = no motion
+    "talk_text": "shimmer",
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",
