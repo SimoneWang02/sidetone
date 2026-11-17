@@ -229,11 +229,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   right of the session's first line (`Badge`: microphone, moving dots, paper plane, cross).
   Since 2026-11-17 it is inside the session's light (the author, by voice: "it would be better
   if we put the icon inside the bowl instead of the details"; "bowl" was read as the round
-  light, **not confirmed**): `Orb.Sign`, drawn by `Badge.Draw`. While listening the light keeps
+  light; they saw it and said "that's good"): `Orb.Sign`, drawn by `Badge.Draw`. While listening the light keeps
   its voice bars; then pink with dots, green with a paper plane, red with a struck-out
   microphone (a plain cross there already means the session failed). The words stay in the
   bubble or row. `overlay.talk_sign` is `light` (default) or `line` (as before). With no
-  session to show it on, the sign is still in the bubble. Checked in pictures only.
+  session to show it on, the sign is still in the bubble. The paper plane was redrawn the
+  same day (the author: "it doesn't feel centered"): its three corners are equally far from
+  the middle and it is the same on both sides of its line of flight (`Badge.Aim`).
 - Hotkeys (rebind or blank them under `overlay.hotkeys`): always claimed are `toggle` Ctrl+Alt+L,
   `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R and `missed` Ctrl+Alt+U (Ctrl+Alt+M is taken by
   another program on the author's machine). Claimed only while they can act: `allow` Ctrl+Alt+Y,

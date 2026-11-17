@@ -17,9 +17,9 @@ real keys yet.
       3.6 s. Slips: "push the talk" for "push-to-talk", "in futura" for "in futuro", and the
       first words of the recording may be missing (it starts at "the to-do list"). Not
       tried: a recording that is Italian from its first word.
-- [ ] Push-to-talk's sign inside the session's light (2026-11-17): dots while it works, a
-      paper plane when sent, a struck-out microphone when nothing went out. Is the light what
-      was meant by "inside the bowl", and do the signs read at that size?
+- [x] Push-to-talk's sign inside the session's light (2026-11-17). The author saw the dots
+      and the paper plane and, after the plane was redrawn to sit in the middle, said "that's
+      good". Not seen by them yet: the struck-out microphone for "not heard" or cancelled.
       `"talk_sign": "line"` under `overlay` puts the sign back beside the name.
 - [ ] Hold `Ctrl+Alt`: the details panel comes out while the keys are held
 - [ ] `Ctrl+Alt` + mouse wheel: the focus moves, and stops at the first and last session
