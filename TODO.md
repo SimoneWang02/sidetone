@@ -35,6 +35,18 @@ real keys yet.
 
 ## Rough edges
 
+- [ ] A hub restart forgets the order of the sessions in the bar (they come back in the order
+      they next report something) and the titles that came from a prompt (a session Claude
+      Code has not named shows only its folder until the next prompt). The author noticed
+      both on 2026-11-17. Keep order and titles in a small file, like the waiting follow-ups.
+- [ ] A session started by voice keeps Claude Code's placeholder name (the folder plus two
+      letters, "claude-speaks-3f"). The hub now ignores that name and uses the prompt, typed
+      or spoken, but see the restart item above.
+- [ ] Something said to a busy session waits until its reply ends, and a turn stuck on an
+      unanswered dialog in the terminal holds it back for as long as the dialog is open. The
+      overlay shows "waiting" for 3.5 s only; the author took it as not heard (2026-11-17).
+      Keep the waiting sign on that session's light until the words are delivered, and say
+      "Queued." instead of "Sent.".
 - [ ] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next
@@ -77,6 +89,12 @@ Bigger pieces:
       hub already takes plain events from anything that can send them.
 - [ ] An overlay for Linux and macOS. Today it is Windows only.
 - [ ] Voice cloning, if that is what "uploadable" meant (see above).
+
+- [ ] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
+      take a light with the mouse and drop it where it should sit in the bar. The hub keeps
+      the order (by project, so it survives restarts) and new sessions join at the end. Fits
+      the dragging the bar already has: with the keys held a drag moves one light, without
+      them the whole bar.
 
 Away from the PC (the author's idea, 2026-11-17: with sessions open and nobody at the desk,
 "is it possible to use like either phone or AirPods interaction to do stuff", for example an
