@@ -28,6 +28,7 @@ Usage: claude-speaks <command>
   overlay dots|list|toggle|restart   switch the on-screen overlay's view, or restart it
   overlay layout NAME|next   how sessions are shown: bar or island
   overlay move               make the overlay easy to find and drag (you can drag it any time)
+  overlay hover always|keys  what brings the details out: the mouse on the bar, or only holding Ctrl+Alt
   overlay monitor N          put it on monitor N (0 = primary)
   overlay corner top-right|top-left|bottom-right|bottom-left
   terminal                   show how sessions' own terminals are marked
@@ -164,6 +165,9 @@ case ${1:-} in
       restart) echo '{"restart": true}' | hub_post /overlay >/dev/null ;;
       move) echo '{"move": true}' | hub_post /overlay >/dev/null && echo "drag the overlay now; it stays where you drop it" ;;
       monitor) jq -nc --arg n "${3:-0}" '{monitor: ($n | tonumber)}' | hub_post /overlay >/dev/null ;;
+      hover)
+        got=$(jq -nc --arg h "${3:-}" '{hover: $h}' | hub_post /overlay | jq -r '.hover // empty')
+        [ -n "$got" ] && echo "hover: $got" || { echo "hover: always or keys (needs a hub that knows it: claude-speaks hub restart)"; exit 2; } ;;
       layout)
         got=$(jq -nc --arg l "${3:-next}" '{layout: $l}' | hub_post /overlay | jq -r '.layout // empty')
         [ -n "$got" ] && echo "layout: $got" || { echo "layouts: bar, island (or: next)"; exit 2; } ;;

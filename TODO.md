@@ -277,7 +277,7 @@ real keys yet.
       away from the screen, the voices alone may not be enough to tell them apart.
 - [ ] `hub/hub.py` is over 1,100 lines. Split it (permission requests, push-to-talk, the
       HTTP layer) before adding much more.
-- [ ] The overlay gets in the way of a game (the author, 2026-11-17, by voice): when the
+- [x] The overlay gets in the way of a game (the author, 2026-11-17, by voice): when the
       mouse passes over the bar while playing, the bar reacts and takes the mouse (it
       unfolds, and a press there starts a drag instead of reaching the game). Their
       suggestion: the bar only answers to the mouse while `Ctrl+Alt` is held; otherwise the
@@ -289,6 +289,13 @@ real keys yet.
       `Ctrl+Alt` held (`overlay.drag_keys`). Still open: it unfolds whenever the mouse passes
       over it. A setting for that (unfold under the mouse: always, or only with the keys)
       has not been built; the author was not asked whether they want the unfolding gone.
+      Asked on 2026-11-17, the author first said the details should by default only open
+      with `Ctrl+Alt` held, and a minute later, before it was live: "Actually never mind
+      ... I like hovering ... opening up its details. It's fine." So the mouse still opens
+      them, and the other way is there for whoever wants it: `claude-speaks overlay hover
+      keys` (or `"hover": "keys"` under `overlay`). With it a mouse passing over the bar
+      changes nothing, not even the light under it. Compiled and covered by a test for
+      the command; nobody has looked at `hover: keys` on screen or in a game.
 - [x] `first_audio` in `voice.log` is too high for a line whose first sentence is long (3 to
       8 s logged where the sound started within a second, as `heard` shows). The time is
       taken after the sentence was written to the player, and that write waits until the

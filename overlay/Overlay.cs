@@ -884,6 +884,11 @@ namespace ClaudeSpeaks
         object[] sessions = new object[0];
         object[] history = new object[0];
         bool historyAll;  // the history shows every session's lines, not only those of the one under the mouse
+        // The mouse alone on the bar brings the details out. `hover: keys` turns that off, for a
+        // bar that must not answer to a mouse passing over it in a game: then only holding
+        // Ctrl+Alt brings them out. The author asked for that as the default, tried to picture
+        // it and took it back ("I like hovering ... opening up its details"), so it is a choice.
+        bool hoverOpens = true;
         string historyOf = "";  // the session whose lines the history shows: the one the mouse was on last
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
@@ -1075,6 +1080,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
                     if (msg.ContainsKey("history")) historyAll = Str(msg, "history") == "all";
+                    if (msg.ContainsKey("hover")) hoverOpens = Str(msg, "hover") != "keys";
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
@@ -1460,7 +1466,8 @@ namespace ClaudeSpeaks
 
         // --- the mouse ------------------------------------------------------------------------------
 
-        // The panel comes out when the mouse reaches the bar and goes shortly after it leaves.
+        // The panel comes out when the mouse reaches the bar and goes shortly after it leaves. With
+        // `hover: keys` the mouse only matters while the details are out for another reason.
         // While the mouse is on the bar, the bar takes the mouse so it can be dragged; the light
         // under it grows and its row is lit. In list mode, resting longer also shows the history.
         void WatchCursor()
@@ -1473,8 +1480,10 @@ namespace ClaudeSpeaks
             if (inside) { insideTicks++; outsideTicks = 0; } else { outsideTicks++; insideTicks = 0; }
             bool wantHover = inside ? insideTicks >= 3 || hover : hover && outsideTicks < 9;  // 0.1 s to open, 0.3 s to close
             bool wantPeek = mode == "list" && (inside ? insideTicks >= 22 || peek : peek && outsideTicks < 9);
+            if (!hoverOpens) wantHover = false;  // only the keys (or the list key) bring the details out
             Row under = null;
-            if (inside && rail.ActualHeight > 0 && (onBar || !Island))
+            // Nor does a light grow under a mouse that is only passing: nothing answers until the details are out.
+            if (inside && rail.ActualHeight > 0 && (onBar || !Island) && (hoverOpens || IsOpen()))
             {
                 // In the bar's own units, past its edge: along it, whichever way it runs. (In the
                 // bar layout the rows are level with the lights, so this also works over the panel.)

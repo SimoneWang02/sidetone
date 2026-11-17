@@ -1484,6 +1484,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._reply({"layout": hub.set_layout(str(body["layout"]))})
             elif "monitor" in body or "corner" in body:
                 hub.place_overlay(**{k: body[k] for k in ("monitor", "corner") if k in body})
+            elif "hover" in body:  # whether the mouse alone brings the details out
+                if body["hover"] not in ("keys", "always"):
+                    return self._reply({"error": "hover is one of: keys, always"}, 400)
+                hub.place_overlay(hover=body["hover"])
+                return self._reply({"hover": body["hover"]})
             else:
                 hub.overlay.send({"type": "mode", "mode": body.get("mode", "toggle")})
             self._reply({})

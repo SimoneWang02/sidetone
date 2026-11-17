@@ -180,6 +180,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   only needs the cursor's position. `claude-speaks overlay move` works without the keys.
   The author dragged it with the keys held the same day ("it works. Now perfect"), and the
   new place was saved.
+- What brings the details out (`overlay.hover`, 2026-11-17): `always` (default) = the mouse
+  resting on the bar, as ever; `keys` = only holding Ctrl+Alt or the list key, and then a
+  mouse passing over the bar changes nothing at all (no light growing under it either).
+  `claude-speaks overlay hover always|keys`. Asked whether the bar should stop opening under
+  the mouse because of games, the author said yes, as the default, and took it back a minute
+  later ("Actually never mind ... I like hovering ... opening up its details"), so the
+  default did not change and `keys` is untried on screen.
 - Name colors (asked for by voice on 2026-11-17: "if ... either the session title or the folder
   name could be different color, would be ... much easier to read"; read as: the name should
   stand apart from the title, and sessions from each other): `Session.color`, one of

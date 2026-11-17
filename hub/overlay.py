@@ -46,6 +46,10 @@ DEFAULTS = {
     # While you talk, hide the talk hotkey's Ctrl and Alt from other programs, so that a click
     # is a plain click and not a Ctrl+Alt+click (which a video player, for one, ignores).
     "talk_frees_keys": True,
+    # What brings the details out: always = the mouse resting on the bar, or holding Ctrl+Alt |
+    # keys = only holding Ctrl+Alt (or the key that keeps them out), so a mouse passing over
+    # the bar, in a game for one, changes nothing
+    "hover": "always",
     # What the history under the kept-out details shows: session = the lines of the session the
     # mouse is on (before it touched one: the session in focus) | all = every session's lines
     "history": "session",
