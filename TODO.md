@@ -119,7 +119,7 @@ real keys yet.
       works while two or more sessions are open.
       The author, 2026-11-17, after the mending, asked to press an arrow while talking and
       go on talking: "It seems to be working. That's good." Repeat after a hub restart the
-      same hour: "the replay worked". Not said yet: Left and Right in the island layout.
+      same hour: "the replay worked". Left and Right in the island layout: see the layout key above.
 - [x] `Ctrl+Alt+K`: switches between the bar and the island, and back. The author,
       2026-11-17, asked to switch and to try Left and Right there: "It works fine. Yeah,
       it's perfect."
