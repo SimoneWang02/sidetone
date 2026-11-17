@@ -74,7 +74,7 @@ real keys yet.
       taken after the sentence was written to the player, and that write waits until the
       player has taken most of it. Take the time before writing.
 - [ ] A hub that is running old code keeps old faults: a fix only counts once the hub was
-      restarted. On 2026-11-17 a reply was cut by the author's own voice message 8 minutes
+      restarted. On 2026-11-17 a reply was cut by the author's own voice message two minutes
       after that fault was fixed and committed, because the hub had not been restarted yet.
       Say in `claude-speaks status` when the running hub is older than the code on disk.
 - [ ] The picture check can catch the live overlay when the two overlap on screen.
