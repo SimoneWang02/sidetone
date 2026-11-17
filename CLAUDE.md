@@ -213,7 +213,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 78 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 80 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
@@ -284,6 +284,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   feedback". Delivered while the session is busy, it is handled right after the current reply.
   It works from both Stop and SessionStart. Claude Code kills these hooks when the session exits.
   Its `timeout` is enforced, so the listener asks for 86400 s.
+- Languages (2026-11-17): the author also speaks Italian to it; the English-only model dropped
+  those recordings or invented English ("But I'll see you in Italy in a few days."). Their
+  `config.json` now has `whisper_model: small` and `whisper_language: "en,it"`. With several
+  languages named, `Transcriber` asks the model which one a recording is and picks the likeliest
+  of the named ones (a short clip was detected as English with only 0.26 certainty). Measured
+  with Kokoro's Italian voices as the speaker: `small` got Italian right, about 1.2 s per
+  sentence with detection against 0.7 s for `small.en`; loudness down to a peak of 0.03 made no
+  difference. The repo default stays `small.en`.
 - Speech-to-text facts: `small.en` (int8, CPU) transcribes 4.4 s of speech in about 0.7 s,
   `base.en` in 0.3 s but drops punctuation. The WSLg microphone works through `parec`. Without a
   tail after key release the last word is cut. After a hub restart idle sessions are unknown

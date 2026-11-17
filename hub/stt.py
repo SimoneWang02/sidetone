@@ -71,12 +71,20 @@ class Recorder:
 
 
 class Transcriber:
-    """Whisper kept loaded after its first use. `small.en` reads a short sentence in under a second on CPU."""
+    """Whisper kept loaded after its first use. `small.en` reads a short sentence in under a second on CPU.
 
-    def __init__(self, model: str = "small.en", language: str = "en"):
+    `language` is for multilingual models such as `small`: one code ("it"), several ("en,it":
+    each recording is taken as whichever of them it sounds most like), or "auto" for any language.
+    Naming the languages you speak matters for short sentences, which are easily mistaken for
+    some other language. English-only models (names ending in ".en") ignore it.
+    """
+
+    def __init__(self, model: str = "small.en", language: str | list = "en"):
         self.name = model
-        # English-only models ignore the setting; "auto" lets a multilingual model detect it.
-        self.language = "en" if model.endswith(".en") else (None if language == "auto" else language)
+        codes = [c.strip().lower() for c in (language if isinstance(language, str) else ",".join(language)).split(",")]
+        codes = [c for c in codes if c and c != "auto"]
+        self.languages = ["en"] if model.endswith(".en") else codes  # empty: any language
+        self.heard = ""  # the language of the last recording
         self._model = None
         self._lock = threading.Lock()
 
@@ -102,7 +110,13 @@ class Transcriber:
 
         self.load()
         audio = np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768.0
+        language = self.languages[0] if len(self.languages) == 1 else None
+        if len(self.languages) > 1:  # which of the user's languages is this?
+            likely = dict(self._model.detect_language(audio)[2])
+            language = max(self.languages, key=lambda code: likely.get(code, 0.0))
         # The voice filter drops silence first; without it Whisper invents words for an empty recording.
-        segments, _ = self._model.transcribe(audio, language=self.language, beam_size=1, vad_filter=True,
-                                             condition_on_previous_text=False)
-        return " ".join(s.text.strip() for s in segments).strip()
+        segments, info = self._model.transcribe(audio, language=language, beam_size=1, vad_filter=True,
+                                                condition_on_previous_text=False)
+        text = " ".join(s.text.strip() for s in segments).strip()
+        self.heard = getattr(info, "language", language or "")
+        return text

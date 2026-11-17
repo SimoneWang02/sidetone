@@ -9,6 +9,7 @@ import sys
 import tempfile
 import threading
 import time
+import types
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -723,6 +724,35 @@ class PushToTalk(HubCase):
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "deny"])
         hub.talk_start()
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "cancel", "deny"])
+
+
+class SpokenLanguages(unittest.TestCase):
+    def test_which_languages_a_model_listens_for(self):
+        import stt
+
+        self.assertEqual(stt.Transcriber("small.en", "it").languages, ["en"])  # an English-only model
+        self.assertEqual(stt.Transcriber("small", "it").languages, ["it"])
+        self.assertEqual(stt.Transcriber("small", "en, IT").languages, ["en", "it"])
+        self.assertEqual(stt.Transcriber("small", ["en", "it"]).languages, ["en", "it"])
+        self.assertEqual(stt.Transcriber("small", "auto").languages, [])  # any language
+
+    def test_a_recording_is_taken_as_the_likeliest_of_your_languages(self):
+        import stt
+
+        class Model:
+            asked = None
+
+            def detect_language(self, audio):
+                return "cy", 0.5, [("cy", 0.5), ("it", 0.3), ("en", 0.1)]  # a short clip mistaken for Welsh
+
+            def transcribe(self, audio, language, **options):
+                Model.asked = language
+                return [types.SimpleNamespace(text=" Ciao Claude. ")], types.SimpleNamespace(language=language)
+
+        listener = stt.Transcriber("small", "en,it")
+        listener._model = Model()
+        self.assertEqual(listener.transcribe(bytes(3200)), "Ciao Claude.")
+        self.assertEqual((Model.asked, listener.heard), ("it", "it"))
 
 
 class Loudness(unittest.TestCase):

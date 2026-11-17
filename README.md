@@ -163,8 +163,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 - The hub uses about 0.5 GB of memory with the voice loaded, and about 1.2 GB while the Whisper
   model is loaded (from the first push-to-talk until ten minutes after the last one). Each spoken
   line is a short burst of CPU.
-- Push-to-talk understands English out of the box. For another language set `whisper_model` to
-  a multilingual model such as `small` and `whisper_language` to its code or `auto`.
+- Push-to-talk understands English out of the box. For other languages set `whisper_model` to
+  a multilingual model such as `small`, and `whisper_language` to the ones you speak, for
+  example `"en,it"`: each recording is then taken as whichever of them it sounds most like.
+  (`"auto"` allows any language, but short sentences are easily mistaken for the wrong one.)
+  Claude gets your words in the language you spoke; its spoken summaries stay in English.
 - Own voices are Kokoro voice files or blends of existing voices. Cloning a voice from a
   recording is not something Kokoro can do.
 - Without Kokoro the hub falls back to the system voice (macOS `say`, speech-dispatcher or
@@ -186,7 +189,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-78 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+80 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
 `python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
 view. It captures only the overlay's own rectangles, and shows the see-through glass over a

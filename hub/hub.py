@@ -103,7 +103,7 @@ class Config:
     # after followup_delay unless cancelled), True, or "auto" (only for sessions that would act
     # on it without asking, i.e. not in default or plan mode).
     followup_confirm: bool | str = False
-    whisper_language: str = "en"  # for multilingual models such as "small": a code, or "auto"
+    whisper_language: str = "en"  # for multilingual models such as "small": "it", "en,it" (the ones you speak), or "auto"
     whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
     config_path: str = ""  # the user's config.json; overlay placement chosen by dragging is saved there
@@ -635,8 +635,10 @@ class Hub:
         except Exception as e:  # a broken model must not take the hub down
             log(self.cfg, "hub.log", f"transcription failed: {e}")
             text = ""
+        heard = getattr(self.transcriber, "heard", "") if text else ""
         log(self.cfg, "hub.log", f"talk: {len(pcm) / 2 / stt.RATE:.1f}s recorded, peak level {stt.loudness(pcm):.2f}, "
-                                 f"transcribed in {time.monotonic() - started:.1f}s: {text or '(nothing heard)'}")
+                                 f"transcribed in {time.monotonic() - started:.1f}s"
+                                 f"{' as ' + heard if heard else ''}: {text or '(nothing heard)'}")
         if self._unload:
             self._unload.cancel()
         if self.transcriber and self.cfg.whisper_unload_minutes:
