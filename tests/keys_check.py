@@ -20,6 +20,8 @@ Two rounds:
    then). Expected: nothing of the talk key is passed on, during the hold Windows takes Shift
    for up although it is still held (so a click would be a plain click), and the second hold,
    begun without letting go of Shift, is still recognised.
+4. Another key (F19) is tapped during the hold, after which a keyboard no longer repeats the
+   held key. Expected: the hold goes on until the talk key is let go, and nothing is passed on.
 """
 import json
 import os
@@ -73,7 +75,7 @@ def wait_ready(timeout=40):
     return False
 
 
-def round_(keep, expected, what, talk="F20", modifier=0, hidden=None):
+def round_(keep, expected, what, talk="F20", modifier=0, hidden=None, other=0):
     """Hold the key once with the overlay set to `keep`; True if other programs saw `expected`
     (and, with a `modifier` held as well, if Windows took that key for `hidden` during the hold)."""
     send(type="config", opaque=True, still=True, mode="dots", focus_wheel="", drag_keys="", hotkeys={"talk": talk},
@@ -83,7 +85,7 @@ def round_(keep, expected, what, talk="F20", modifier=0, hidden=None):
             print("  overlay error:", m.get("message"))
     watcher = subprocess.Popen(
         ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", win(f"{ROOT}/tests/keys_check.ps1"),
-         "-Repeats", str(REPEATS), "-Delay", "1500", "-Modifier", str(modifier)],
+         "-Repeats", str(REPEATS), "-Delay", "1500", "-Modifier", str(modifier), "-Other", str(other)],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd="/mnt/c/Windows")
     if watcher.stdout.readline().strip() != "hooked":
         print("  !! the watcher did not start:", watcher.stderr.read()[:300])
@@ -112,7 +114,10 @@ try:
     # Left Shift stands in for Ctrl and Alt: held before the talk key and let go after two holds.
     third = round_("held", "", "a hotkey with a second key (Shift+F20), which is hidden while talking:",
                    talk="Shift+F20", modifier=0xA0, hidden="up")
-    ok = first and second and third
+    # F19 is tapped in the middle of the hold, as an arrow key is to move the focus while talking.
+    # Had the hold ended there, the release of the talk key a second and a half later would be passed on.
+    fourth = round_("always", "", "another key pressed while talking does not end the hold:", other=0x82)
+    ok = first and second and third and fourth
 finally:
     try:
         proc.stdin.close()

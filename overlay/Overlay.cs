@@ -1576,6 +1576,11 @@ namespace ClaudeSpeaks
             bool down = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
             if (masked.Remove((int)key))  // really let go, or pressed anew: from here on Windows is right about this key again
                 return CallNextHookEx(keyHook, code, wParam, lParam);
+            // A keyboard repeats only the key pressed last. Once another key goes down during a
+            // hold, the talk key stops repeating though it is still held, so its repeats can no
+            // longer tell us anything (an arrow pressed to move the focus ended the recording
+            // a second later). From then on only its release ends the hold.
+            if (holding && down && key != heldKey) repeated = false;
             if (down && masked.Count > 0)  // Windows no longer sees our hotkeys' Ctrl and Alt, so they are matched here
                 foreach (KeyValuePair<string, uint[]> claim in claims)
                     if (claim.Key != "talk" && claim.Value[0] == key && Mods(claim.Value[1], true))

@@ -6,7 +6,9 @@
 # With -Modifier (a key such as left Shift, 0xA0) that key is held down first and let go last,
 # as the Ctrl and Alt of the real hotkey are, and the output also says whether Windows took it
 # for up or down in the middle of the hold.
-param([int]$Key = 0x83, [int]$Repeats = 4, [int]$Delay = 300, [int]$Modifier = 0)
+# With -Other, that key is tapped in the middle of the hold and the hold then goes on for a
+# second and a half: a keyboard stops repeating the held key once another one is pressed.
+param([int]$Key = 0x83, [int]$Repeats = 4, [int]$Delay = 300, [int]$Modifier = 0, [int]$Other = 0)
 
 Add-Type -ReferencedAssemblies System.Windows.Forms -TypeDefinition @"
 using System;
@@ -40,7 +42,7 @@ public static class KeysCheck
         return CallNextHookEx(hook, code, wParam, lParam);
     }
 
-    public static string Run(int key, int repeats, int delay, int modifier)
+    public static string Run(int key, int repeats, int delay, int modifier, int other)
     {
         watched = key;
         proc = OnKey;
@@ -55,6 +57,11 @@ public static class KeysCheck
             Thread.Sleep(400);                                    // time for the overlay to react
             if (modifier != 0) held = (GetAsyncKeyState(modifier) & 0x8000) != 0 ? "down" : "up";
             for (int i = 0; i < repeats; i++) { keybd_event((byte)key, 0, 0, UIntPtr.Zero); Thread.Sleep(40); }
+            if (other != 0)
+            {
+                keybd_event((byte)other, 0, 0, UIntPtr.Zero); Thread.Sleep(40);
+                keybd_event((byte)other, 0, 2, UIntPtr.Zero); Thread.Sleep(1500);  // held on, with no more repeats
+            }
             keybd_event((byte)key, 0, 2, UIntPtr.Zero);          // let go
             Thread.Sleep(300);
             state = (GetAsyncKeyState(key) & 0x8000) != 0 ? "stuck" : "released";
@@ -72,4 +79,4 @@ public static class KeysCheck
 }
 "@
 
-[KeysCheck]::Run($Key, $Repeats, $Delay, $Modifier)
+[KeysCheck]::Run($Key, $Repeats, $Delay, $Modifier, $Other)

@@ -413,7 +413,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the old way (repeats kept, release passed on, so a video can still pause then).
   `overlay.keep_talk_key`: `held` (default), `always` (hook in all the time, for a talk key
   without Ctrl or Alt) or `off`. If a kept release is ever lost, the hold ends a second after
-  the key stops repeating. `tests/keys_check.py` checks both ways from WSL with a spare key
+  the key stops repeating. That safeguard is dropped as soon as another key goes down during
+  the hold: a keyboard repeats only the key pressed last, so an arrow pressed to move the
+  focus while talking ended the recording a second later (the author, 2026-11-17: with the
+  wheel "it continues ... but whenever I use the arrows, it stops"). `tests/keys_check.py` checks both ways from WSL with a spare key
   (F20, no Ctrl or Alt). Not checked from WSL: the hook going in on the real Ctrl and Alt.
   The author's wider idea, that holding Ctrl+Alt switches off every other key, was not built:
   it would also take the Ctrl+Alt shortcuts of other programs and, on keyboards such as the
