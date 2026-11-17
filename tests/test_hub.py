@@ -508,6 +508,33 @@ class Questions(HubCase):
         self.assertEqual(self.session()["state"], "working")
         self.assertEqual(self.spoken()[-1], "Answered: Red.")
 
+    def test_a_question_can_be_answered_in_your_own_words(self):
+        hub = self.make(talk_feedback="none")
+        req = hub.request_permission(ask_question(question("Which drink?", "Tea", "Coffee"),
+                                                  question("Which colour?", "Red", "Blue")))
+        hub.follow_up("Neither, water please", session="s1", delay=0)  # what push-to-talk heard
+        time.sleep(0.1)
+        self.assertEqual(req.answers, {"Which drink?": "Neither, water please"})
+        self.assertFalse(req.done.is_set())
+        self.assertEqual(self.overlay.of("request")[-1]["text"], "asks: Which colour?")
+        hub.follow_up("Green", session="s1", delay=0)
+        time.sleep(0.1)
+        self.assertEqual((req.decision, req.answers), ("answer", {"Which drink?": "Neither, water please", "Which colour?": "Green"}))
+        self.assertEqual(hub.followups.get("s1", []), [])  # the words were the answer, not a message for later
+        self.assertEqual(self.session()["state"], "working")
+
+    def test_a_question_answered_in_the_terminal_leaves_the_overlay(self):
+        hub = self.make()
+        asked = ask_question(question("Which drink?", "Tea", "Coffee"))
+        req = hub.request_permission(asked)
+        self.assertEqual(self.overlay.of("request")[-1]["text"], "asks: Which drink?")
+        answered = {**asked["tool_input"], "answers": {"Which drink?": "Tea"}}  # as Claude Code reports the call that ran
+        hub.on_event(ev("PostToolUse", tool_name="AskUserQuestion", tool_input=answered))
+        self.assertTrue(req.done.is_set())
+        self.assertIsNone(req.decision)
+        self.assertEqual(self.overlay.of("request")[-1], {"type": "request"})
+        self.assertEqual(self.session()["state"], "working")
+
     def test_a_waiting_question_is_read_out_with_its_options(self):
         hub = self.make()
         hub.request_permission(ask_question(question("Which drink?", "Tea", "Coffee")))

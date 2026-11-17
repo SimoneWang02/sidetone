@@ -578,23 +578,28 @@ class Hub:
                     or not 1 <= number <= len(question["options"])):
                 return False
             self.last_seen = time.time()
-            label = question["options"][number - 1]["label"]
-            req.answers[question["question"]] = label
-            s = self.sessions.by_id.get(req.session)
-            if s:
-                self.speech.drop_session(s.id)  # stop reading the options out
-            if req.question:  # more questions in the same prompt: on to the next
-                req.shown = time.monotonic()
-                if s:
-                    s.note = f"asks: {req.question['question']}"
-                    self._say(s, f"{label}. Next. {_read_out(req.question)}", "needs_you", "question")
-                self._show_request()
-            else:
-                self._resolve(req, "answer", "hotkey")
-                if s:
-                    self._say(s, f"Answered: {label}.", "allowed", "decision")
+            self._answer(req, question["options"][number - 1]["label"], "hotkey")
         self.publish()
         return True
+
+    def _answer(self, req: Request, answer: str, why: str, echo: bool = True) -> None:
+        """Give `answer` to the question on screen: an option's label, or with `why` "voice" the
+        user's own words (Claude gets them as it gets a typed "Other"). After the last question
+        the hook hands all answers to Claude. `echo` says the answer back. Call with the lock held."""
+        req.answers[req.question["question"]] = answer
+        s = self.sessions.by_id.get(req.session)
+        if s:
+            self.speech.drop_session(s.id)  # stop reading the options out
+        if req.question:  # more questions in the same prompt: on to the next
+            req.shown = time.monotonic()
+            if s:
+                s.note = f"asks: {req.question['question']}"
+                self._say(s, f"{answer + '. ' if echo else ''}Next. {_read_out(req.question)}", "needs_you", "question")
+            self._show_request()
+        else:
+            self._resolve(req, "answer", why)
+            if s and echo:
+                self._say(s, f"Answered: {answer}.", "allowed", "decision")
 
     def abandon(self, req: Request, why: str, interrupted: bool = False) -> None:
         """The request ended without the hub answering it (answered in the terminal, hook killed...)."""
@@ -608,7 +613,7 @@ class Hub:
     def _settle(self, sid: str, why: str, tool: str | None = None, tool_input: dict | None = None) -> None:
         """Close a session's open requests; with a tool given, only the one for that exact call."""
         for req in [r for r in self.requests if r.session == sid]:
-            if tool is None or (req.tool == tool and req.tool_input == (tool_input or {})):
+            if tool is None or (req.tool == tool and _same_call(tool, req.tool_input, tool_input or {})):
                 self._resolve(req, None, why)
 
     def _resolve(self, req: Request, decision: str | None, why: str) -> None:
@@ -852,15 +857,21 @@ class Hub:
                 self._talk(None)
                 return
             self._talk("sent", s, pending.text, seconds=2.5)  # what went out, for a glance
-            self.followups.setdefault(s.id, []).append(pending.text)
-            self._keep_followups()
-            listener = self.listeners.get(s.id)
-            if listener:
-                listener.wake.set()
-            else:  # it is in the middle of a reply and gets this right after
-                self._talk("queued", s, pending.text, seconds=3.5)
-            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
-            self._signal("sent" if listener else "queued", s, "Sent." if listener else "Queued.")
+            asking = next((r for r in self.requests if r.session == s.id and r.question), None)
+            if asking:  # it is waiting on a question, so these words are the answer to it
+                self._answer(asking, pending.text, "voice", echo=False)
+                log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] given as the answer to its question")
+                self._signal("sent", s, "Sent.")
+            else:
+                self.followups.setdefault(s.id, []).append(pending.text)
+                self._keep_followups()
+                listener = self.listeners.get(s.id)
+                if listener:
+                    listener.wake.set()
+                else:  # it is in the middle of a reply and gets this right after
+                    self._talk("queued", s, pending.text, seconds=3.5)
+                log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
+                self._signal("sent" if listener else "queued", s, "Sent." if listener else "Queued.")
         self.publish()
 
     def _expire(self, pending: Pending) -> None:
@@ -1143,6 +1154,14 @@ def _spoken_name(name: str) -> str:
 
 FLASH_LOOK = {"allowed": "done", "denied": "failed", "progress": "working"}  # speech kind -> overlay glyph
 NUMBER_WORDS = ("One", "Two", "Three", "Four")
+
+
+def _same_call(tool: str, asked: dict, ran: dict) -> bool:
+    """Is the tool call that ran the one a prompt was open for? A question answered in the
+    terminal comes back with the answers added to it, so only its questions are compared."""
+    if tool == "AskUserQuestion":
+        return asked.get("questions") == ran.get("questions")
+    return asked == ran
 
 
 def _answerable(tool_input: dict) -> list:
