@@ -47,7 +47,9 @@ real keys yet.
       author asked whether it is worth it and has not said keep or drop. Keep: merge the
       branch and restart the hub. Drop: the offer was to remove the key and the catch-up
       code altogether, since the present version mostly says "Nothing new".
-- [ ] `Ctrl+Alt+Backspace` while recording
+- [x] `Ctrl+Alt+Backspace` while recording (the author, 2026-11-17, right after being asked
+      to try it: "Nice it works it works"). Not said: whether the same key also cut a line
+      that was being spoken.
 - [x] Hold the talk key with a video playing in the browser in front (YouTube): the video
       should neither pause nor change speed, also when Ctrl or Alt is let go before Space.
       The author, 2026-11-17: fine while holding, but "it stops the video on release". The
