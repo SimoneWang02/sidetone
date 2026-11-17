@@ -182,7 +182,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   new place was saved. Later that day: "sometimes the cursor is not aligned" with the bar
   while dragging. `BeginDrag` took the grab point from `GetCursorPos` when the press was
   handled, which is after the mouse has moved on; it now takes it from the press
-  (`e.GetPosition`). Believed to be the cause, not shown to be: nobody has dragged since.
+  (`e.GetPosition`). The author dragged it afterwards: "Perfect, it seems to be working."
 - What brings the details out (`overlay.hover`, 2026-11-17): `always` (default) = the mouse
   resting on the bar, as ever; `keys` = only holding Ctrl+Alt or the list key, and then a
   mouse passing over the bar changes nothing at all (no light growing under it either).
