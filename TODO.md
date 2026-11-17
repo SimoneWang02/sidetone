@@ -214,7 +214,10 @@ real keys yet.
       inputs?"). Tests only. To try: close every session, wait for the hub to go
       (`claude-speaks hub stop` does it at once), open one session and speak to it
       without typing.
-- [ ] Sessions started from the VS Code extension showing up in the bar
+- [x] Sessions started from the VS Code extension showing up in the bar. The author,
+      2026-11-17, opened Claude Code in a new editor tab: "it seems to be added below",
+      and the hub listed it as a third session, idle, with a voice of its own. Not tried:
+      whether such a session speaks and can be spoken to.
 - [x] The bar no longer getting taller when the mouse is on it while a long sentence is
       said: since 2026-11-17 the sentence is cut to one line in the details (`row_lines`).
       The author the same day: "It works. It's only one row. I mean you can make it two.
