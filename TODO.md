@@ -296,6 +296,13 @@ real keys yet.
       overlay shows "waiting" for 3.5 s only; the author took it as not heard (2026-11-17).
       Keep the waiting sign on that session's light until the words are delivered. (Done
       2026-11-17: a waiting message has its own sound, or "Queued." with `talk_feedback: voice`.)
+      Built that evening on the author's go-ahead: a small dot in the microphone's color
+      stays at the upper right of that session's light for as long as words are held for
+      it, its row in the details says "1 message waiting", and when the session takes
+      them the light shows the paper plane. While the words are on screen the light shows
+      a clock, where it showed the plane of words that went out. Seen in pictures only.
+      To try: speak to a session in the middle of a reply and watch its light until the
+      reply ends. Not built: a sound at the moment the words are handed over.
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next

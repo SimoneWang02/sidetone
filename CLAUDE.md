@@ -308,6 +308,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   plays one. Measured on the sink's monitor: sound within a few hundredths of a second, about
   0.2 s long. "Allowed." and "Denied." are still spoken. **The author has not said yet
   whether the sounds are right**; the pitches are in `sounds.TONES`.
+- Words that wait are marked on the light (2026-11-17). Words for a busy session showed
+  "waiting" for 3.5 s and then nothing, and the author took that as not heard. `Hub._waiting`
+  holds the sessions whose words could not be handed over (`_deliver` found no listener to
+  wake); their rows carry `waiting` (how many) and "1 message waiting" in `meta`. The
+  overlay draws a small dot in the microphone's color at the upper right of the light
+  (`Orb.Mark`) until `collect` hands the words over, which shows `sent` on that light for
+  2.5 s unless push-to-talk is showing something of its own. The `queued` step is a clock
+  in the light (`Badge` kind `wait`), no longer the plane. Seen in pictures; **the author
+  has not seen it yet**.
 - What push-to-talk shows (changed 2026-11-17: the author did not like the text line with
   arrows, "listening → name", and it kept the old name when the focus moved): the hub sends
   `talk` with a step (`listening`, `transcribing`, `ready`, `sent`, `failed`, `focus`), the
