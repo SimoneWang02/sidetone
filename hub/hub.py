@@ -322,10 +322,12 @@ class Hub:
             self.sessions.keep(kept.get("sessions"))
         except (OSError, ValueError, AttributeError):
             return
+        colors = {sid: was["color"] for sid, was in self.sessions.kept.items()}  # as they are now
         for e in kept.get("history") or []:  # what was said before the restart, for repeat and the history
             if (isinstance(e, dict) and isinstance(e.get("time"), (int, float))
                     and all(isinstance(e.get(k), str) for k in ("session", "name", "spoken_name", "voice", "text", "kind"))):
-                self.history.append({**e, "color": str(e.get("color") or ""), "heard": bool(e.get("heard"))})
+                self.history.append({**e, "color": colors.get(e["session"]) or str(e.get("color") or ""),
+                                     "heard": bool(e.get("heard"))})
         live = claude_sessions.read(self.cfg.sessions_dir)
         can_tell = os.path.isdir(self.cfg.sessions_dir)
         for sid, was in list(self.sessions.kept.items()):

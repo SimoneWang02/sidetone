@@ -165,7 +165,7 @@ def sessions(speaking=None, focus="api-server"):
         dict(name="data-pipeline", title="Nightly export", state="failed", text="error: rate limit", meta=""),
         dict(name="notes", title="", state="idle", text="", meta=""),
     ]
-    for row, color in zip(rows, ["#8AB4FF", "#FFB86B", "#C6A0F6", "#7FDBCA", "#FF8FA3"]):
+    for row, color in zip(rows, ["#8AB4FF", "#FFB86B", "#C6A0F6", "#7FDBCA", "#F27FFF"]):
         row["color"] = color
         row["speaking"] = row["name"] == speaking
         row["target"] = row["name"] == focus

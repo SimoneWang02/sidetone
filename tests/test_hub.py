@@ -1294,6 +1294,33 @@ class AcrossARestart(HubCase):
             hub.on_event(ev("SessionStart", sid=sid))
         return hub
 
+    def test_a_color_that_is_no_longer_handed_out_is_replaced(self):
+        import state
+
+        hub = self.three()
+        hub.on_display(ev("MessageDisplay", sid="b", delta=tag("Page built.")))
+        self.spoken()
+        hub.publish()
+        before = self.who()
+        path = hub._sessions_file()
+        with open(path) as f:
+            kept = json.load(f)
+        for entry in kept["sessions"] + kept["history"]:  # as written by a hub that still had the pink
+            if entry.get("session", entry.get("id")) == "b":
+                entry["color"] = "#FF8FA3"
+        with open(path, "w") as f:
+            json.dump(kept, f)
+        again = self.restart()
+        for sid in "cba":
+            again.on_event(ev("SessionStart", sid=sid))
+        after = self.who()
+        self.assertEqual([(i, n, v) for i, n, c, v in after], [(i, n, v) for i, n, c, v in before])
+        colors = [c for _, _, c, _ in after]
+        self.assertEqual((colors[0], colors[2]), (before[0][2], before[2][2]))  # the others keep theirs
+        self.assertIn(colors[1], state.COLORS)
+        self.assertEqual(len(set(colors)), 3)
+        self.assertEqual([h["color"] for h in again.history], [colors[1]])  # and its old lines follow
+
     def test_what_was_said_can_still_be_repeated_after_a_restart(self):
         hub = self.make()
         hub.on_display(ev("MessageDisplay", sid="a", delta=tag("Tests pass.")))

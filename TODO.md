@@ -120,6 +120,10 @@ real keys yet.
 - [ ] `Ctrl+Alt+K`: switches between the bar and the island, and back
 - [ ] Push-to-talk in Italian from the first word (so far every Italian recording began in
       English)
+- [ ] The first session's name and terminal tint in orchid instead of pink (changed
+      2026-11-17, so that only the microphone and "Release to send" are pink; needs a hub
+      restart to show). To look at: is it far enough from the pink, and from the lilac
+      another session can have?
 - [ ] The bar over a game in borderless windowed mode
 - [x] A plain click on the bar reaching the window underneath (the author, 2026-11-17: "it
       lands on the window underneath")

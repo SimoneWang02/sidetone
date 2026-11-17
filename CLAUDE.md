@@ -185,6 +185,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   stand apart from the title, and sessions from each other): `Session.color`, one of
   `state.COLORS`, stable per project name and not shared by two live sessions. Rows, history
   lines and requests carry `color`; the overlay writes the name in it and leaves the title white.
+  One of the ten was a pink (`#FF8FA3`) next to the microphone's own (`#FF8FA6`), so "Release
+  to send", the one line written in the microphone's color because it asks you to do
+  something, looked like the name of the session that had it; the author, 2026-11-17: "very
+  similar to the brand color, especially of the first terminal, which is not really great".
+  That name color is now an orchid (`#F27FFF`), and a session kept across a restart with a
+  color that is no longer in the list gets a new one (`Sessions.keep`), its old lines too.
 - Titles: `Session.title` is Claude Code's own name for the session (the `name` field of its
   session file, a slug such as `eyes-free-claude-speaks`, turned into words). Claude Code
   writes that name within a second of the first typed prompt, but a session started by voice
