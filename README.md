@@ -28,8 +28,9 @@ its own spoken line as the first line of its reply.
   Move the mouse onto it and a panel unfolds beside it with each session's name (each in its
   own color), a short title, what it is doing, its task progress and elapsed time. While a session talks, a bubble
   next to its light shows the sentence, and bars follow the real sound of the voice.
-  `Ctrl+Alt+L` keeps the panel out. Grab the bar with the mouse to drag it anywhere, on any
-  monitor; it stays there. A plain click still goes to whatever is underneath, and it never
+  `Ctrl+Alt+L` keeps the panel out. Hold `Ctrl+Alt` and grab the bar with the mouse to drag it
+  anywhere, on any monitor; it stays there. Without those keys the mouse goes straight through
+  the bar to whatever is underneath (`"drag_keys": ""` lets you drag it any time), and it never
   takes focus. Everything that moves is drawn in step with your screen's refresh rate.
 - **Answer permission prompts from anywhere.** The overlay shows what a session wants to run.
   `Ctrl+Alt+Y` allows, `Ctrl+Alt+N` denies. The dialog in the terminal keeps working too;
@@ -130,7 +131,7 @@ claude-speaks voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
 claude-speaks voice add NAME FILE    load your own Kokoro voice file (.npy)
 claude-speaks overlay dots|list|toggle|restart     only the lights, or kept open
 claude-speaks overlay layout NAME|next   bar or island
-claude-speaks overlay move           makes the bar easy to find and drag (you can drag it any time)
+claude-speaks overlay move           makes the bar easy to find and drag (or hold Ctrl+Alt and drag it)
 claude-speaks overlay monitor N | corner top-left|top-right|bottom-left|bottom-right
 claude-speaks terminal               how sessions' own terminals are marked
 claude-speaks terminal tint focus|all|off     whose terminal wears its session's color
@@ -160,6 +161,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "opacity": 0.9,
     "talk_sign": "light",
     "keep_talk_key": "held",
+    "drag_keys": "Ctrl+Alt",
     "hotkeys": { "talk": "Ctrl+Alt+Space", "toggle": "Ctrl+Alt+L" }
   },
   "terminal": {

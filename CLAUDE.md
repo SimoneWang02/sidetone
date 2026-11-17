@@ -164,7 +164,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   drag that follows the cursor frame by frame until the button is up; a press that did not
   move it is re-sent as a click to whatever is underneath, so plain clicks still pass through.
   The drop is reported as `moved` (monitor, nearest corner, offsets) and saved to `config.json`.
-  **Not tried with a real mouse yet** (it cannot be done from WSL without moving the user's cursor).
+  Since 2026-11-17 the bar only takes the mouse while `Ctrl+Alt` is held (`overlay.drag_keys`,
+  `""` = whenever the mouse is on it, as before). The author tried a plain click, which
+  reached the window underneath, but disliked seeing the move cursor every time the mouse
+  crossed the bar: "it would be wiser to ... drag and move when I have the combination of
+  alt and control". Without the keys nothing of the bar is in the mouse's way now (no move
+  cursor, no brighter edge, no wheel on the bar); it still unfolds under the mouse, which
+  only needs the cursor's position. `claude-speaks overlay move` works without the keys.
+  **The drag itself has not been confirmed by the author yet.**
 - Name colors (asked for by voice on 2026-11-17: "if ... either the session title or the folder
   name could be different color, would be ... much easier to read"; read as: the name should
   stand apart from the title, and sessions from each other): `Session.color`, one of

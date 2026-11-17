@@ -32,6 +32,10 @@ DEFAULTS = {
     "flash_seconds": 4,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
+    # Held to take hold of the bar with the mouse: drag it, or turn the wheel on it. Without them
+    # the mouse goes straight through the bar to the window underneath. "" = the bar takes the
+    # mouse whenever it is on it (a plain click still reaches what is underneath).
+    "drag_keys": "Ctrl+Alt",
     # Keeping the held talk key from other programs needs a keyboard hook. "held": in only while
     # the hotkey's Ctrl/Alt are down and during the hold; "always": for a talk key without them; "off".
     "keep_talk_key": "held",

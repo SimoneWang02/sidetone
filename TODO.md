@@ -58,7 +58,12 @@ real keys yet.
       Nice." Known gap: Space pressed in the very same instant as Ctrl and Alt can still
       pause the video on release.
 - [ ] The bar over a game in borderless windowed mode
-- [ ] A plain click on the bar reaching the window underneath
+- [x] A plain click on the bar reaching the window underneath (the author, 2026-11-17: "it
+      lands on the window underneath")
+- [ ] Dragging the bar, which since the same day needs `Ctrl+Alt` held (the author's wish on
+      seeing the move cursor whenever the mouse was on the bar): with the keys held the
+      move cursor shows on the bar and it can be dragged; without them there is no move
+      cursor and clicks and the wheel go to the window underneath.
 - [ ] Sessions started from the VS Code extension showing up in the bar
 
 ## To decide
@@ -109,6 +114,10 @@ real keys yet.
       always, only with the keys held, and (an idea, not asked for) only with the keys held
       while a full-screen program is in front. The keys already bring the panel out, so
       nothing is lost; dragging the bar would then also need the keys.
+      Half done on 2026-11-17: the bar takes the mouse (drag, wheel, move cursor) only with
+      `Ctrl+Alt` held (`overlay.drag_keys`). Still open: it unfolds whenever the mouse passes
+      over it. A setting for that (unfold under the mouse: always, or only with the keys)
+      has not been built; the author was not asked whether they want the unfolding gone.
 - [ ] `first_audio` in `voice.log` is too high for a line whose first sentence is long (3 to
       8 s logged where the sound started within a second, as `heard` shows). The time is
       taken after the sentence was written to the player, and that write waits until the

@@ -741,6 +741,9 @@ namespace ClaudeSpeaks
         readonly HookProc wheelProc, keyProc;
         IntPtr wheelHook, keyHook;
         int[] wheelKeys = { VK_CONTROL, VK_MENU };  // held together with the wheel to change the focus
+        // Held to take hold of the bar with the mouse (drag it, turn the wheel on it). Without
+        // them the mouse goes straight through the bar to what is underneath. Empty: any time.
+        int[] dragKeys = { VK_CONTROL, VK_MENU };
         int wheelTurned;
         double wheelUntil, selectorY, selectorShown, heldSince;
         bool wheeling, keysOpen;
@@ -966,6 +969,7 @@ namespace ClaudeSpeaks
                     if (wanted != "island") wanted = "bar";
                     if (wanted != layout) { layout = wanted; ApplyLayout(); }
                     if (msg.ContainsKey("focus_wheel")) wheelKeys = Keys(Str(msg, "focus_wheel"));
+                    if (msg.ContainsKey("drag_keys")) dragKeys = Keys(Str(msg, "drag_keys"));
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
                     SetGlass();
@@ -1361,7 +1365,7 @@ namespace ClaudeSpeaks
                     along -= room;
                 }
             }
-            bool wantCatch = (onBar || moving) && Ui.Now > passUntil;
+            bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys)))) && Ui.Now > passUntil;
             if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); Edge(); }
             if (under != hot) { hot = under; Run(true); }
             if (wantHover == hover && wantPeek == peek) return;
@@ -1378,7 +1382,7 @@ namespace ClaudeSpeaks
         // are down and there is more than one session to choose from.
         void WatchWheelKeys()
         {
-            bool held = wheelKeys.Length > 0 && rail.IsVisible && Held();
+            bool held = wheelKeys.Length > 0 && rail.IsVisible && Held(wheelKeys);
             // Holding those keys by themselves also brings the panel out. Not at once, so a quick
             // hotkey does not make it flicker, and not during push-to-talk, which has its bubble.
             if (!held) heldSince = 0;
@@ -1390,9 +1394,9 @@ namespace ClaudeSpeaks
             else if (!want && wheelHook != IntPtr.Zero) { UnhookWindowsHookEx(wheelHook); wheelHook = IntPtr.Zero; wheelTurned = 0; }
         }
 
-        bool Held()
+        static bool Held(int[] keys)
         {
-            foreach (int key in wheelKeys) if ((GetAsyncKeyState(key) & 0x8000) == 0) return false;
+            foreach (int key in keys) if ((GetAsyncKeyState(key) & 0x8000) == 0) return false;
             // AltGr, used to type letters on many keyboards, reports itself as Ctrl+Alt: leave it alone.
             return (GetAsyncKeyState(VK_RMENU) & 0x8000) == 0;
         }
@@ -1401,7 +1405,7 @@ namespace ClaudeSpeaks
         // app under the mouse does not scroll or zoom); everything else is passed on untouched.
         IntPtr OnMouse(int code, IntPtr wParam, IntPtr lParam)
         {
-            if (code < 0 || wParam.ToInt32() != WM_MOUSEWHEEL || !Held()) return CallNextHookEx(wheelHook, code, wParam, lParam);
+            if (code < 0 || wParam.ToInt32() != WM_MOUSEWHEEL || !Held(wheelKeys)) return CallNextHookEx(wheelHook, code, wParam, lParam);
             var data = (MouseHookData)Marshal.PtrToStructure(lParam, typeof(MouseHookData));
             int turned = (short)(data.Data >> 16);
             rail.Dispatcher.BeginInvoke(new Action(delegate { Wheel(turned); }));
