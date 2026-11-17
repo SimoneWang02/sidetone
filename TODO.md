@@ -132,8 +132,11 @@ real keys yet.
 - [x] `Ctrl+Alt+K`: switches between the bar and the island, and back. The author,
       2026-11-17, asked to switch and to try Left and Right there: "It works fine. Yeah,
       it's perfect."
-- [ ] Push-to-talk in Italian from the first word (so far every Italian recording began in
-      English)
+- [x] Push-to-talk in Italian from the first word (so far every Italian recording began in
+      English). Done by the author on 2026-11-17: "ok vediamo proviamo a me a me sembra che
+      funziona sia sia funzionato abbia funzionato in passato" arrived whole, taken as
+      Italian, nothing cut at the start. It came without capitals or punctuation, which
+      the English recordings have.
 - [x] "Release to send" with a glint of light running along it while the talk key is held
       (asked for by the author on 2026-11-17 as "an animation on the text"; which one was
       left open). To look at: is the glint what was meant? The other choices are
