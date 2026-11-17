@@ -742,12 +742,13 @@ class Hub:
             old.wake.set()
 
     def focus(self, step: int) -> str | None:
-        """Move the focus (who a spoken follow-up goes to) to the next or previous session."""
+        """Move the focus (who a spoken follow-up goes to) to the next or previous session.
+        It stops at the first and the last one: turning the wheel further does not jump round."""
         with self.lock:
             ids = list(self.sessions.by_id)
             if not ids:
                 return None
-            self.talk_target = ids[(ids.index(self._target().id) + step) % len(ids)]
+            self.talk_target = ids[max(0, min(len(ids) - 1, ids.index(self._target().id) + step))]
             name = self.sessions.by_id[self.talk_target].name
         self.publish()
         return name

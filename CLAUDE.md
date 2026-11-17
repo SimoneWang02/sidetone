@@ -164,7 +164,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - Focus (asked for by the author on 2026-11-17: "combine ctrl+alt and the mouse wheel to decide
   which session to focus on. also whichever spoke last gets focused"): the focus is the hub's
   `talk_target`, the session a spoken follow-up goes to. It moves to whoever speaks, and
-  `Hub.focus(step)` moves it by hand. Rows carry `target`; the overlay draws a frame that glides
+  `Hub.focus(step)` moves it by hand and stops at the first and last session (the author asked
+  that the wheel not jump from the bottom back to the top). Rows carry `target`; the overlay draws a frame that glides
   to that light and lights its row. `Ctrl+Alt` + wheel (`overlay.focus_wheel`, `""` turns it off)
   sends `focus_prev` / `focus_next` and brings the panel out for 1.6 s. Windows only reports
   the wheel to a background program through a low-level mouse hook, which sits in the path of

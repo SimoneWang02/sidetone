@@ -664,9 +664,13 @@ class PushToTalk(HubCase):
         hub.talk_target = "a"
         hub.on_overlay({"type": "hotkey", "name": "focus_next"})
         self.assertEqual(self.in_focus(), "b")
-        hub.on_overlay({"type": "hotkey", "name": "focus_next"})  # past the last one: round to the first
-        self.assertEqual(self.in_focus(), "a")
+        hub.on_overlay({"type": "hotkey", "name": "focus_next"})  # already on the last one: it stays there
+        self.assertEqual(self.in_focus(), "b")
         hub.on_overlay({"type": "hotkey", "name": "focus_prev"})
+        self.assertEqual(self.in_focus(), "a")
+        hub.on_overlay({"type": "hotkey", "name": "focus_prev"})  # and it stays on the first one
+        self.assertEqual(self.in_focus(), "a")
+        hub.on_overlay({"type": "hotkey", "name": "focus_next"})
         self.assertEqual(self.in_focus(), "b")
         hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("Done here.")))
         self.assertTrue(hub.speech.wait_idle(5))
