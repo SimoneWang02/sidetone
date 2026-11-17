@@ -1023,17 +1023,18 @@ class Hub:
         if not s:
             return False
         waiting = self.followups.get(s.id, [])
+        after = f"{time.monotonic() - sent.at:.1f} s after it went out"  # the log's own times are whole seconds
         if not sent.answer and sent.text in waiting:
             del waiting[len(waiting) - 1 - waiting[::-1].index(sent.text)]
             if not waiting:
                 self.followups.pop(s.id, None)
             self._keep_followups()
             self._talk("failed", s, "Taken back", seconds=2)
-            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back before the session got it")
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, before the session got it")
         else:
             self._deliver(s, TAKE_BACK)
             self._talk("failed", s, "Taken back: it is told to ignore that", seconds=3)
-            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back after the session got it: told to ignore it")
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, when the session had it: told to ignore it")
         self._signal("failed")
         return True
 
