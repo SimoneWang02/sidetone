@@ -46,10 +46,11 @@ real keys yet.
       line of the session in focus (move the focus with `Ctrl+Alt` + wheel first), and the
       bubble with the voice comes out at that session's light while it is said. The author,
       2026-11-17, right after two repeats: "It's perfect. Yeah, I see it."
-- [ ] Speaking to a session right after interrupting it (mended 2026-11-17 after the author's
-      words to an interrupted session "didn't go through"; checked with a real session,
-      not yet by the author): interrupt a reply with Esc or Ctrl+C, hold the talk key and
-      say something. It should answer.
+- [x] Speaking to a session right after interrupting it (mended 2026-11-17 after the author's
+      words to an interrupted session "didn't go through"): interrupt a reply with Esc or
+      Ctrl+C, hold the talk key and say something. Done by the author the same day: they
+      interrupted a reply and their next words ("I stopped the previous audio, now I'm
+      sending another one") arrived, carried by the listener that starts with a prompt.
 - [ ] Words going to the wrong session (the author, 2026-11-17: "i sent an audio to
       claude-speaks 4 but somehow got here (i didnt notice at first)"). Nothing was broken:
       the voice goes to the session in focus, which is the one that spoke last, and this
