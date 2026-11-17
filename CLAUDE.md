@@ -625,6 +625,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   needs you) words wait, and `reconcile` hands them over within a second of it stopping,
   whether the reply ended or was interrupted. Checked with a real session: spoken to while
   busy, interrupted two seconds later, woken two seconds after that.
+- The first session's listener waits for the hub (2026-11-17). `listen.sh` left at once when
+  there was no socket, and the first session after the hub has exited starts the hub
+  (`report.sh --start`) in the same moment its listener runs. That session then had no
+  listener until its first prompt: the author opened a session, spoke to it twice before
+  typing anything, and asked "why are you not receiving audio inputs?" (`hub.log` said
+  "waiting for the session to stop" for an idle session; the words were kept and arrived
+  after the next reply). The listener now waits up to `CS_WAIT` seconds (10) for the socket
+  and only then takes it that there is no hub.
 - Editing a hook script while it runs (2026-11-17): bash reads a script from its file as it
   goes, by position. `listen.sh` waits for hours, and when another session edited it in place
   the listeners already running read on in the middle of the new text: "line 19: r: command

@@ -1866,6 +1866,28 @@ class HubProcess(unittest.TestCase):
         self.assertEqual(hook.returncode, 2)
         self.assertIn('"run the tests"', err)
 
+    def test_a_listener_started_just_before_the_hub_waits_for_it(self):
+        """The first session starts the hub and its listener in the same moment."""
+        hook = subprocess.Popen([os.path.join(ROOT, "hooks", "listen.sh")], stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=self.env)
+        self.addCleanup(hook.kill)
+        hook.stdin.write(json.dumps(ev("SessionStart")))
+        hook.stdin.close()
+        hook.stdin = None
+        time.sleep(0.5)
+        self.assertIsNone(hook.poll(), "the listener gave up before the hub was there")
+        self.start_hub()
+        self.assertTrue(wait_for(lambda: self.names() == ["alpha"], 5), "the hub never saw the listener")
+        self.assertEqual(self.call("/follow-up", {"text": "run the tests", "session": "alpha", "delay": 0}), {"queued": True})
+        out, err = hook.communicate(timeout=5)
+        self.assertEqual(hook.returncode, 2)
+        self.assertIn('"run the tests"', err)
+
+    def test_a_listener_gives_up_where_there_is_no_hub(self):
+        done = subprocess.run([os.path.join(ROOT, "hooks", "listen.sh")], input=json.dumps(ev("SessionStart")),
+                              capture_output=True, text=True, env={**self.env, "CS_WAIT": "1"}, timeout=10)
+        self.assertEqual((done.returncode, done.stderr), (0, ""))
+
     @unittest.skipUnless(__import__("shutil").which("node"), "needs node to run the editor extension")
     def test_the_editor_extension_tells_the_hub_which_terminal_you_went_to(self):
         """The real extension code, with a stand-in for the editor, against a real hub."""

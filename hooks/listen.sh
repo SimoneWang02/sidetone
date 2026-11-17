@@ -13,7 +13,14 @@
 main() {
   input=$(cat)
   . "${BASH_SOURCE[0]%/*}/lib.sh"
-  [ -S "$CS_SOCK" ] || exit 0
+  # The first session after the hub went away starts it (report.sh --start) in the same moment
+  # this hook runs, so there is no socket yet. Leaving at once left that session with no
+  # listener until its first prompt, and words spoken to it before then only waited.
+  for _ in $(seq $(( ${CS_WAIT:-10} * 5 ))); do
+    [ -S "$CS_SOCK" ] && break
+    sleep 0.2
+  done
+  [ -S "$CS_SOCK" ] || exit 0   # no hub on this machine
   reply=$(mktemp "$CS_RUN/listen.XXXXXX") || exit 0
   pid=
   trap '[ -n "$pid" ] && kill "$pid" 2>/dev/null; rm -f "$reply"; exit 0' TERM INT HUP
