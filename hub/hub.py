@@ -646,7 +646,8 @@ class Hub:
             self.overlay.send({
                 "type": "request", "name": s.name if s else "", "color": s.color if s else "",
                 "text": f"asks: {req.question['question']}",
-                "detail": "   ".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
+                "options": [o["label"] for o in options],  # drawn one to a line, each behind its number
+                "detail": "\n".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
                 "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} answers"
                         + (f"  \u00b7  question {len(req.answers) + 1} of {total}" if total > 1 else "")
                         + (f"  \u00b7  {more} more waiting" if more else ""),

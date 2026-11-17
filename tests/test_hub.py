@@ -495,7 +495,7 @@ class Questions(HubCase):
         req = hub.request_permission(ask_question(question("Which drink?", "Tea", "Coffee", "Water"),
                                                   question("Which colour?", "Red", "Blue")))
         shown = self.overlay.of("request")[-1]
-        self.assertEqual((shown["text"], shown["detail"]), ("asks: Which drink?", "1  Tea   2  Coffee   3  Water"))
+        self.assertEqual((shown["text"], shown["options"]), ("asks: Which drink?", ["Tea", "Coffee", "Water"]))
         self.assertIn("question 1 of 2", shown["keys"])
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["option1", "option2", "option3"])
         self.assertFalse(hub.decide("allow"))  # a question is not a yes/no

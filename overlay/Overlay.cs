@@ -757,6 +757,7 @@ namespace ClaudeSpeaks
         readonly StackPanel requestBox = new StackPanel(), bannerBox = new StackPanel(), historyBox = new StackPanel();
         readonly StackPanel historyLines = new StackPanel();
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
+        readonly FontFamily requestMono = new FontFamily("Consolas");
         readonly TextBlock bannerTitle = new TextBlock(), bannerHint = new TextBlock();
         readonly TextBlock emptyLine = new TextBlock { Text = "No Claude sessions", Foreground = Ui.Faint, Margin = new Thickness(12, 13, 12, 13) };
         readonly TextBlock bubbleLine1 = new TextBlock(), bubbleLine2 = new TextBlock();
@@ -835,9 +836,8 @@ namespace ClaudeSpeaks
             requestTitle.TextWrapping = requestKeys.TextWrapping = requestDetail.TextWrapping = TextWrapping.Wrap;
             requestTitle.MaxHeight = 54;
             requestTitle.TextTrimming = requestDetail.TextTrimming = TextTrimming.CharacterEllipsis;
-            requestDetail.FontFamily = new FontFamily("Consolas");
+            requestDetail.FontFamily = requestMono;
             requestDetail.Foreground = Ui.Dim;
-            requestDetail.MaxHeight = 70;  // about four lines; the terminal has the full command
             requestDetail.Margin = new Thickness(0, 4, 0, 4);
             requestKeys.Foreground = Ui.AmberEdge;
             Section(requestBox, requestTitle, requestDetail, requestKeys);
@@ -1772,8 +1772,27 @@ namespace ClaudeSpeaks
                 requestTitle.Inlines.Add(new Run("\u25B2  ") { Foreground = Ui.AmberEdge, FontFamily = Ui.Symbols });
                 requestTitle.Inlines.Add(new Run(Str(msg, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(msg, "color")) });
                 requestTitle.Inlines.Add(new Run(Str(msg, "text")));
-                requestDetail.Text = Str(msg, "detail");
-                requestDetail.Visibility = requestDetail.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+                object[] options = msg.ContainsKey("options") && msg["options"] != null ? (object[])msg["options"] : new object[0];
+                string detail = Str(msg, "detail");
+                requestDetail.Inlines.Clear();
+                if (options.Length > 0)  // a question: each choice on a line of its own, behind its number
+                {
+                    requestDetail.FontFamily = requestTitle.FontFamily;
+                    requestDetail.MaxHeight = 170;
+                    for (int i = 0; i < options.Length; i++)
+                    {
+                        if (i > 0) requestDetail.Inlines.Add(new LineBreak());
+                        requestDetail.Inlines.Add(new Run((i + 1) + "   ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.AmberEdge });
+                        requestDetail.Inlines.Add(new Run(Convert.ToString(options[i], CultureInfo.InvariantCulture)) { Foreground = Brushes.White });
+                    }
+                }
+                else  // a permission prompt: the exact command or path
+                {
+                    requestDetail.FontFamily = requestMono;
+                    requestDetail.MaxHeight = 70;  // about four lines; the terminal has the full command
+                    requestDetail.Text = detail;
+                }
+                requestDetail.Visibility = options.Length > 0 || detail.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
                 requestKeys.Text = Str(msg, "keys");
             }
             Render();

@@ -202,7 +202,8 @@ send(type="state", sessions=sessions(), history=HISTORY)
 time.sleep(2.5)
 shot("open", 0.3)
 send(type="peek", on=False)
-send(type="request", name="web-app", color="#C6A0F6", text="asks: Which drink would you like?", detail="1  Tea   2  Coffee   3  Water",
+send(type="request", name="web-app", color="#C6A0F6", text="asks: Which drink would you like?",
+     options=["Tea", "Coffee, with milk and one sugar, in the large cup that is still in the cupboard above the sink", "Water"],
      keys="Ctrl+Alt+1 to Ctrl+Alt+3 answers  \u00b7  question 1 of 2")
 shot("question")
 send(type="request", name="web-app", text="wants to: Push to the remote", detail="git push origin main",

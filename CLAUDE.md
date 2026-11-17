@@ -274,6 +274,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   in `tool_input`. Single-choice questions with 2 to 4 options become a `Request` with
   `questions`; `choose(n)` records the label and, after the last one, the hook returns allow
   with `updatedInput.answers` (question text → label). Others are only announced.
+  The overlay gets the labels as `options` and writes each on a line of its own behind its
+  number (the author found them unreadable run together on one line).
   Since 2026-11-17 a question can also be answered in your own words (the author: "let's say I
   want to clarify, I want to put my notes. Can I send an audio instead of picking a choice?").
   Before, words spoken to a session waiting on a question sat in the queue until the question

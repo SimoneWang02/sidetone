@@ -29,10 +29,14 @@ real keys yet.
 - [ ] `Ctrl+Alt+1` to `4` on a real multiple-choice question (a real question came up on
       2026-11-17, but the author answered it in the VS Code terminal, so the keys are still
       untried)
-- [ ] Answering a question by voice (built 2026-11-17 on the author's question whether they
-      could "send an audio instead of picking a choice"; checked with a real session through
-      the command line, not yet with a real voice): while a session shows a question, hold
-      the talk key and say the answer in your own words.
+- [x] Answering a question by voice (built 2026-11-17 on the author's question whether they
+      could "send an audio instead of picking a choice"): while a session shows a question,
+      hold the talk key and say the answer in your own words. Done by the author the same
+      day on a real question: 17 s of speech came back as the answer, word for word.
+- [ ] The choices of a question each on a line of their own in the overlay (the author,
+      2026-11-17, in that same spoken answer: "the choices are not in new lines. I see them
+      all in a single line and it's not very readable"; changed at once, seen in pictures
+      only).
 - [ ] A question answered in the terminal leaving the overlay at once (mended 2026-11-17
       after the author saw it stay; checked with a real session).
 - [x] `Ctrl+Alt+R` (repeat): the author, 2026-11-17: "good for replay".
@@ -52,7 +56,9 @@ real keys yet.
       `heard` mark that catch-up does not use yet).
       Built the same day and parked on the branch `away-catch-up` (commit `07c9ff9`, 121
       tests pass, the overlay compiles; not live, never tried with real idle time). The
-      author asked whether it is worth it and has not said keep or drop. Keep: merge the
+      author asked whether it is worth it and, asked again the same day with three choices
+      (keep, drop the key, leave it), said: "I think we can leave it for now." So the key
+      keeps its old behaviour until they bring it up again. Keep: merge the
       branch and restart the hub. Drop: the offer was to remove the key and the catch-up
       code altogether, since the present version mostly says "Nothing new".
 - [x] `Ctrl+Alt+Backspace` while recording (the author, 2026-11-17, right after being asked
