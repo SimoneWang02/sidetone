@@ -92,6 +92,12 @@ class Config:
     voices: dict = field(default_factory=dict)  # project name -> voice
     voice_pool: list = field(default_factory=lambda: list(VOICE_POOL))
     label: str = "auto"  # auto (several sessions and no overlay to show who talks) | always | never
+    # What the catch-up key replays. "away": lines said while keyboard and mouse had been left
+    # alone for `away_after` seconds, and lines that never came out (cut, or dropped as too old).
+    # "all": every line since your last prompt or hotkey, which is also what "away" falls back
+    # to where nothing reports keyboard and mouse (no overlay).
+    missed: str = "away"
+    away_after: float = 60.0
     repeat: str = "focus"  # what the repeat key says again: the last line of the session in focus | "last" (anyone's)
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
@@ -153,7 +159,7 @@ class Config:
             user = {}
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail",
-                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat",
+                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "missed", "away_after",
                     "talk_feedback", "sound_volume",
                     "progress", "progress_after", "progress_interval"):
             if key in user:
@@ -197,6 +203,10 @@ class Hub:
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
         self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
         self.last_seen = time.time()  # last sign the user was there: a prompt, a hotkey, a catch-up
+        # Since when keyboard and mouse have been left alone, as the overlay reports it; None
+        # while they are in use. Not to be trusted until the overlay has reported once.
+        self.quiet_since: float | None = None
+        self._input_known = False
         self._progress_said: dict[str, float] = {}  # session id -> when it last announced progress
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
@@ -228,6 +238,9 @@ class Hub:
             if event == "UserPromptSubmit":
                 self.last_seen = time.time()
                 prompt = str(ev.get("prompt") or "")
+                if not prompt.lstrip().startswith("<"):  # typed in its terminal: you have read what it said
+                    for e in self.history:
+                        e["seen"] = e.get("seen") or e.get("session") == sid
                 self._title_from(s, prompt=prompt)
                 s.state, s.activity, s.note = "working", "Thinking", ""
                 s.turn_started, s.spoken = time.monotonic(), None
@@ -411,7 +424,7 @@ class Hub:
     def snapshot(self) -> dict:
         with self.lock:
             sessions = [s.snapshot() for s in self.sessions.by_id.values()]
-        return {"sessions": sessions, "muted": self._muted(), **self.speech.snapshot()}
+        return {"sessions": sessions, "muted": self._muted(), "away": self._away(), **self.speech.snapshot()}
 
     # --- catching up -------------------------------------------------------------------------
 
@@ -439,10 +452,31 @@ class Hub:
                                   kind="notice", src=src, entry=entry,
                                   label=entry["spoken_name"] if named or not live else None))
 
+    def _away(self) -> bool | None:
+        """Whether keyboard and mouse have been left alone for `away_after` seconds. None when
+        nothing tells us: no overlay on screen, or it has not reported yet."""
+        if not (self._input_known and self.overlay and getattr(self.overlay, "ready", True)):
+            return None
+        return self.quiet_since is not None and time.time() - self.quiet_since >= self.cfg.away_after
+
+    def _missed(self, e: dict) -> bool:
+        """Does the catch-up key owe the user this line? (See `Config.missed`.)"""
+        if e.get("seen"):
+            return False
+        if self.cfg.missed == "all" or (e["heard"] and e.get("away") is None):  # nobody knows who was there
+            return e["time"] > self.last_seen
+        return not e["heard"] or bool(e.get("away"))
+
     def catch_up(self, limit: int = 8) -> int:
-        """Replay what sessions said since the user was last seen (a prompt, a hotkey, a catch-up)."""
+        """Replay what the user missed: lines said while they were away from keyboard and mouse
+        and lines that never came out. Where that is not known, or with `missed: all`, every
+        line since they were last seen (a prompt, a hotkey, a catch-up)."""
+        waiting = [u.entry for u in self.speech.pending()]  # about to be heard anyway
         with self.lock:
-            missed = [e for e in self.history if e["time"] > self.last_seen][-limit:]
+            missed = [e for e in self.history if self._missed(e) and not any(e is w for w in waiting)]
+            for e in missed:
+                e["seen"] = True
+            missed = missed[-limit:]
             self.last_seen = time.time()
         if not missed:
             self.say("Nothing new.", kind="notice")
@@ -713,6 +747,11 @@ class Hub:
             placed = {k: msg[k] for k in ("monitor", "corner", "offset_x", "offset_y", "island_x", "island_y") if k in msg}
             self.place_overlay(False, **placed)  # the window already knows; this saves it
             return
+        if msg.get("type") == "ready":  # a new window: what the old one said about the keyboard is void
+            self.quiet_since, self._input_known = None, False
+        elif msg.get("type") == "input":  # keyboard and mouse fell quiet (idle = for how many seconds) or are in use again
+            idle = float(msg.get("idle") or 0)
+            self.quiet_since, self._input_known = (time.time() - idle if idle > 0 else None), True
         if msg.get("type") != "hotkey":
             return
         name = msg.get("name")
@@ -1099,6 +1138,8 @@ class Hub:
             self.history.append(entry)
         if self._muted():
             self._flash(s, text, FLASH_LOOK.get(kind, kind))  # voice is off
+            if entry:  # shown instead of said: that counts as delivered, if someone was there
+                entry["heard"], entry["away"] = True, self._away()
         else:
             self.speech.put(Utterance(text=text, voice=s.voice, session=s.id, kind=kind, src=src, entry=entry))
 
@@ -1125,8 +1166,11 @@ class Hub:
         return _spoken_name(s.name)
 
     def _log_speech(self, u: Utterance, label: str, waited: float, first: float | None, outcome: str) -> None:
-        if u.entry is not None and outcome == "spoken" and first is not None:
-            u.entry["heard"] = True
+        spoken = outcome == "spoken" and first is not None
+        if u.entry is not None and u.src in ("repeat", "catch-up"):  # said again on request
+            u.entry["seen"] = u.entry.get("seen") or spoken
+        elif u.entry is not None:  # was it heard, and was anyone there? (for catching up)
+            u.entry["heard"], u.entry["away"] = u.entry["heard"] or spoken, self._away()
         timing = f"waited={waited * 1000:.0f}ms"
         if first is not None:
             timing += f" first_audio={first * 1000:.0f}ms"

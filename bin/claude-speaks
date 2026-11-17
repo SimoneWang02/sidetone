@@ -20,7 +20,7 @@ Usage: claude-speaks <command>
   answer N                   pick option N of the question the overlay is showing
   sound sent|queued|failed   play one of the short sounds that answer push-to-talk
   repeat                     say the last line of the session in focus again
-  missed                     replay what sessions said since you were last here
+  missed                     replay what sessions said while you were away from keyboard and mouse
   follow-up [-s PROJECT] TEXT   send a follow-up to a session as if you had said it
   talk start|stop|cancel     the talk key and the cancel key, from a shell
   target [PROJECT]           show or choose which session a spoken follow-up goes to

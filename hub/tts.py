@@ -401,6 +401,11 @@ class SpeechQueue:
         with self._cond:
             return self._cond.wait_for(lambda: not self.queued and self.current is None, timeout)
 
+    def pending(self) -> list[Utterance]:
+        """The line being spoken and those still waiting."""
+        with self._cond:
+            return ([self.current] if self.current else []) + list(self.queued)
+
     def snapshot(self) -> dict:
         with self._cond:
             return {

@@ -536,6 +536,78 @@ class CatchingUp(HubCase):
         self.assertEqual(hub.catch_up(), 0)
         self.assertEqual(self.spoken(), ["Nothing new."])
 
+    def watched(self, **cfg):
+        """A hub whose overlay reports when keyboard and mouse are left alone."""
+        hub = self.make(label="never", **cfg)
+        hub.overlay = self.overlay = FakeOverlay()
+        hub.on_overlay({"type": "ready"})
+        hub.on_overlay({"type": "input", "idle": 0})
+        return hub
+
+    def says(self, sid, cwd, text):
+        self.hub.on_display(ev("MessageDisplay", sid=sid, cwd=cwd, delta=tag(text)))
+        self.spoken()
+        self.engine.spoken.clear()
+
+    def test_missed_is_what_was_said_while_you_were_away_from_keyboard_and_mouse(self):
+        hub = self.watched()
+        self.says("a", "/w/api-server", "Tests pass.")  # you were there and heard it
+        hub.on_overlay({"type": "input", "idle": 300})  # five minutes without a key or the mouse
+        self.says("b", "/w/web", "Page built.")
+        hub.on_overlay({"type": "input", "idle": 0})  # back
+        hub.on_overlay({"type": "hotkey", "name": "focus_prev"})  # other keys do not use it up
+        self.assertEqual(hub.catch_up(), 1)
+        self.assertEqual(self.spoken(), ["You missed 1 update.", "web. Page built."])
+        self.engine.spoken.clear()
+        self.assertEqual(hub.catch_up(), 0)
+
+    def test_a_short_pause_is_not_being_away(self):
+        hub = self.watched(away_after=60)
+        hub.on_overlay({"type": "input", "idle": 15})
+        self.says("a", "/w/api-server", "Tests pass.")
+        self.assertEqual(hub.catch_up(), 0)
+        self.assertEqual(self.spoken(), ["Nothing new."])
+
+    def test_a_line_that_never_came_out_is_missed_even_at_the_desk(self):
+        hub = self.watched(duration=0.3)
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/api-server", delta=tag("Tests pass.")))
+        time.sleep(0.05)
+        hub.cancel()  # cut while it was being said
+        self.spoken()
+        self.engine.spoken.clear()
+        self.assertEqual(hub.catch_up(), 1)
+        self.assertEqual(self.spoken()[-1], "api server. Tests pass.")
+
+    def test_typing_to_a_session_means_you_have_read_what_it_said(self):
+        hub = self.watched()
+        hub.on_overlay({"type": "input", "idle": 300})
+        self.says("a", "/w/api-server", "Tests pass.")
+        self.says("b", "/w/web", "Page built.")
+        hub.on_overlay({"type": "input", "idle": 0})
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/api-server", prompt="go on"))
+        self.assertEqual(hub.catch_up(), 1)
+        self.assertEqual(self.spoken()[-1], "web. Page built.")
+
+    def test_a_line_about_to_be_heard_is_not_missed(self):
+        hub = self.watched(duration=0.3)
+        hub.on_overlay({"type": "input", "idle": 300})
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/api-server", delta=tag("Tests pass.")))
+        time.sleep(0.05)
+        self.assertEqual(hub.catch_up(), 0)  # it is being said right now
+
+    def test_missed_can_be_set_to_everything_since_you_were_last_seen(self):
+        hub = self.watched(missed="all")
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/api-server"))
+        self.says("a", "/w/api-server", "Tests pass.")  # heard at the desk, and still replayed
+        self.assertEqual(hub.catch_up(), 1)
+
+    def test_a_new_overlay_window_has_to_report_before_it_is_believed(self):
+        hub = self.watched()
+        hub.on_overlay({"type": "input", "idle": 300})
+        self.assertTrue(hub.snapshot()["away"])
+        hub.on_overlay({"type": "ready"})  # restarted
+        self.assertIsNone(hub.snapshot()["away"])
+
     def test_repeat_says_the_last_line_again_in_the_same_voice(self):
         hub = self.make()
         hub.on_display(ev("MessageDisplay", delta=tag("All done.")))

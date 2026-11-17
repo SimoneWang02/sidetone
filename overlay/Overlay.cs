@@ -719,6 +719,8 @@ namespace ClaudeSpeaks
         [DllImport("user32.dll")] static extern bool GetCursorPos(out CursorPoint point);
         [StructLayout(LayoutKind.Sequential)] struct CursorPoint { public int X; public int Y; }
         [DllImport("user32.dll")] static extern int GetSystemMetrics(int index);
+        [StructLayout(LayoutKind.Sequential)] struct LastInput { public uint Size; public uint Time; }
+        [DllImport("user32.dll")] static extern bool GetLastInputInfo(ref LastInput info);
         delegate IntPtr HookProc(int code, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")] static extern IntPtr SetWindowsHookEx(int kind, HookProc proc, IntPtr module, uint thread);
         [DllImport("user32.dll")] static extern bool UnhookWindowsHookEx(IntPtr hook);
@@ -766,6 +768,9 @@ namespace ClaudeSpeaks
         readonly DispatcherTimer bannerTimer = new DispatcherTimer();
         readonly DispatcherTimer holdTimer = new DispatcherTimer();
         readonly DispatcherTimer topTimer = new DispatcherTimer();
+        readonly DispatcherTimer inputTimer = new DispatcherTimer();
+        const double QuietAfter = 10;  // seconds without key or mouse before the hub is told
+        int quiet = -1;  // what the hub was last told: 1 = keyboard and mouse left alone, 0 = in use, -1 = nothing yet
         readonly Dictionary<int, string> hotkeys = new Dictionary<int, string>();        // registered id -> name
         readonly Dictionary<int, uint> hotkeyKeys = new Dictionary<int, uint>();         // registered id -> key
         readonly Dictionary<string, string> wantedKeys = new Dictionary<string, string>(); // name -> "Ctrl+Alt+L"
@@ -874,9 +879,13 @@ namespace ClaudeSpeaks
             topTimer.Interval = TimeSpan.FromSeconds(2);
             topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); };
 
+            inputTimer.Interval = TimeSpan.FromSeconds(1);
+            inputTimer.Tick += delegate { WatchInput(); };
+
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
             SetGlass();
             topTimer.Start();
+            inputTimer.Start();
             hoverTimer.Start();
         }
 
@@ -1897,6 +1906,21 @@ namespace ClaudeSpeaks
                 reply["frames"] = frames;
             }
             Write(reply);
+        }
+
+        // Tell the hub when keyboard and mouse fall quiet and when they are used again, so it
+        // knows which lines were said to an empty room. Only those two moments are reported;
+        // how long counts as away is the hub's business.
+        void WatchInput()
+        {
+            var info = new LastInput();
+            info.Size = (uint)Marshal.SizeOf(typeof(LastInput));
+            if (!GetLastInputInfo(ref info)) return;
+            double idle = unchecked((uint)Environment.TickCount - info.Time) / 1000.0;
+            int now = idle >= QuietAfter ? 1 : 0;
+            if (now == quiet) return;
+            quiet = now;
+            Send("input", "idle", now == 1 ? Math.Round(idle) : 0.0);
         }
 
         void Send(string type, string key, object value)
