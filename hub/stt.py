@@ -26,6 +26,7 @@ class Recorder:
 
     def __init__(self, source: str = ""):
         self.source = source  # PulseAudio source name; empty = the default one
+        self.on_chunk = None  # called with each 0.05 s of audio as it arrives (to show the voice)
         self.proc: subprocess.Popen | None = None
         self._chunks: list[bytes] = []
         self._reader: threading.Thread | None = None
@@ -45,10 +46,12 @@ class Recorder:
 
     def _read(self, proc: subprocess.Popen) -> None:
         while True:
-            chunk = proc.stdout.read(3200)  # 0.1 s
+            chunk = proc.stdout.read(1600)  # 0.05 s
             if not chunk:
                 return
             self._chunks.append(chunk)
+            if self.on_chunk and self.proc is proc:
+                self.on_chunk(chunk)
 
     def stop(self, tail: float = 0.0) -> bytes:
         """Stop recording and return what was captured (16-bit little-endian samples).

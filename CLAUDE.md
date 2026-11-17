@@ -161,6 +161,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   "Sent.". Target: the session that spoke last; a quick tap of the talk key picks the next one.
   A busy session gets the follow-up right after its current reply. With no listener yet, the
   text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
+- What push-to-talk shows (changed 2026-11-17: the author did not like the text line with
+  arrows, "listening → name", and it kept the old name when the focus moved): the hub sends
+  `talk` with a step (`listening`, `transcribing`, `ready`, `sent`, `failed`, `focus`), the
+  session it is about, and the words; the overlay shows it in the bubble beside that session's
+  light (or in its row when the panel is out). While listening the hub also sends `mic`
+  loudness values from the recorder, drawn as a wave in the microphone's own color, and the
+  light becomes voice bars in that color. `Hub.focus()` re-sends what is on screen for the new
+  session, and a pending follow-up moves with it. `banner` is now only used by the overlay
+  itself (move mode).
 - Hotkeys (rebind or blank them under `overlay.hotkeys`): always claimed are `toggle` Ctrl+Alt+L,
   `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R and `missed` Ctrl+Alt+U (Ctrl+Alt+M is taken by
   another program on the author's machine). Claimed only while they can act: `allow` Ctrl+Alt+Y,
@@ -202,7 +211,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 76 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 78 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

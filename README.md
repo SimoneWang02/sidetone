@@ -37,8 +37,10 @@ its own spoken line as the first line of its reply.
 - **Answer Claude's questions with a number key.** A multiple-choice question is shown with
   numbered options and read out; `Ctrl+Alt+1` to `4` picks one.
 - **Push-to-talk follow-ups.** Hold `Ctrl+Alt+Space`, say "also add a test for the empty case",
-  release. A local Whisper model transcribes it and it is sent at once to the session in
-  focus, even if that session is idle; the overlay shows what was sent. The focus is on
+  release. While you hold the key, a bubble next to that session's light shows your own voice
+  as a wave, so you can see the microphone hears you. A local Whisper model transcribes it and
+  it is sent at once to the session in focus, even if that session is idle; the bubble then
+  shows what was sent. The focus is on
   whichever session spoke last, shown by a frame around its light; hold `Ctrl+Alt` and turn the
   mouse wheel to move it to another session. If you would rather check the text first, set
   `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
@@ -183,7 +185,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 ```
 
-76 tests with a silent voice and a fake microphone. They include the real hook scripts talking
+78 tests with a silent voice and a fake microphone. They include the real hook scripts talking
 to a hub over its socket, and a hub process that is killed and restarted.
 `python3 tests/overlay_check.py OUT_DIR --glass` (Windows/WSL) saves a picture of each overlay
 view. It captures only the overlay's own rectangles, and shows the see-through glass over a

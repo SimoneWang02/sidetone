@@ -168,6 +168,8 @@ class Hub:
         self.listeners: dict[str, Listener] = {}  # session id -> its waiting hook
         self.followups: dict[str, list[str]] = {}  # session id -> text not yet picked up
         self.talk_target: str | None = None  # session a spoken follow-up goes to
+        self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
+        self._mic_meter = Meter()  # turns microphone audio into a loudness for the overlay
         self._talking: float | None = None  # when the talk key went down
         self._pending: Pending | None = None  # the follow-up being shown
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
@@ -586,12 +588,13 @@ class Hub:
                 return False
             s = self._target()
             if not s:
-                self._banner("no Claude session to talk to", seconds=2)
+                self._talk("failed", None, "no Claude session to talk to", seconds=2)
                 return False
             self._talking = time.monotonic()
+            self.talk_target = s.id  # the session shown as listening is the one that gets it
             if not (self._pending and self._pending.confirm):  # that one may be about to get its confirming tap
                 self._cancel_pending()
-                self._banner(f"listening \u2192 {s.name}", "release to send \u00b7 tap to pick another session")
+                self._talk("listening", s)
         self.speech.pause()
         self.recorder.start()
         if self.transcriber:  # load the model while the user is still speaking
@@ -617,11 +620,11 @@ class Hub:
                 ids = list(self.sessions.by_id)
                 if ids:
                     self.talk_target = ids[(ids.index(self._target().id) + 1) % len(ids)]
-                    self._banner(f"talking to {self.sessions.by_id[self.talk_target].name}", seconds=2)
+                    self._talk("focus", self.sessions.by_id[self.talk_target], seconds=1.6)
         else:
             with self.lock:
                 self._cancel_pending()
-                self._banner("transcribing\u2026")
+                self._talk("transcribing", self._target())
             threading.Thread(target=self._transcribe, args=(pcm,), daemon=True).start()
         self.publish()
 
@@ -643,7 +646,7 @@ class Hub:
         if text:
             self.follow_up(text)
         else:
-            self._banner("did not catch that", seconds=2)
+            self._talk("failed", self._target(), "did not catch that", seconds=2)
 
     def follow_up(self, text: str, session: str | None = None, delay: float | None = None) -> bool:
         """Show a follow-up, then send it to the session.
@@ -666,7 +669,7 @@ class Hub:
                 hint = f"{keys.get('cancel', '')} cancels" if keys.get("cancel") else ""
                 pending.timer = threading.Timer(self.cfg.followup_delay if delay is None else delay,
                                                 self._send, args=(pending,))
-            self._banner(f"\u2192 {s.name}: \u201c{text}\u201d", hint)
+            self._talk("ready", s, text, hint)
             pending.timer.daemon = True
             pending.timer.start()
         self.publish()
@@ -680,9 +683,9 @@ class Hub:
             self._pending = None
             s = self.sessions.by_id.get(pending.session)
             if not s:
-                self._banner(None)
+                self._talk(None)
                 return
-            self._banner(f"sent \u2192 {s.name}: \u201c{pending.text}\u201d", seconds=2.5)  # what went out, for a glance
+            self._talk("sent", s, pending.text, seconds=2.5)  # what went out, for a glance
             self.followups.setdefault(s.id, []).append(pending.text)
             listener = self.listeners.get(s.id)
             if listener:
@@ -697,16 +700,17 @@ class Hub:
             if self._pending is not pending:
                 return
             self._pending = None
-            self._banner("not sent", seconds=2)
+            self._talk("failed", self.sessions.by_id.get(pending.session), "not sent", seconds=2)
         self.publish()
 
     def cancel(self) -> None:
         """The cancel key: stop recording, or take back a follow-up, or cut the line being spoken."""
         with self.lock:
             talking, self._talking = self._talking, None
+            about = self.sessions.by_id.get(self._pending.session) if self._pending else self._target()
             had_pending = self._cancel_pending()
             if talking or had_pending:
-                self._banner("cancelled", seconds=1.5)
+                self._talk("failed", about, "cancelled", seconds=1.5)
         if talking:
             self.recorder.stop()
             self.speech.resume()
@@ -751,7 +755,12 @@ class Hub:
             if not ids:
                 return None
             self.talk_target = ids[max(0, min(len(ids) - 1, ids.index(self._target().id) + step))]
-            name = self.sessions.by_id[self.talk_target].name
+            s = self.sessions.by_id[self.talk_target]
+            name = s.name
+            if self._talk_shown:  # what is on screen for push-to-talk follows the focus
+                if self._pending:
+                    self._pending.session = s.id
+                self._talk(self._talk_shown[0], s, *self._talk_shown[1:])
         self.publish()
         return name
 
@@ -767,18 +776,26 @@ class Hub:
             return False
         self._pending.timer.cancel()
         self._pending = None
-        self._banner(None)
+        self._talk(None)
         return True
 
     def _needs_confirmation(self, s) -> bool:
         wanted = self.cfg.followup_confirm
         return s.permission_mode not in PROMPTING_MODES if wanted == "auto" else bool(wanted)
 
-    def _banner(self, text: str | None, hint: str = "", seconds: float = 0) -> None:
-        """A solid line about push-to-talk; stays until replaced unless `seconds` is given."""
+    def _talk(self, state: str | None, s=None, text: str = "", hint: str = "", seconds: float = 0) -> None:
+        """Tell the overlay where push-to-talk stands: listening, transcribing, ready (waiting for a
+        go-ahead), sent, failed (the text says why), focus (a tap moved it), or None for nothing.
+        It is shown on the session it is about; it stays until replaced unless `seconds` is given."""
+        self._talk_shown = (state, text, hint) if state in ("listening", "ready") else None
         if self.overlay:
-            self.overlay.send({"type": "banner", "text": text, "hint": hint, "seconds": seconds}
-                              if text else {"type": "banner"})
+            self.overlay.send({"type": "talk", "state": state, "name": s.name if s else "", "text": text,
+                               "hint": hint, "seconds": seconds} if state else {"type": "talk"})
+
+    def _mic_heard(self, chunk: bytes) -> None:
+        """A moment of the microphone while the talk key is held: the overlay shows it as a wave."""
+        if self.overlay:
+            self.overlay.send({"type": "mic", "levels": [self._mic_meter.level(chunk)], "step": len(chunk) / 2 / stt.RATE})
 
     # --- overlay -----------------------------------------------------------------------------
 
@@ -1130,6 +1147,7 @@ def main() -> int:
         hub.publish()  # starts the window now, so it is ready before the first session speaks
     if stt.Recorder.available() and stt.Transcriber.available():
         hub.recorder = stt.Recorder(cfg.mic_source)
+        hub.recorder.on_chunk = hub._mic_heard
         hub.transcriber = stt.Transcriber(cfg.whisper_model, cfg.whisper_language)
     server = serve(hub, cfg.sock)
     stop = lambda *_: threading.Thread(target=server.shutdown, daemon=True).start()  # noqa: E731

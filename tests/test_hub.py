@@ -556,8 +556,9 @@ class PushToTalk(HubCase):
         hub.on_event(ev("SessionStart", sid="b", cwd="/w/b"))
         return hub
 
-    def banners(self):
-        return [m.get("text") for m in self.overlay.of("banner")]
+    def talks(self):
+        """What the overlay was told about push-to-talk: (step, session, words) in order."""
+        return [(m.get("state"), m.get("name", ""), m.get("text", "")) for m in self.overlay.of("talk")]
 
     def test_hold_to_talk_reaches_the_session_that_spoke_last(self):
         hub = self.make()
@@ -566,10 +567,10 @@ class PushToTalk(HubCase):
         listener = hub.listen("a")
         self.assertTrue(hub.talk_start())
         self.assertTrue(hub.recorder.recording)
-        self.assertIn("listening \u2192 a", self.banners())
+        self.assertIn(("listening", "a", ""), self.talks())
         hub.talk_end()
         self.assertTrue(listener.wake.wait(3), "the follow-up never reached the listener")
-        self.assertIn("\u2192 a: \u201calso add a test\u201d", self.banners())
+        self.assertIn(("ready", "a", "also add a test"), self.talks())
         self.assertEqual(hub.collect(listener), "also add a test")
         self.assertEqual(self.spoken(), ["A is done.", "Sent."])
 
@@ -590,7 +591,7 @@ class PushToTalk(HubCase):
         hub.cancel()
         time.sleep(0.35)
         self.assertEqual(hub.followups, {})
-        self.assertIn("cancelled", self.banners())
+        self.assertIn(("failed", "a", "cancelled"), self.talks())
 
     def test_a_quick_tap_picks_the_next_session(self):
         hub = self.make()
@@ -599,15 +600,31 @@ class PushToTalk(HubCase):
         hub.talk_start()
         hub.talk_end()
         self.assertEqual(hub.talk_target, "b")
-        self.assertIn("talking to b", self.banners())
+        self.assertIn(("focus", "b", ""), self.talks())
         self.assertFalse(wait_for(lambda: hub.followups, 0.2))
+
+    def test_what_is_on_screen_follows_the_focus(self):
+        hub = self.make()
+        hub.talk_target = "a"
+        hub.talk_start()
+        self.assertEqual(self.talks()[-1], ("listening", "a", ""))
+        hub.focus(1)  # the wheel, while the talk key is still held
+        self.assertEqual(self.talks()[-1], ("listening", "b", ""))
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: hub.followups.get("b") == ["also add a test"]))
+        self.assertIn(("sent", "b", "also add a test"), self.talks())
+
+    def test_the_microphone_is_shown_while_listening(self):
+        hub = self.make()
+        hub._mic_heard(bytes(1600))
+        self.assertEqual(self.overlay.of("mic")[-1], {"type": "mic", "levels": [0.0], "step": 0.05})
 
     def test_silence_sends_nothing(self):
         hub = self.make()
         hub.transcriber.text = ""
         hub.talk_start()
         hub.talk_end()
-        self.assertTrue(wait_for(lambda: "did not catch that" in self.banners()))
+        self.assertTrue(wait_for(lambda: ("failed", "b", "did not catch that") in self.talks()))  # b: the newest session
         self.assertEqual(hub.followups, {})
 
     def test_follow_up_waits_for_a_session_with_no_listener_yet(self):
@@ -634,7 +651,7 @@ class PushToTalk(HubCase):
         hub.talk_end()
         self.assertTrue(listener.wake.wait(2))
         self.assertEqual(hub.collect(listener), "also add a test")
-        self.assertIn("sent \u2192 a: \u201calso add a test\u201d", self.banners())  # a receipt to glance at
+        self.assertIn(("sent", "a", "also add a test"), self.talks())  # a receipt to glance at
 
     def test_with_confirming_on_an_unattended_session_needs_a_tap(self):
         hub = self.make(followup_confirm="auto")
@@ -644,7 +661,7 @@ class PushToTalk(HubCase):
         hub.talk_start()
         hub.talk_end()
         self.assertTrue(wait_for(lambda: hub._pending is not None))
-        self.assertIn("tap Ctrl+Alt+Space to send", self.overlay.of("banner")[-1]["hint"])
+        self.assertIn("tap Ctrl+Alt+Space to send", self.overlay.of("talk")[-1]["hint"])
         time.sleep(0.2)  # well past followup_delay: it must still be waiting
         self.assertFalse(listener.wake.is_set())
         hub_module.TAP = 30  # the next press is a tap
@@ -659,7 +676,7 @@ class PushToTalk(HubCase):
         hub_module.CONFIRM_WINDOW = 0.1
         hub.talk_start()
         hub.talk_end()
-        self.assertTrue(wait_for(lambda: "not sent" in self.banners()))
+        self.assertTrue(wait_for(lambda: "not sent" in [text for _, _, text in self.talks()]))
         self.assertEqual(hub.followups, {})
 
     def test_typed_follow_up_and_prompting_session_send_without_a_tap(self):

@@ -33,7 +33,7 @@ namespace ClaudeSpeaks
         public static double Now { get { return watch.Elapsed.TotalSeconds; } }
 
         public static readonly FontFamily Symbols = new FontFamily("Segoe UI Symbol");
-        public static readonly Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00);
+        public static readonly Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00), Mic = Color.FromRgb(0xFF, 0x6E, 0x8A);
         public static readonly Brush Dim = Paint("#C8FFFFFF"), Faint = Paint("#8CFFFFFF");
 
         // Shape differs as well as color (see Orb), so a state reads without color vision.
@@ -158,7 +158,7 @@ namespace ClaudeSpeaks
         static readonly double[] Weights = { 0.5, 0.8, 1.0, 0.8, 0.5 };
         public string State = "idle";
         public bool Speaking;
-        public Wave Wave;
+        public Wave Wave, Listening;  // Listening: your own voice, while you hold the talk key for this session
         public double Born = Ui.Now, Changed = -10, Hot;
 
         public Orb() { Width = Height = Size; IsHitTestVisible = false; }
@@ -166,30 +166,31 @@ namespace ClaudeSpeaks
         // Whether it has to be drawn again on the next frame.
         public bool Moving
         {
-            get { double t = Ui.Now; return Speaking || State == "working" || State == "needs_you" || t - Changed < 0.8 || t - Born < 0.45; }
+            get { double t = Ui.Now; return Speaking || Listening != null || State == "working" || State == "needs_you" || t - Changed < 0.8 || t - Born < 0.45; }
         }
 
         protected override void OnRender(DrawingContext dc)
         {
             double t = Ui.Now, age = t - Changed;
             var c = new Point(Size / 2, Size / 2);
-            Color tint = Ui.Tint(State);
+            Color tint = Listening != null ? Ui.Mic : Ui.Tint(State);
+            Wave wave = Listening ?? Wave;
             double bump = age < 0.4 ? 0.2 * Math.Sin(Math.PI * age / 0.4) : 0;
             double scale = Ui.Overshoot((t - Born) / 0.4) * (1 + bump + 0.14 * Hot);
             dc.PushTransform(new ScaleTransform(scale, scale, c.X, c.Y));
-            if (age < 0.8 && !Speaking && State != "idle" && State != "working")
+            if (age < 0.8 && !Speaking && Listening == null && State != "idle" && State != "working")
             {
                 double ring = Ui.EaseOut(age / 0.8);  // a ring that spreads and fades
                 dc.DrawEllipse(null, Ui.Line(tint, 0.7 * (1 - ring), 2), c, 13 + 9 * ring, 13 + 9 * ring);
             }
-            if (Speaking)
+            if (Speaking || Listening != null)
             {
-                double level = Wave.At(t - Wave.Lag);
+                double level = wave.At(t - Wave.Lag);
                 dc.DrawEllipse(Ui.Alpha(tint, 0.10 + 0.22 * level), null, c, 13.5 + 4 * level, 13.5 + 4 * level);
                 dc.DrawEllipse(Ui.Alpha(tint, 0.30), Ui.Line(tint, 0.95, 1.5), c, 13, 13);
                 for (int i = 0; i < 5; i++)
                 {
-                    double h = 3 + 17 * Weights[i] * Wave.At(t - Wave.Lag - Math.Abs(i - 2) * 0.07);
+                    double h = 3 + 17 * Weights[i] * wave.At(t - Wave.Lag - Math.Abs(i - 2) * 0.07);
                     dc.DrawRoundedRectangle(Brushes.White, null, new Rect(c.X + (i - 2) * 4.4 - 1.3, c.Y - h / 2, 2.6, h), 1.3, 1.3);
                 }
                 dc.Pop();
@@ -437,7 +438,7 @@ namespace ClaudeSpeaks
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock line1 = new TextBlock(), line2 = new TextBlock(), meta = new TextBlock();
         public bool Speaking, Focus;
-        public string Name = "", Title = "", State = "", FlashText;
+        public string Name = "", Title = "", State = "", FlashText, TalkLabel, TalkText = "";  // TalkLabel: null unless push-to-talk is about this session
         public double FlashUntil, Hot, Lit;
         string rowText = "", metaText = "";
 
@@ -480,7 +481,6 @@ namespace ClaudeSpeaks
             Wave.Synthetic = s.ContainsKey("synth") && Convert.ToBoolean(s["synth"]);
             if (Speaking && !was) Wave.Since = Ui.Now;
             if (!Speaking && was) Wave.Clear();
-            Strip.Tint = Ui.Tint(State);
             Overlay.Heading(line1, Name, Title);
             string text = Overlay.Str(s, "text");
             if (text != rowText && rowText.Length > 0 && !Saying)  // what it is doing changed: the new words fade in
@@ -493,25 +493,40 @@ namespace ClaudeSpeaks
 
         public bool Saying { get { return FlashText != null && (Speaking || Ui.Now < FlashUntil); } }
 
+        // Something to read about it right now: what it says, or what you are saying to it.
+        public bool Showing { get { return TalkLabel != null || Saying; } }
+
+        // Push-to-talk is about this session (label such as "listening", and words), or no longer.
+        public void SetTalk(string label, string text, Wave mic)
+        {
+            bool changed = label != TalkLabel || text != TalkText || (Orb.Listening != null) != (mic != null);
+            TalkLabel = label;
+            TalkText = text ?? "";
+            Orb.Listening = mic;
+            if (changed) { Orb.Changed = Ui.Now; Refresh(); }
+        }
+
         // The second line is the sentence being spoken (or just shown) while there is one,
         // otherwise what the session is doing.
         public void Refresh()
         {
-            bool saying = Saying;
-            line2.Text = saying ? FlashText : rowText;
+            bool saying = Showing, talk = TalkLabel != null;
+            line2.Text = talk ? (TalkText.Length > 0 ? TalkLabel + "  \u00b7  " + TalkText : TalkLabel) : saying ? FlashText : rowText;
             line2.TextWrapping = saying ? TextWrapping.Wrap : TextWrapping.NoWrap;
             line2.Foreground = saying ? Brushes.White : Ui.Dim;
             meta.Text = metaText;
             meta.Visibility = saying || metaText.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
             row2.Visibility = line2.Text.Length == 0 && meta.Visibility != Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-            Strip.Visibility = Speaking ? Visibility.Visible : Visibility.Collapsed;
+            Strip.Wave = Orb.Listening ?? Wave;
+            Strip.Tint = Orb.Listening != null ? Ui.Mic : Ui.Tint(State);
+            Strip.Visibility = Speaking || Orb.Listening != null ? Visibility.Visible : Visibility.Collapsed;
         }
 
         // The soft highlight behind the line: under the mouse, while it is being said, and
         // (fainter) on the session in focus, the one a spoken follow-up goes to.
         public bool Glow(double dt)
         {
-            bool moving = Ui.Approach(ref Lit, Math.Max(Hot > 0.5 ? 0.11 : 0, Math.Max(Saying ? 0.085 : 0, Focus ? 0.06 : 0)), 14, dt);
+            bool moving = Ui.Approach(ref Lit, Math.Max(Hot > 0.5 ? 0.11 : 0, Math.Max(Showing ? 0.085 : 0, Focus ? 0.06 : 0)), 14, dt);
             glow.Opacity = Lit;
             return moving;
         }
@@ -598,6 +613,11 @@ namespace ClaudeSpeaks
         bool inFrame;
         int[] grabbedAt = new int[4];
         Row talker, hot;  // the session the speech bubble belongs to; the one under the mouse
+        // Push-to-talk: what is going on (listening, transcribing, sent, ...), for which session,
+        // the words, and your own voice as the microphone hears it.
+        readonly Wave mic = new Wave();
+        string talkState = "", talkName = "", talkText = "", talkHint = "";
+        double talkUntil;
 
         Overlay(TextWriter output)
         {
@@ -756,6 +776,12 @@ namespace ClaudeSpeaks
                 case "wave":
                     AddWave(msg);
                     break;
+                case "talk":
+                    Talk(msg);
+                    break;
+                case "mic":
+                    AddLevels(mic, msg);
+                    break;
                 case "request":
                     ShowRequest(msg);
                     break;
@@ -846,7 +872,12 @@ namespace ClaudeSpeaks
             bool showHistory = isList && peek && history.Length > 0;
             historyBox.Visibility = showHistory ? Visibility.Visible : Visibility.Collapsed;
             if (showHistory) BuildHistory();
-            bool show = isList || hasRequest || hasBanner || moving || sessions.Length > 0;
+            bool talking = talkState.Length > 0;
+            string label = TalkLabel(), words = TalkWords();
+            foreach (Row row in order)
+                if (talking && row.Name == talkName) row.SetTalk(label, words, talkState == "listening" ? mic : null);
+                else row.SetTalk(null, "", null);
+            bool show = isList || hasRequest || hasBanner || moving || talking || sessions.Length > 0;
             if (show && !rail.IsVisible) rail.Show();
             else if (!show && rail.IsVisible) rail.Hide();
 
@@ -915,19 +946,28 @@ namespace ClaudeSpeaks
         void UpdateBubble(bool barShown)
         {
             Row found = null;
-            if (!IsOpen() && barShown && !dragging)
+            bool talking = talkState.Length > 0, away = !IsOpen() && barShown && !dragging;
+            if (away)
                 foreach (Row row in order)
+                {
+                    if (row.TalkLabel != null) { found = row; break; }  // what you are saying comes first
                     if (row.Saying && (found == null || row.Speaking || (!found.Speaking && row.FlashUntil > found.FlashUntil))) found = row;
-            if (found == null) { bubble.Goal = 0; return; }
-            talker = found;
-            string shows = found.Name + "\n" + found.Title + "\n" + found.FlashText + "\n" + found.State;
+                }
+            bool orphan = away && talking && (found == null || found.TalkLabel == null);  // push-to-talk with no session to show it on
+            if (found == null && !orphan) { bubble.Goal = 0; return; }
+            talker = orphan ? null : found;
+            bool mine = orphan || found.TalkLabel != null, listening = mine && talkState == "listening";
+            string head = orphan ? "" : found.Name, sub = mine ? TalkLabel() : found.Title, body = mine ? TalkWords() : found.FlashText;
+            string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State) + listening;
             if (shows != bubbleShows)
             {
                 bubbleShows = shows;
-                Heading(bubbleLine1, found.Name, found.Title);
-                bubbleLine2.Text = found.FlashText;
-                bubbleStrip.Wave = found.Wave;
-                bubbleStrip.Tint = Ui.Tint(found.State);
+                Heading(bubbleLine1, head.Length > 0 ? head : sub, head.Length > 0 ? sub : "");
+                bubbleLine2.Text = body;
+                bubbleLine2.Visibility = body.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+                bubbleLine2.Foreground = listening ? Ui.Dim : Brushes.White;
+                bubbleStrip.Wave = listening ? mic : orphan ? mic : found.Wave;
+                bubbleStrip.Tint = mine ? Ui.Mic : Ui.Tint(found.State);
                 bubbleStrip.NewestRight = corner.EndsWith("right");
             }
             if (bubble.Goal == 0) bubbleAt = Ui.Now;
@@ -964,6 +1004,11 @@ namespace ClaudeSpeaks
             frames++;
             bool again = false, expired = false, right = corner.EndsWith("right");
             if (dragging) { DragStep(); again = true; }
+            if (talkState.Length > 0)
+            {
+                again = true;
+                if (now >= talkUntil) { talkState = ""; expired = true; }
+            }
             if (now < wheelUntil) again = true;
             else if (wheeling) { wheeling = false; expired = true; }  // the panel that came out for the wheel goes back
             again |= MoveSelector(dt);
@@ -1292,14 +1337,56 @@ namespace ClaudeSpeaks
             Render();
         }
 
-        void AddWave(Dictionary<string, object> msg)
+        void AddWave(Dictionary<string, object> msg) { AddLevels(WaveOf(Str(msg, "name")), msg); }
+
+        void AddLevels(Wave wave, Dictionary<string, object> msg)
         {
             if (!msg.ContainsKey("levels")) return;
             var raw = (object[])msg["levels"];
             var levels = new double[raw.Length];
             for (int i = 0; i < raw.Length; i++) levels[i] = Convert.ToDouble(raw[i], CultureInfo.InvariantCulture);
-            WaveOf(Str(msg, "name")).Add(Ui.Now + Num(msg, "delay", 0), Math.Max(0.005, Num(msg, "step", 0.04)), levels);
+            wave.Add(Ui.Now + Num(msg, "delay", 0), Math.Max(0.005, Num(msg, "step", 0.04)), levels);
             Run(true);
+        }
+
+        // Push-to-talk, step by step: listening (with your voice as a wave), transcribing, ready
+        // (waiting for a go-ahead), sent, failed (text says why), focus (a tap moved the focus).
+        // It shows on the session it is about, and moves with the focus.
+        void Talk(Dictionary<string, object> msg)
+        {
+            string state = Str(msg, "state");
+            if (state == "listening" && talkState != "listening") mic.Clear();
+            talkState = state;
+            talkName = Str(msg, "name");
+            talkText = Str(msg, "text");
+            talkHint = Str(msg, "hint");
+            double seconds = Num(msg, "seconds", 0);
+            talkUntil = seconds > 0 ? Ui.Now + seconds : double.MaxValue;
+            Render();
+        }
+
+        string TalkLabel()
+        {
+            switch (talkState)
+            {
+                case "listening": return "listening";
+                case "transcribing": return "transcribing\u2026";
+                case "ready": return "ready to send";
+                case "sent": return "sent";
+                case "focus": return "in focus";
+                default: return talkText;  // failed: the text says what happened
+            }
+        }
+
+        string TalkWords()
+        {
+            switch (talkState)
+            {
+                case "listening": return "release to send";
+                case "ready": return "\u201c" + talkText + "\u201d" + (talkHint.Length > 0 ? "\n" + talkHint : "");
+                case "sent": return "\u201c" + talkText + "\u201d";
+                default: return "";
+            }
         }
 
         // A permission prompt or question stays on screen until it is answered: the hotkeys act on it.
@@ -1350,7 +1437,7 @@ namespace ClaudeSpeaks
         void Fade()
         {
             bool busy = hasRequest || hasBanner || moving || hover || peek;
-            foreach (Row row in order) busy = busy || row.Saying;
+            foreach (Row row in order) busy = busy || row.Showing;
             double target = opaque || busy ? 1.0 : (mode == "list" ? listOpacity : idleOpacity);
             if (target == lastFade) return;
             lastFade = target;
@@ -1384,10 +1471,10 @@ namespace ClaudeSpeaks
                 double top = bottom ? rail.Top + height - panel.Goal : rail.Top;
                 panel.Top = Math.Max(work.Top + 4, Math.Min(work.Bottom - panel.Goal - 4, top));
             }
-            if (bubble.Goal > 0 && talker != null)
+            if (bubble.Goal > 0)
             {
                 double level = height / 2;
-                try { level = talker.Light.TransformToAncestor(rail).Transform(new Point(0, talker.Light.ActualHeight / 2)).Y; }
+                try { if (talker != null) level = talker.Light.TransformToAncestor(rail).Transform(new Point(0, talker.Light.ActualHeight / 2)).Y; }
                 catch (InvalidOperationException) { }  // its light is not on screen yet
                 bubble.Left = right ? rail.Left - BubbleWidth - Gap : rail.Left + width + Gap;
                 bubble.Top = Math.Max(work.Top + 4, Math.Min(work.Bottom - bubble.Goal - 4, rail.Top + level - bubble.Goal / 2));
