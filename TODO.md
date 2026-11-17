@@ -344,6 +344,24 @@ Smaller ideas:
       default.
 - [ ] A small VS Code extension: the only way to color the tab itself and to bring a
       terminal to the front (the jump key above).
+- [ ] The focus follows the terminal you click (the author's idea, 2026-11-17: "whenever I
+      ... click on a terminal automatically the overlay ... select that ... session"). The
+      other way round exists: the terminal of the session in focus is tinted. Looked at
+      the same day, nothing built:
+      - The hub cannot see which terminal has the keyboard. It can write to a session's
+        terminal but not read what the terminal sends back (that goes to Claude Code),
+        and the terminal's own "last used" time is only kept to the nearest 8 seconds by
+        Linux and moves for the terminal that loses the keyboard too.
+      - Claude Code knows when its terminal gains the keyboard, but its session file does
+        not say so and no hook reports it (to check in its documentation, in case one
+        has been added).
+      - Reliable: the small VS Code extension above. VS Code tells an extension which
+        terminal is active the moment it changes, with the terminal's process, which
+        leads to the session; the extension tells the hub. Only for VS Code; another
+        terminal program would need its own way.
+      - Without any of that: the focus already goes to a session when it speaks, so one
+        you type to gets it with its reply. It could move at the moment you send the
+        prompt instead; that is a few lines in the hub.
 - [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
       as a small sign on the tab for a moment (its visual bell setting is off by default).
 - [ ] A phone notification when a session needs you and you are away
