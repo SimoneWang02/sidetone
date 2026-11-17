@@ -1599,6 +1599,32 @@ class HubProcess(unittest.TestCase):
         self.assertEqual(hook.returncode, 2)
         self.assertIn('"run the tests"', err)
 
+    def test_a_listener_keeps_working_when_its_script_is_edited_under_it(self):
+        """Bash reads a script from its file as it goes. A listener waits for hours, and when the
+        file changed meanwhile it read on in the middle of the new text: a syntax error, the
+        session woken with that error, and the words it had been given lost."""
+        import shutil
+        hooks = os.path.join(self.tmp, "hooks")
+        shutil.copytree(os.path.join(ROOT, "hooks"), hooks)
+        self.env["CS_ROOT"] = ROOT
+        self.start_hub()
+        script = os.path.join(hooks, "listen.sh")
+        hook = subprocess.Popen([script], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True, env=self.env)
+        self.addCleanup(hook.kill)
+        hook.stdin.write(json.dumps(ev("Stop")))
+        hook.stdin.close()
+        hook.stdin = None
+        self.assertTrue(wait_for(lambda: self.names() == ["alpha"], 5), "the hub never saw the listener")
+        with open(script, "r+") as f:  # the same file, with everything moved down a little
+            text = f.read()
+            f.seek(0)
+            f.write(text.replace("\n", "\n# a comment someone added while it was running\n", 1))
+        self.assertEqual(self.call("/follow-up", {"text": "run the tests", "session": "alpha", "delay": 0}), {"queued": True})
+        out, err = hook.communicate(timeout=5)
+        self.assertEqual((hook.returncode, err.count("\n")), (2, 2), err)
+        self.assertIn('"run the tests"', err)
+
 
 if __name__ == "__main__":
     unittest.main()

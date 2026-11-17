@@ -394,7 +394,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off]`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 123 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 124 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
@@ -481,6 +481,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   needs you) words wait, and `reconcile` hands them over within a second of it stopping,
   whether the reply ended or was interrupted. Checked with a real session: spoken to while
   busy, interrupted two seconds later, woken two seconds after that.
+- Editing a hook script while it runs (2026-11-17): bash reads a script from its file as it
+  goes, by position. `listen.sh` waits for hours, and when another session edited it in place
+  the listeners already running read on in the middle of the new text: "line 19: r: command
+  not found", a syntax error, exit 2. That woke the session with the error, and the words the
+  author had just spoken to it were lost (they were still in `hub.log`). `listen.sh` and
+  `permission.sh` are now one function called on the last line (read whole before it runs),
+  and a test edits the script under a waiting listener. Listeners started before a fix like
+  this keep the fault: end them with `kill` (their trap exits quietly), after which words to
+  that session wait in the hub until its next prompt or stop.
 - Languages (2026-11-17): the author also speaks Italian to it; the English-only model dropped
   those recordings or invented English ("But I'll see you in Italy in a few days."). Their
   `config.json` now has `whisper_model: small` and `whisper_language: "en,it"`. With several
