@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Background listener (asyncRewake hook on Stop and SessionStart): waits on the hub for a spoken
-# follow-up addressed to this session. When one arrives it is printed for Claude and the hook
+# Background listener (asyncRewake hook on Stop, SessionStart and UserPromptSubmit): waits on the
+# hub for a spoken follow-up addressed to this session. It also starts with every prompt because
+# a turn that is interrupted ends without a Stop event, and the session would have no listener. When one arrives it is printed for Claude and the hook
 # exits 2, which wakes the session even if it is idle. A newer listener or the session ending
 # makes the hub release this one, and it exits quietly. If the hub restarts, it reconnects.
 input=$(cat)

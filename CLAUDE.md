@@ -88,7 +88,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 | Stop | `hooks/speak.sh` | Tells the hub the turn ended; the hub speaks the line only if streaming missed it |
 | Notification (`permission_prompt`, `elicitation_dialog`) | `hooks/notify.sh` | Hub marks the session "needs you" and says "I need your input" |
 | PermissionRequest | `hooks/permission.sh` | Holds a request open on the hub until the prompt is answered. Prints the hub's allow/deny, or nothing if it was answered in the terminal |
-| Stop, SessionStart (`asyncRewake`) | `hooks/listen.sh` | Background listener: waits on the hub for a spoken follow-up for this session, prints it for Claude and exits 2, which wakes the session |
+| Stop, SessionStart, UserPromptSubmit (`asyncRewake`) | `hooks/listen.sh` | Background listener: waits on the hub for a spoken follow-up for this session, prints it for Claude and exits 2, which wakes the session |
 | SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse(Failure), TaskCreated, TaskCompleted, StopFailure | `hooks/report.sh` (async) | Forwards the payload so the hub knows what each session is doing. `--start` also starts the hub |
 
 - `hub/hub.py`: the one background process. HTTP over a Unix socket at
@@ -394,7 +394,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off]`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 120 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 123 tests with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
@@ -469,6 +469,18 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   feedback". Delivered while the session is busy, it is handled right after the current reply.
   It works from both Stop and SessionStart. Claude Code kills these hooks when the session exits.
   Its `timeout` is enforced, so the listener asks for 86400 s.
+  Measured 2026-11-17: it also works from UserPromptSubmit. The prompt is not held up, the hook
+  outlives the turn, an Esc does not kill it, and it wakes the interrupted session. Each
+  prompt starts another one and the older ones live on, so something has to retire them
+  (the hub releases a session's older listener when a new one reports).
+- A session has a listener all the time (2026-11-17). Before, only from a Stop or a start:
+  the author interrupted this session with Ctrl+C, spoke to it, and the words "didn't go
+  through", because an interrupt ends a turn without a Stop and nothing was listening. Now
+  `listen.sh` also runs on every prompt. Since a listener is then there in the middle of a
+  reply too, the hub decides by the session's state: to a busy session (`BUSY`: working or
+  needs you) words wait, and `reconcile` hands them over within a second of it stopping,
+  whether the reply ended or was interrupted. Checked with a real session: spoken to while
+  busy, interrupted two seconds later, woken two seconds after that.
 - Languages (2026-11-17): the author also speaks Italian to it; the English-only model dropped
   those recordings or invented English ("But I'll see you in Italy in a few days."). Their
   `config.json` now has `whisper_model: small` and `whisper_language: "en,it"`. With several

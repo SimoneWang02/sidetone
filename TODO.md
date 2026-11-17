@@ -42,9 +42,22 @@ real keys yet.
 - [ ] A question answered in the terminal leaving the overlay at once (mended 2026-11-17
       after the author saw it stay; checked with a real session).
 - [x] `Ctrl+Alt+R` (repeat): the author, 2026-11-17: "good for replay".
-- [ ] `Ctrl+Alt+R` again after the change they asked for the same day: it now says the last
+- [x] `Ctrl+Alt+R` again after the change they asked for the same day: it now says the last
       line of the session in focus (move the focus with `Ctrl+Alt` + wheel first), and the
-      bubble with the voice comes out at that session's light while it is said.
+      bubble with the voice comes out at that session's light while it is said. The author,
+      2026-11-17, right after two repeats: "It's perfect. Yeah, I see it."
+- [ ] Speaking to a session right after interrupting it (mended 2026-11-17 after the author's
+      words to an interrupted session "didn't go through"; checked with a real session,
+      not yet by the author): interrupt a reply with Esc or Ctrl+C, hold the talk key and
+      say something. It should answer.
+- [ ] Words going to the wrong session (the author, 2026-11-17: "i sent an audio to
+      claude-speaks 4 but somehow got here (i didnt notice at first)"). Nothing was broken:
+      the voice goes to the session in focus, which is the one that spoke last, and this
+      session had just spoken while they were looking at the other one's terminal. The
+      listening bubble shows who is being spoken to, but it was not noticed. Ideas, none
+      built: the focus following the terminal you click (see below, needs a VS Code
+      extension); the focus moving to a session when you type to it; saying the session's
+      name when the talk key goes down and the focus is not where you last typed.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
       which was right, since nothing had been said since the last message. Not heard yet:
       a real replay, pressed after a session spoke while the author was away from it.

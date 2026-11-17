@@ -911,6 +911,40 @@ class PushToTalk(HubCase):
         self.assertTrue(listener.wake.is_set())
         self.assertEqual(hub.collect(listener), "run the tests")
 
+    def test_words_for_a_busy_session_wait_and_go_out_when_it_is_interrupted(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a"))
+        listener = hub.listen("a")  # the listener a session has from the moment a prompt is sent
+        hub.follow_up("stop, do the other thing", "a", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("a")))
+        hub.reconcile()
+        self.assertFalse(listener.wake.is_set())  # in the middle of its reply: not now
+        self.assertIn("queued", [t[0] for t in self.talks()])
+        hub.on_event(ev("PostToolUse", sid="a", cwd="/w/a", tool_name="Bash", is_interrupt=True))  # Esc; no Stop follows
+        hub.reconcile()
+        self.assertTrue(listener.wake.is_set())
+        self.assertEqual(hub.collect(listener), "stop, do the other thing")
+
+    def test_words_for_an_interrupted_session_are_sent_at_once(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a"))
+        listener = hub.listen("a")
+        hub.on_event(ev("PostToolUse", sid="a", cwd="/w/a", tool_name="Bash", is_interrupt=True))
+        hub.follow_up("are you there", "a", delay=0)
+        self.assertTrue(wait_for(listener.wake.is_set))
+        self.assertEqual(hub.collect(listener), "are you there")
+
+    def test_a_listener_that_starts_in_the_middle_of_a_reply_waits_for_its_end(self):
+        hub = self.make()
+        hub.follow_up("one more thing", "a", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("a")))
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a"))  # you typed something else meanwhile
+        listener = hub.listen("a")
+        self.assertFalse(listener.wake.is_set())
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Done.")))
+        hub.reconcile()
+        self.assertTrue(listener.wake.is_set())
+
     def test_a_newer_listener_replaces_the_older_one(self):
         hub = self.make()
         old, new = hub.listen("a"), hub.listen("a")
@@ -921,6 +955,7 @@ class PushToTalk(HubCase):
     def test_a_follow_up_is_sent_without_a_second_tap(self):
         hub = self.make()
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", permission_mode="bypassPermissions"))
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a"))  # its turn is over: it can be spoken to at once
         hub.talk_target = "a"
         listener = hub.listen("a")
         hub.talk_start()
@@ -932,6 +967,7 @@ class PushToTalk(HubCase):
     def test_with_confirming_on_an_unattended_session_needs_a_tap(self):
         hub = self.make(followup_confirm="auto")
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", permission_mode="bypassPermissions"))
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a"))  # its turn is over: it can be spoken to at once
         hub.talk_target = "a"
         listener = hub.listen("a")
         hub.talk_start()

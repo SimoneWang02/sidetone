@@ -375,6 +375,14 @@ class Hub:
                 elif s.seen_file and quiet > 5:  # it had a file and no longer does: the session is gone
                     self._forget(s.id, "session gone")
                     changed = True
+            # Words that waited for a busy session go out once it is no longer busy. After a
+            # reply that happens by itself (its new listener asks for them); after an interrupt
+            # no hook runs, so the listener it has had since its last prompt is woken here.
+            for sid, waiting in self.followups.items():
+                s, listener = self.sessions.by_id.get(sid), self.listeners.get(sid)
+                if waiting and s and listener and not listener.wake.is_set() and s.state not in BUSY:
+                    listener.wake.set()
+                    log(self.cfg, "hub.log", f"follow-up [{sid[:8]}] sent, now that the session has stopped")
         if changed:
             self.publish()
 
@@ -881,10 +889,12 @@ class Hub:
             else:
                 self.followups.setdefault(s.id, []).append(pending.text)
                 self._keep_followups()
-                listener = self.listeners.get(s.id)
+                # A session has a listener all the time (see listen.sh), also in the middle of
+                # a reply; then the words wait and it gets them right after (see reconcile).
+                listener = self.listeners.get(s.id) if s.state not in BUSY else None
                 if listener:
                     listener.wake.set()
-                else:  # it is in the middle of a reply and gets this right after
+                else:
                     self._talk("queued", s, pending.text, seconds=3.5)
                 log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
                 self._signal("sent" if listener else "queued", s, "Sent." if listener else "Queued.")
@@ -922,7 +932,8 @@ class Hub:
             self.sessions.touch(sid, cwd)  # after a hub restart this is how an idle session reappears
             self._release(sid)
             listener = self.listeners[sid] = Listener(sid)
-            if self.followups.get(sid):
+            s = self.sessions.by_id.get(sid)
+            if self.followups.get(sid) and not (s and s.state in BUSY):
                 listener.wake.set()
             return listener
 
@@ -1168,6 +1179,7 @@ def _spoken_name(name: str) -> str:
     return re.sub(r"[-_.]+", " ", name).strip()
 
 
+BUSY = ("working", "needs_you")  # states of a session in the middle of a turn
 FLASH_LOOK = {"allowed": "done", "denied": "failed", "progress": "working"}  # speech kind -> overlay glyph
 NUMBER_WORDS = ("One", "Two", "Three", "Four")
 

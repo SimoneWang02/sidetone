@@ -40,6 +40,12 @@
             "type": "command",
             "command": "$HOME/personal/claude-speaks/hooks/report.sh --start",
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "$HOME/personal/claude-speaks/hooks/listen.sh",
+            "timeout": 86400,
+            "asyncRewake": true
           }
         ]
       }
