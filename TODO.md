@@ -106,6 +106,19 @@ Bigger pieces:
       A cloned voice of a real person needs that person's consent under these tools' terms
       (Pocket TTS and ElevenLabs say so outright), so the feature is "bring your own
       recording" and no cloned voices ship in the repo.
+      The author wants this (2026-11-17: a realistic copy of one person's voice, with that
+      person's approval; "put this in the to-do list and I'll definitely try something").
+      What it takes:
+      - from the author: one recording of that person, a single voice with no music or
+        noise, about 10 to 30 seconds, as a WAV file, spoken the way the voice should
+        sound (the engines copy the manner of the clip, not only the tone) and in the
+        language it will speak (an Italian clip made to speak English keeps an accent)
+      - to build: a second engine in `hub/tts.py` beside Kokoro, and `voice add` taking a
+        recording; choosing a voice per project already works
+      - order to try: Pocket TTS first (the only one likely to keep the quick start of
+        speech), Chatterbox if it does not sound real enough, ElevenLabs as the paid
+        yardstick
+      - the recording stays on the author's machine, never in the repo
 
 - [ ] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
       take a light with the mouse and drop it where it should sit in the bar. The hub keeps
