@@ -896,6 +896,32 @@ class PushToTalk(HubCase):
         self.assertTrue(listener.wake.wait(3))
         self.assertEqual(hub.collect(listener), "also add a test")
 
+    def test_words_that_wait_are_marked_on_the_light_until_the_session_has_them(self):
+        hub = self.make(unsend_seconds=0)
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))  # "a" is in the middle of a reply
+        hub.listen("a")
+        hub.follow_up("also add a test", "a", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("a")))
+        row = lambda: next(r for r in self.overlay.of("state")[-1]["sessions"] if r["name"] == "a")
+        self.assertTrue(wait_for(lambda: row()["waiting"] == 1))
+        self.assertIn("1 message waiting", row()["meta"])
+        hub.follow_up("and run it", "a", delay=0)
+        self.assertTrue(wait_for(lambda: row()["waiting"] == 2))
+        self.assertIn("2 messages waiting", row()["meta"])
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Done.")))
+        self.assertEqual(row()["waiting"], 2, "the reply ended, but its new listener has not asked yet")
+        self.assertEqual(hub.collect(hub.listen("a")), "also add a test and run it")
+        self.assertEqual(row()["waiting"], 0)
+        self.assertNotIn("waiting", row()["meta"])
+        self.assertEqual(self.talks()[-1], ("sent", "a", "also add a test and run it"))
+
+    def test_words_handed_over_at_once_are_never_marked_as_waiting(self):
+        hub = self.make()
+        hub.listen("a")  # idle and listening
+        hub.follow_up("run the tests", "a", delay=0)
+        self.assertTrue(wait_for(lambda: ("sent", "a", "run the tests") in self.talks()))
+        self.assertEqual([r["waiting"] for m in self.overlay.of("state") for r in m["sessions"] if "waiting" in r and r["waiting"]], [])
+
     def test_cancel_right_after_sending_takes_waiting_words_back(self):
         hub = self.make()
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))  # "a" is in the middle of a reply

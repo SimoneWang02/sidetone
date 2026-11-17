@@ -253,6 +253,7 @@ namespace ClaudeSpeaks
         static readonly double[] Weights = { 0.5, 0.8, 1.0, 0.8, 0.5 };
         public string State = "idle", Sign = "";  // Sign: where push-to-talk stands, while it is about this session and shown here
         public bool Speaking;
+        public bool Waiting;  // words of yours are held for this session until it can take them
         public Wave Wave, Listening;  // Listening: your own voice, while you hold the talk key for this session
         public double Born = Ui.Now, Changed = -10, Hot, SignSince;
 
@@ -274,8 +275,8 @@ namespace ClaudeSpeaks
             get
             {
                 double t = Ui.Now;
-                if (Signed && (Sign == "dots" || t - SignSince < 0.5)) return true;
-                return Speaking || Listening != null || State == "working" || State == "needs_you" || t - Changed < 0.8 || t - Born < 0.45;
+                if (Signed && (Sign == "dots" || Sign == "wait" || t - SignSince < 0.5)) return true;
+                return Waiting || Speaking || Listening != null || State == "working" || State == "needs_you" || t - Changed < 0.8 || t - Born < 0.45;
             }
         }
 
@@ -298,6 +299,7 @@ namespace ClaudeSpeaks
             {
                 dc.DrawEllipse(Ui.Alpha(tint, 0.30), Ui.Line(tint, 0.95, 1.5), c, 13, 13);
                 Badge.Draw(dc, Sign, c.X, c.Y, t, t - SignSince, true);
+                if (Sign != "wait") Mark(dc, c, t);  // the clock says it already
                 dc.Pop();
                 return;
             }
@@ -311,6 +313,7 @@ namespace ClaudeSpeaks
                     double h = 3 + 17 * Weights[i] * wave.At(t - Wave.Lag - Math.Abs(i - 2) * 0.07);
                     dc.DrawRoundedRectangle(Brushes.White, null, new Rect(c.X + (i - 2) * 4.4 - 1.3, c.Y - h / 2, 2.6, h), 1.3, 1.3);
                 }
+                Mark(dc, c, t);
                 dc.Pop();
                 return;
             }
@@ -366,7 +369,20 @@ namespace ClaudeSpeaks
                     dc.DrawEllipse(Ui.Alpha(tint, 0.65), null, c, 2.5, 2.5);
                     break;
             }
+            Mark(dc, c, t);
             dc.Pop();
+        }
+
+        // Words are waiting for this session: a small dot in the microphone's color at the
+        // upper right of the light, breathing, for as long as they wait.
+        void Mark(DrawingContext dc, Point c, double t)
+        {
+            if (!Waiting) return;
+            var at = new Point(c.X + 10, c.Y - 10);
+            double breath = 0.5 + 0.5 * Math.Sin(t * 3.2);
+            dc.DrawEllipse(Ui.Alpha(Ui.Mic, 0.22 * breath), null, at, 5.2 + 2 * breath, 5.2 + 2 * breath);
+            dc.DrawEllipse(Ui.Alpha(Color.FromRgb(0x14, 0x14, 0x18), 0.85), null, at, 5.2, 5.2);
+            dc.DrawEllipse(Ui.Alpha(Ui.Mic, 0.8 + 0.2 * breath), null, at, 3.8, 3.8);
         }
     }
 
@@ -400,7 +416,7 @@ namespace ClaudeSpeaks
     // this element at the right of the session's line (the "talk_sign" setting).
     class Badge : FrameworkElement
     {
-        public string Kind = "";  // "", mic, dots, sent, failed
+        public string Kind = "";  // "", mic, dots, sent, wait, failed
         public double Since;
 
         public Badge() { Width = 20; Height = 18; IsHitTestVisible = false; VerticalAlignment = VerticalAlignment.Center; HorizontalAlignment = HorizontalAlignment.Right; }
@@ -418,7 +434,7 @@ namespace ClaudeSpeaks
         bool settled;  // drawn at least once after its entrance was over
 
         // Whether it has to be drawn again on the next frame.
-        public bool Moving { get { return Kind == "mic" || Kind == "dots" || (Kind.Length > 0 && !settled); } }
+        public bool Moving { get { return Kind == "mic" || Kind == "dots" || Kind == "wait" || (Kind.Length > 0 && !settled); } }
 
         protected override void OnRender(DrawingContext dc)
         {
@@ -468,6 +484,17 @@ namespace ClaudeSpeaks
                     }
                     dc.DrawGeometry(Ui.Alpha(ink, 0.35), Ui.Line(ink, 1, 1.5), plane);
                     dc.DrawLine(Ui.Line(ink, 1, 1.5), notch, nose);
+                    break;
+                }
+                case "wait":
+                {
+                    // A clock with one hand going round: the words are held until the session
+                    // has finished what it is doing.
+                    Color ink = inLight ? Colors.White : Ui.Mic;
+                    double turn = t * 1.8;
+                    dc.DrawEllipse(null, Ui.Line(ink, 0.95, 1.6), new Point(cx, cy), 7.2, 7.2);
+                    dc.DrawLine(Ui.Line(ink, 1, 1.7), new Point(cx, cy), new Point(cx, cy - 4.8));
+                    dc.DrawLine(Ui.Line(ink, 1, 1.7), new Point(cx, cy), new Point(cx + 3.6 * Math.Sin(turn), cy - 3.6 * Math.Cos(turn)));
                     break;
                 }
                 case "failed":
@@ -727,6 +754,7 @@ namespace ClaudeSpeaks
             State = Orb.State = Overlay.Str(s, "state", "idle");
             Speaking = Orb.Speaking = s.ContainsKey("speaking") && Convert.ToBoolean(s["speaking"]);
             Focus = s.ContainsKey("target") && Convert.ToBoolean(s["target"]);
+            Orb.Waiting = s.ContainsKey("waiting") && Convert.ToDouble(s["waiting"]) > 0;
             if (before.Length > 0 && (before != State || was != Speaking)) Orb.Changed = Ui.Now;  // the light pops
             Wave.Synthetic = s.ContainsKey("synth") && Convert.ToBoolean(s["synth"]);
             if (Speaking && !was) Wave.Since = Ui.Now;
@@ -1951,7 +1979,8 @@ namespace ClaudeSpeaks
             {
                 case "listening": return "mic";
                 case "transcribing": case "ready": return "dots";
-                case "sent": case "queued": return "sent";
+                case "sent": return "sent";
+                case "queued": return "wait";
                 case "failed": return "failed";
                 default: return "";
             }

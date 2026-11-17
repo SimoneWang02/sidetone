@@ -217,6 +217,9 @@ class Hub:
         # session id -> text not yet picked up. Kept on disk too (in the run folder, owner-only),
         # so what was said to a busy session is not lost when the hub restarts.
         self.followups: dict[str, list[str]] = self._kept_followups()
+        # Sessions whose words could not be handed over yet (busy, or no listener): their light
+        # carries a mark until they are.
+        self._waiting: set[str] = set(self.followups)
         self.talk_target: str | None = None  # session a spoken follow-up goes to
         self._kept_sessions: dict | None = None  # what sessions.json last said (see _keep_sessions)
         self._front = ""  # the terminal the editor last said you were in (see terminal_in_front)
@@ -318,6 +321,7 @@ class Hub:
         self._settle(sid, why)
         self._release(sid)
         self.followups.pop(sid, None)
+        self._waiting.discard(sid)
         self._keep_followups()
         if self.talk_target == sid:
             self.talk_target = None
@@ -1007,6 +1011,8 @@ class Hub:
         listener = self.listeners.get(s.id) if s.state not in BUSY else None
         if listener:
             listener.wake.set()
+        else:
+            self._waiting.add(s.id)
         return bool(listener)
 
     def _unsendable(self) -> Sent | None:
@@ -1028,6 +1034,7 @@ class Hub:
             del waiting[len(waiting) - 1 - waiting[::-1].index(sent.text)]
             if not waiting:
                 self.followups.pop(s.id, None)
+                self._waiting.discard(s.id)
             self._keep_followups()
             self._talk("failed", s, "Taken back", seconds=2)
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, before the session got it")
@@ -1090,7 +1097,18 @@ class Hub:
             del self.listeners[listener.session]
             text = " ".join(self.followups.pop(listener.session, [])) or None
             self._keep_followups()
-            return text
+            waited = listener.session in self._waiting
+            self._waiting.discard(listener.session)
+            s = self.sessions.by_id.get(listener.session)
+            # Words that had to wait are now with the session: say so on its light, unless
+            # push-to-talk is showing something of its own there.
+            last = self._unsendable()  # words that can still be taken back keep their own sign
+            if (text and waited and s and TAKE_BACK not in text and (not last or last.session == s.id)
+                    and not (self._talking or self._transcribing or self._pending)):
+                self._talk("sent", s, text, seconds=2.5)
+        if text and waited:
+            self.publish()  # the mark for waiting words leaves the light
+        return text
 
     def stop_listening(self, listener: Listener) -> None:
         with self.lock:
@@ -1237,7 +1255,9 @@ class Hub:
                 "meta": " \u00b7 ".join(filter(None, [
                     f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
+                    self._waiting_note(s.id),
                 ])),
+                "waiting": self._waiting_count(s.id),  # words of yours it has not been handed yet
                 "speaking": s.id == speaking,
                 "target": len(self.sessions.by_id) > 1 and self._target() is s,  # in focus: follow-ups go here
                 "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
@@ -1261,6 +1281,13 @@ class Hub:
             self.overlay.send({"type": "keys", "live": keys})
         if new_rows:
             self.overlay.send({"type": "state", "sessions": rows, "history": history})
+
+    def _waiting_count(self, sid: str) -> int:
+        return len(self.followups.get(sid, ())) if sid in self._waiting else 0
+
+    def _waiting_note(self, sid: str) -> str:
+        n = self._waiting_count(sid)
+        return "" if not n else "1 message waiting" if n == 1 else f"{n} messages waiting"
 
     def _flash(self, s, text: str, state: str | None = None) -> None:
         """Expand the overlay's dots into one line about this session for a few seconds."""
