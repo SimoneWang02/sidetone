@@ -39,6 +39,7 @@ from state import (COLORS, FORGET_AFTER, VOICE_POOL, Sessions, describe, permiss
 from tts import Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
 
 import base  # noqa: E402
+import usage  # noqa: E402
 from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, CONFIRM_WINDOW, Config, EDITOR_WAIT, Editor,  # noqa: E402,F401
                   FLASH_LOOK, KEPT_LINES, Listener, MIN_SHOWN, NEEDS_INPUT, NUMBER_WORDS, OWN_DIALOG,  # noqa: E402,F401
                   OWN_SESSION, PROMPTING_MODES, Pending, Request, SAFE_ID, STOP_WAIT, Sent, Stopping,  # noqa: E402,F401
@@ -101,7 +102,24 @@ class Hub(Permissions, Talk):
         """Update a session from any hook payload other than MessageDisplay."""
         if ev.get("session_id"):
             self._apply(ev)
+            self._count_context(ev)
             self.publish()
+
+    def _count_context(self, ev: dict) -> None:
+        """How full the session's context is, from the transcript its hook names; counted when
+        a reply or a step has just been written there (2 ms for the end of the file)."""
+        path = ev.get("transcript_path")
+        if not (self.cfg.context_shown and path and ev.get("hook_event_name") in ("Stop", "PostToolUse", "UserPromptSubmit", "SessionStart")):
+            return
+        try:
+            read = usage.context(str(path), int(self.cfg.context_window))
+        except Exception:  # an odd transcript is no reason to lose the event
+            read = None
+        if read:
+            with self.lock:
+                s = self.sessions.by_id.get(ev["session_id"])
+                if s:
+                    s.context = read.percent
 
     def _apply(self, ev: dict) -> None:
         sid, event = ev["session_id"], ev.get("hook_event_name", "")
@@ -509,7 +527,9 @@ class Hub(Permissions, Talk):
                     f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
                     self._waiting_note(s.id),
+                    f"context {s.context:.0f}%" if self.cfg.context_shown and s.context is not None else "",
                 ])),
+                "context": s.context if self.cfg.context_shown else None,  # percent of its window, for a sign of its own later
                 "waiting": self._waiting_count(s.id),  # words of yours it has not been handed yet
                 "speaking": s.id == speaking,
                 "target": len(self.sessions.by_id) > 1 and self._target() is s,  # in focus: follow-ups go here

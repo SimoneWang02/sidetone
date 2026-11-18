@@ -184,6 +184,15 @@ class Config:
     # to cancel the key ends the turn of the session in focus | "sent" = only the first |
     # "never" = neither; a session that already has the words is told to ignore them
     cancel_stops: str = "always"
+    # Asking for the plan's usage by voice ("what's my usage", "how much of the five hours have
+    # I used"): the hub answers aloud, the five-hour window first, and the words do not go to
+    # a session. False: such words are a session's like any others.
+    usage_by_voice: bool = True
+    # How full each session's context is, as a percentage in its row of the details, counted
+    # from its transcript. `context_window`: the size it is held against, in tokens (the
+    # transcript does not say it; one million for the models measured).
+    context_shown: bool = True
+    context_window: int = 1_000_000
     # Stopping at once: where the session runs in a terminal of an editor with the claude-speaks
     # extension, Escape is typed into that terminal, which ends the turn in the same moment.
     # False: only by the hook, at the session's next step (which is also what happens anywhere else).
@@ -261,7 +270,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "context_shown", "context_window",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):

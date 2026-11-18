@@ -11,6 +11,7 @@ import threading
 import time
 
 import base
+import usage
 import stt
 import terminal as terminal_mod
 from tts import Utterance
@@ -20,6 +21,8 @@ from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, Editor, Listener, OWN_SE
 
 
 class Talk:
+    usage_ask = staticmethod(usage.ask)  # the call to Claude Code; the tests put their own in its place
+    _usage_shown = False  # the overlay shows "Reading your usage" and nothing newer
     """The hub's methods for the talk and cancel keys. They use the hub's lock, sessions, speech and overlay."""
 
     # --- push-to-talk ------------------------------------------------------------------------
@@ -163,11 +166,50 @@ class Talk:
                 self._talk(None)
                 return
             question = self._aside_question(s, pending.text)
-            if question:
+            if self.cfg.usage_by_voice and usage.asks(pending.text):
+                self._ask_usage(s, pending.text)
+            elif question:
                 self._ask_aside(s, pending.text, question)
             else:
                 self._hand_over(s, pending.text)
         self.publish()
+
+    # --- the plan's usage --------------------------------------------------------------------
+
+    def _ask_usage(self, s, text: str) -> None:
+        """Words that ask how much of the plan is used: the hub answers them itself, aloud, and
+        no session gets them. Call with the lock held."""
+        self._talk("aside", s, text, "Reading your usage\u2026")
+        self._usage_shown = True
+        self._signal("sent", s)
+        log(self.cfg, "hub.log", f"usage asked by voice: {text[:80]}")
+        threading.Thread(target=self._answer_usage, args=(s.id,), daemon=True).start()
+
+    def _answer_usage(self, sid: str) -> None:
+        line = self.usage()["line"]
+        with self.lock:
+            if self._usage_shown:  # nothing newer is on screen
+                self._talk(None)
+            s = self.sessions.by_id.get(sid) or self._target()
+            if s:
+                self._say_aside(s, line)  # in that session's voice, without touching its own lines
+        self.publish()
+
+    def usage(self) -> dict:
+        """The plan's usage as it is this moment, asked of Claude Code (about a second and a
+        half, no model request): the sentence to say and the figures. Not to be called with
+        the lock held."""
+        started = time.monotonic()
+        try:
+            text, why = self.usage_ask(self.cfg.aside_claude, 20.0)
+        except Exception as e:  # nothing here may take the hub down
+            text, why = "", str(e)
+        read = usage.parse(text)
+        line = usage.say(read)
+        log(self.cfg, "hub.log", f"usage read in {time.monotonic() - started:.1f}s: {line}" + (f" ({why[:200]})" if why else ""))
+        window = lambda w: {"used": w.used, "resets": w.resets} if w else None  # noqa: E731
+        return {"line": line, "five_hour": window(read.five_hour), "week": window(read.week),
+                "models": {name: window(w) for name, w in read.models.items()}}
 
     def _hand_over(self, s, text: str) -> None:
         """Words for a session go out: as the answer to the question it is asking, to its
@@ -634,6 +676,7 @@ class Talk:
         It is shown on the session it is about; it stays until replaced unless `seconds` is given."""
         self._talk_shown = (state, text, hint) if state in ("listening", "ready") else None
         self._aside_shown = None  # whatever is shown now, it is not a side question being answered
+        self._usage_shown = False
         if self.overlay:
             self.overlay.send({"type": "talk", "state": state, "name": s.name if s else "", "text": text,
                                "hint": hint, "seconds": seconds} if state else {"type": "talk"})

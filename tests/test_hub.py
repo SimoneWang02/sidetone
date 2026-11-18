@@ -253,6 +253,25 @@ class OverlayFeed(HubCase):
         hub.overlay = self.overlay = FakeOverlay()
         return hub
 
+    def test_rows_say_how_full_a_sessions_context_is(self):
+        hub = self.make()
+        record = os.path.join(self.tmp, "record.jsonl")
+        with open(record, "w") as f:
+            json.dump({"type": "assistant", "isSidechain": False, "message": {"usage": {
+                "input_tokens": 2, "cache_creation_input_tokens": 150000, "cache_read_input_tokens": 469998, "output_tokens": 14}}}, f)
+        hub.on_event(ev("UserPromptSubmit"))
+        row = lambda: self.overlay.of("state")[-1]["sessions"][0]
+        self.assertIsNone(row()["context"])  # nothing to go on yet
+        self.assertNotIn("context", row()["meta"])
+        hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
+        self.assertEqual(row()["context"], 62.0)
+        self.assertIn("context 62%", row()["meta"])
+        hub.on_event(ev("Stop", transcript_path=os.path.join(self.tmp, "gone.jsonl"), last_assistant_message=tag("Done.")))
+        self.assertEqual(row()["context"], 62.0, "a record that cannot be read leaves the last figure")
+        hub.cfg.context_shown = False
+        hub.on_event(ev("UserPromptSubmit"))
+        self.assertNotIn("context", row()["meta"])
+
     def test_rows_show_activity_tasks_and_how_the_turn_ended(self):
         hub = self.make()
         hub.on_event(ev("UserPromptSubmit"))
@@ -1131,6 +1150,37 @@ class PushToTalk(HubCase):
         hub.cancel()
         self.assertEqual(hub.editor_done(off), [], "switched off: only the hook")
         self.assertEqual(self.talks()[-1], ("stopped", "a", "Stopping at its next step"))
+
+    USAGE = ("Current session: 26% used \u00b7 resets Nov 18, 2:39am (America/New_York)\n"
+             "Current week (all models): 38% used \u00b7 resets Nov 23, 7:59am (America/New_York)\n")
+
+    def test_a_spoken_question_about_the_usage_is_answered_aloud_and_reaches_no_session(self):
+        hub = self.make(talk_feedback="none")
+        asked = []
+        hub.usage_ask = lambda program, timeout: asked.append(program) or (self.USAGE, "")
+        listener = hub.listen("a")
+        hub.follow_up("what's my usage", "a", delay=0)
+        self.assertTrue(wait_for(lambda: any("26 percent of the five hours" in line for line in self.spoken())), self.spoken())
+        self.assertEqual(len(asked), 1)
+        self.assertFalse(listener.wake.is_set(), "the session was given the question")
+        self.assertEqual(hub.followups, {})
+        shown = [m for m in self.overlay.of("talk") if m.get("state") == "aside"]
+        self.assertEqual((shown[-1]["name"], shown[-1]["hint"]), ("a", "Reading your usage\u2026"))
+        self.assertEqual(self.overlay.of("talk")[-1], {"type": "talk"})  # and taken off the screen again
+        hub.follow_up("add a usage meter to the overlay", "a", delay=0)  # about usage, but work for the session
+        self.assertTrue(listener.wake.wait(3))
+        self.assertEqual(hub.collect(listener), "add a usage meter to the overlay")
+        self.assertEqual(len(asked), 1)
+
+    def test_usage_that_cannot_be_read_says_so_and_can_be_switched_off(self):
+        hub = self.make(talk_feedback="none")
+        hub.usage_ask = lambda program, timeout: ("", "no answer in 20s")
+        hub.follow_up("how much usage do I have left", "a", delay=0)
+        self.assertTrue(wait_for(lambda: "I could not read the usage." in self.spoken()), self.spoken())
+        hub.cfg.usage_by_voice = False
+        listener = hub.listen("a")
+        hub.follow_up("what's my usage", "a", delay=0)
+        self.assertTrue(listener.wake.wait(3), "switched off: the words are the session's")
 
     def test_the_cancel_key_cuts_a_line_before_it_stops_anyone(self):
         hub = self.make(duration=2.0)

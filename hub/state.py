@@ -175,6 +175,7 @@ class Session:
     seen_file: bool = False  # Claude Code's own session file was seen for it (see claude_sessions.py)
     tty: str | None = None  # the terminal it runs in ("" = none); not looked for yet while None (see terminal.py)
     order: int = 0  # its place in the bar: lower comes first, and it keeps it across a hub restart
+    context: float | None = None  # how full its context is, in percent (see usage.context); None = not known
     updated: float = field(default_factory=time.monotonic)
 
     def snapshot(self) -> dict:

@@ -79,6 +79,14 @@ class Handler(BaseHTTPRequestHandler):
                 target = hub._target()
             hub.publish()
             self._reply({"target": target.name if target else None, "found": bool(match) or not body.get("session")})
+        elif self.path == "/usage":  # the plan's usage now; said aloud too with {"say": true}
+            read = hub.usage()
+            if body.get("say"):
+                with hub.lock:
+                    s = hub._target()
+                    if s:
+                        hub._say_aside(s, read["line"])
+            self._reply(read)
         elif self.path == "/follow-up":
             sid = None
             if body.get("session"):  # a project name from the command line

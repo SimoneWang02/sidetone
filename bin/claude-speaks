@@ -22,6 +22,7 @@ Usage: claude-speaks <command>
   languages [CODES]          show or choose the languages push-to-talk listens for: en  or  en,it  or  auto
   repeat                     say the last line of the session in focus again
   missed                     replay what sessions said since you were last here
+  usage [say]                how much of the plan's five hours and week is used; "say" also speaks it
   follow-up [-s PROJECT] TEXT   send a follow-up to a session as if you had said it
   talk start|stop|cancel     the talk key and the cancel key, from a shell
   target [PROJECT]           show or choose which session a spoken follow-up goes to
@@ -155,6 +156,10 @@ case ${1:-} in
     fi
     ;;
   repeat) echo '{"what": "last"}' | hub_post /replay >/dev/null || { echo "hub is not running"; exit 1; } ;;
+  usage)
+    read=$(jq -nc --arg say "${2:-}" '{say: ($say == "say")}' | hub_post /usage 30) || { echo "hub is not running"; exit 1; }
+    jq -r .line <<<"$read"
+    ;;
   missed)
     count=$(echo '{"what": "missed"}' | hub_post /replay | jq -r .count) || { echo "hub is not running"; exit 1; }
     echo "$count missed"
