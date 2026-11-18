@@ -443,7 +443,7 @@ real keys yet.
       a third with the keys: all three points ticked as right. Then: "when sending
       the answers I don't think you should read the answer"; an answer given with the
       keys now gets the short sound for "sent" (`talk_feedback: voice` says it back
-      as before). Not heard by the author yet.
+      as before). Heard by the author the same night: "Only a short sound".
       Speaking to a session that waits at a permission prompt, built the same evening.
       The author: "if I use voice it's neither a yes or no ... maybe it's more a no and
       then I give more details", and asked whether Claude then builds on what it was
@@ -461,7 +461,8 @@ real keys yet.
       what could be done: say and show "question 1 of 2" so it is clear more are coming.
       Done 2026-11-17: the overlay writes "question 1 of 2" beside the name of who asks
       (it stood small at the end of the line about the keys) and the voice reads
-      "Question 2 of 2: ..." for the next one. Seen in a picture; not seen by the author.
+      "Question 2 of 2: ..." for the next one. The author, asked in such a dialog the
+      same night: "Yes, I see it" and "Yes, heard it".
 - [x] With two or more languages, working out which one a recording is costs about 0.6 s,
       nearly as much as writing the sentence down (measured 2026-11-17, see "Numbers to
       publish"). Likely because the recording goes through the first half of the model
@@ -727,7 +728,10 @@ Smaller ideas:
       spoken; end the turn of the session in focus while it works. `cancel_stops` is
       `always`, `sent` (not the last of those) or `never` (as before: told to ignore).
       Checked with the real hook on a throwaway session, before a step and during one.
-      **Not pressed by the author yet.** To try: give a session something with several
+      Pressed by the author that night on a session working in small steps: the hub
+      logged "its turn was ended 1.8 s after the key", and they said "It seems to be
+      working." Not tried by them: the key right after sending words, on a session
+      that has them. How it was tried: give a session something with several
       steps, put the focus on it and press `Ctrl+Alt+Backspace` while nothing is being
       said; its light should show a red stop sign and its turn should end within a step.
       Open:
