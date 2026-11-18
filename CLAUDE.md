@@ -621,6 +621,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   A new folder first shows a trust dialog (Down, Enter). To wait between steps use
   `python3 -c "import time; time.sleep(2)"`: `read -t 1 < /dev/null` returns at once, and
   keys sent without a real wait land in the wrong dialog.
+- Stopping a session from outside (measured 2026-11-17 with a throwaway session in tmux,
+  Claude Code 2.1.327; nothing built): `kill -INT` on its pid ends the whole session. A
+  `PreToolUse` hook that prints `{"continue": false, "stopReason": ...}` stops the turn after
+  that tool call has run; with `hookSpecificOutput.permissionDecision: "deny"` added the call
+  is not run and the turn ends there. A tool already running finishes first. Esc sent to the
+  terminal (`tmux send-keys Escape`) interrupts at once, also in the middle of a tool.
+  `claude --setting-sources project` starts a test session without the user's hooks, so it
+  neither speaks nor shows in the overlay.
 - `asyncRewake` facts (measured 2026-11-16): a hook with `asyncRewake: true` that exits 2 wakes
   an idle session within a second; its stderr reaches Claude and the terminal shows "Stop hook
   feedback". Delivered while the session is busy, it is handled right after the current reply.

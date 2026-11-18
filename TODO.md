@@ -558,6 +558,25 @@ guesses to check first.
 
 Smaller ideas:
 
+- [ ] A key that stops the session in focus (the author's idea, 2026-11-17: the cancel key
+      "could be more universal and stop the process ... of that session", not only take
+      words back in the four seconds after sending). It would also make taking back real
+      for a session that already has the words: today it is only told to ignore them.
+      What can stop a session from outside, measured the same evening with a throwaway
+      session (Claude Code 2.1.327):
+      - an interrupt signal to its process: no. The whole session exits.
+      - a hook: yes, in any terminal. A `PreToolUse` hook that answers `continue: false`
+        together with a refusal of that call stops the turn at its next step, and the
+        step is not run ("hook stopped Claude"). Without the refusal the step still
+        runs first. A step that is already running finishes, and a reply that is only
+        being written is not stopped at all.
+      - Esc written into its terminal: yes, at once, in the middle of a step
+        ("Interrupted"). Done through tmux here. For VS Code the extension would have to
+        write it (`Terminal.sendText`), which needs the hub to talk to the extension;
+        nobody has tried that. Nothing else can type into a terminal on this machine.
+      Open: which key and how. Offered: a double press, since the same key also cuts a
+      line being spoken and one slip would end real work; the author: "double pressing
+      might be too much work". Not decided.
 - [ ] Easier ways to take back what you said (the author, 2026-11-17: "it would be really
       cool to somehow cancel with a shortcut"; today it is `Ctrl+Alt+Backspace` while the talk
       key is still held, a four-key grip). Built the same day: the same key within four
