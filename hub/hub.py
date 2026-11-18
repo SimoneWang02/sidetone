@@ -34,7 +34,7 @@ import sounds as sounds_mod  # noqa: E402
 import stale  # noqa: E402
 import stt  # noqa: E402
 import terminal as terminal_mod  # noqa: E402
-from state import (FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
+from state import (COLORS, FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
                    speech_from_message, split_display, title_from_message)
 from tts import Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
 
@@ -154,6 +154,9 @@ class Config:
     speed: float = 1.1
     voices: dict = field(default_factory=dict)  # project name -> voice
     voice_pool: list = field(default_factory=lambda: list(VOICE_POOL))
+    # The colors sessions' names are written in ("#RRGGBB"). A session that joins others gets
+    # the one furthest from theirs, so a short list of very different colors serves best.
+    colors: list = field(default_factory=lambda: list(COLORS))
     label: str = "auto"  # auto (several sessions and no overlay to show who talks) | always | never
     # Where a session's title comes from. "ask": each session is asked to name what it is working
     # on, in its speak tag, and may change that as the work moves on. "auto": never asked; the
@@ -256,7 +259,7 @@ class Config:
                 user = json.load(f)
         except FileNotFoundError:
             user = {}
-        for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
+        for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "voice_at_prompt",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
@@ -278,7 +281,7 @@ class Hub:
     def __init__(self, cfg: Config, engine):
         self.cfg = cfg
         self.lock = threading.Lock()
-        self.sessions = Sessions(cfg.voice_pool, cfg.voices, os.path.join(cfg.state, "voices.json"))
+        self.sessions = Sessions(cfg.voice_pool, cfg.voices, os.path.join(cfg.state, "voices.json"), colors=cfg.colors)
         self.last_event = time.monotonic()
         self.overlay = None  # anything with send(dict); set by main() or the tests
         self.terminals = terminal_mod.Terminals(cfg.terminal)  # marks each session's own terminal

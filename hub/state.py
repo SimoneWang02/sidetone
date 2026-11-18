@@ -18,7 +18,14 @@ VOICE_POOL = [
 # and none of them the plain blue, amber, green or red the status lights use. The fifth is
 # nearly the microphone's pink; it was an orchid ("#F27FFF") for an hour on 2026-11-17, until
 # the author asked for the pink back and for the words that clashed with it to change instead.
-COLORS = ["#8AB4FF", "#FFB86B", "#C6A0F6", "#7FDBCA", "#FF8FA3", "#F9E27D", "#B9F27C", "#F5A97F", "#91D7E3", "#F5BDE6"]
+# There were ten until the same evening, some of them near twins: with four sessions open the
+# author had an orange ("#FFB86B") beside the yellow and said "there's not much contrast".
+# Now eight that are further apart, and who gets which is decided by distance (_color_for).
+COLORS = ["#8AB4FF", "#FFA24D", "#B07CFF", "#7FDBCA", "#FF8FA3", "#F9E27D", "#B9F27C", "#FF7FD9"]
+# Two name colors nearer than this are hard to tell apart at a glance. Measured as the
+# distance between them in CIELAB, where equal steps look about equally big to the eye:
+# that orange and the yellow were 25 apart, the pink and the teal are 77.
+TOO_CLOSE = 40.0
 
 ACTIVE_WINDOW = 15 * 60  # a session counts as active this long after its last event
 FORGET_AFTER = 6 * 3600  # sessions killed without a SessionEnd are dropped after this
@@ -28,6 +35,33 @@ KEPT_FOR = 15 * 60  # after a hub restart, a session that has not reported yet k
 _TITLE = r"""(?:\s+title\s*=\s*(?:"([^"]*)"|'([^']*)'))?"""
 _SPEAK_LINE = re.compile(r"^\s*<speak" + _TITLE + r"\s*>\s*(.*?)\s*</speak>\s*$")
 _SPEAK_LAST = re.compile(r".*<speak" + _TITLE + r"\s*>(.*)</speak>")
+
+
+def _lab(color: str) -> tuple[float, float, float]:
+    """A "#RRGGBB" color in CIELAB (lightness, green to red, blue to yellow)."""
+    def linear(c: float) -> float:
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+    def curve(t: float) -> float:
+        return t ** (1 / 3) if t > 0.008856 else 7.787 * t + 16 / 116
+
+    r, g, b = (linear(int(color[i:i + 2], 16) / 255) for i in (1, 3, 5))
+    x = curve((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047)
+    y = curve(0.2126 * r + 0.7152 * g + 0.0722 * b)
+    z = curve((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883)
+    return 116 * y - 16, 500 * (x - y), 200 * (y - z)
+
+
+def color_distance(a: str, b: str) -> float:
+    """How different two colors look: 0 = the same, about 100 = as different as colors get."""
+    return sum((p - q) ** 2 for p, q in zip(_lab(a), _lab(b))) ** 0.5
+
+
+def usable_colors(wanted) -> list[str]:
+    """The name colors to hand out: the user's own list if it holds at least two, else ours."""
+    own = [c.upper() for c in wanted if isinstance(c, str) and re.fullmatch(r"#[0-9a-fA-F]{6}", c)] if isinstance(wanted, list) else []
+    own = list(dict.fromkeys(own))
+    return own if len(own) >= 2 else list(COLORS)
 
 
 def split_display(delta: str) -> tuple[str | None, str, str]:
@@ -156,8 +190,9 @@ class Session:
 class Sessions:
     """Registry keyed by session id. Not thread-safe: the hub holds its lock around every call."""
 
-    def __init__(self, pool: list[str], pinned: dict[str, str], voices_file: str | None = None):
+    def __init__(self, pool: list[str], pinned: dict[str, str], voices_file: str | None = None, colors=None):
         self.pool = pool
+        self.colors = usable_colors(colors)  # the name colors handed out
         self.pinned = pinned  # project name -> voice, from the config file
         self.by_id: dict[str, Session] = {}
         # Voices already handed out, kept on disk so a project sounds the same after a restart.
@@ -237,12 +272,21 @@ class Sessions:
                     "note": str(entry.get("note") or "") if ended else "",
                     "seen_file": bool(entry.get("seen_file")), "order": order,
                 }
-                if self.kept[sid]["color"] not in COLORS:  # a color that is no longer handed out
+                if self.kept[sid]["color"] not in self.colors:  # a color that is no longer handed out
                     self.kept[sid]["color"] = ""
             except (KeyError, TypeError, AttributeError):
                 continue
-        for entry in self.kept.values():
-            entry["color"] = entry["color"] or self._color_for(entry["name"])
+        # In the order of the bar: a session whose color is gone, or too near the color of one
+        # before it, gets the color that is furthest from everybody else's.
+        entries = list(self.kept.values())
+        for i, entry in enumerate(entries):
+            mine, others = entry["color"], [e["color"] for e in entries if e is not entry and e["color"]]
+            if mine and all(color_distance(mine, e["color"]) >= TOO_CLOSE for e in entries[:i] if e["color"]):
+                continue
+            best = self._color_for(entry["name"], others)
+            apart = lambda c: min((color_distance(c, o) for o in others), default=0.0)  # noqa: E731
+            if not mine or apart(best) > apart(mine):
+                entry["color"] = best
 
     def active_count(self) -> int:
         now = time.monotonic()
@@ -256,12 +300,20 @@ class Sessions:
             name = f"{base} {n}"
         return name
 
-    def _color_for(self, name: str) -> str:
-        """Same project, same color every time, unless a live session already has it."""
-        start = zlib.crc32(name.encode()[::-1]) % len(COLORS)
-        order = [COLORS[(start + i) % len(COLORS)] for i in range(len(COLORS))]
-        live = {s.color for s in self.by_id.values()} | {k["color"] for k in self.kept.values()}
-        return next((c for c in order if c not in live), order[0])
+    def _color_for(self, name: str, others: list[str] | None = None) -> str:
+        """The color for a session's name. Alone, a project has the same color every time.
+        With other sessions about (`others`: their colors; by default all that are known), it
+        is the free color that is furthest from all of theirs, so that two names side by
+        side are never an orange and a yellow."""
+        start = zlib.crc32(name.encode()[::-1]) % len(self.colors)
+        order = [self.colors[(start + i) % len(self.colors)] for i in range(len(self.colors))]
+        if others is None:
+            others = [s.color for s in self.by_id.values()] + [k["color"] for k in self.kept.values()]
+        others = [c for c in others if re.fullmatch(r"#[0-9a-fA-F]{6}", c or "")]
+        free = [c for c in order if c not in others]
+        if not free or not others:
+            return (free or order)[0]
+        return max(free, key=lambda c: min(color_distance(c, o) for o in others))
 
     def _voice_for(self, name: str) -> str:
         """Same project, same voice every time. A new project gets one nobody else has, if any is left."""

@@ -26,7 +26,8 @@ its own spoken line as the first line of its reply.
 - **A glass overlay** (Windows): a slim bar of frosted glass with one status light per session:
   a spinner while it works, a pulsing amber light when it needs you, a check when it is done.
   Move the mouse onto it and a panel unfolds beside it with each session's name (each in its
-  own color), a short title, what it is doing, its task progress and elapsed time. While a session talks, a bubble
+  own color, chosen to be as different as possible from the colors of the sessions already
+  open; `"colors"` in the settings is a list of your own), a short title, what it is doing, its task progress and elapsed time. While a session talks, a bubble
   next to its light shows the sentence, and bars follow the real sound of the voice.
   `Ctrl+Alt+L` keeps the panel out. Hold `Ctrl+Alt` and grab the bar with the mouse to drag it
   anywhere, on any monitor; it stays there. Without those keys the mouse goes straight through

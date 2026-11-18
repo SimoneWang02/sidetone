@@ -308,6 +308,28 @@ class OverlayFeed(HubCase):
         again.on_event(ev("SessionStart", sid="x", cwd="/w/project-0"))
         self.assertEqual(again.snapshot()["sessions"][0]["color"], colors[0])
 
+    def test_name_colors_side_by_side_are_far_apart(self):
+        import state
+
+        near = state.color_distance("#FFB86B", "#F9E27D")  # the orange and the yellow the author could not tell apart
+        self.assertLess(near, state.TOO_CLOSE)
+        self.assertGreater(state.color_distance("#FF8FA3", "#7FDBCA"), 70)  # pink and teal: nobody mixes those up
+        hub = self.make()
+        for i in range(5):  # also sessions of one project, which is where it was seen
+            hub.on_event(ev("SessionStart", sid=f"s{i}", cwd="/w/claude-speaks"))
+        colors = [r["color"] for r in self.overlay.of("state")[-1]["sessions"]]
+        apart = min(state.color_distance(a, b) for i, a in enumerate(colors) for b in colors[:i])
+        self.assertGreaterEqual(apart, state.TOO_CLOSE, colors)
+
+    def test_the_name_colors_can_be_your_own(self):
+        hub = self.make(colors=["#ff0000", "#00FF00", "not a color", "#0000FF"])
+        for i in range(3):
+            hub.on_event(ev("SessionStart", sid=f"s{i}", cwd=f"/w/project-{i}"))
+        colors = [r["color"] for r in self.overlay.of("state")[-1]["sessions"]]
+        self.assertEqual(sorted(colors), ["#0000FF", "#00FF00", "#FF0000"])
+        import state
+        self.assertEqual(state.usable_colors(["#123456"]), state.COLORS)  # one color tells nobody apart
+
     def test_rows_carry_a_short_title_from_the_prompt(self):
         hub = self.make()
         hub.on_event(ev("UserPromptSubmit", prompt="fix the flaky login test, then run the whole suite again and tell me\nmore"))
@@ -1855,6 +1877,39 @@ class AcrossARestart(HubCase):
         self.assertIn(colors[1], state.COLORS)
         self.assertEqual(len(set(colors)), 3)
         self.assertEqual([h["color"] for h in again.history], [colors[1]])  # and its old lines follow
+
+    def test_colors_too_near_each_other_are_set_apart_at_a_restart(self):
+        import state
+
+        hub = self.make()
+        for sid in "abcd":
+            hub.on_event(ev("SessionStart", sid=sid))
+        hub.publish()
+        path = hub._sessions_file()
+        with open(path) as f:
+            kept = json.load(f)
+        # As the author had them: pink, the old orange, yellow, teal.
+        for entry, color in zip(kept["sessions"], ["#FF8FA3", "#FFB86B", "#F9E27D", "#7FDBCA"]):
+            entry["color"] = color
+        with open(path, "w") as f:
+            json.dump(kept, f)
+        again = self.restart()
+        for sid in "abcd":
+            again.on_event(ev("SessionStart", sid=sid))
+        colors = [c for _, _, c, _ in self.who()]
+        self.assertEqual((colors[0], colors[2], colors[3]), ("#FF8FA3", "#F9E27D", "#7FDBCA"))  # these were fine
+        self.assertIn(colors[1], state.COLORS)
+        apart = min(state.color_distance(a, b) for i, a in enumerate(colors) for b in colors[:i])
+        self.assertGreaterEqual(apart, state.TOO_CLOSE, colors)
+        kept["sessions"][1]["color"] = "#FFA24D"  # today's orange, beside the yellow: the later of the two moves
+        with open(path, "w") as f:
+            json.dump(kept, f)
+        third = self.restart()
+        for sid in "abcd":
+            third.on_event(ev("SessionStart", sid=sid))
+        colors = [c for _, _, c, _ in self.who()]
+        self.assertEqual((colors[0], colors[1], colors[3]), ("#FF8FA3", "#FFA24D", "#7FDBCA"))
+        self.assertGreaterEqual(state.color_distance(colors[2], "#FFA24D"), state.TOO_CLOSE)
 
     def test_what_was_said_can_still_be_repeated_after_a_restart(self):
         hub = self.make()

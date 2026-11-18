@@ -216,6 +216,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   microphone's wave, light and sign are still pink. Left from the first try: a session
   kept across a restart with a color that is not in the list gets a new one
   (`Sessions.keep`), its old lines too.
+  Colors too near each other (same evening; the author, with four sessions of this project
+  open: "The palette of colors is not very distinctive. There's not much contrast between
+  claude-speaks 2 and claude-speaks 4. One is orange, the other one is yellow"). The ten
+  colors had near twins, and a session simply got the next free one in the list. Measured
+  as distance in CIELAB (`state.color_distance`), that orange (`#FFB86B`) and the yellow
+  were 25 apart, pink and teal are 77. Now: eight colors, the nearest two 32 apart (yellow
+  and lime; no eighth soft color is further than about 36 from all the others); a session
+  that joins others gets the free color furthest from all of theirs (`_color_for`), and
+  alone a project still has its own color every time; at a hub restart a session whose
+  color is nearer than `state.TOO_CLOSE` (40) to that of one before it in the bar gets
+  the furthest free one (`Sessions.keep`), which is how sessions already open are set
+  right. `colors` in `config.json` is a list of your own (`#RRGGBB`, at least two). For
+  the author's four it changed one: claude-speaks 2 from orange to violet, nearest two
+  then 59 apart. **Not seen by the author yet.**
 - "Release to send" moves (2026-11-17; the author, right after the color talk: "putting an
   animation on the text ... would be great"; which animation was not said, so it is a
   setting with three choices). `overlay.talk_text`: `shimmer` (default; a glint of light
@@ -664,7 +678,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
-  `voice_pool`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
+  `voice_pool`, `colors`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
   `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
