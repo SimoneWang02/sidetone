@@ -575,7 +575,8 @@ class Questions(HubCase):
         self.assertTrue(hub.choose(1))
         said = self.spoken()
         self.assertEqual(hub.sounds.played, ["sent"])  # once, when the last answer went in
-        self.assertFalse([line for line in said if "Coffee" in line or "Red" in line or "Answered" in line], said)
+        # The next question may have begun to be read out ("... One: Red."); no answer is said back.
+        self.assertFalse([line for line in said if "Coffee" in line or "Answered" in line], said)
 
     def test_a_question_can_be_answered_in_your_own_words(self):
         hub = self.make(talk_feedback="none")
@@ -2028,6 +2029,36 @@ class ThroughTheHooks(HubCase):
         decision = json.loads(proc.communicate(timeout=5)[0])["hookSpecificOutput"]["decision"]
         self.assertEqual(decision["behavior"], "deny")
         self.assertIn("overlay", decision["message"])
+        self.spoken()
+
+    def test_words_spoken_at_a_permission_prompt_turn_it_down_and_follow_as_the_next_message(self):
+        hub = self.hub
+        hub.on_event(ev("UserPromptSubmit", prompt="clean up"))
+        proc = self.start_permission_hook()
+        hub.follow_up("Do not delete it, rename it instead", session="s1", delay=0)
+        decision = json.loads(proc.communicate(timeout=5)[0])["hookSpecificOutput"]["decision"]
+        self.assertEqual(decision["behavior"], "deny")
+        self.assertIn("more details", decision["message"])
+        self.assertEqual(hub.requests, [])
+        self.assertTrue(os.path.exists(os.path.join(self.tmp, "stop", "s1")), "its turn goes on without the words")
+        self.assertEqual(hub.followups.get("s1"), ["Do not delete it, rename it instead"])
+        hub.on_event(ev("Stop", last_assistant_message=tag("I will wait for your details.")))  # the turn ended
+        self.assertNotIn("I will wait for your details.", self.spoken())  # nothing to hear: the words are on their way
+        self.assertEqual(hub.collect(hub.listen("s1")), "Do not delete it, rename it instead")
+
+    def test_words_spoken_at_a_permission_prompt_can_be_made_to_wait(self):
+        hub = self.hub
+        hub.cfg.voice_at_prompt = "wait"
+        hub.on_event(ev("UserPromptSubmit", prompt="clean up"))
+        proc = self.start_permission_hook()
+        hub.follow_up("Do not delete it, rename it instead", session="s1", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("s1")))
+        self.assertEqual(len(hub.requests), 1, "the request is still open")
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "stop", "s1")))
+        hub_module.MIN_SHOWN, old = 0, hub_module.MIN_SHOWN
+        self.addCleanup(setattr, hub_module, "MIN_SHOWN", old)
+        self.assertTrue(hub.decide("allow"))
+        proc.communicate(timeout=5)
         self.spoken()
 
     def test_permission_hook_hands_claude_the_chosen_option(self):

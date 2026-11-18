@@ -97,6 +97,11 @@ OWN_SESSION = re.compile(r"CLAUDECODE\Z|CLAUDE_(PID|EFFORT)\Z|CLAUDE_CODE_(CHILD
                          r"|CLAUDE_CODE_(SSE_PORT|ENTRYPOINT|EXECPATH)\Z")
 
 
+# What Claude is told when its request is turned down because the user began to speak to it.
+VOICE_AT_PROMPT = ("Not approved for now: the user is answering by voice with more details instead of a yes or a no. "
+                   "Do not retry this or work around it; their message follows.")
+
+
 @dataclass
 class Pending:
     """A follow-up on screen, not sent yet."""
@@ -128,6 +133,7 @@ class Request:
     decision: str | None = None  # allow | deny | answer | None (answered elsewhere)
     questions: list = field(default_factory=list)  # for AskUserQuestion: the questions, each with options
     answers: dict = field(default_factory=dict)  # question text -> chosen option label
+    message: str = ""  # with a deny: what Claude is told beside it (it reads this as the tool's output, not as the user)
     ticked: set = field(default_factory=set)  # a question with several choices to tick: those ticked so far, counted from 0
     shells: set | None = None  # the session's commands that were already running when it asked (None: not known)
 
@@ -178,6 +184,12 @@ class Config:
     # to cancel the key ends the turn of the session in focus | "sent" = only the first |
     # "never" = neither; a session that already has the words is told to ignore them
     cancel_stops: str = "always"
+    # Words spoken to a session that waits at a permission prompt: "details" = they are neither
+    # a yes nor a no but more to go on: the request is turned down for now, the turn is ended
+    # and the words are the session's next message, so it goes on from them (the terminal's
+    # "No, and tell Claude what to do differently") | "wait" = they wait until the prompt is
+    # answered some other way
+    voice_at_prompt: str = "details"
     # Ask for a confirming tap before sending a spoken follow-up: False (the default; it is sent
     # after followup_delay unless cancelled), True, or "auto" (only for sessions that would act
     # on it without asking, i.e. not in default or plan mode).
@@ -245,7 +257,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "voice_at_prompt",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):
@@ -1122,6 +1134,15 @@ class Hub:
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] given as the answer to its question")
             self._signal("sent", s, "Sent.")
         else:
+            prompt = next((r for r in self.requests if r.session == s.id), None)
+            if prompt and self.cfg.voice_at_prompt != "wait":
+                # More to go on, said while it waits for a yes or no. A request can only be
+                # allowed or refused, and Claude does not take a refusal's message for the
+                # user's words, so: refused for now, its turn ended, and the words follow as
+                # the next message, which it builds on with all it knows of the task.
+                prompt.message = VOICE_AT_PROMPT
+                self._resolve(prompt, "deny", "voice: more details follow")
+                self._stop_turn(s)
             listener = self._deliver(s, text)
             if not listener:
                 self._talk("queued", s, text, seconds=max(3.5, shown))
@@ -1974,7 +1995,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             decision = {"behavior": req.decision}
         if req.decision == "deny":
-            decision["message"] = "Denied by the user from the claude-speaks overlay."
+            decision["message"] = req.message or "Denied by the user from the claude-speaks overlay."
         self._reply({"hookSpecificOutput": {"hookEventName": "PermissionRequest", "decision": decision}})
 
     def _listen(self, hub: Hub, body: dict) -> None:
