@@ -71,7 +71,7 @@ DEFAULTS = {
     # dot = a plain breathing dot
     "waiting_mark": "number",
     "waiting_hold": 0.9,  # seconds the number covers the whole light before it goes to the corner
-    "waiting_many": "face",  # more than nine messages waiting: face = a silly face | number = "9+"
+    "waiting_many": "face",  # more than nine messages waiting: face = a face that has had enough | number = "9+"
     # Which messages show their number across the whole light first: first = the first to wait
     # (later ones make the number jump in its corner) | each | never
     "waiting_cover": "first",
