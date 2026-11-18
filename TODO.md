@@ -732,7 +732,7 @@ Bigger pieces:
       Suggested first step: usage from the headless `/usage` call (overlay and voice,
       no change to anyone's settings); a status line forwarder and the transcript for
       context per session after that.
-- [ ] Room for a session's figures (the author, 2026-11-18: "so many metrics for each
+- [x] Room for a session's figures (the author, 2026-11-18: "so many metrics for each
       session ... revamp a bit the design of the layout ... to have space for them").
       Built the same night, the first of three ideas, on "let's try your pick": a row
       keeps only its running time, and a line under the rows names the figures of the
@@ -741,7 +741,9 @@ Bigger pieces:
       more thought ("the most important ... the visualization"), and the line became a
       card of four tiles, each a small name, a large figure and, for context and tasks,
       a thin bar (`overlay.details_style`: `tiles`, or `line`). What was read and why
-      it looks as it does is in `CLAUDE.md`. **For them to judge on screen.** Ideas
+      it looks as it does is in `CLAUDE.md`. The author on the card: "it's not bad",
+      then, once the room around it was the same on every side: "Oh, it's perfect."
+      Ideas
       from that look, not built: the plan's usage ("5h 41%, week 40%") as a thin line
       at the foot of the card, which would settle "Usage in the overlay" below; a mark
       for the kind of agent; the row dropping its time. If the card is not liked,

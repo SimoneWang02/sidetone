@@ -925,7 +925,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the right than at the left. Now 13 px above and below it, for a bar at the top of the
   screen and at the bottom (measured in `metrics-under.png` and `metrics-other.png`; the
   card's margin is set in `Render`, since which side is the panel's edge depends on
-  where the bar is), and about 11 px inside on all four sides. Ideas from the same look
+  where the bar is), and about 11 px inside on all four sides. The author on that: "Oh,
+  it's perfect." Ideas from the same look
   that were not built: the plan's usage as a thin line at the foot of that card, a mark
   for the kind of agent, the row dropping its time now that the card has it.
 - No raised dots (2026-11-18; the author: "don't use the dots, the central dots. I don't
