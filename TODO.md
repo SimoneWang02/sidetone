@@ -688,10 +688,14 @@ Bigger pieces:
       the order (by project, so it survives restarts) and new sessions join at the end. Fits
       the dragging the bar already has: with the keys held a drag moves one light, without
       them the whole bar.
-- [ ] Usage in the overlay (the author's idea, 2026-11-17: "customizable bar that shows the
+- [x] Usage in the overlay (the author's idea, 2026-11-17: "customizable bar that shows the
       usage, the five-hour window and the weekly usage"): a part of the overlay that shows how
       much of the plan is used up, in the five-hour window and in the week, and when each
       starts again. A setting like the rest: on or off, where it sits, what it shows.
+      Built 2026-11-18 as two thin bars with their percent at the foot of the card of
+      figures, read again every five minutes (`usage_shown`, `usage_every`,
+      `usage_warn`). Not shown: when each window starts again, and the week of one
+      model. **For the author to judge on screen.**
 - [ ] Context window per session (same day: "for each session maybe something that indicates
       the context window"): a sign of how full each session's context is, for example a thin
       arc around its light and a figure in its row, with a warning color when it is nearly
@@ -753,9 +757,11 @@ Bigger pieces:
       session's card, a mark per line for how the turn ended, time and tokens at the
       right, the newest brightest, a white dot on lines never heard to the end. **For
       them to judge on screen** (keep the details out with `Ctrl+Alt+L` and rest the
-      mouse on a session). Offered and open: showing it on plain hover too, and, from
-      the list before it, the plan's usage at the foot of the card, key caps in
-      requests, bars that glide, a red step for context near full.
+      mouse on a session). Since then, on their word: no time on the lines (tokens
+      only), the two columns lined up, the missed dot on the mark, the plan's usage at
+      the foot of the card, and key caps in requests. Offered and open: showing the
+      history on plain hover too, bars that glide, a red step for context near full,
+      hiding a turn's half-way word once its last line is there.
 - [x] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for
       each request to ... show me the metrics of how much token you've used? Is it
       important?"). Possible: Claude Code's record of a session has the token counts of

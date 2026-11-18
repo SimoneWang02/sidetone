@@ -729,7 +729,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `usage_shown`, `usage_every`, `usage_warn`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -955,6 +955,22 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   it is." So a line ends in its tokens only, and `history_time: true` puts "3m" before
   them again. The second offer, hiding a turn's progress lines once its final line is
   there, they did not follow as said aloud; it was explained again and is open.
+- Three more from the same evening, on the author's "Yes, do that and then we can try
+  test" (2026-11-18). (1) The plan's usage at the foot of the card (`usage_shown`,
+  `usage_every` 300 s, `usage_warn` 80; `Talk._plan_due`, `_plan_bars`; this settles their
+  idea of the day before, "bar that shows the usage"): under a faint line, "5 hours" and
+  "Week", each a thin bar and its percent, orange from the warning on. `reconcile` has it
+  read again when the last reading is older than `usage_every`, only while a session is
+  open and the overlay is up; a reading by voice refreshes it too, and one that fails
+  leaves the last figures. It goes with every `state` as `usage`: [what, percent, "warn"
+  or ""]. The tests switch it off (`HubCase.make`), or a test hub would ask the real
+  Claude Code. (2) The dot of a line that was not heard to its end sits on the mark in
+  front of the line now, at its upper right; with the time gone it floated alone.
+  (3) Key caps under a request or a question (`Overlay.Caps`): the hub sends `hints`,
+  [keys, what they do, last key of a range or ""], and `more`; keys that begin alike show
+  that beginning once, fainter: [Ctrl] [Alt]  [Y] allow  [N] deny, or [1–3] answers. The
+  old line of text (`keys`) is still sent and is drawn when there are no hints. All
+  three seen in pictures; **none seen by the author yet**.
 - The card follows the focus (2026-11-18; the author: "I focused the second session and it
   still showed ... the first session's metrics"). The card was about the row the mouse had
   been on last, for as long as that session lived, and only before any row was touched

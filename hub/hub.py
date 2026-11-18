@@ -63,6 +63,8 @@ class Hub(Permissions, Talk):
         self.overlay = None  # anything with send(dict); set by main() or the tests
         self.terminals = terminal_mod.Terminals(cfg.terminal)  # marks each session's own terminal
         self._shown: dict | None = None  # last state sent to the overlay, to skip repeats
+        self.plan: dict | None = None  # the plan's usage as last read (see Talk.usage), for the overlay
+        self._plan_asked, self._plan_busy = float("-inf"), False
         self.requests: list[Request] = []  # open permission prompts, oldest first
         self.recorder = None  # stt.Recorder, set by main() or the tests
         self.transcriber = None  # stt.Transcriber
@@ -329,6 +331,7 @@ class Hub(Permissions, Talk):
     def reconcile(self) -> None:
         """Catch what hooks cannot report, from Claude Code's own session files: a turn you
         interrupted with Esc, and a session whose terminal was closed."""
+        self._plan_due()
         live = claude_sessions.read(self.cfg.sessions_dir)
         changed = False
         with self.lock:
@@ -616,11 +619,12 @@ class Hub(Permissions, Talk):
                                     "kind": e.get("kind", ""),
                                     "missed": not (e.get("heard") or e.get("shown") or id(e) in to_say)})
             new_keys, self._keys = keys != self._keys, keys
-            new_rows, self._shown = (rows, history) != self._shown, (rows, history)
+            bars = self._plan_bars()
+            new_rows, self._shown = (rows, history, bars) != self._shown, (rows, history, bars)
         if new_keys:  # claim allow/deny/cancel only while they can do something
             self.overlay.send({"type": "keys", "live": keys})
         if new_rows:
-            self.overlay.send({"type": "state", "sessions": rows, "history": history})
+            self.overlay.send({"type": "state", "sessions": rows, "history": history, "usage": bars})
 
     def _figures(self, s) -> dict:
         """What can be said in figures about a session right now. For each (see

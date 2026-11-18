@@ -199,6 +199,15 @@ class Config:
     # I used"): the hub answers aloud, the five-hour window first, and the words do not go to
     # a session. False: such words are a session's like any others.
     usage_by_voice: bool = True
+    # The plan's usage at the foot of the card of figures in the overlay: the five-hour window
+    # and the week, each a thin bar and its percent (the author's idea, 2026-11-17: "bar that
+    # shows the usage, the five-hour window and the weekly usage"). Read with the same call
+    # as for the voice, every `usage_every` seconds while a session is open and the overlay
+    # is up (about a second each time, no request to a model). From `usage_warn` percent on
+    # a bar is drawn in the warning color.
+    usage_shown: bool = True
+    usage_every: float = 300.0
+    usage_warn: float = 80.0
     # How full each session's context is, counted from its transcript, and where it shows:
     # arc = a thin arc around the session's light, filling clockwise from the top (the author,
     # 2026-11-18, found the words too long beside the running time and chose the arc of three
@@ -324,7 +333,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "separator", "waiting_words", "row_metrics", "detail_metrics",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "usage_shown", "usage_every", "usage_warn", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):

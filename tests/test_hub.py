@@ -36,6 +36,7 @@ class HubCase(unittest.TestCase):
     def make(self, duration=0.0, **cfg):
         self.tmp = tempfile.mkdtemp(prefix="cs-test-")
         self.engine = NullEngine(duration)
+        cfg.setdefault("usage_shown", False)  # or a hub with an overlay would ask the real Claude Code for the plan's usage
         self.cfg = Config(run=self.tmp, state=self.tmp, engine="null",
                           mute_file=os.path.join(self.tmp, "voice-off"),
                           sessions_dir=os.path.join(self.tmp, "claude-sessions"), **cfg)
@@ -618,6 +619,7 @@ class Permissions(HubCase):
         shown = self.overlay.of("request")[-1]
         self.assertEqual((shown["name"], shown["text"], shown["detail"]), ("alpha", "wants to: Run tests", "npm test"))
         self.assertIn("Ctrl+Alt+Y allow", shown["keys"])
+        self.assertEqual((shown["hints"], shown["more"]), ([["Ctrl+Alt+Y", "allow", ""], ["Ctrl+Alt+N", "deny", ""]], 0))  # for key caps
         self.assertTrue(hub.decide("allow"))
         self.assertEqual(req.decision, "allow")
         self.assertTrue(req.done.is_set())
@@ -771,6 +773,7 @@ class Questions(HubCase):
         self.assertEqual((shown()["question"], shown()["options"], shown()["ticked"]),
                          ("Which fruits?", ["Apple", "Banana", "Cherry"], [False, False, False]))
         self.assertIn("Ctrl+Alt+Y confirms", shown()["keys"])
+        self.assertEqual(shown()["hints"], [["Ctrl+Alt+1", "tick", "3"], ["Ctrl+Alt+Y", "confirms", ""]])
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "option1", "option2", "option3"])
         self.assertFalse(hub.decide("allow"), "nothing is ticked yet")
         self.assertTrue(hub.choose(3))
@@ -1266,6 +1269,26 @@ class PushToTalk(HubCase):
         self.assertTrue(listener.wake.wait(3))
         self.assertEqual(hub.collect(listener), "add a usage meter to the overlay")
         self.assertEqual(len(asked), 1)
+
+    def test_the_plans_usage_goes_to_the_overlay_and_is_read_again_only_when_it_is_old(self):
+        hub = self.make(usage_shown=True, usage_warn=30)
+        asked = []
+        hub.usage_ask = lambda program, timeout: asked.append(program) or (self.USAGE, "")
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a"))
+        hub.reconcile()
+        self.assertTrue(wait_for(lambda: self.overlay.of("state")[-1]["usage"] == [["5 hours", 26, ""], ["Week", 38, "warn"]]))
+        hub.reconcile()
+        hub.reconcile()
+        self.assertEqual(len(asked), 1, "read a moment ago")
+        hub.usage_ask = lambda program, timeout: ("", "no answer")  # a reading that fails leaves the last figures
+        hub._plan_asked = float("-inf")
+        hub.reconcile()
+        self.assertTrue(wait_for(lambda: not hub._plan_busy))
+        hub.publish()
+        self.assertEqual(self.overlay.of("state")[-1]["usage"][0], ["5 hours", 26, ""])
+        hub.cfg.usage_shown = False
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Done.")))
+        self.assertEqual(self.overlay.of("state")[-1]["usage"], [])
 
     def test_usage_that_cannot_be_read_says_so_and_can_be_switched_off(self):
         hub = self.make(talk_feedback="none")

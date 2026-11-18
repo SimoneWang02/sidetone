@@ -169,6 +169,11 @@ class Permissions:
                 "options": [o["label"] for o in options],
                 **({"ticked": [i in req.ticked for i in range(len(options))]} if several else {}),
                 "detail": "\n".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
+                # The same as parts, for key caps: [the keys, what they do, the last key of a range or ""].
+                "hints": [h for h in ([keys.get("option1", ""), "tick" if several else "answers",
+                                       str(keys.get(f"option{len(options)}", "")).rpartition("+")[2]],
+                                      [keys.get("allow", ""), "confirms", ""] if several else None) if h and h[0]],
+                "more": more,
                 "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} "
                         + (f"tick{wide}{keys.get('allow', '')} confirms" if several else "answers")
                         + (f"{wide}{more} more waiting" if more else ""),
@@ -177,6 +182,8 @@ class Permissions:
         self.overlay.send({
             "type": "request", "name": s.name if s else "", "color": s.color if s else "", "text": f"wants to: {req.summary}",
             "detail": req.detail[:300],
+            "hints": [h for h in ([keys.get("allow", ""), "allow", ""], [keys.get("deny", ""), "deny", ""]) if h[0]],
+            "more": more,
             "keys": f"{keys.get('allow', '')} allow{wide}{keys.get('deny', '')} deny" + (f"{wide}{more} more waiting" if more else ""),
         })
 

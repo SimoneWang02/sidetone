@@ -352,7 +352,9 @@ def question(text, options, ticked=None, place="", more=0):
     keys = f"Ctrl+Alt+1 to Ctrl+Alt+{len(options)} " + ("tick    Ctrl+Alt+Y confirms" if ticked is not None else "answers")
     send(type="request", name="web-app", color=COLORS[2], text=f"asks: {text}", question=text, place=place, options=options,
          detail="\n".join(f"{i}  {o}" for i, o in enumerate(options, 1)),
-         keys=keys + (f"    {more} more waiting" if more else ""),
+         keys=keys + (f"    {more} more waiting" if more else ""), more=more,
+         hints=[["Ctrl+Alt+1", "tick" if ticked is not None else "answers", str(len(options))]]
+               + ([["Ctrl+Alt+Y", "confirms", ""]] if ticked is not None else []),
          **({"ticked": ticked} if ticked is not None else {}))
 
 
@@ -368,7 +370,7 @@ shot("question-tick-none")
 question("Which toppings do you want on it?", TOPPINGS, ticked=[True, False, True, False], place="2 of 2", more=1)
 shot("question-tick-some")
 send(type="request", name="web-app", color=COLORS[2], text="wants to: Push to the remote", detail="git push origin main",
-     keys="Ctrl+Alt+Y allow    Ctrl+Alt+N deny")
+     keys="Ctrl+Alt+Y allow    Ctrl+Alt+N deny", hints=[["Ctrl+Alt+Y", "allow", ""], ["Ctrl+Alt+N", "deny", ""]], more=0)
 shot("permission")
 send(type="request")
 send(type="talk", state="listening", name="web-app")
@@ -460,6 +462,8 @@ send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=
 shot("context-waiting")
 # A session's figures in a line of their own under the rows: of the session in focus, and
 # of the one the mouse is on (which has four of them).
+USAGE = [["5 hours", 41, ""], ["Week", 86, "warn"]]  # the plan's usage, at the foot of the card
+send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE)
 send(type="peek", on=True)
 shot("metrics", 0.6)
 send(type="peek", on=True, over="web-app")

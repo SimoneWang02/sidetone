@@ -555,11 +555,13 @@ namespace ClaudeSpeaks
     class EndMark : FrameworkElement
     {
         readonly string kind;
+        readonly bool missed;  // never heard to its end: a white dot at the mark's upper right
 
-        public EndMark(string kind)
+        public EndMark(string kind, bool missed)
         {
             this.kind = kind;
-            Width = 13; Height = 16; Margin = new Thickness(0, 0, 6, 0);
+            this.missed = missed;
+            Width = 14; Height = 16; Margin = new Thickness(0, 0, 5, 0);
             VerticalAlignment = VerticalAlignment.Top;
             IsHitTestVisible = false;
         }
@@ -600,6 +602,7 @@ namespace ClaudeSpeaks
                     dc.DrawEllipse(Ui.Alpha(Colors.White, 0.45), null, new Point(6.4, 8.4), 1.6, 1.6);
                     break;
             }
+            if (missed) dc.DrawEllipse(Brushes.White, new Pen(Ui.Alpha(Color.FromRgb(0x20, 0x24, 0x2C), 1), 1.2), new Point(11.2, 3.6), 2.7, 2.7);
         }
     }
 
@@ -1149,6 +1152,8 @@ namespace ClaudeSpeaks
         readonly StackPanel metricsBody = new StackPanel();
         string detailsStyle = "tiles";
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
+        // What the keys do, each key drawn as a small cap: quicker to take in than a line of text.
+        readonly WrapPanel requestCaps = new WrapPanel { Margin = new Thickness(0, 2, 0, 0) };
         readonly FontFamily requestMono = new FontFamily("Consolas");
         readonly TextBlock bannerTitle = new TextBlock(), bannerHint = new TextBlock();
         readonly TextBlock emptyLine = new TextBlock { Text = "No Claude sessions", Foreground = Ui.Faint, Margin = new Thickness(12, 13, 12, 13) };
@@ -1195,6 +1200,7 @@ namespace ClaudeSpeaks
         // Ctrl+Alt brings them out. The author asked for that as the default, tried to picture
         // it and took it back ("I like hovering ... opening up its details"), so it is a choice.
         bool hoverOpens = true;
+        object[] usage = new object[0];  // the plan's usage, from the hub: [what, percent, "warn" or ""] each
         string focusWas = "";  // the session in focus as of the last state, to notice when it moves
         string historyOf = "";  // the session whose lines the history shows: the one the mouse was on last
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
@@ -1247,7 +1253,7 @@ namespace ClaudeSpeaks
             requestDetail.Foreground = Ui.Dim;
             requestDetail.Margin = new Thickness(0, 4, 0, 4);
             requestKeys.Foreground = Ui.AmberEdge;
-            Section(requestBox, requestTitle, requestDetail, requestKeys);
+            Section(requestBox, requestTitle, requestDetail, requestKeys, requestCaps);
             bannerTitle.TextWrapping = bannerHint.TextWrapping = TextWrapping.Wrap;
             bannerHint.Foreground = Ui.Faint;
             bannerHint.Margin = new Thickness(0, 2, 0, 0);
@@ -1424,6 +1430,7 @@ namespace ClaudeSpeaks
                 case "state":
                     sessions = msg.ContainsKey("sessions") ? (object[])msg["sessions"] : new object[0];
                     history = msg.ContainsKey("history") ? (object[])msg["history"] : new object[0];
+                    usage = msg.ContainsKey("usage") && msg["usage"] is object[] ? (object[])msg["usage"] : new object[0];
                     // The focus moved to another session (arrows, wheel, another terminal, or it
                     // spoke): the card and the history are about that one now, not about the one
                     // the mouse was on last. A mouse that is on a row right now still has its say.
@@ -1561,7 +1568,7 @@ namespace ClaudeSpeaks
             bool inCard = showHistory && detailsStyle != "line" && !historyAll;
             bool showMetrics = asked && BuildMetrics(inCard);
             if (showHistory && !(inCard && showMetrics)) BuildHistory();
-            metricsCard.Padding = new Thickness(11, 7, 11, inCard && showMetrics && metricsBody.Children.Count > 2 ? 8 : 12);
+            metricsCard.Padding = new Thickness(11, 7, 11, usage.Length == 0 && inCard && showMetrics && metricsBody.Children.Count > 2 ? 8 : 11);
             metricsLine.Visibility = showMetrics && detailsStyle == "line" ? Visibility.Visible : Visibility.Collapsed;
             metricsCard.Visibility = showMetrics && detailsStyle != "line" ? Visibility.Visible : Visibility.Collapsed;
             // The same room above the card as below it (10 px), whichever of the two is the
@@ -1845,7 +1852,47 @@ namespace ClaudeSpeaks
                     metricsBody.Children.Add(said);
                 }
             }
+            if (usage.Length > 0)  // the plan's usage, which is nobody's in particular: at the foot, under a faint line
+            {
+                metricsBody.Children.Add(new Border { Height = 1, Background = Ui.Paint("#22FFFFFF"), Margin = new Thickness(0, 9, 0, 7) });
+                var plan = new System.Windows.Controls.Primitives.UniformGrid { Rows = 1, Margin = new Thickness(0, 0, -14, 0) };
+                foreach (object o in usage)
+                {
+                    var part = o as object[];
+                    if (part == null || part.Length < 2) continue;
+                    double used = Ui.Clamp(Convert.ToDouble(part[1], CultureInfo.InvariantCulture) / 100);
+                    bool warn = part.Length > 2 && Convert.ToString(part[2], CultureInfo.InvariantCulture) == "warn";
+                    var cell = new Grid { Margin = new Thickness(0, 0, 14, 0) };
+                    cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    cell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    cell.Children.Add(new TextBlock { Text = Convert.ToString(part[0], CultureInfo.InvariantCulture), FontSize = 10.5, Foreground = Ui.Faint, VerticalAlignment = VerticalAlignment.Center });
+                    UIElement bar = Meter(used, warn);
+                    Grid.SetColumn(bar, 1);
+                    cell.Children.Add(bar);
+                    var figure = new TextBlock { Text = Math.Round(used * 100) + "%", FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Ui.Dim, VerticalAlignment = VerticalAlignment.Center };
+                    Grid.SetColumn(figure, 2);
+                    cell.Children.Add(figure);
+                    plan.Children.Add(cell);
+                }
+                metricsBody.Children.Add(plan);
+            }
             return true;
+        }
+
+        // A thin bar for a share of a whole: its own color when that is nearly the whole, over
+        // a faint step of the same color.
+        static Grid Meter(double share, bool warn)
+        {
+            Color ink = warn ? Ui.ContextFull : Colors.White;
+            var bar = new Grid { Height = 4, Margin = new Thickness(7, 1, 7, 0), VerticalAlignment = VerticalAlignment.Center };
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(share, 0.02), GridUnitType.Star) });
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - share, 0), GridUnitType.Star) });
+            var track = new Border { CornerRadius = new CornerRadius(2), Background = Ui.Alpha(ink, 0.18) };
+            Grid.SetColumnSpan(track, 2);
+            bar.Children.Add(track);
+            bar.Children.Add(new Border { CornerRadius = new CornerRadius(2), Background = Ui.Alpha(ink, warn ? 1 : 0.82) });
+            return bar;
         }
 
         // One figure of a session: its name, the figure, and a thin bar if it is a share of a
@@ -1908,7 +1955,7 @@ namespace ClaudeSpeaks
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                line.Children.Add(new EndMark(Str(h, "kind")));
+                line.Children.Add(new EndMark(Str(h, "kind"), h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"])));
                 var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
                 if (named) words.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
                 words.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Alpha(Colors.White, n == 0 ? 0.94 : n == 1 ? 0.76 : n == 2 ? 0.64 : 0.55) });
@@ -1918,12 +1965,6 @@ namespace ClaudeSpeaks
                 // times stand under one another and so do the tokens, with or without a figure.
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "ago" });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "used" });
-                if (h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"]))
-                {
-                    var dot = new System.Windows.Shapes.Ellipse { Width = 5, Height = 5, Fill = Ui.Alpha(Colors.White, 0.95), Margin = new Thickness(8, 6, 0, 0), VerticalAlignment = VerticalAlignment.Top };
-                    Grid.SetColumn(dot, 2);
-                    line.Children.Add(dot);
-                }
                 string used = Str(h, "tokens");
                 var ago = new TextBlock { Text = Str(h, "ago"), FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(Str(h, "ago").Length > 0 ? 8 : 0, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
                 Grid.SetColumn(ago, 3);
@@ -2507,8 +2548,58 @@ namespace ClaudeSpeaks
                 }
                 requestDetail.Visibility = options.Length > 0 || detail.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
                 requestKeys.Text = Str(msg, "keys");
+                object[] hints = msg.ContainsKey("hints") && msg["hints"] is object[] ? (object[])msg["hints"] : new object[0];
+                requestCaps.Children.Clear();
+                if (hints.Length > 0) Caps(hints, (int)Num(msg, "more", 0));
+                requestKeys.Visibility = requestCaps.Children.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+                requestCaps.Visibility = requestCaps.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             }
             Render();
+        }
+
+        // The keys of a request as caps. Keys that all begin alike ("Ctrl+Alt+Y", "Ctrl+Alt+N")
+        // show that beginning once, fainter, and then one cap for each with what it does:
+        // [Ctrl] [Alt]  [Y] allow  [N] deny. A range is written "1-3" with a dash.
+        void Caps(object[] hints, int more)
+        {
+            var parts = new List<string[]>();  // the keys before the last, the last key, what it does
+            foreach (object o in hints)
+            {
+                var hint = o as object[];
+                if (hint == null || hint.Length < 2) continue;
+                string combo = Convert.ToString(hint[0], CultureInfo.InvariantCulture), does = Convert.ToString(hint[1], CultureInfo.InvariantCulture);
+                string to = hint.Length > 2 ? Convert.ToString(hint[2], CultureInfo.InvariantCulture) : "";
+                int cut = combo.LastIndexOf('+');
+                string last = cut >= 0 ? combo.Substring(cut + 1) : combo;
+                if (last.Length == 0) continue;
+                parts.Add(new[] { cut >= 0 ? combo.Substring(0, cut) : "", to.Length > 0 && to != last ? last + "\u2013" + to : last, does });
+            }
+            if (parts.Count == 0) return;
+            bool alike = parts[0][0].Length > 0;
+            foreach (string[] part in parts) alike &= part[0] == parts[0][0];
+            if (alike)
+            {
+                foreach (string key in parts[0][0].Split('+')) requestCaps.Children.Add(Cap(key, false));
+                requestCaps.Children.Add(new Border { Width = 6 });
+            }
+            foreach (string[] part in parts)
+            {
+                if (!alike && part[0].Length > 0) foreach (string key in part[0].Split('+')) requestCaps.Children.Add(Cap(key, false));
+                requestCaps.Children.Add(Cap(part[1], true));
+                requestCaps.Children.Add(new TextBlock { Text = part[2], Foreground = Ui.AmberEdge, Margin = new Thickness(3, 0, 12, 4), VerticalAlignment = VerticalAlignment.Center });
+            }
+            if (more > 0) requestCaps.Children.Add(new TextBlock { Text = more + " more waiting", Foreground = Ui.Faint, FontSize = 12, Margin = new Thickness(0, 0, 0, 4), VerticalAlignment = VerticalAlignment.Center });
+        }
+
+        // One key. `main`: the key that tells the choices apart; the others (Ctrl, Alt) are fainter.
+        static Border Cap(string key, bool main)
+        {
+            return new Border {
+                CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(main ? 6 : 5, 0, main ? 6 : 5, 1),
+                Margin = new Thickness(0, 0, 3, 4), VerticalAlignment = VerticalAlignment.Center, MinWidth = 20,
+                BorderBrush = Ui.Alpha(Ui.Amber, main ? 0.85 : 0.40), Background = Ui.Alpha(Ui.Amber, main ? 0.20 : 0.06),
+                Child = new TextBlock { Text = key, FontSize = 11.5, FontWeight = main ? FontWeights.SemiBold : FontWeights.Normal, Foreground = main ? Brushes.White : Ui.Dim, HorizontalAlignment = HorizontalAlignment.Center },
+            };
         }
 
         // Push-to-talk feedback: who is being recorded for, the transcript about to be sent, and so on.

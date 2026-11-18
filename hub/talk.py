@@ -195,10 +195,11 @@ class Talk:
                 self._say_aside(s, line)  # in that session's voice, without touching its own lines
         self.publish()
 
-    def usage(self) -> dict:
+    def usage(self, quiet: bool = False) -> dict:
         """The plan's usage as it is this moment, asked of Claude Code (about a second and a
-        half, no model request): the sentence to say and the figures. Not to be called with
-        the lock held."""
+        half, no model request): the sentence to say and the figures. They are kept for the
+        overlay (`plan`). `quiet`: the regular reading, which is not worth a line in the log
+        each time. Not to be called with the lock held."""
         started = time.monotonic()
         try:
             text, why = self.usage_ask(self.cfg.aside_claude, 20.0)
@@ -206,10 +207,40 @@ class Talk:
             text, why = "", str(e)
         read = usage.parse(text)
         line = usage.say(read)
-        log(self.cfg, "hub.log", f"usage read in {time.monotonic() - started:.1f}s: {line}" + (f" ({why[:200]})" if why else ""))
+        if why or not quiet:
+            log(self.cfg, "hub.log", f"usage read in {time.monotonic() - started:.1f}s: {line}" + (f" ({why[:200]})" if why else ""))
         window = lambda w: {"used": w.used, "resets": w.resets} if w else None  # noqa: E731
-        return {"line": line, "five_hour": window(read.five_hour), "week": window(read.week),
-                "models": {name: window(w) for name, w in read.models.items()}}
+        got = {"line": line, "five_hour": window(read.five_hour), "week": window(read.week),
+               "models": {name: window(w) for name, w in read.models.items()}}
+        if got["five_hour"] or got["week"]:  # a reading that failed leaves the last figures
+            with self.lock:
+                self.plan = got
+        return got
+
+    def _plan_due(self) -> None:
+        """Read the plan's usage again for the overlay when the last reading is old enough."""
+        if not (self.cfg.usage_shown and self.overlay and self.sessions.by_id):
+            return
+        now = time.monotonic()
+        with self.lock:
+            if self._plan_busy or now - self._plan_asked < max(30.0, float(self.cfg.usage_every)):
+                return
+            self._plan_busy, self._plan_asked = True, now
+
+        def read() -> None:
+            try:
+                self.usage(quiet=True)
+            finally:
+                self._plan_busy = False
+            self.publish()
+        threading.Thread(target=read, name="usage", daemon=True).start()
+
+    def _plan_bars(self) -> list:
+        """The plan's usage for the foot of the overlay's card: [what, percent, "warn" or ""]."""
+        plan = self.plan if self.cfg.usage_shown else None
+        warn = float(self.cfg.usage_warn or 0)
+        return [[name, round(w["used"]), "warn" if warn and w["used"] >= warn else ""]
+                for name, w in (("5 hours", (plan or {}).get("five_hour")), ("Week", (plan or {}).get("week"))) if w]
 
     def _hand_over(self, s, text: str) -> None:
         """Words for a session go out: as the answer to the question it is asking, to its
