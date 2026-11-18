@@ -44,6 +44,17 @@ PROMPTING_MODES = ("", "default", "plan")  # permission modes in which Claude as
 
 
 @dataclass
+class Stopping:
+    """A session that was asked to end its turn (see Hub._stop_turn)."""
+    at: float
+    busy: bool  # it has been seen in the middle of a turn since it was asked
+
+
+STOP_WAIT = 20.0  # seconds a session that was asked to stop may take to show that it is in a turn at all
+SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")  # a session id that can be a file name
+
+
+@dataclass
 class Sent:
     """The follow-up that went out last: for a few seconds the cancel key takes it back."""
     session: str
@@ -133,6 +144,11 @@ class Config:
     followup_delay: float = 0.0  # seconds a transcript is shown (and can be cancelled) before it is sent; 0 = at once
     talk_tail: float = 0.4  # seconds to keep recording after the talk key is released
     unsend_seconds: float = 4.0  # how long after sending the cancel key still takes the words back; 0 = never
+    # What the cancel key stops besides a recording and a line being spoken: "always" = words
+    # just taken back from a session that already has them end its turn, and with nothing else
+    # to cancel the key ends the turn of the session in focus | "sent" = only the first |
+    # "never" = neither; a session that already has the words is told to ignore them
+    cancel_stops: str = "always"
     # Ask for a confirming tap before sending a spoken follow-up: False (the default; it is sent
     # after followup_delay unless cancelled), True, or "auto" (only for sessions that would act
     # on it without asking, i.e. not in default or plan mode).
@@ -183,7 +199,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume",
                     "progress", "progress_after", "progress_interval"):
@@ -220,6 +236,8 @@ class Hub:
         # Sessions whose words could not be handed over yet (busy, or no listener): their light
         # carries a mark until they are.
         self._waiting: set[str] = set(self.followups)
+        self._stopping: dict[str, Stopping] = {}  # sessions asked to end their turn, until they have
+        self._clear_stops()  # what a hub before this one asked for is not wanted any more
         self.talk_target: str | None = None  # session a spoken follow-up goes to
         self._kept_sessions: dict | None = None  # what sessions.json last said (see _keep_sessions)
         self._front = ""  # the terminal the editor last said you were in (see terminal_in_front)
@@ -276,6 +294,7 @@ class Hub:
                     # arrives as markup, often while you have not heard the reply yet, so that
                     # reply stays in the queue and is spoken in full.
                     self.speech.drop_session(sid)
+                    self._unstop(sid, "a new prompt was typed")  # that is a new turn: it must run
             elif event == "PreToolUse":
                 s.state, s.activity = "working", describe(ev.get("tool_name", ""), ev.get("tool_input") or {})
             elif event in ("PostToolUse", "PostToolUseFailure"):
@@ -310,6 +329,7 @@ class Hub:
                     self._say(s, speech, "done", "stop")
                 elif not speech:
                     self._flash(s, "done")  # nothing is spoken for this turn, so show it instead
+                self._unstop(sid, "its turn ended by itself")
                 s.spoken = None
             elif event == "StopFailure":
                 s.state, s.activity, s.turn_started = "failed", "", None
@@ -322,6 +342,7 @@ class Hub:
         self._release(sid)
         self.followups.pop(sid, None)
         self._waiting.discard(sid)
+        self._unstop(sid)
         self._keep_followups()
         if self.talk_target == sid:
             self.talk_target = None
@@ -418,6 +439,24 @@ class Hub:
                         changed = True
                 elif s.seen_file and quiet > 5:  # it had a file and no longer does: the session is gone
                     self._forget(s.id, "session gone")
+                    changed = True
+            # A session that was asked to stop: its hook takes the file away as it ends the turn.
+            for sid, stopping in list(self._stopping.items()):
+                s = self.sessions.by_id.get(sid)
+                if not s:
+                    self._unstop(sid)
+                elif not os.path.exists(self._stop_file(sid)):
+                    del self._stopping[sid]
+                    self._settle(sid, "stopped")
+                    s.state, s.activity, s.note, s.turn_started = "idle", "", "stopped", None
+                    if not (self._talking or self._transcribing or self._pending):
+                        self._talk("stopped", s, "Stopped", seconds=2.5)
+                    log(self.cfg, "hub.log", f"stop [{sid[:8]}] its turn was ended {time.monotonic() - stopping.at:.1f} s after the key")
+                    changed = True
+                elif s.state in BUSY:
+                    stopping.busy = True
+                elif stopping.busy or time.monotonic() - stopping.at > STOP_WAIT:
+                    self._unstop(sid, "its turn ended by itself")
                     changed = True
             # Words that waited for a busy session go out once it is no longer busy. After a
             # reply that happens by itself (its new listener asks for them); after an interrupt
@@ -1038,12 +1077,61 @@ class Hub:
             self._keep_followups()
             self._talk("failed", s, "Taken back", seconds=2)
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, before the session got it")
+        elif self.cfg.cancel_stops != "never" and self._stop_turn(s):
+            self._talk("stopped", s, "Taken back: stopping it", seconds=3)
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, when the session had it: its turn is being stopped")
         else:
             self._deliver(s, TAKE_BACK)
             self._talk("failed", s, "Taken back: it is told to ignore that", seconds=3)
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, when the session had it: told to ignore it")
         self._signal("failed")
         return True
+
+    # --- stopping a turn ---------------------------------------------------------------------
+
+    def _stop_file(self, sid: str) -> str:
+        return os.path.join(self.cfg.run, "stop", sid)
+
+    def _stop_turn(self, s) -> bool:
+        """Ask a session to end the turn it is in. Nothing outside a terminal can press Esc in
+        it, and a signal ends the whole session, so a file named after the session is left
+        for hooks/stop.sh, which ends the turn at the session's next tool call or as the one
+        that is running finishes. Until then the session is not spoken for: what it says
+        about that turn is not wanted. Call with the lock held."""
+        if not SAFE_ID.match(s.id):
+            return False
+        try:
+            os.makedirs(os.path.dirname(self._stop_file(s.id)), mode=0o700, exist_ok=True)
+            os.close(os.open(self._stop_file(s.id), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600))
+        except OSError:
+            return False
+        self._stopping[s.id] = Stopping(time.monotonic(), s.state in BUSY)
+        self.speech.drop_session(s.id)
+        return True
+
+    def _unstop(self, sid: str, why: str = "") -> None:
+        """The turn is over, or another one is wanted: nothing is to be stopped any more."""
+        if self._stopping.pop(sid, None) is None:
+            return
+        try:
+            os.unlink(self._stop_file(sid))
+        except OSError:
+            pass
+        if why:
+            log(self.cfg, "hub.log", f"stop [{sid[:8]}] not needed: {why}")
+
+    def _clear_stops(self) -> None:
+        try:
+            for name in os.listdir(os.path.join(self.cfg.run, "stop")):
+                os.unlink(os.path.join(self.cfg.run, "stop", name))
+        except OSError:
+            pass
+
+    def _stoppable(self):
+        """The session whose turn the cancel key would end when there is nothing else for it
+        to cancel: the one in focus, while it works."""
+        s = self._target() if self.cfg.cancel_stops == "always" else None
+        return s if s and s.state == "working" and s.id not in self._stopping else None
 
     def _expire(self, pending: Pending) -> None:
         """Nobody confirmed it in time: better dropped than sent late and out of context."""
@@ -1057,7 +1145,9 @@ class Hub:
 
     def cancel(self) -> None:
         """The cancel key: stop recording, or take back a follow-up (one still being worked
-        out, one on screen, or one sent in the last few seconds), or cut the line being spoken."""
+        out, one on screen, or one sent in the last few seconds), or cut the line being spoken,
+        or, with none of those, end the turn of the session in focus."""
+        stopped = False
         with self.lock:
             talking, self._talking = self._talking, None
             about = self.sessions.by_id.get(self._pending.session) if self._pending else self._target()
@@ -1071,10 +1161,16 @@ class Hub:
                 self._signal("failed")
             else:
                 took_back = self._take_back()
+                s = self._stoppable()
+                if not took_back and s and not self.speech.current and self._stop_turn(s):
+                    stopped = True
+                    self._talk("stopped", s, "Stopping at its next step", seconds=3)
+                    self._signal("failed")
+                    log(self.cfg, "hub.log", f"stop [{s.id[:8]}] asked for with the cancel key")
         if talking:
             self.recorder.stop()
             self.speech.resume()
-        elif not (had_pending or took_back or hearing):
+        elif not (had_pending or took_back or hearing or stopped):
             self.speech.skip()
         self.publish()
 
@@ -1099,6 +1195,8 @@ class Hub:
             self._keep_followups()
             waited = listener.session in self._waiting
             self._waiting.discard(listener.session)
+            if text:
+                self._unstop(listener.session, "it was given new words")  # they start a turn that must run
             s = self.sessions.by_id.get(listener.session)
             # Words that had to wait are now with the session: say so on its light, unless
             # push-to-talk is showing something of its own there.
@@ -1251,7 +1349,7 @@ class Hub:
                 "color": s.color,
                 "state": s.state,
                 "title": s.title,
-                "text": s.activity if s.state == "working" else s.note,
+                "text": "Stopping at its next step" if s.id in self._stopping else s.activity if s.state == "working" else s.note,
                 "meta": " \u00b7 ".join(filter(None, [
                     f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
@@ -1265,7 +1363,8 @@ class Hub:
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)] if asking
                            else ["allow", "deny"] if self.requests else [])
-                          + (["cancel"] if self._talking or self._transcribing or self._pending or current or self._unsendable() else [])
+                          + (["cancel"] if self._talking or self._transcribing or self._pending or current or self._unsendable()
+                             or self._stoppable() else [])
                           + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else []))
             now = time.time()
             # Newest first, and up to four lines of each session: the overlay shows those of the
@@ -1338,6 +1437,9 @@ class Hub:
             self._say(s, words, "allowed", "follow-up")
 
     def _say(self, s, text: str, kind: str, src: str) -> None:
+        if s.id in self._stopping and kind in ("done", "progress"):
+            log(self.cfg, "hub.log", f"stop [{s.id[:8]}] not spoken, its turn is being stopped: {text[:80]}")
+            return
         s.last_speech = text
         entry = None
         if kind in ("done", "failed", "needs_you", "progress"):  # what a session said, not our own feedback

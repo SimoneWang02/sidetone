@@ -937,8 +937,103 @@ class PushToTalk(HubCase):
         hub.cancel()  # a second press has nothing left to take back
         self.assertEqual(hub.followups, {"a": ["said earlier"]})
 
-    def test_cancel_after_the_session_got_the_words_tells_it_to_ignore_them(self):
+    def got_the_words(self, **cfg):
+        """Session "a" was idle and has just been handed what was said to it."""
+        hub = self.make(**cfg)
+        hub.talk_target = "a"
+        listener = hub.listen("a")
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(listener.wake.wait(3))
+        self.assertEqual(hub.collect(listener), "also add a test")
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="<task-notification>also add a test"))
+        return hub
+
+    def test_cancel_after_the_session_got_the_words_stops_its_turn(self):
+        hub = self.got_the_words()
+        again = hub.listen("a")
+        hub.cancel()
+        flag = os.path.join(self.tmp, "stop", "a")
+        self.assertTrue(os.path.exists(flag), "nothing was left for its hook")
+        self.assertEqual(self.talks()[-1], ("stopped", "a", "Taken back: stopping it"))
+        self.assertFalse(again.wake.is_set(), "it must not be woken with a message about it")
+        row = lambda: next(r for r in self.overlay.of("state")[-1]["sessions"] if r["name"] == "a")
+        self.assertEqual(row()["text"], "Stopping at its next step")
+        os.unlink(flag)  # hooks/stop.sh, at its next tool call
+        hub.reconcile()
+        self.assertEqual((row()["state"], row()["text"]), ("idle", "stopped"))
+        self.assertEqual(self.talks()[-1], ("stopped", "a", "Stopped"))
+
+    def test_a_stopped_turn_that_ends_by_itself_is_not_spoken_and_the_next_one_runs(self):
+        hub = self.got_the_words()
+        hub.cancel()
+        flag = os.path.join(self.tmp, "stop", "a")
+        self.assertTrue(os.path.exists(flag))
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Here is the answer to what you took back.")))
+        self.assertNotIn("Here is the answer to what you took back.", " ".join(self.spoken()))
+        self.assertFalse(os.path.exists(flag), "the next turn would be stopped at its first step")
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go on"))
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Going on.")))
+        self.assertIn("Going on.", self.spoken()[-1])
+
+    def test_new_words_or_a_typed_prompt_call_the_stop_off(self):
+        hub = self.got_the_words()
+        hub.cancel()
+        flag = os.path.join(self.tmp, "stop", "a")
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="do this instead"))
+        self.assertFalse(os.path.exists(flag))
+        hub.cancel()  # nothing just sent, nothing spoken: the key stops the session in focus
+        self.assertTrue(os.path.exists(flag))
+        hub.follow_up("and this", "a", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("a")))
+        self.assertTrue(os.path.exists(flag), "words that wait for the turn to end do not call it off")
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Stopped there.")))
+        self.assertEqual(hub.collect(hub.listen("a")), "and this")
+        self.assertFalse(os.path.exists(flag))
+
+    def test_the_cancel_key_ends_the_turn_of_the_session_in_focus(self):
         hub = self.make()
+        hub.talk_target = "a"
+        hub.publish()
+        self.assertNotIn("cancel", self.overlay.of("keys")[-1]["live"])  # idle: nothing for the key to do
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        self.assertIn("cancel", self.overlay.of("keys")[-1]["live"])
+        hub.cancel()
+        flag = os.path.join(self.tmp, "stop", "a")
+        self.assertTrue(os.path.exists(flag))
+        self.assertEqual(self.talks()[-1], ("stopped", "a", "Stopping at its next step"))
+        self.assertNotIn("cancel", self.overlay.of("keys")[-1]["live"])  # asked already
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "stop", "b")), "only the session in focus")
+
+    def test_the_cancel_key_cuts_a_line_before_it_stops_anyone(self):
+        hub = self.make(duration=2.0)
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        hub.on_event(ev("Stop", sid="b", cwd="/w/b", last_assistant_message=tag("A long line from the other session.")))
+        self.assertTrue(wait_for(lambda: hub.speech.current is not None and hub.talk_target == "b"))
+        hub.talk_target = "a"  # the one that speaks took the focus; it is moved back by hand
+        hub.cancel()
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "stop", "a")), "that press was for the voice")
+        self.assertTrue(wait_for(lambda: hub.speech.current is None))
+        hub.cancel()
+        self.assertTrue(os.path.exists(os.path.join(self.tmp, "stop", "a")))
+
+    def test_the_cancel_key_can_be_kept_from_stopping_sessions(self):
+        hub = self.make(cancel_stops="sent")
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        hub.talk_target = "a"
+        hub.cancel()
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "stop", "a")))
+
+    def test_a_hub_that_starts_forgets_what_the_last_one_wanted_stopped(self):
+        hub = self.got_the_words()
+        hub.cancel()
+        self.assertTrue(os.path.exists(os.path.join(self.tmp, "stop", "a")))
+        again = Hub(self.cfg, NullEngine())
+        self.addCleanup(again.speech.close)
+        self.assertEqual(os.listdir(os.path.join(self.tmp, "stop")), [])
+
+    def test_cancel_after_the_session_got_the_words_tells_it_to_ignore_them(self):
+        hub = self.make(cancel_stops="never")
         hub.talk_target = "a"
         listener = hub.listen("a")
         hub.talk_start()
@@ -952,7 +1047,7 @@ class PushToTalk(HubCase):
         self.assertEqual(self.talks()[-1][:2], ("failed", "a"))
 
     def test_words_can_only_be_taken_back_for_a_few_seconds(self):
-        hub = self.make(unsend_seconds=0.2)
+        hub = self.make(unsend_seconds=0.2, cancel_stops="sent")  # or the key would stay, to stop the session
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
         hub.talk_target = "a"
         hub.talk_start()
@@ -1569,6 +1664,25 @@ class ThroughTheHooks(HubCase):
 
     def test_socket_is_private(self):
         self.assertEqual(os.stat(self.cfg.sock).st_mode & 0o077, 0)
+
+    def test_stop_hook_ends_the_turn_of_the_session_that_was_asked_to_stop(self):
+        hub = self.hub
+        hub.on_event(ev("UserPromptSubmit", prompt="go"))
+        call = ev("PreToolUse", tool_name="Bash", tool_input={"command": "npm test"})
+        self.assertEqual(self.hook("stop.sh", call).stdout, "")  # nobody asked
+        with hub.lock:
+            self.assertTrue(hub._stop_turn(hub.sessions.by_id["s1"]))
+        self.assertEqual(self.hook("stop.sh", ev("PreToolUse", sid="s2")).stdout, "", "another session goes on")
+        told = json.loads(self.hook("stop.sh", call).stdout)
+        self.assertIs(told["continue"], False)
+        self.assertEqual(told["hookSpecificOutput"]["permissionDecision"], "deny")  # this call is not made either
+        self.assertEqual(self.hook("stop.sh", call).stdout, "")  # once
+        hub.reconcile()
+        self.assertEqual(self.session()["state"], "idle")
+        with hub.lock:
+            hub._stop_turn(hub.sessions.by_id["s1"])
+        told = json.loads(self.hook("stop.sh", ev("PostToolUse", tool_name="Bash")).stdout)
+        self.assertEqual((told["continue"], "hookSpecificOutput" in told), (False, False))
 
     def test_display_then_stop(self):
         delta = f"{tag('Pushed and done.')}\nMore text.\n"

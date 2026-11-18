@@ -296,7 +296,7 @@ namespace ClaudeSpeaks
             double t = Ui.Now, age = t - Changed;
             var c = new Point(Size / 2, Size / 2);
             bool signed = Signed;
-            Color tint = signed ? (Sign == "sent" ? Ui.Tint("done") : Sign == "failed" ? Ui.Tint("failed") : Ui.Mic) : Listening != null ? Ui.Mic : Ui.Tint(State);
+            Color tint = signed ? (Sign == "sent" ? Ui.Tint("done") : Sign == "failed" || Sign == "stop" ? Ui.Tint("failed") : Ui.Mic) : Listening != null ? Ui.Mic : Ui.Tint(State);
             Wave wave = Listening ?? Wave;
             double bump = age < 0.4 ? 0.2 * Math.Sin(Math.PI * age / 0.4) : 0;
             double scale = Ui.Overshoot((t - Born) / 0.4) * (1 + bump + 0.14 * Hot);
@@ -448,7 +448,7 @@ namespace ClaudeSpeaks
     // this element at the right of the session's line (the "talk_sign" setting).
     class Badge : FrameworkElement
     {
-        public string Kind = "";  // "", mic, dots, sent, wait, failed
+        public string Kind = "";  // "", mic, dots, sent, wait, failed, stop
         public double Since;
 
         public Badge() { Width = 20; Height = 18; IsHitTestVisible = false; VerticalAlignment = VerticalAlignment.Center; HorizontalAlignment = HorizontalAlignment.Right; }
@@ -516,6 +516,13 @@ namespace ClaudeSpeaks
                     }
                     dc.DrawGeometry(Ui.Alpha(ink, 0.35), Ui.Line(ink, 1, 1.5), plane);
                     dc.DrawLine(Ui.Line(ink, 1, 1.5), notch, nose);
+                    break;
+                }
+                case "stop":
+                {
+                    // The square of a stop button: the session's turn is being ended.
+                    Brush ink = inLight ? Brushes.White : (Brush)Ui.Alpha(Ui.Tint("failed"), 1);
+                    dc.DrawRoundedRectangle(ink, null, new Rect(cx - 5, cy - 5, 10, 10), 2, 2);
                     break;
                 }
                 case "wait":
@@ -2016,6 +2023,7 @@ namespace ClaudeSpeaks
                 case "sent": return "sent";
                 case "queued": return "wait";
                 case "failed": return "failed";
+                case "stopped": return "stop";
                 default: return "";
             }
         }

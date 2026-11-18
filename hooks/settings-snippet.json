@@ -57,6 +57,11 @@
             "type": "command",
             "command": "$HOME/personal/claude-speaks/hooks/report.sh",
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "$HOME/personal/claude-speaks/hooks/stop.sh",
+            "timeout": 5
           }
         ]
       }
@@ -79,6 +84,11 @@
             "type": "command",
             "command": "$HOME/personal/claude-speaks/hooks/report.sh",
             "async": true
+          },
+          {
+            "type": "command",
+            "command": "$HOME/personal/claude-speaks/hooks/stop.sh",
+            "timeout": 5
           }
         ]
       }
