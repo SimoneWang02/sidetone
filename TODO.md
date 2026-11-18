@@ -424,6 +424,15 @@ real keys yet.
         ignores what it asks for (it even tried the command again). So "no, and do
         this instead" by voice has to be a denial followed by the words as a spoken
         message, which Claude does take as the user's.
+      Built the same evening for questions: the number keys tick and untick a choice
+      (a box in front of each shows it), `Ctrl+Alt+Y` hands the ticked ones in, and
+      spoken words are the answer in your own words, as the terminal's "type
+      something" is (the author: "that's the process I want to go through"). Tried by
+      the author at once on a real question with three choices: all three ticked and
+      confirmed with the keys, and the session got them. Not tried: answering one by
+      voice. Still open in this box: speaking to a session that waits at a permission
+      prompt (offered: deny it, stop its turn and hand the words over as the next
+      message; not answered), and the terminal's "chat about this" as such.
 - [ ] Several questions in one dialog: answered by voice or number key, the overlay moves on
       to the second question, but the terminal goes on showing the first until the last one
       is answered (the author, 2026-11-17: "I sent an audio to answer the first question
