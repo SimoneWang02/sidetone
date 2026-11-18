@@ -1,8 +1,27 @@
 #!/usr/bin/env bash
 # Removes the claude-speaks hooks from ~/.claude/settings.json (other hooks are kept; a backup
-# is written first) and stops the hub. Models, the Python environment and logs are left in place.
+# is written first), stops the hub and takes the VS Code extension out again (--keep-vscode
+# leaves it). Models, the Python environment and logs are left in place.
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+EXTENSION=claude-speaks.claude-speaks
+keep_vscode=0
+for option in "$@"; do
+  case $option in
+    --keep-vscode) keep_vscode=1 ;;
+    *) echo "unknown option: $option" >&2; exit 2 ;;
+  esac
+done
+# The extension belongs to VS Code, not to a home folder: it goes whether or not there are
+# hooks to remove.
+if [ $keep_vscode = 0 ] && command -v code >/dev/null 2>&1 &&
+   code --list-extensions 2>/dev/null | grep -qix "$EXTENSION"; then
+  if code --uninstall-extension "$EXTENSION" >/dev/null 2>&1; then
+    echo "VS Code extension removed."
+  else
+    echo "Note: the VS Code extension could not be removed. In a VS Code terminal: claude-speaks vscode uninstall"
+  fi
+fi
 SETTINGS=$HOME/.claude/settings.json
 [ -s "$SETTINGS" ] || { echo "no $SETTINGS, nothing to do"; exit 0; }
 backup=$SETTINGS.bak-claude-speaks-$(date +%Y%m%d-%H%M%S)

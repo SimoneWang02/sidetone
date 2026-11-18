@@ -2,14 +2,16 @@
 # Installs claude-speaks from this checkout: the Python environment, the voice model, and the
 # hooks in ~/.claude/settings.json (your existing hooks are kept; a backup is written first).
 # Re-running is safe. Options: --no-models (skip downloads), --hooks-only (only settings.json),
-# --languages CODES (what you will speak to it, for example en,it; without it the script asks once).
+# --languages CODES (what you will speak to it, for example en,it; without it the script asks once),
+# --vscode or --no-vscode (the VS Code extension; without either the script asks once).
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 KOKORO_DIR=${KOKORO_DIR:-$HOME/.local/share/kokoro}
 SETTINGS=$HOME/.claude/settings.json
 MODELS=https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}/claude-speaks/config.json
-models=1 hooks_only=0 languages=
+models=1 hooks_only=0 languages= vscode=ask
+EXTENSION=claude-speaks.claude-speaks
 while [ $# -gt 0 ]; do
   case $1 in
     --no-models) models=0 ;;
@@ -17,6 +19,8 @@ while [ $# -gt 0 ]; do
     --languages) [ $# -gt 1 ] || { echo "--languages needs codes, for example: --languages en,it" >&2; exit 2; }
                  languages=$2; shift ;;
     --languages=*) languages=${1#*=} ;;
+    --vscode) vscode=yes ;;
+    --no-vscode) vscode=no ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -105,4 +109,27 @@ for name in claude-speaks cs; do
   fi
   case ":$PATH:" in *":$BIN:"*) try=$name ;; *) echo "Note: $BIN is not on your PATH, so '$name' will not be found yet." ;; esac
 done
+
+# The VS Code extension: it tells the hub which terminal you are in, so going to a terminal
+# gives the session running there the focus. Only where VS Code's `code` command is found.
+# Asked once, of a person at a terminal; an extension that is already there is brought up to
+# date without asking. With nobody to ask and no option given, VS Code is left alone.
+if [ $vscode = ask ]; then
+  if [ $hooks_only = 1 ] || ! [ -t 0 ] || ! [ -t 1 ] || ! command -v code >/dev/null 2>&1; then
+    vscode=no
+  elif code --list-extensions 2>/dev/null | grep -qix "$EXTENSION"; then
+    vscode=yes
+  else
+    echo "VS Code is here. Its claude-speaks extension tells the hub which terminal you are in, so going to a terminal gives its session the focus."
+    read -r -p "Install the extension? (Enter = yes, n = no): " answer || answer=n
+    case $answer in ""|[Yy]*) vscode=yes ;; *) vscode=no; echo "Not installed. Any time later: claude-speaks vscode install" ;; esac
+  fi
+fi
+if [ $vscode = yes ]; then
+  if ! command -v code >/dev/null 2>&1; then
+    echo "Note: no 'code' command here, so the VS Code extension was not installed. In a VS Code terminal: claude-speaks vscode install"
+  elif ! "$ROOT/bin/claude-speaks" vscode install; then
+    echo "Note: the VS Code extension could not be installed. Try in a VS Code terminal: claude-speaks vscode install"
+  fi
+fi
 echo "Done. Start a new Claude Code session and it will speak. Try: $try demo"
