@@ -323,7 +323,24 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   itself, when a prompt is typed, when the session is handed new words, and when a hub
   starts. `cancel_stops`: `always` (default), `sent` (only when taking words back) or
   `never` (told to ignore, as below). Tried with the real hook on a throwaway session;
-  **the author has not pressed it yet**. A turn that only writes text has no step to stop at.
+  The author pressed it the same night on a session working in small steps ("its turn was
+  ended 1.8 s after the key"). A turn that only writes text has no step to stop at.
+- Stopping at once through the editor (2026-11-17, `stop_at_once`, `Hub._press`, `/editor`,
+  `vscode/extension.js` 0.2.0). Only the editor can type into its terminals. The extension
+  keeps one request open with the hub (`POST /editor` with the process ids of its terminals,
+  held for `EDITOR_WAIT` 25 s and asked again; anew when a terminal opens or closes); the
+  hub keeps it as an `Editor` with terminal → process id, and `_stop_turn` hands the one
+  that holds the session's terminal `{"pid", "key": "escape"}`, which the extension types
+  with `Terminal.sendText(text, false)`. It knows no other key, so the hub cannot have
+  anything else typed. Measured with tmux on a throwaway session: one Escape or one Ctrl+C
+  interrupts a working session; a second Ctrl+C at the prompt closes the session, a second
+  Escape there opens its rewind list. So Escape is asked for once (`Stopping.pressed`) and
+  only of a session in a turn; if it had not begun yet or no editor was waiting, `reconcile`
+  asks within a second. The file for the hook is left in place either way and cleared when
+  the session is seen to have stopped. The foreground `sleep` of a test prompt is refused
+  by Claude Code itself now; a small script that counts stands in for it. Tested with the
+  real extension code, a stand-in editor and a real hub. **Not tried in the author's VS
+  Code: it runs 0.1.0 until its extension host is restarted.**
 - Side questions (2026-11-17; the author, by voice: "I was wondering if you could do a slash,
   by the way, BTW ... it lets me skip the queue and ask a by the way question", meaning Claude
   Code's `/btw`). Spoken words for a session in the middle of a turn that open with "by the
@@ -789,6 +806,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   ignoring it"), so a reason or a new instruction has to follow as a spoken message. A test
   session needs `--permission-mode default` to ask at all; without it this machine starts
   sessions in auto mode.
+- Where usage and context figures can be read (measured 2026-11-17 by another session,
+  Claude Code 2.1.327; nothing built, details in `TODO.md`): `claude -p "/usage"
+  --no-session-persistence` prints the five-hour window, the week and the week of the
+  model in a second with no model request; a status line command is handed `rate_limits`
+  and `context_window` per session, only after an answer from the model and never while
+  idle; the last assistant line of a transcript gives the context in use.
 - `asyncRewake` facts (measured 2026-11-16): a hook with `asyncRewake: true` that exits 2 wakes
   an idle session within a second; its stderr reaches Claude and the terminal shows "Stop hook
   feedback". Delivered while the session is busy, it is handled right after the current reply.

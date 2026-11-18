@@ -128,7 +128,7 @@ work, run `cs demo` in a terminal.
 | `Ctrl+Alt+Up` / `Ctrl+Alt+Down` | Move the focus to the session above or below (claimed only while two or more are open). In the island layout it is `Ctrl+Alt+Left` / `Ctrl+Alt+Right` |
 | `Ctrl+Alt` + mouse wheel | The same with the wheel |
 | hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send |
-| `Ctrl+Alt+Backspace` | Stop recording, take back a follow-up, cut the line being spoken, or stop the session in focus at its next step |
+| `Ctrl+Alt+Backspace` | Stop recording, take back a follow-up, cut the line being spoken, or stop the session in focus (at once in VS Code with the extension, elsewhere at its next step) |
 | `Ctrl+Alt+U` | Replay what was said since you were last there |
 | `Ctrl+Alt+R` | Repeat the last line of the session in focus |
 

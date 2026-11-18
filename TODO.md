@@ -662,10 +662,28 @@ Bigger pieces:
       the context window"): a sign of how full each session's context is, for example a thin
       arc around its light and a figure in its row, with a warning color when it is nearly
       full.
-      Nothing looked into yet for either. The hub has no source for these numbers today; to
-      check first: what Claude Code hands to a status line command (it gets a JSON about the
-      session, which may carry both), and whether context use can be counted from the
-      transcript a hook points to.
+      Looked into on 2026-11-17 by another session (Claude Code 2.1.327, plan Pro; two
+      throwaway sessions and three headless calls; nothing built). All of it can be had:
+      - plan usage, fresh and free: `claude -p "/usage" --no-session-persistence` answers
+        in about a second without a model request, with lines such as "Current session:
+        15% used · resets Nov 18, 2:39am", "Current week (all models): 37% used · resets
+        ..." and "Current week (Fable): 70% used · ...". Text for people, so to be read
+        loosely. It is the only place the week of one model shows.
+      - plan usage, per session: what a status line command is handed carries
+        `rate_limits.five_hour` and `.seven_day`, each with `used_percentage` and
+        `resets_at` (documented). It is what that session's last answer from the model
+        said, so an idle session's figures are old; the command is not run while idle.
+        A status line command that prints nothing takes no row on screen.
+      - context per session: the same report has `context_window` (`used_percentage`,
+        `total_input_tokens`, `context_window_size`), keyed by `session_id`. Without
+        a status line: the last assistant line of the transcript, input tokens plus both
+        cache counts, gave exactly what `/context` showed; after a compaction the
+        `compact_boundary` line's `postTokens`. The transcript does not hold the size
+        of the window.
+      - not to build on: the usage address the program calls with the login token.
+      Suggested first step: usage from the headless `/usage` call (overlay and voice,
+      no change to anyone's settings); a status line forwarder and the transcript for
+      context per session after that.
 - [ ] Usage said aloud (the author, 2026-11-17, by voice: "check if in the future it's
       possible to make you say the percentage of the current usage"). Today a session
       cannot answer "what's the current usage?": nothing it can call reports the plan's
@@ -743,7 +761,19 @@ Smaller ideas:
       Open:
       - a turn that is only writing, with no step left, cannot be stopped; it ends by
         itself and what it says is not spoken
-      - instant stopping through the VS Code extension (Esc written into the terminal)
+      - instant stopping through the VS Code extension: built later that night, on the
+        author's go-ahead, while they were away. The extension keeps a request open
+        with the hub and types one Escape into the terminal the hub names
+        (`stop_at_once`). Measured first on a throwaway session: one Escape or one
+        Ctrl+C interrupts a working session; a second Ctrl+C closes the session and a
+        second Escape at an idle prompt opens its rewind list, hence one Escape, and
+        only for a session in a turn. Tested with the real extension code against a
+        real hub and a stand-in for the editor. Version 0.2.0 is installed, but
+        **VS Code still runs 0.1.0 until its extensions are restarted** (Ctrl+Shift+P,
+        "Restart Extension Host"); after that, to try: the cancel key on a session
+        that is working should stop it in the same moment, and `hub.log` should say
+        "escape asked of the editor". Not known until then: whether VS Code hands
+        the Escape to the terminal as typed.
       - the key is now claimed from every program whenever the session in focus works
       - a session waiting at a permission prompt is not stopped by the key in focus
 - [ ] Easier ways to take back what you said (the author, 2026-11-17: "it would be really
