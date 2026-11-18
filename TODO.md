@@ -517,7 +517,19 @@ real keys yet.
       started, and one when the overlay on screen is older than its source, each with the
       command that applies it. It shows from the next hub restart on. Not done: saying it
       anywhere but in `status` (the overlay could show it).
-- [ ] The picture check can catch the live overlay when the two overlap on screen.
+- [x] The picture check can catch the live overlay when the two overlap on screen.
+      Done 2026-11-17 by another session while the author was away: the pictures are
+      asked from the overlay's own windows (`tests/overlay_capture.ps1`) and no longer
+      copied from the screen, and each run proves it by laying a colored window over
+      the overlay first. The glass views, which only exist on the screen, look for a
+      place free of other programs' always-on-top windows. It also has the views built
+      that day (waiting marks, tick boxes, a question's place, stopping, queued, a side
+      question). A tool for whoever works on the overlay; nothing a user of it meets.
+- [ ] Seen in those pictures, not mended: a choice that wraps goes on under its box, not
+      under its first word; the move view says "just grab it with the mouse" although
+      `Ctrl+Alt` is needed by default; with the clock mark, "9+" is hardly readable;
+      the blur and acrylic glass look the same; a tick question's line about the keys
+      wraps when "1 more waiting" is added.
 - [x] `install.sh` has only been run in throwaway folders, never with the model download.
       Done on the evening of 2026-11-17: run in an empty home folder with nothing
       cached, so Python, the packages and both models really came from the network (22 s

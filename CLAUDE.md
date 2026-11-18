@@ -648,6 +648,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the nearest corner and offsets, which the hub saves into `config.json`. The panel and bubble
   go on the side of the bar that faces the middle of the screen.
 - `tests/overlay_check.py OUT_DIR [--glass]`: manual check that saves a picture of every overlay view.
+  Since 2026-11-17 it asks each window of its own overlay for its picture (`PrintWindow`
+  with flag 2, through `tests/overlay_capture.ps1`, one PowerShell process for the run; the
+  window is found by the exact rectangle of the `bounds` reply), so nothing that lies over
+  or behind it on the screen is in the picture, the live overlay included; each run proves
+  that with a colored window laid over it and exits 1 if it cannot. Only the glass views are
+  still copied from the screen, over a test card, at a place it finds free of other
+  programs' always-on-top windows.
 - The held talk key is kept from other programs (2026-11-17; the author held `Ctrl+Alt+Space`
   while watching YouTube and the video paused). A hotkey only keeps a key to itself while its
   Ctrl and Alt are down too; over a long hold one of them is let go, and the key then repeats
