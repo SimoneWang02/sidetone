@@ -623,6 +623,33 @@ Smaller ideas:
       - instant stopping through the VS Code extension (Esc written into the terminal)
       - the key is now claimed from every program whenever the session in focus works
       - a session waiting at a permission prompt is not stopped by the key in focus
+- [ ] A spoken "by the way" question that does not wait (the author, by voice, 2026-11-17:
+      "I was wondering if you could do a slash, by the way, BTW ... it lets me skip the
+      queue and ask a by the way question"). Today words for a busy session wait until its
+      reply is over. Claude Code's own `/btw` answers a side question at once from what
+      the session knows, without tools, and leaves the session's work and its record
+      untouched; but it has to be typed into the session's prompt, and nothing here can
+      type into a terminal. The request behind it (`side_question`) is only open to
+      programs that started the session themselves or to Remote Control, not to a hook.
+      What does work from outside, measured the same evening on this very session while
+      it was in the middle of a turn (Claude Code 2.1.327):
+      `claude -p --resume <session id> --fork-session --no-session-persistence
+      --setting-sources project --strict-mcp-config --tools "" --model haiku "<question>"`
+      answered correctly from the conversation in 6.4 s. The copy reads the session's
+      record up to that moment, the session itself notices nothing, no record is kept,
+      and without the user's hooks the copy neither speaks nor shows in the overlay.
+      So the hub could run that for the session in focus and say the answer in that
+      session's voice. Nothing built. Open:
+      - how to say "this one is a side question": a second talk key (suggested:
+        `Ctrl+Alt+B`, held like the talk key), or words at the start ("by the way, ...")
+      - which model answers (`haiku` was the 6.4 s; the session's own model would know
+        as much but take longer and cost more on a long conversation)
+      - the answer is not in the session afterwards, as with `/btw`; it would go into
+        the hub's history so repeat and catch-up have it
+      - an answer that needs a file read or a command cannot be given; the copy has to
+        say so, as `/btw` does
+      - what the light shows while the copy thinks, and that its answer must not
+        replace the session's own waiting line in the queue
 - [ ] Easier ways to take back what you said (the author, 2026-11-17: "it would be really
       cool to somehow cancel with a shortcut"; today it is `Ctrl+Alt+Backspace` while the talk
       key is still held, a four-key grip). Built the same day: the same key within four
