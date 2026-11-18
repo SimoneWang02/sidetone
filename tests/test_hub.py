@@ -1016,6 +1016,7 @@ class PushToTalk(HubCase):
         flag = os.path.join(self.tmp, "stop", "a")
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="do this instead"))
         self.assertFalse(os.path.exists(flag))
+        self.assertTrue(hub.speech.wait_idle(5))  # while the hub's own answer to the first press is said, the key would cut that
         hub.cancel()  # nothing just sent, nothing spoken: the key stops the session in focus
         self.assertTrue(os.path.exists(flag))
         hub.follow_up("and this", "a", delay=0)
