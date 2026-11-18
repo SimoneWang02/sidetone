@@ -229,7 +229,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the furthest free one (`Sessions.keep`), which is how sessions already open are set
   right. `colors` in `config.json` is a list of your own (`#RRGGBB`, at least two). For
   the author's four it changed one: claude-speaks 2 from orange to violet, nearest two
-  then 59 apart. **Not seen by the author yet.**
+  then 59 apart. **Not seen by the author yet.** Minutes later: "Can't you just use a prefix
+  palette of color? Like 10, 20, 30. I don't know the maximum" number of sessions. So the
+  list is twenty now: the eight soft ones first (`state.SOFT`), handed out while one of them
+  is still at least 40 from every color in use (about five sessions), then twelve stronger
+  ones that were worked out, each the furthest from all before it among colors readable on
+  dark glass and clear of the status lights and of white. The nearest two of the twenty are
+  29 apart; thirty could only be had 25 apart, which is the orange and yellow again. A
+  twenty-first session shares the color the fewest have. Claude Code itself sets no limit
+  to the number of sessions.
 - "Release to send" moves (2026-11-17; the author, right after the color talk: "putting an
   animation on the text ... would be great"; which animation was not said, so it is a
   setting with three choices). `overlay.talk_text`: `shimmer` (default; a glint of light

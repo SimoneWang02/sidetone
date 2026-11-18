@@ -21,7 +21,16 @@ VOICE_POOL = [
 # There were ten until the same evening, some of them near twins: with four sessions open the
 # author had an orange ("#FFB86B") beside the yellow and said "there's not much contrast".
 # Now eight that are further apart, and who gets which is decided by distance (_color_for).
-COLORS = ["#8AB4FF", "#FFA24D", "#B07CFF", "#7FDBCA", "#FF8FA3", "#F9E27D", "#B9F27C", "#FF7FD9"]
+# Then twelve more, since nobody knows how many sessions there will be (the author: "Can't
+# you just use a prefix palette of color? Like 10, 20, 30"). Those were worked out, each the
+# color furthest from all before it among colors light enough to read on dark glass and
+# clear of the status lights and of the white of titles; they are stronger than the first
+# eight, which is what keeps twenty apart: the nearest two of the twenty are 29 apart, of
+# thirty it would be 25, no better than the orange and yellow that started this.
+COLORS = ["#8AB4FF", "#FFA24D", "#B07CFF", "#7FDBCA", "#FF8FA3", "#F9E27D", "#B9F27C", "#FF7FD9",
+          "#A98C68", "#0CC006", "#00FBAB", "#EDF11C", "#FE5910", "#ED44EC", "#8C9802", "#AA85A7",
+          "#A3FA30", "#DAF0B8", "#FE4B93", "#F1B8FF"]
+SOFT = 8  # the first so many of the list are the soft ones, handed out before the others
 # Two name colors nearer than this are hard to tell apart at a glance. Measured as the
 # distance between them in CIELAB, where equal steps look about equally big to the eye:
 # that orange and the yellow were 25 apart, the pink and the teal are 77.
@@ -305,15 +314,23 @@ class Sessions:
         With other sessions about (`others`: their colors; by default all that are known), it
         is the free color that is furthest from all of theirs, so that two names side by
         side are never an orange and a yellow."""
-        start = zlib.crc32(name.encode()[::-1]) % len(self.colors)
-        order = [self.colors[(start + i) % len(self.colors)] for i in range(len(self.colors))]
+        soft = self.colors[:SOFT]
+        start = zlib.crc32(name.encode()[::-1]) % len(soft)
+        order = soft[start:] + soft[:start] + self.colors[SOFT:]
         if others is None:
             others = [s.color for s in self.by_id.values()] + [k["color"] for k in self.kept.values()]
         others = [c for c in others if re.fullmatch(r"#[0-9a-fA-F]{6}", c or "")]
+        if not others:
+            return order[0]
         free = [c for c in order if c not in others]
-        if not free or not others:
-            return (free or order)[0]
-        return max(free, key=lambda c: min(color_distance(c, o) for o in others))
+        if not free:  # more sessions than colors: the one the fewest have
+            return min(order, key=others.count)
+
+        def apart(c: str) -> float:
+            return min(color_distance(c, o) for o in others)
+        # A soft one while one of those is still clearly apart from everybody; then any.
+        gentle = max((c for c in free if c in soft), key=apart, default=None)
+        return gentle if gentle and apart(gentle) >= TOO_CLOSE else max(free, key=apart)
 
     def _voice_for(self, name: str) -> str:
         """Same project, same voice every time. A new project gets one nobody else has, if any is left."""

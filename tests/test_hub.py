@@ -321,6 +321,19 @@ class OverlayFeed(HubCase):
         apart = min(state.color_distance(a, b) for i, a in enumerate(colors) for b in colors[:i])
         self.assertGreaterEqual(apart, state.TOO_CLOSE, colors)
 
+    def test_twenty_sessions_have_twenty_colors_and_the_first_ones_the_soft_ones(self):
+        import state
+
+        hub = self.make()
+        for i in range(21):
+            hub.on_event(ev("SessionStart", sid=f"s{i}", cwd="/w/claude-speaks"))
+        colors = [r["color"] for r in self.overlay.of("state")[-1]["sessions"]]
+        self.assertTrue(set(colors[:5]) <= set(state.COLORS[:state.SOFT]), colors[:5])
+        self.assertEqual(len(set(colors[:20])), 20)
+        apart = min(state.color_distance(a, b) for i, a in enumerate(colors[:20]) for b in colors[:i])
+        self.assertGreater(apart, 25, colors)  # 25: the orange and the yellow that could not be told apart
+        self.assertIn(colors[20], state.COLORS)  # one more session than colors: it shares one
+
     def test_the_name_colors_can_be_your_own(self):
         hub = self.make(colors=["#ff0000", "#00FF00", "not a color", "#0000FF"])
         for i in range(3):
