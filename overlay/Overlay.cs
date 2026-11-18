@@ -495,6 +495,44 @@ namespace ClaudeSpeaks
         }
     }
 
+    // The box in front of a choice that can be ticked. Drawn as one shape, not taken from a font
+    // (whose ticked and unticked boxes differ in size, so the words beside them moved) and not
+    // made of a border around a filling (a seam shows between the two): unticked it is an
+    // outline, ticked it is one filled square with the tick in its middle.
+    class TickMark : FrameworkElement
+    {
+        const double Side = 14;
+        readonly bool on;
+
+        public TickMark(bool on)
+        {
+            this.on = on;
+            Width = Height = Side;
+            Margin = new Thickness(0, 2, 0, 2);
+            IsHitTestVisible = false;
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            if (!on)
+            {
+                dc.DrawRoundedRectangle(null, new Pen(Ui.AmberEdge, 1.5), new Rect(0.75, 0.75, Side - 1.5, Side - 1.5), 3, 3);
+                return;
+            }
+            dc.DrawRoundedRectangle(Ui.AmberEdge, null, new Rect(0, 0, Side, Side), 3.5, 3.5);
+            // The tick's own box is 6.8 by 5 and sits in the middle of the square.
+            var pen = new Pen(new SolidColorBrush(Color.FromRgb(0x14, 0x14, 0x18)), 1.9) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
+            var tick = new StreamGeometry();
+            using (StreamGeometryContext g = tick.Open())
+            {
+                g.BeginFigure(new Point(3.6, 7.1), false, false);
+                g.LineTo(new Point(6.0, 9.5), true, true);
+                g.LineTo(new Point(10.4, 4.5), true, true);
+            }
+            dc.DrawGeometry(null, pen, tick);
+        }
+    }
+
     // The last few seconds of the voice as bars flowing behind the text, newest next to the orb.
     class WaveStrip : FrameworkElement
     {
@@ -2149,25 +2187,7 @@ namespace ClaudeSpeaks
         }
 
         // A permission prompt or question stays on screen until it is answered: the hotkeys act on it.
-        // The box in front of a choice that can be ticked. Drawn here, not taken from a font,
-        // so that it is the same size ticked and unticked and the words beside it stay put.
-        static UIElement TickBox(bool on)
-        {
-            var box = new Border
-            {
-                Width = 14, Height = 14, CornerRadius = new CornerRadius(3.5), BorderThickness = new Thickness(1.5),
-                BorderBrush = Ui.AmberEdge, Background = on ? Ui.AmberEdge : Brushes.Transparent,
-                Margin = new Thickness(0, 2, 0, 2), SnapsToDevicePixels = true,
-            };
-            if (on)
-                box.Child = new System.Windows.Shapes.Path
-                {
-                    Data = Geometry.Parse("M 2.2,5.8 L 4.6,8.2 L 8.8,3"),
-                    Stroke = new SolidColorBrush(Color.FromRgb(0x14, 0x14, 0x18)), StrokeThickness = 1.8,
-                    StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round,
-                };
-            return box;
-        }
+        static UIElement TickBox(bool on) { return new TickMark(on); }
 
         void ShowRequest(Dictionary<string, object> msg)
         {

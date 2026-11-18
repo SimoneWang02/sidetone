@@ -758,11 +758,9 @@ class Hub:
             if question.get("multiSelect"):  # tick or untick; the allow key hands the ticked ones in
                 on = number - 1 not in req.ticked
                 (req.ticked.add if on else req.ticked.discard)(number - 1)
-                s = self.sessions.by_id.get(req.session)
-                if s:
-                    self.speech.drop_session(s.id)  # stop reading the options out
-                    self._say(s, f"{label}." if on else f"Not {label}.", "allowed", "decision")
-                self._show_request()
+                if req.session in self.sessions.by_id:
+                    self.speech.drop_session(req.session)  # stop reading the options out
+                self._show_request()  # the box shows it; said aloud at every press it was a nuisance
             else:
                 self._answer(req, label, "hotkey")
         self.publish()
