@@ -835,7 +835,16 @@ Smaller ideas:
         took the focus) reports nothing, so the focus stays where it was. No extension
         interface says "this terminal got the keyboard". Claude Code knows when its
         terminal gains the keyboard, but no hook reports it.
-      - `install.sh` does not install the extension yet.
+      - `install.sh` offers the extension since 2026-11-17 (done by another session
+        while the author was away): where a `code` command is found it asks once, of a
+        person at a terminal on a full install; `--vscode` and `--no-vscode` answer
+        ahead; one already installed is brought up to date without asking; from a
+        script VS Code is left alone. `uninstall.sh` removes it (`--keep-vscode`
+        leaves it). Run end to end in an empty home with real downloads and a stand-in
+        for `code`; a fresh install registered exactly the hooks of the snippet,
+        `stop.sh` among them (`tests/test_install.py`, 16 tests). Not tried: the
+        question itself by a person on a machine that does not have the extension,
+        and a "no" is not remembered for the next install.
       - Only VS Code; another terminal program would need its own way.
       - It could also move at the moment you send a typed prompt (a few lines in the hub).
 - [ ] More for the VS Code extension, now that it exists: color the tab itself in the

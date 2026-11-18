@@ -924,6 +924,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   has been loaded by the first push-to-talk.
 - `claude-speaks hub stop` and `uninstall.sh` act on the hub of the current `XDG_RUNTIME_DIR`,
   whatever `HOME` is, so a test with a fake home folder still stops the real hub.
+  Since 2026-11-17 `uninstall.sh` also removes the VS Code extension, through whatever
+  `code` is on the PATH, and a session's PATH has the real one: a test that runs it needs
+  `--keep-vscode` or a stand-in `code` first on the PATH (`tests/test_install.py` takes
+  every real `code` off the PATH).
+- The installer and the extension (2026-11-17, built by another session while the author was
+  away): `install.sh` asks once whether to install the VS Code extension, where `code` is
+  found and a person is at a terminal on a full install (`--vscode` / `--no-vscode` answer
+  ahead; one already there is updated without asking; from a script nothing is asked or
+  installed). Run end to end in an empty home with real downloads and a stand-in `code`:
+  the registered hooks were those of `hooks/settings-snippet.json`, a hub started from the
+  registered SessionStart hook, and uninstalling left the settings empty.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.

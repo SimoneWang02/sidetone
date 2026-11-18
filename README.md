@@ -73,7 +73,8 @@ its own spoken line as the first line of its reply.
   others. `claude-speaks terminal tint all` lets every terminal wear its color all the time,
   `tint off` none; `claude-speaks terminal find` lights up the one in focus again.
 - **Go to a terminal, and its session has the focus.** With the small VS Code extension
-  (`claude-speaks vscode install`, run in a VS Code terminal), switching to another terminal
+  (the installer offers it when it finds VS Code, `--vscode` or `--no-vscode` answers ahead;
+  or `claude-speaks vscode install`, run in a VS Code terminal), switching to another terminal
   in VS Code selects the session running there, so push-to-talk goes to the terminal you are
   looking at. VS Code reports a change of terminal, not every click: going back into the
   terminal you were last in changes nothing. `claude-speaks terminal follow off` turns it off.
