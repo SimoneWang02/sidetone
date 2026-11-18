@@ -95,6 +95,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 | Stop, SessionStart, UserPromptSubmit (`asyncRewake`) | `hooks/listen.sh` | Background listener: waits on the hub for a spoken follow-up for this session, prints it for Claude and exits 2, which wakes the session |
 | SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse(Failure), TaskCreated, TaskCompleted, StopFailure | `hooks/report.sh` (async) | Forwards the payload so the hub knows what each session is doing. `--start` also starts the hub |
 
+- The hub's code is in five files since 2026-11-17 (it was one of 2,100 lines; sections
+  were moved whole): `hub/hub.py` has the `Hub` itself (hook events, who is who across a
+  restart, catching up, voices, the overlay feed) and `main`; `hub/base.py` the settings
+  (`Config`), the small records (`Request`, `Pending`, `Sent`, `Stopping`, `Editor`,
+  `Aside`, `Listener`) and helpers that need no hub; `hub/permissions.py` and
+  `hub/talk.py` are parts of the `Hub` class (`class Hub(Permissions, Talk)`: requests and
+  questions; push-to-talk, words on their way, side questions, taking back, stopping);
+  `hub/server.py` is the HTTP layer. Where these notes say `hub/hub.py` for one of those
+  things, look there. `hub.py` still offers every name of `base`, so `from hub import
+  Config` works; the three waits the tests shorten (`MIN_SHOWN`, `TAP`, `CONFIRM_WINDOW`)
+  are read as `base.NAME` wherever they are used and set on `base` in the tests.
 - `hub/hub.py`: the one background process. HTTP over a Unix socket at
   `$XDG_RUNTIME_DIR/claude-speaks/hub.sock` (not a TCP port, so no web page or other machine can
   make it speak, and later approve or inject). Started lazily by the hooks, single instance by

@@ -483,8 +483,14 @@ real keys yet.
       Asked on 2026-11-17 whether the name should be said again when many sessions are
       open, the author said: "I don't think it should right now. It's pretty good, pretty
       happy." So it stays off; `label: always` is there if that changes.
-- [ ] `hub/hub.py` is over 1,100 lines. Split it (permission requests, push-to-talk, the
+- [x] `hub/hub.py` is over 1,100 lines. Split it (permission requests, push-to-talk, the
       HTTP layer) before adding much more.
+      Done 2026-11-17, at over 2,100 lines, on the author's choice from a list while they
+      were away: whole sections moved unchanged into `hub/base.py`, `permissions.py`,
+      `talk.py` and `server.py`; `hub.py` is 710 lines. All tests pass and the live hub
+      runs on it. Left for later: `talk.py` is 645 lines and holds more than its name
+      says (words on their way, side questions, stopping), and the section headings in
+      it are from before.
 - [x] The overlay gets in the way of a game (the author, 2026-11-17, by voice): when the
       mouse passes over the bar while playing, the bar reacts and takes the mouse (it
       unfolds, and a press there starts a drag instead of reaching the game). Their
