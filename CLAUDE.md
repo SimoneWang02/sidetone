@@ -740,9 +740,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   neither speaks nor shows in the overlay.
 - Questions with several choices to tick (2026-11-17; before, only announced): they get a
   `Request` like the others. `choose(n)` ticks or unticks (`Request.ticked`), the overlay
-  gets each label behind a box (U+2610, U+2611), the allow key is live and `decide("allow")`
-  hands the ticked labels in, joined by ", ". Spoken words are the answer, as for one choice.
-  The author ticked three and confirmed with the real keys on a real question the same day.
+  gets `ticked` (true or false per choice) and draws a box in front of each, with no number
+  (`TickMark`: one shape; two characters of a font differed in size and moved the words, a
+  border around a filling showed a seam). The allow key is live and `decide("allow")` hands
+  the ticked labels in, joined by ", ". Spoken words are the answer, as for one choice.
+  Ticking says nothing aloud (the author: "it gets annoying"). A request for a question
+  also carries `question`, written on a line of its own under the name. The author
+  answered three such questions the same day, with the keys and by voice, and passed the look.
 - More permission hook facts (measured 2026-11-17, Claude Code 2.1.327): a multi-select
   `AskUserQuestion` (`multiSelect: true`) is answered through `updatedInput.answers` like a
   single choice, with the labels joined by ", " or with any free text. The `message` of a

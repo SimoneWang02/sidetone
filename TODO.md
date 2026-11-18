@@ -434,8 +434,13 @@ real keys yet.
       spoken words are the answer in your own words, as the terminal's "type
       something" is (the author: "that's the process I want to go through"). Tried by
       the author at once on a real question with three choices: all three ticked and
-      confirmed with the keys, and the session got them. Not tried: answering one by
-      voice. Still open in this box: speaking to a session that waits at a permission
+      confirmed with the keys, and the session got them. Their remarks on the look,
+      mended the same hour: no numbers beside the boxes; the ticked and unticked box
+      were not one size, so the words moved; the question on a line of its own under
+      the name, not "name asks: question"; no voice at every tick ("it gets
+      annoying"); the tick not centered and a gap between the filling and the edge.
+      The box is now drawn as one shape. A second question they answered by voice,
+      a third with the keys: all three points ticked as right. Still open in this box: speaking to a session that waits at a permission
       prompt (offered: deny it, stop its turn and hand the words over as the next
       message; not answered), and the terminal's "chat about this" as such.
 - [ ] Several questions in one dialog: answered by voice or number key, the overlay moves on
