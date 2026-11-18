@@ -1195,6 +1195,7 @@ namespace ClaudeSpeaks
         // Ctrl+Alt brings them out. The author asked for that as the default, tried to picture
         // it and took it back ("I like hovering ... opening up its details"), so it is a choice.
         bool hoverOpens = true;
+        string focusWas = "";  // the session in focus as of the last state, to notice when it moves
         string historyOf = "";  // the session whose lines the history shows: the one the mouse was on last
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
@@ -1423,6 +1424,16 @@ namespace ClaudeSpeaks
                 case "state":
                     sessions = msg.ContainsKey("sessions") ? (object[])msg["sessions"] : new object[0];
                     history = msg.ContainsKey("history") ? (object[])msg["history"] : new object[0];
+                    // The focus moved to another session (arrows, wheel, another terminal, or it
+                    // spoke): the card and the history are about that one now, not about the one
+                    // the mouse was on last. A mouse that is on a row right now still has its say.
+                    string inFocus = "";
+                    foreach (object o in sessions)
+                    {
+                        var row = (Dictionary<string, object>)o;
+                        if (row.ContainsKey("target") && Convert.ToBoolean(row["target"])) inFocus = Str(row, "name");
+                    }
+                    if (inFocus != focusWas) { focusWas = inFocus; if (inFocus.Length > 0) historyOf = inFocus; }
                     Render();
                     break;
                 case "flash":
@@ -1786,8 +1797,11 @@ namespace ClaudeSpeaks
         // when there is nothing to say.
         bool BuildMetrics(bool withLines)
         {
-            Row about = hot;
-            if (about == null) foreach (Row row in order) if (row.Name == historyOf) about = row;
+            // Whichever was chosen last: the row the mouse went onto, or the session the focus
+            // moved to (`historyOf` is set by both). Before either, the session in focus.
+            Row about = null;
+            foreach (Row row in order) if (row.Name == historyOf) about = row;
+            if (about == null) about = hot;
             if (about == null) foreach (Row row in order) if (row.Focus) about = row;
             if (about == null && order.Count == 1) about = order[0];
             metricsLine.Inlines.Clear();

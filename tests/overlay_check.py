@@ -460,6 +460,11 @@ send(type="peek", on=True, over="web-app")
 shot("metrics-other", 0.6)
 send(type="peek", on=True, over="claude-speaks")
 shot("metrics-unknown", 0.6)
+# The mouse was on web-app last; then the focus moves to another session: the card follows it.
+send(type="peek", on=True, over="web-app")
+send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING, focus="claude-speaks"), history=HISTORY)
+shot("metrics-follows-focus", 0.6)
+send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, monitor=0, corner="top-right", offset_x=420, offset_y=260)
 send(type="peek", on=True, over="web-app")
 shot("metrics-under", 1.0)  # a bar in the upper half: the card is under the rows

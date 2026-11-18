@@ -948,6 +948,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   time and the tokens were one piece of text, so a time stood further left on a line that
   had tokens; they are two columns now, each as wide as its widest entry
   (`SharedSizeGroup`), so times stand under times and tokens under tokens.
+- The card follows the focus (2026-11-18; the author: "I focused the second session and it
+  still showed ... the first session's metrics"). The card was about the row the mouse had
+  been on last, for as long as that session lived, and only before any row was touched
+  about the one in focus. Now the last choice decides: going onto a row with the mouse, or
+  the focus moving to a session by arrows, wheel, another terminal or its speaking (the
+  overlay notices `target` change between two states and sets `historyOf`). The history
+  goes with it. Seen in a picture (`metrics-follows-focus.png`), not by the author.
 - No raised dots (2026-11-18; the author: "don't use the dots, the central dots. I don't
   like them"). The parts of a line the hub writes (tasks and time in a row, the keys under
   a request or a question, the confirming tap) are set apart by a gap, three spaces or
