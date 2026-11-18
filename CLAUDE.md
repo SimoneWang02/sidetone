@@ -307,8 +307,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Code's `/btw`). Spoken words for a session in the middle of a turn that open with "by the
   way" or "btw" (`aside_words`) do not wait: `Hub._ask_aside` starts a throwaway copy of
   that session (`Hub.aside_run`: `claude -p --resume ID --fork-session
-  --no-session-persistence --settings '{"disableAllHooks": true}' --strict-mcp-config
-  --tools "" --model haiku`, in the session's folder, without the variables that tie a
+  --no-session-persistence`, hooks off, on the session's own model and effort, see the end
+  of this point; in the session's folder, without the variables that tie a
   process to the session whose hook started the hub), and its answer is said in the session's
   voice (`_say_aside`: kind `notice`, so it and the session's own waiting line do not replace
   each other; in the history as kind `aside`, so repeat and catch-up have it). The session
@@ -319,7 +319,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   turn. No answer (error, or none in `aside_timeout`, 60 s): the words go to the session
   like any others (`_hand_over`, which is what `_send` did before). `aside`: `busy`
   (default; an idle session gets the words as usual and can act on them), `always`, `off`.
-  `aside_model`: `haiku`, or `""` for Claude Code's own choice. Why not `/btw` itself: it
+  `aside_model`: `session` (default) or a model's name such as `haiku`. Why not `/btw` itself: it
   has to be typed into the session, and the request behind it (`side_question`) is only
   open to programs that started the session or to Remote Control. Measured on a session in
   the middle of a turn, Claude Code 2.1.327: 4.7 to 6.4 s to an answer. What it costs (the
@@ -330,7 +330,27 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   reuse that), 10.5 cents with `DISABLE_PROMPT_CACHING=1`, which the hub now sets. `/btw`
   reads the same tokens from what the session has saved, about 4 cents on Fable 5.2 by the
   price list (worked out, not measured). Haiku 5.5 costs five times more per token above
-  100 thousand tokens of prompt, which is where the 10 cents come from. With hooks off the
+  100 thousand tokens of prompt, which is where the 10 cents come from. The author then said
+  the cost on Fable does not matter to them ("I'm not paying per API") and that ideally they
+  want the real thing: "I want to call the function by the way ... it's like a parallel
+  processing question". Two things were measured for that. (1) The real `/btw`, typed into
+  a throwaway session in tmux while it worked, answers at once, and its answer reaches a
+  `SubagentStop` hook as `last_assistant_message` with an empty `agent_type`, so it could be
+  spoken; the suggestion for the next prompt arrives the very same way. But its answer box
+  stays open until Esc or Enter and takes whatever is typed next: a second `/btw` typed
+  into it was lost, and its letters are the box's own commands (c copy, f fork, x clear).
+  The hub cannot see what a terminal is showing, Esc with no box open interrupts the turn
+  and Enter with a permission prompt open approves it, so typing it through the VS Code
+  extension was not built. (2) A copy on the session's own model and effort, with no tool
+  taken away, begins its request exactly as the session does and so reuses what the session
+  has saved, which is what `/btw` does inside: on this session 272 thousand tokens were read
+  from what was saved and 32 thousand were new, answered by Fable in 4.5 s; on a small
+  Haiku session 1.5 s. `--tools ""`, `--disallowedTools` and plan mode each lose the reuse;
+  `--permission-mode default` with rules that make every tool ask (`hub.ASIDE_ASK`) keeps
+  it, and a copy told to run a command was refused. That is the default now
+  (`aside_model: session`); the model and effort are read from the end of Claude Code's
+  record of the session (`hub.session_model`, `projects_dir`). A named model works as
+  before: no tools, nothing saved. With hooks off the
   copy neither spoke nor showed up in the hub. **Not tried by the author yet**, and never
   through the live hub with a real voice.
 - Taking words back after they went out (2026-11-17, `Hub._take_back`, `unsend_seconds`, 4;

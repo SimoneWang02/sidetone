@@ -8,6 +8,7 @@ speak. The client side is hooks/lib.sh.
 from __future__ import annotations
 
 import fcntl
+import glob
 import json
 import os
 import re
@@ -89,6 +90,8 @@ ASIDE_PROMPT = ("This is a side question from me, asked by voice while you work 
                 "speak tag, no code, no paths, no symbols and no markdown. You cannot use tools here: if the "
                 "answer would need reading a file, running a command or searching, say that it cannot be checked "
                 "from a side question. Do not continue or change the task you were working on. The question: ")
+# Tools a copy on the session's own model may not use: it would have to ask, and nobody is there.
+ASIDE_ASK = ["Bash", "Edit", "Write", "NotebookEdit", "Read", "Grep", "Glob", "WebFetch", "WebSearch", "Agent", "Skill", "mcp__*"]
 # Variables that tie a new Claude Code process to the session whose hook started the hub.
 OWN_SESSION = re.compile(r"CLAUDECODE\Z|CLAUDE_(PID|EFFORT)\Z|CLAUDE_CODE_(CHILD|MESSAGING|SESSION)_"
                          r"|CLAUDE_CODE_(SSE_PORT|ENTRYPOINT|EXECPATH)\Z")
@@ -184,14 +187,18 @@ class Config:
     # knows, without tools, and the answer is said in the session's voice. The session itself
     # never sees the question or the answer. `aside`: "busy" = only while the session is in
     # the middle of a turn (an idle one gets the words as usual and can act on them) |
-    # "always" | "off". `aside_model`: the model that answers; "" = the one Claude Code picks
-    # by itself. If no answer comes within `aside_timeout` seconds, the words go to the
-    # session after all. `aside_claude`: the Claude Code program; "" = the one on the PATH.
+    # "always" | "off". `aside_model`: "session" = the copy runs on the session's own model with
+    # the session's own tools, which lets it reuse the conversation the session has saved, as
+    # Claude Code's `/btw` does (asking is then refused for every tool that acts) | a model's
+    # name such as "haiku" = that model reads the whole conversation anew, with no tools at
+    # all. If no answer comes within `aside_timeout` seconds, the words go to the session
+    # after all. `aside_claude`: the Claude Code program; "" = the one on the PATH.
     aside: str = "busy"
     aside_words: list = field(default_factory=lambda: ["by the way", "btw"])
-    aside_model: str = "haiku"
+    aside_model: str = "session"
     aside_timeout: float = 60.0
     aside_claude: str = ""
+    projects_dir: str = os.path.expanduser("~/.claude/projects")  # Claude Code's records of each session
     # How the hub answers a spoken follow-up: "sound" (a short sound the moment it goes out, a
     # different one when it has to wait for a busy session or was not sent), "voice" ("Sent."
     # in the session's voice, which waits its turn behind a line being spoken) or "none".
@@ -240,7 +247,7 @@ class Config:
         for key in ("voices", "voice_pool", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
-                    "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude",
+                    "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):
             if key in user:
                 setattr(cfg, key, user[key])
@@ -1175,21 +1182,34 @@ class Hub:
         `--resume` with `--fork-session` reads the session's record up to this moment under a
         new id, and `--no-session-persistence` keeps no record of the copy, so the session is
         not touched. Hooks are off for the copy: it must neither speak nor show up here as a
-        session. Measured on a session in the middle of a turn: an answer in about 5 s."""
+        session. Measured on a session in the middle of a turn: an answer in about 5 s.
+
+        On the session's own model (`aside_model: session`) the request must begin exactly as
+        the session's own requests do, or what the session has saved is not reused: same
+        model, same effort, same tools. So no tool is taken away (measured: `--tools ""` and
+        `--disallowedTools` both make the copy read everything anew, and so does plan mode
+        for a part). Rules that make every acting tool ask keep the reuse, and asking is a
+        refusal where nobody can answer: a copy told to run a command was refused."""
         program = self.cfg.aside_claude or shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
-        cmd = [program, "-p", "--resume", aside.session, "--fork-session", "--no-session-persistence",
-               "--settings", '{"disableAllHooks": true}', "--strict-mcp-config", "--tools", ""]
-        if self.cfg.aside_model:
-            cmd += ["--model", self.cfg.aside_model]
+        cmd = [program, "-p", "--resume", aside.session, "--fork-session", "--no-session-persistence"]
         env = {k: v for k, v in os.environ.items() if not OWN_SESSION.match(k)}
-        # The copy reads the whole conversation once and is gone. Saving it for reuse costs up
-        # to twice the price of reading it, and a second question seconds later was measured
-        # not to reuse it: 16 cents with the saving against 10 without, for the same answer.
-        env["DISABLE_PROMPT_CACHING"] = "1"
+        if self.cfg.aside_model in ("", "session"):
+            model, effort = session_model(self.cfg.projects_dir, aside.session)
+            cmd += ["--permission-mode", "default",
+                    "--settings", json.dumps({"disableAllHooks": True, "permissions": {"ask": ASIDE_ASK}})]
+            cmd += ["--model", model] if model else []
+            cmd += ["--effort", effort] if effort else []
+        else:
+            cmd += ["--settings", '{"disableAllHooks": true}', "--strict-mcp-config", "--tools", "",
+                    "--model", self.cfg.aside_model]
+            # Another model reads the whole conversation once and is gone. Saving it for reuse
+            # costs up to twice the price of reading it, and a second question seconds later was
+            # measured not to reuse it: 16 cents with the saving against 10 without.
+            env["DISABLE_PROMPT_CACHING"] = "1"
         with self.lock:
             if aside.dropped:
                 return "", "dropped"
-            aside.proc = subprocess.Popen(cmd + [ASIDE_PROMPT + question], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+            aside.proc = subprocess.Popen(cmd + ["--", ASIDE_PROMPT + question], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                           start_new_session=True)
         try:
@@ -1706,6 +1726,33 @@ def aside_question(text: str, words: list) -> str:
         if m:
             return m.group(1).strip()
     return ""
+
+
+def session_model(projects_dir: str, sid: str) -> tuple[str, str]:
+    """The model and effort a session last answered with, read from the end of Claude Code's
+    record of it; "" for what cannot be found. The model can change in the middle of a
+    session, so it is looked up each time."""
+    for path in glob.glob(os.path.join(glob.escape(projects_dir), "*", glob.escape(sid) + ".jsonl")):
+        try:
+            with open(path, "rb") as f:
+                f.seek(max(0, os.path.getsize(path) - 1_000_000))
+                lines = f.read().decode("utf-8", "replace").splitlines()
+        except OSError:
+            continue
+        for line in reversed(lines):
+            if '"assistant"' not in line:
+                continue
+            try:
+                entry = json.loads(line)
+            except ValueError:  # the first line of the part that was read is cut
+                continue
+            if not isinstance(entry, dict) or entry.get("type") != "assistant" or entry.get("isSidechain"):
+                continue
+            message = entry.get("message") if isinstance(entry.get("message"), dict) else {}
+            model, effort = message.get("model"), entry.get("effort")
+            if isinstance(model, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._\[\]-]*", model):
+                return model, effort if isinstance(effort, str) and re.fullmatch(r"[a-z]+", effort) else ""
+    return "", ""
 
 
 def spoken_answer(reply: str, limit: int = 500) -> str:

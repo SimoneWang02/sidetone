@@ -62,7 +62,9 @@ its own spoken line as the first line of its reply.
   the answer, and the copy cannot read files or run commands, like Claude Code's own `/btw`.
   `Ctrl+Alt+Backspace` drops the question while it is being answered; if no answer comes,
   the words go to the session after all. `aside` is `busy` (default), `always` (idle sessions
-  too) or `off`; `aside_words` are the openings, `aside_model` the model that answers (`haiku`).
+  too) or `off`; `aside_words` are the openings. `aside_model` is `session` (default: the
+  session's own model, which reuses the conversation the session has saved, so an answer
+  takes a few seconds even in a long session) or a model's name such as `haiku`.
 - **Which terminal is which.** With several sessions open, the terminal of the session in focus
   takes a faint tint of that session's color, the color its name has in the overlay, and lights
   up brighter for a moment when you move the focus to it. No extension is needed: the hub

@@ -24,12 +24,17 @@ real keys yet.
       Open:
       - does the speech model write "by the way" reliably at the start (the author's own
         choice came through as "the worst by the way"); other openings go in `aside_words`
-      - cost: about 10 cents a question on a long conversation, against about 4 for
-        `/btw`, because the copy cannot reuse what the session has saved. Not tried: a
-        copy on the session's own model with the same tools, which might reuse it and
-        cost what `/btw` does; a miss in that test costs a dollar or two on Fable
-      - the answer comes from `haiku` (`aside_model`); a very long conversation may not fit
-        it, and then the words go to the session as before
+      - the copy now runs on the session's own model and reuses what the session has
+        saved, as `/btw` does (the author: cost on Fable does not matter, and ideally
+        they want the real `/btw`); 4.5 s on a long Fable session. What it adds to the
+        plan's usage compared with `/btw` was not measured
+      - the real `/btw` typed into the terminal by the VS Code extension: looked at and
+        not built. Its answer can be heard by a hook (`SubagentStop`), but its answer
+        box stays open and takes the next thing typed, and the hub cannot see whether
+        a box, a permission prompt or half a typed line is there. Would need a way to
+        know what the terminal shows
+      - a `/btw` the author types by hand is not spoken yet; the hook that hears it
+        also hears the suggestion for the next prompt, so the two must be told apart
       - only for a session in the middle of a turn (`aside: always` for idle ones too)
       - a question that needs a file read or a command gets "that cannot be checked from
         a side question"; nothing offers to pass it on to the session

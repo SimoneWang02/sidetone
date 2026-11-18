@@ -1530,9 +1530,47 @@ class SideQuestions(HubCase):
         self.assertEqual(args[:5], ["-p", "--resume", "c0ffee-12", "--fork-session", "--no-session-persistence"])
         self.assertEqual(json.loads(args[args.index("--settings") + 1]), {"disableAllHooks": True})
         self.assertEqual((args[args.index("--tools") + 1], args[args.index("--model") + 1]), ("", "haiku"))
+        self.assertEqual(args[-2], "--")  # or the words would be read as more names of tools
         self.assertTrue(args[-1].endswith("The question: how does it listen?"))
         self.assertEqual((seen["cwd"], seen["inside"], seen["kept"]), (os.path.realpath(tmp), None, "/cfg"))
         self.assertEqual(seen["saving"], "1")  # the copy does not pay to save a conversation it reads once
+
+    def test_on_the_sessions_own_model_the_copy_keeps_the_tools_and_may_use_none_that_acts(self):
+        tmp = tempfile.mkdtemp(prefix="cs-aside-")
+        program, seen = os.path.join(tmp, "claude"), os.path.join(tmp, "seen.json")
+        with open(program, "w") as f:
+            f.write("#!/usr/bin/env python3\nimport json, os, sys\n"
+                    f"json.dump({{'args': sys.argv[1:], 'saving': os.environ.get('DISABLE_PROMPT_CACHING')}}, open({seen!r}, 'w'))\n"
+                    "print('It listens on a socket.')\n")
+        os.chmod(program, 0o755)
+        record = os.path.join(tmp, "projects", "-w-c")
+        os.makedirs(record)
+        with open(os.path.join(record, "c0ffee-12.jsonl"), "w") as f:
+            for model, effort, side in (("claude-old-1", "low", False), ("claude-new-2", "high", False), ("claude-side-3", "max", True)):
+                f.write(json.dumps({"type": "assistant", "effort": effort, "isSidechain": side, "message": {"model": model}}) + "\n")
+                f.write(json.dumps({"type": "user", "message": {"content": "an \"assistant\" is mentioned"}}) + "\n")
+        hub = self.make(aside_claude=program, projects_dir=os.path.join(tmp, "projects"))
+        self.assertEqual(hub.cfg.aside_model, "session")
+        del hub.aside_run  # the real one
+        hub.on_event(ev("UserPromptSubmit", sid="c0ffee-12", cwd=tmp, prompt="build it"))
+        hub.follow_up("By the way, how does it listen?", "c0ffee-12", delay=0)
+        self.assertTrue(wait_for(lambda: self.engine.spoken))
+        self.assertEqual(self.spoken(), ["It listens on a socket."])
+        with open(seen) as f:
+            seen = json.load(f)
+        args = seen["args"]
+        self.assertEqual((args[args.index("--model") + 1], args[args.index("--effort") + 1]), ("claude-new-2", "high"))
+        self.assertEqual(args[args.index("--permission-mode") + 1], "default")
+        settings = json.loads(args[args.index("--settings") + 1])
+        self.assertTrue(settings["disableAllHooks"])
+        self.assertTrue({"Bash", "Edit", "Write", "Read", "mcp__*"} <= set(settings["permissions"]["ask"]))
+        for changes_the_start in ("--tools", "--disallowedTools", "--strict-mcp-config"):
+            self.assertNotIn(changes_the_start, args)  # or what the session has saved is not reused
+        self.assertIsNone(seen["saving"])
+        self.assertEqual(args[-2], "--")
+
+    def test_a_session_with_no_record_is_asked_on_claude_codes_own_choice_of_model(self):
+        self.assertEqual(hub_module.session_model(tempfile.mkdtemp(prefix="cs-aside-"), "c0ffee-12"), ("", ""))
 
     def test_a_copy_that_fails_or_takes_too_long_gives_the_words_to_the_session(self):
         tmp = tempfile.mkdtemp(prefix="cs-aside-")
