@@ -1482,7 +1482,8 @@ class SideQuestions(HubCase):
         with open(program, "w") as f:
             f.write("#!/usr/bin/env python3\nimport json, os, sys\n"
                     f"json.dump({{'args': sys.argv[1:], 'cwd': os.getcwd(), 'inside': os.environ.get('CLAUDECODE'),\n"
-                    f"           'kept': os.environ.get('CLAUDE_CONFIG_DIR')}}, open({seen!r}, 'w'))\n"
+                    f"           'kept': os.environ.get('CLAUDE_CONFIG_DIR'),\n"
+                    f"           'saving': os.environ.get('DISABLE_PROMPT_CACHING')}}, open({seen!r}, 'w'))\n"
                     "print('<speak title=\"Side\">It listens on a socket.</speak>')\n")
         os.chmod(program, 0o755)
         hub = self.make(aside_claude=program, aside_model="haiku")
@@ -1500,6 +1501,7 @@ class SideQuestions(HubCase):
         self.assertEqual((args[args.index("--tools") + 1], args[args.index("--model") + 1]), ("", "haiku"))
         self.assertTrue(args[-1].endswith("The question: how does it listen?"))
         self.assertEqual((seen["cwd"], seen["inside"], seen["kept"]), (os.path.realpath(tmp), None, "/cfg"))
+        self.assertEqual(seen["saving"], "1")  # the copy does not pay to save a conversation it reads once
 
     def test_a_copy_that_fails_or_takes_too_long_gives_the_words_to_the_session(self):
         tmp = tempfile.mkdtemp(prefix="cs-aside-")

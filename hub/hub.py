@@ -1161,6 +1161,10 @@ class Hub:
         if self.cfg.aside_model:
             cmd += ["--model", self.cfg.aside_model]
         env = {k: v for k, v in os.environ.items() if not OWN_SESSION.match(k)}
+        # The copy reads the whole conversation once and is gone. Saving it for reuse costs up
+        # to twice the price of reading it, and a second question seconds later was measured
+        # not to reuse it: 16 cents with the saving against 10 without, for the same answer.
+        env["DISABLE_PROMPT_CACHING"] = "1"
         with self.lock:
             if aside.dropped:
                 return "", "dropped"
