@@ -363,6 +363,13 @@ real keys yet.
       like a funny emoji ... like a shocked emoji". Above nine messages the disc is now
       a shocked face, drawn by the overlay (`overlay.waiting_many`: `face`, or `number`
       for "9+"). In the corner it is three white dots on red, small for a face.
+      Shown to the author on the live overlay (eleven messages queued for a busy
+      session): "kind of scary face ... it's not funny". Redrawn as a yellow face with
+      one wide eye and its tongue out. They also asked which is better, the number
+      covering the light each time or staying in the corner and counting up there;
+      built as suggested to them: only the first message to wait covers the light, the
+      ones that join make the number jump in its corner (`overlay.waiting_cover`:
+      `first`, `each`, `never`). Shown live again; **no word on either yet.**
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next

@@ -376,7 +376,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   step puts no sign in the light. **They have not seen the number move yet.** Above nine
   messages the disc is a shocked face (`Orb.Shocked`, drawn, since WPF here has no color
   emoji; `overlay.waiting_many`: `face` or `number` for "9+"), the author's idea on
-  seeing "9+": "very dense in that circle".
+  seeing "9+": "very dense in that circle". That face was first a shocked one in white on
+  red, which they found "kind of scary ... not funny"; it is now yellow, one eye wide, tongue
+  out (`Orb.Silly`). `overlay.waiting_cover` says which messages show their number across
+  the whole light: `first` (default; the ones that join make it jump in the corner), `each`
+  or `never`. To show the mark on the live overlay: `claude-speaks follow-up -s NAME TEXT`
+  several times for a session that is busy.
 - What push-to-talk shows (changed 2026-11-17: the author did not like the text line with
   arrows, "listening → name", and it kept the old name when the focus moved): the hub sends
   `talk` with a step (`listening`, `transcribing`, `ready`, `sent`, `failed`, `focus`), the
