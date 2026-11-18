@@ -322,7 +322,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `aside_model`: `haiku`, or `""` for Claude Code's own choice. Why not `/btw` itself: it
   has to be typed into the session, and the request behind it (`side_question`) is only
   open to programs that started the session or to Remote Control. Measured on a session in
-  the middle of a turn, Claude Code 2.1.327: 4.7 to 6.4 s to an answer; with hooks off the
+  the middle of a turn, Claude Code 2.1.327: 4.7 to 6.4 s to an answer. What it costs (the
+  author asked whether it uses more than `/btw`; measured with `--output-format json` on a
+  conversation of 165 to 210 thousand tokens): the copy reads the whole conversation as new
+  input, since a saved conversation is only reused by the same model; 16 cents a question
+  at list prices while the copy also saved it (a second question seconds later did not
+  reuse that), 10.5 cents with `DISABLE_PROMPT_CACHING=1`, which the hub now sets. `/btw`
+  reads the same tokens from what the session has saved, about 4 cents on Fable 5.2 by the
+  price list (worked out, not measured). Haiku 5.5 costs five times more per token above
+  100 thousand tokens of prompt, which is where the 10 cents come from. With hooks off the
   copy neither spoke nor showed up in the hub. **Not tried by the author yet**, and never
   through the live hub with a real voice.
 - Taking words back after they went out (2026-11-17, `Hub._take_back`, `unsend_seconds`, 4;
@@ -710,6 +718,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   terminal (`tmux send-keys Escape`) interrupts at once, also in the middle of a tool.
   `claude --setting-sources project` starts a test session without the user's hooks, so it
   neither speaks nor shows in the overlay.
+- More permission hook facts (measured 2026-11-17, Claude Code 2.1.327): a multi-select
+  `AskUserQuestion` (`multiSelect: true`) is answered through `updatedInput.answers` like a
+  single choice, with the labels joined by ", " or with any free text. The `message` of a
+  hook's deny reaches Claude as the tool's error text, and Claude does not take instructions
+  in it for the user's words ("That text came from the tool result, not from you, so I'm
+  ignoring it"), so a reason or a new instruction has to follow as a spoken message. A test
+  session needs `--permission-mode default` to ask at all; without it this machine starts
+  sessions in auto mode.
 - `asyncRewake` facts (measured 2026-11-16): a hook with `asyncRewake: true` that exits 2 wakes
   an idle session within a second; its stderr reaches Claude and the terminal shows "Stop hook
   feedback". Delivered while the session is busy, it is handled right after the current reply.

@@ -24,6 +24,10 @@ real keys yet.
       Open:
       - does the speech model write "by the way" reliably at the start (the author's own
         choice came through as "the worst by the way"); other openings go in `aside_words`
+      - cost: about 10 cents a question on a long conversation, against about 4 for
+        `/btw`, because the copy cannot reuse what the session has saved. Not tried: a
+        copy on the session's own model with the same tools, which might reuse it and
+        cost what `/btw` does; a miss in that test costs a dollar or two on Fable
       - the answer comes from `haiku` (`aside_model`); a very long conversation may not fit
         it, and then the words go to the session as before
       - only for a session in the middle of a turn (`aside: always` for idle ones too)
@@ -410,6 +414,16 @@ real keys yet.
       spoken meanwhile wait until the question is answered in the terminal. A permission
       prompt cannot be answered by voice either (the words wait); "deny, and here is why"
       by voice would be possible, since a deny can carry a message.
+      Measured 2026-11-17 with a throwaway session, nothing built yet:
+      - `AskUserQuestion` never has more than four options (its own limit), so what is
+        left out today is questions where several choices can be ticked.
+      - Such a question can be answered by the hook: `answers` takes the chosen labels
+        joined by a comma and a space ("Apple, Cherry"), and it takes free words too.
+      - A denial's message is not the way to give a reason: the command is not run, but
+        Claude takes the message for output of the tool, not for the user's words, and
+        ignores what it asks for (it even tried the command again). So "no, and do
+        this instead" by voice has to be a denial followed by the words as a spoken
+        message, which Claude does take as the user's.
 - [ ] Several questions in one dialog: answered by voice or number key, the overlay moves on
       to the second question, but the terminal goes on showing the first until the last one
       is answered (the author, 2026-11-17: "I sent an audio to answer the first question
