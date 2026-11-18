@@ -760,8 +760,9 @@ Bigger pieces:
       mouse on a session). Since then, on their word: no time on the lines (tokens
       only), the two columns lined up, the missed dot on the mark, the plan's usage at
       the foot of the card, and key caps in requests. Offered and open: showing the
-      history on plain hover too, bars that glide, a red step for context near full,
-      hiding a turn's half-way word once its last line is there.
+      history on plain hover too, a red step for context near full, hiding a turn's
+      half-way word once its last line is there. Bars that glide: built on their
+      spoken answer to a question (heard as "barstack live"); the motion is unseen.
 - [x] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for
       each request to ... show me the metrics of how much token you've used? Is it
       important?"). Possible: Claude Code's record of a session has the token counts of

@@ -1571,6 +1571,7 @@ namespace ClaudeSpeaks
             metricsCard.Padding = new Thickness(11, 7, 11, usage.Length == 0 && inCard && showMetrics && metricsBody.Children.Count > 2 ? 8 : 11);
             metricsLine.Visibility = showMetrics && detailsStyle == "line" ? Visibility.Visible : Visibility.Collapsed;
             metricsCard.Visibility = showMetrics && detailsStyle != "line" ? Visibility.Visible : Visibility.Collapsed;
+            if (metricsCard.Visibility != Visibility.Visible) { stood.Clear(); gliding.Clear(); }  // the bars fill from nothing when it comes up again
             // The same room above the card as below it (10 px), whichever of the two is the
             // panel's edge and whichever the dividing line; more when the history follows.
             bool linesFollow = historyLines.Children.Count > 0;
@@ -1802,6 +1803,29 @@ namespace ClaudeSpeaks
         // Writes the line of figures for the session the mouse is on (it stays chosen when the
         // mouse moves off, like the history), else the one in focus, else the only one. False
         // when there is nothing to say.
+        // Where the bar in each place of the card stood when it was last drawn (0 when the card
+        // was away), so that a bar can glide from there; and notes where it stands now. The
+        // card is drawn anew whenever anything changes, also in the middle of a glide: then
+        // the bar goes on from where the glide had got to, not from its end.
+        readonly Dictionary<string, double> stood = new Dictionary<string, double>();
+        readonly Dictionary<string, double[]> gliding = new Dictionary<string, double[]>();  // place -> from, to, since when
+        const double GlideTakes = 0.34;
+
+        double Stood(string place, double now)
+        {
+            double was = stood.ContainsKey(place) ? stood[place] : 0;
+            if (gliding.ContainsKey(place))
+            {
+                double[] g = gliding[place];
+                double done = (Ui.Now - g[2]) / GlideTakes;
+                if (done < 1) was = g[0] + (g[1] - g[0]) * Ui.EaseOut(done);
+                else gliding.Remove(place);
+            }
+            if (Math.Abs(was - now) > 0.005) gliding[place] = new[] { was, now, Ui.Now };
+            stood[place] = now;
+            return was;
+        }
+
         bool BuildMetrics(bool withLines)
         {
             // Whichever was chosen last: the row the mouse went onto, or the session the focus
@@ -1832,7 +1856,7 @@ namespace ClaudeSpeaks
                     metricsLine.Inlines.Add(new Run(name + " ") { Foreground = Ui.Faint });
                     metricsLine.Inlines.Add(new Run(figure) { Foreground = Brushes.White });
                 }
-                tiles.Children.Add(Tile(name, figure, share, warn));
+                tiles.Children.Add(Tile(name, figure, share, warn, share >= 0 ? Stood("tile" + tiles.Children.Count, share) : -1));
             }
             if (!any) return false;
             if (order.Count > 1)  // whose figures they are, where there is a choice
@@ -1867,7 +1891,7 @@ namespace ClaudeSpeaks
                     cell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                     cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                     cell.Children.Add(new TextBlock { Text = Convert.ToString(part[0], CultureInfo.InvariantCulture), FontSize = 10.5, Foreground = Ui.Faint, VerticalAlignment = VerticalAlignment.Center });
-                    UIElement bar = Meter(used, warn);
+                    UIElement bar = Meter(used, warn, Stood("plan" + plan.Children.Count, used), new Thickness(7, 1, 7, 0));
                     Grid.SetColumn(bar, 1);
                     cell.Children.Add(bar);
                     var figure = new TextBlock { Text = Math.Round(used * 100) + "%", FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Ui.Dim, VerticalAlignment = VerticalAlignment.Center };
@@ -1882,22 +1906,33 @@ namespace ClaudeSpeaks
 
         // A thin bar for a share of a whole: its own color when that is nearly the whole, over
         // a faint step of the same color.
-        static Grid Meter(double share, bool warn)
+        static Grid Meter(double share, bool warn, double from, Thickness margin)
         {
             Color ink = warn ? Ui.ContextFull : Colors.White;
-            var bar = new Grid { Height = 4, Margin = new Thickness(7, 1, 7, 0), VerticalAlignment = VerticalAlignment.Center };
-            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(share, 0.02), GridUnitType.Star) });
+            double shown = Math.Max(share, 0.02);
+            var bar = new Grid { Height = 4, Margin = margin, VerticalAlignment = VerticalAlignment.Center };
+            bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(shown, GridUnitType.Star) });
             bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - share, 0), GridUnitType.Star) });
             var track = new Border { CornerRadius = new CornerRadius(2), Background = Ui.Alpha(ink, 0.18) };
             Grid.SetColumnSpan(track, 2);
             bar.Children.Add(track);
-            bar.Children.Add(new Border { CornerRadius = new CornerRadius(2), Background = Ui.Alpha(ink, warn ? 1 : 0.82) });
+            var fill = new Border { CornerRadius = new CornerRadius(2), Background = Ui.Alpha(ink, warn ? 1 : 0.82) };
+            bar.Children.Add(fill);
+            // It glides from where the bar in this place stood before (another session's figure,
+            // or nothing when the card has just come up) to where it stands now.
+            if (!Ui.Motionless && from >= 0 && Math.Abs(from - share) > 0.005)
+            {
+                var stretch = new ScaleTransform(1, 1);
+                fill.RenderTransformOrigin = new Point(0, 0.5);
+                fill.RenderTransform = stretch;
+                stretch.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(from / shown, 1, TimeSpan.FromSeconds(GlideTakes)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+            }
             return bar;
         }
 
         // One figure of a session: its name, the figure, and a thin bar if it is a share of a
         // whole (the bar's own color when it is nearly the whole, over a faint step of the same).
-        static UIElement Tile(string name, string figure, double share, bool warn)
+        static UIElement Tile(string name, string figure, double share, bool warn, double from)
         {
             var tile = new StackPanel { Margin = new Thickness(0, 0, 12, 0) };
             tile.Children.Add(new TextBlock { Text = name, FontSize = 10.5, Foreground = Ui.Faint, TextTrimming = TextTrimming.CharacterEllipsis });
@@ -1911,17 +1946,7 @@ namespace ClaudeSpeaks
             }
             else number.Inlines.Add(new Run(figure) { Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Brushes.White });
             tile.Children.Add(number);
-            var bar = new Grid { Height = 4, Margin = new Thickness(0, 4, 0, 0) };
-            if (share >= 0)
-            {
-                Color ink = warn ? Ui.ContextFull : Colors.White;
-                bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(share, 0.02), GridUnitType.Star) });
-                bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - share, 0), GridUnitType.Star) });
-                var track = new Border { CornerRadius = new CornerRadius(2), Background = Ui.Alpha(ink, 0.18) };
-                Grid.SetColumnSpan(track, 2);
-                bar.Children.Add(track);
-                bar.Children.Add(new Border { CornerRadius = new CornerRadius(2), Background = Ui.Alpha(ink, warn ? 1 : 0.82) });
-            }
+            UIElement bar = share >= 0 ? (UIElement)Meter(share, warn, from, new Thickness(0, 4, 0, 0)) : new Border { Height = 4, Margin = new Thickness(0, 4, 0, 0) };
             tile.Children.Add(bar);
             return tile;
         }

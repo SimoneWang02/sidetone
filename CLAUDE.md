@@ -971,6 +971,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   that beginning once, fainter: [Ctrl] [Alt]  [Y] allow  [N] deny, or [1–3] answers. The
   old line of text (`keys`) is still sent and is drawn when there are no hints. All
   three seen in pictures; **none seen by the author yet**.
+- The key caps were shown to the author with a real question (which small idea next, four
+  choices); they answered it by voice, written down as "We're doing a bit of a barstack
+  live", taken as the second choice, "Bars that glide". Whether they saw the caps and
+  liked them they did not say. Built on that: a bar of the card glides in a third of a
+  second from where the bar in its place stood (another session's figure, or nothing when
+  the card has just come up) to its new place (`Overlay.Meter`, `Stood`, `GlideTakes`;
+  none with `still`). The card is rebuilt at every change, so a glide that is under way
+  is picked up from where it had got to. Compiles and draws; the motion itself has been
+  seen by nobody.
 - The card follows the focus (2026-11-18; the author: "I focused the second session and it
   still showed ... the first session's metrics"). The card was about the row the mouse had
   been on last, for as long as that session lived, and only before any row was touched
