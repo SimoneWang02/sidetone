@@ -363,8 +363,13 @@ real keys yet.
       `first`, `each`, `never`). Shown live again. On the grinning face: the yellow is
       good, but "it looks like he's mentally ill"; rather "a more like disgusted face
       ... like you have so many requests". Third face, the same evening: lids half
-      down, a sideways look, one brow up, a flat mouth. Shown live; **no word on it
-      yet**, nor on the number jumping in its corner.
+      down, a sideways look, one brow up, a flat mouth. Shown live. The author then put
+      a picture in their Downloads folder as the look to go for (a yellow face with
+      brows raised in the middle, oval eyes with a line under each and a wavy mouth
+      turned down); the face is drawn after it, the fourth, and larger in the corner
+      than a digit. And on the first number covering the light: "just put it top
+      right", so `waiting_cover` is `never` by default and every number comes up in
+      its corner with a small jump. Shown live; **no word on either yet.**
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next

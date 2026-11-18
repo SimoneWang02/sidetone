@@ -379,10 +379,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   seeing "9+": "very dense in that circle". That face was first a shocked one in white on
   red, which they found "kind of scary ... not funny", then yellow with its tongue out, which
   looked "mentally ill"; they asked for one that is fed up with so many requests, so it is
-  yellow with half-closed lids, a sideways look, one brow up and a flat mouth
-  (`Orb.Unimpressed`). `overlay.waiting_cover` says which messages show their number across
-  the whole light: `first` (default; the ones that join make it jump in the corner), `each`
-  or `never`. To show the mark on the live overlay: `claude-speaks follow-up -s NAME TEXT`
+  yellow; the fourth is drawn after a picture they gave as the look to go for: brows raised
+  in the middle, oval eyes with a line under each, a wavy mouth turned down (`Orb.Dismayed`;
+  in the corner it is drawn larger than a digit, or it cannot be read). `overlay.waiting_cover` says which messages show their number across
+  the whole light: `never` (default since the author said "just put it top right"; the
+  number comes up in its corner with a small jump), `first` or `each`. To show the mark on the live overlay: `claude-speaks follow-up -s NAME TEXT`
   several times for a session that is busy.
 - What push-to-talk shows (changed 2026-11-17: the author did not like the text line with
   arrows, "listening → name", and it kept the old name when the focus moved): the hub sends
