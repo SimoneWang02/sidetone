@@ -440,7 +440,10 @@ real keys yet.
       the name, not "name asks: question"; no voice at every tick ("it gets
       annoying"); the tick not centered and a gap between the filling and the edge.
       The box is now drawn as one shape. A second question they answered by voice,
-      a third with the keys: all three points ticked as right. Still open in this box: speaking to a session that waits at a permission
+      a third with the keys: all three points ticked as right. Then: "when sending
+      the answers I don't think you should read the answer"; an answer given with the
+      keys now gets the short sound for "sent" (`talk_feedback: voice` says it back
+      as before). Not heard by the author yet. Still open in this box: speaking to a session that waits at a permission
       prompt (offered: deny it, stop its turn and hand the words over as the next
       message; not answered), and the terminal's "chat about this" as such.
 - [ ] Several questions in one dialog: answered by voice or number key, the overlay moves on

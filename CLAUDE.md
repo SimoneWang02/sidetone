@@ -747,6 +747,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Ticking says nothing aloud (the author: "it gets annoying"). A request for a question
   also carries `question`, written on a line of its own under the name. The author
   answered three such questions the same day, with the keys and by voice, and passed the look.
+  An answer given with the keys (any question) is no longer read back ("Answered: ..."): the
+  author found that unneeded, so `_answer` goes through `_signal("sent")`, the sound, and
+  only `talk_feedback: voice` still says it.
 - More permission hook facts (measured 2026-11-17, Claude Code 2.1.327): a multi-select
   `AskUserQuestion` (`multiSelect: true`) is answered through `updatedInput.answers` like a
   single choice, with the labels joined by ", " or with any free text. The `message` of a
