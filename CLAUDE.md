@@ -750,6 +750,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   An answer given with the keys (any question) is no longer read back ("Answered: ..."): the
   author found that unneeded, so `_answer` goes through `_signal("sent")`, the sound, and
   only `talk_feedback: voice` still says it.
+- Words spoken at a permission prompt (2026-11-17, `voice_at_prompt`, `Hub._hand_over`):
+  they used to wait until the prompt was answered some other way. The author: by voice "it's
+  neither a yes or no ... more a no and then I give more details". With `details` (default)
+  the request is denied with `hub.VOICE_AT_PROMPT` as its message ("Not approved for now ...
+  their message follows"), the turn is stopped (`_stop_turn`) and the words wait for it to
+  end, which is at once; Claude then has them as the user's next message and goes on from
+  them with what it knows of the task. `wait` keeps the old way. Tried with a real session
+  through the live hub (a folder asked for, a file wanted instead: no folder, the file
+  requested next); **not tried by the author**.
 - More permission hook facts (measured 2026-11-17, Claude Code 2.1.327): a multi-select
   `AskUserQuestion` (`multiSelect: true`) is answered through `updatedInput.answers` like a
   single choice, with the labels joined by ", " or with any free text. The `message` of a

@@ -414,7 +414,7 @@ real keys yet.
       after Enter in the terminal). Live from the next hub restart; the author has not
       watched it. Other tools (an edit, a web fetch) still wait for their end, which is
       a moment.
-- [ ] The number keys only answer single-choice questions with up to four options. The same
+- [x] The number keys only answer single-choice questions with up to four options. The same
       limit holds for answering by voice: other questions are only announced, and words
       spoken meanwhile wait until the question is answered in the terminal. A permission
       prompt cannot be answered by voice either (the words wait); "deny, and here is why"
@@ -443,9 +443,16 @@ real keys yet.
       a third with the keys: all three points ticked as right. Then: "when sending
       the answers I don't think you should read the answer"; an answer given with the
       keys now gets the short sound for "sent" (`talk_feedback: voice` says it back
-      as before). Not heard by the author yet. Still open in this box: speaking to a session that waits at a permission
-      prompt (offered: deny it, stop its turn and hand the words over as the next
-      message; not answered), and the terminal's "chat about this" as such.
+      as before). Not heard by the author yet.
+      Speaking to a session that waits at a permission prompt, built the same evening.
+      The author: "if I use voice it's neither a yes or no ... maybe it's more a no and
+      then I give more details", and asked whether Claude then builds on what it was
+      doing. It does: the request is turned down for now (it is told that details
+      follow), its turn ends, and the words arrive as the next message
+      (`voice_at_prompt`: `details`, or `wait` as before). Tried on a real session
+      through the live hub: asked for a folder, told by voice "make a file named
+      note.txt instead", it made no folder and asked to write the file. **Not tried by
+      the author.** Not built: the terminal's "chat about this" as such.
 - [ ] Several questions in one dialog: answered by voice or number key, the overlay moves on
       to the second question, but the terminal goes on showing the first until the last one
       is answered (the author, 2026-11-17: "I sent an audio to answer the first question
