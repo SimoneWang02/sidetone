@@ -308,6 +308,12 @@ real keys yet.
       pink notification icon, maybe a red would be better. It's more intuitive." So the
       dot is red by default (`overlay.waiting_color`; `"#FF6E8A"` is the pink). They have
       not said whether they saw the plane at the handover, nor seen the red one yet.
+      On seeing the red dot: "it's not very intuitive. It doesn't feel like there's one
+      in queue besides the current one." Of three ideas (the clock kept small on the
+      light, a paper plane parked beside it, a second ring behind it) they chose the
+      first. So the mark is a small clock whose hand goes round, with the number of
+      messages when two or more wait (`overlay.waiting_mark`: `clock`, or `dot`). Seen
+      in pictures only; **the author has not seen the clock mark yet.**
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next

@@ -65,8 +65,11 @@ DEFAULTS = {
     # The color of those words: "" = a soft white with a white glint, the color of no session |
     # "#RRGGBB" = your own ("#FF8FA6" is the microphone's pink they had at first)
     "talk_text_color": "",
-    # The dot on the light of a session that has words of yours waiting: the red of a
-    # notification | "#RRGGBB" = your own ("#FF6E8A" is the microphone's pink it had at first)
+    # The mark on the light of a session that has words of yours waiting: clock = a small clock
+    # whose hand goes round, with the number of messages when there are two or more | dot = a
+    # plain breathing dot
+    "waiting_mark": "clock",
+    # Its color: the red of a notification | "#RRGGBB" = your own ("#FF6E8A" is the microphone's pink)
     "waiting_color": "#FF3B30",
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",

@@ -66,9 +66,10 @@ namespace ClaudeSpeaks
             return brush;
         }
 
-        // The dot on a light whose session has words of yours waiting: the red of a notification,
+        // The mark on a light whose session has words of yours waiting: the red of a notification,
         // or a color of your own (waiting_color, "#RRGGBB").
         public static Color Waiting = Color.FromRgb(0xFF, 0x3B, 0x30);
+        public static string WaitingMark = "clock";  // or "dot"
 
         public static void SetWaitingColor(string hex)
         {
@@ -263,7 +264,7 @@ namespace ClaudeSpeaks
         static readonly double[] Weights = { 0.5, 0.8, 1.0, 0.8, 0.5 };
         public string State = "idle", Sign = "";  // Sign: where push-to-talk stands, while it is about this session and shown here
         public bool Speaking;
-        public bool Waiting;  // words of yours are held for this session until it can take them
+        public int Waiting;  // how many messages of yours are held for this session until it can take them
         public Wave Wave, Listening;  // Listening: your own voice, while you hold the talk key for this session
         public double Born = Ui.Now, Changed = -10, Hot, SignSince;
 
@@ -286,7 +287,7 @@ namespace ClaudeSpeaks
             {
                 double t = Ui.Now;
                 if (Signed && (Sign == "dots" || Sign == "wait" || t - SignSince < 0.5)) return true;
-                return Waiting || Speaking || Listening != null || State == "working" || State == "needs_you" || t - Changed < 0.8 || t - Born < 0.45;
+                return Waiting > 0 || Speaking || Listening != null || State == "working" || State == "needs_you" || t - Changed < 0.8 || t - Born < 0.45;
             }
         }
 
@@ -383,16 +384,37 @@ namespace ClaudeSpeaks
             dc.Pop();
         }
 
-        // Words are waiting for this session: a small red dot at the upper right of the light,
-        // like the one on an app with something unread, breathing for as long as they wait.
+        // Words are waiting for this session: a small clock at the upper right of the light, the
+        // sign the light itself showed when they were said, for as long as they wait. Its hand
+        // goes round; with two or more messages it shows how many. waiting_mark "dot" makes it
+        // a plain breathing dot.
         void Mark(DrawingContext dc, Point c, double t)
         {
-            if (!Waiting) return;
-            var at = new Point(c.X + 10, c.Y - 10);
-            double breath = 0.5 + 0.5 * Math.Sin(t * 3.2);
-            dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.22 * breath), null, at, 5.2 + 2 * breath, 5.2 + 2 * breath);
-            dc.DrawEllipse(Ui.Alpha(Color.FromRgb(0x14, 0x14, 0x18), 0.85), null, at, 5.2, 5.2);
-            dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.85 + 0.15 * breath), null, at, 3.8, 3.8);
+            if (Waiting <= 0) return;
+            var at = new Point(c.X + 10.5, c.Y - 10.5);
+            Brush rim = Ui.Alpha(Color.FromRgb(0x14, 0x14, 0x18), 0.9);
+            if (Ui.WaitingMark == "dot")
+            {
+                double breath = 0.5 + 0.5 * Math.Sin(t * 3.2);
+                dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.22 * breath), null, at, 5.2 + 2 * breath, 5.2 + 2 * breath);
+                dc.DrawEllipse(rim, null, at, 5.2, 5.2);
+                dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.85 + 0.15 * breath), null, at, 3.8, 3.8);
+                return;
+            }
+            dc.DrawEllipse(rim, null, at, 8, 8);
+            dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.95), Ui.Line(Colors.White, 0.9, 1.1), at, 6.4, 6.4);
+            if (Waiting > 1)
+            {
+                var count = new FormattedText(Waiting > 9 ? "9+" : Waiting.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture,
+                    FlowDirection.LeftToRight, new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal),
+                    Waiting > 9 ? 7.5 : 9.5, Brushes.White);
+                dc.DrawText(count, new Point(at.X - count.Width / 2, at.Y - count.Height / 2));
+                return;
+            }
+            double turn = t * 1.8;
+            Pen hand = Ui.Line(Colors.White, 1, 1.3);
+            dc.DrawLine(hand, at, new Point(at.X, at.Y - 4));
+            dc.DrawLine(hand, at, new Point(at.X + 3 * Math.Sin(turn), at.Y - 3 * Math.Cos(turn)));
         }
     }
 
@@ -764,7 +786,7 @@ namespace ClaudeSpeaks
             State = Orb.State = Overlay.Str(s, "state", "idle");
             Speaking = Orb.Speaking = s.ContainsKey("speaking") && Convert.ToBoolean(s["speaking"]);
             Focus = s.ContainsKey("target") && Convert.ToBoolean(s["target"]);
-            Orb.Waiting = s.ContainsKey("waiting") && Convert.ToDouble(s["waiting"]) > 0;
+            Orb.Waiting = s.ContainsKey("waiting") ? (int)Convert.ToDouble(s["waiting"], CultureInfo.InvariantCulture) : 0;
             if (before.Length > 0 && (before != State || was != Speaking)) Orb.Changed = Ui.Now;  // the light pops
             Wave.Synthetic = s.ContainsKey("synth") && Convert.ToBoolean(s["synth"]);
             if (Speaking && !was) Wave.Since = Ui.Now;
@@ -1107,6 +1129,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
+                    if (msg.ContainsKey("waiting_mark")) Ui.WaitingMark = Str(msg, "waiting_mark") == "dot" ? "dot" : "clock";
                     glass = Str(msg, "glass", glass);
                     islandX = Num(msg, "island_x", islandX);
                     islandY = Num(msg, "island_y", islandY);

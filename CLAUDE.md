@@ -318,7 +318,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   in the light (`Badge` kind `wait`), no longer the plane. The author tried it the same
   evening: "the clock was good", but the dot, then in the microphone's pink, should be red
   ("more intuitive"), so it is the red of a notification now (`overlay.waiting_color`,
-  `"#FF6E8A"` for the pink). **They have not seen the red dot yet.**
+  `"#FF6E8A"` for the pink). The red dot they then found "not very intuitive. It doesn't
+  feel like there's one in queue", and chose, from three ideas, the clock kept small on
+  the light: `overlay.waiting_mark` is `clock` (default; its hand goes round, and with two
+  or more messages it shows the number) or `dot`. **They have not seen the clock mark yet.**
 - What push-to-talk shows (changed 2026-11-17: the author did not like the text line with
   arrows, "listening → name", and it kept the old name when the focus moved): the hub sends
   `talk` with a step (`listening`, `transcribing`, `ready`, `sent`, `failed`, `focus`), the
