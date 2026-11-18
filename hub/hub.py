@@ -246,6 +246,7 @@ class Hub:
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
         self._mic_meter = Meter()  # turns microphone audio into a loudness for the overlay
         self._talking: float | None = None  # when the talk key went down
+        self._overlay_due = False  # a restart of the window was asked for during a hold and waits for its end
         self._transcribing = False  # the key is up and the words are not out of the speech model yet
         self._heard: object | None = None  # that recording; the cancel key clears it, and its words are dropped
         self._pending: Pending | None = None  # the follow-up being shown
@@ -838,7 +839,45 @@ class Hub:
         self.say(f"{name} layout", kind="notice")
         return name
 
+    def restart_overlay(self) -> bool:
+        """Start the window anew; during a hold of the talk key, once the key is up.
+
+        The window is what knows the key is down. On 2026-11-17 another session restarted it
+        while the author was talking: the new window did not know of the hold, so the
+        release ended nothing, the microphone stayed on ("it seemed like the mic was still
+        on") and the words went out later, to the session the focus had moved to."""
+        with self.lock:
+            if self._talking:
+                self._overlay_due = True
+                return False
+        self.overlay.restart()
+        return True
+
+    def _overlay_catch_up(self) -> None:
+        """The hold is over: now the window may be started anew, once the words are out."""
+        with self.lock:
+            due, self._overlay_due = self._overlay_due, False
+        if due and self.overlay:
+            threading.Thread(target=lambda: (self.quiet(30), self.restart_overlay()), daemon=True).start()
+
+    def quiet(self, patience: float = 60.0) -> bool:
+        """Wait until nobody is talking and no words are on their way through the speech model,
+        so that stopping the hub does not cut a sentence or lose one. False: gave up waiting."""
+        until = time.monotonic() + patience
+        while self._talking or self._transcribing or (self._pending and not self._pending.confirm):
+            if time.monotonic() > until:
+                return False
+            time.sleep(0.05)
+        return True
+
     def on_overlay(self, msg: dict) -> None:
+        if msg.get("type") == "exited":
+            # The window died by itself. Whoever holds the talk key is no longer watched, so the
+            # hold ends here: what was said so far goes to the session that was listening.
+            if self._talking:
+                log(self.cfg, "hub.log", "talk: the overlay went away during a hold, which ends here")
+                self.talk_end()
+            return
         if msg.get("type") == "ready":
             # A window that has just started is handed the sessions again by its own module, and
             # nothing else: tell it the question that is still open and the keys that are live.
@@ -947,6 +986,7 @@ class Hub:
             threading.Thread(target=self._transcribe, args=(pcm, said_to.id if said_to else None, heard),
                              daemon=True).start()
         self.publish()
+        self._overlay_catch_up()
 
     def _transcribe(self, pcm: bytes, session: str | None = None, job: object | None = None) -> None:
         started = time.monotonic()
@@ -1173,6 +1213,7 @@ class Hub:
         elif not (had_pending or took_back or hearing or stopped):
             self.speech.skip()
         self.publish()
+        self._overlay_catch_up()
 
     def listen(self, sid: str, cwd: str = "") -> Listener:
         """A session's hook starts waiting for follow-ups; it replaces that session's older one."""
@@ -1635,7 +1676,7 @@ class Handler(BaseHTTPRequestHandler):
             if not hub.overlay:
                 return self._reply({"error": "the overlay is not available here"}, 409)
             if body.get("restart"):
-                hub.overlay.restart()
+                return self._reply({"restarted": hub.restart_overlay()})
             elif body.get("move"):
                 hub.overlay.send({"type": "move"})
             elif "layout" in body:
@@ -1671,6 +1712,7 @@ class Handler(BaseHTTPRequestHandler):
             threading.Thread(target=demo.run, args=(hub,), name="demo", daemon=True).start()
             self._reply({})
         elif self.path == "/shutdown":
+            hub.quiet()  # not in the middle of a sentence being spoken to a session
             self._reply({})
             threading.Thread(target=self.server.shutdown, daemon=True).start()
         else:

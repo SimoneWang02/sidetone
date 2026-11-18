@@ -248,6 +248,9 @@ class Overlay:
                 self.log(f"overlay: {msg.get('message')}")
             self.on_message(msg)
         with self._lock:
-            if self.proc is proc:
+            died = self.proc is proc  # not stopped by us
+            if died:
                 self.proc, self.ready = None, False
         self.log("overlay exited")
+        if died:
+            self.on_message({"type": "exited"})

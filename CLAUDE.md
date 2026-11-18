@@ -302,6 +302,29 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   starts. `cancel_stops`: `always` (default), `sent` (only when taking words back) or
   `never` (told to ignore, as below). Tried with the real hook on a throwaway session;
   **the author has not pressed it yet**. A turn that only writes text has no step to stop at.
+- Side questions (2026-11-17; the author, by voice: "I was wondering if you could do a slash,
+  by the way, BTW ... it lets me skip the queue and ask a by the way question", meaning Claude
+  Code's `/btw`). Spoken words for a session in the middle of a turn that open with "by the
+  way" or "btw" (`aside_words`) do not wait: `Hub._ask_aside` starts a throwaway copy of
+  that session (`Hub.aside_run`: `claude -p --resume ID --fork-session
+  --no-session-persistence --settings '{"disableAllHooks": true}' --strict-mcp-config
+  --tools "" --model haiku`, in the session's folder, without the variables that tie a
+  process to the session whose hook started the hub), and its answer is said in the session's
+  voice (`_say_aside`: kind `notice`, so it and the session's own waiting line do not replace
+  each other; in the history as kind `aside`, so repeat and catch-up have it). The session
+  never sees the question or the answer. Offered a second talk key or opening words, the
+  author chose the words ("starting with the words by the way, that's fine"). While the copy
+  thinks, the overlay shows the `talk` step `aside`: moving dots, the words, "Answering on
+  the side"; the cancel key drops the question then, before it would stop the session's
+  turn. No answer (error, or none in `aside_timeout`, 60 s): the words go to the session
+  like any others (`_hand_over`, which is what `_send` did before). `aside`: `busy`
+  (default; an idle session gets the words as usual and can act on them), `always`, `off`.
+  `aside_model`: `haiku`, or `""` for Claude Code's own choice. Why not `/btw` itself: it
+  has to be typed into the session, and the request behind it (`side_question`) is only
+  open to programs that started the session or to Remote Control. Measured on a session in
+  the middle of a turn, Claude Code 2.1.327: 4.7 to 6.4 s to an answer; with hooks off the
+  copy neither spoke nor showed up in the hub. **Not tried by the author yet**, and never
+  through the live hub with a real voice.
 - Taking words back after they went out (2026-11-17, `Hub._take_back`, `unsend_seconds`, 4;
   0 = off). The author wanted an easier way to cancel; offered a spoken ending ("never mind")
   and an unsend key, they pointed out that the spoken one could throw away a message they
@@ -593,7 +616,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -689,6 +712,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   "waiting for the session to stop" for an idle session; the words were kept and arrived
   after the next reply). The listener now waits up to `CS_WAIT` seconds (10) for the socket
   and only then takes it that there is no hub.
+- Restarts wait for the talk key (2026-11-17). The overlay is the only thing that knows the
+  key is down. Another session ran `overlay restart` 26 s into a hold of 48 s: the new
+  window knew nothing of the hold, so the release ended nothing, the hub went on
+  recording, and a later press and release sent everything to the session the focus had
+  moved to. Now `Hub.restart_overlay` puts the restart off until the hold is over and the
+  words are out (`_overlay_due`, `_overlay_catch_up`); `/shutdown` waits the same way, up
+  to a minute (`Hub.quiet`), so `hub restart` neither cuts a sentence nor loses one on its
+  way through the speech model; and a window that exits by itself reports `exited`, on
+  which the hub ends the hold and sends what was said so far to the session that was
+  listening. A new window cannot take a hold over: the old one kept the key's press from
+  Windows and told it Ctrl and Alt were up, so nothing can be asked about them.
 - Editing a hook script while it runs (2026-11-17): bash reads a script from its file as it
   goes, by position. `listen.sh` waits for hours, and when another session edited it in place
   the listeners already running read on in the middle of the new text: "line 19: r: command

@@ -833,6 +833,48 @@ class PushToTalk(HubCase):
             self.assertEqual((abs(samples[0]) < 200, abs(samples[-1]) < 200), (True, True), name)  # no click
         self.assertFalse(sounds.Sounds().play("nothing"))
 
+    def test_the_overlay_is_not_restarted_while_you_talk(self):
+        """The window is what knows the talk key is down: one started in the middle of a
+        hold never learns of it, and the release then ends nothing."""
+        hub = self.make()
+        self.overlay.restarts = 0
+        self.overlay.restart = lambda: setattr(self.overlay, "restarts", self.overlay.restarts + 1)
+        hub.talk_target = "a"
+        to_a = hub.listen("a")
+        hub.talk_start()
+        self.assertFalse(hub.restart_overlay())
+        self.assertEqual(self.overlay.restarts, 0)
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: self.overlay.restarts == 1), "the restart that waited never came")
+        self.assertTrue(to_a.wake.wait(3))
+        self.assertEqual(hub.collect(to_a), "also add a test")
+        self.assertTrue(hub.restart_overlay())  # nobody talking: at once
+        self.assertEqual(self.overlay.restarts, 2)
+
+    def test_a_hold_ends_when_the_overlay_dies_under_it(self):
+        hub = self.make()
+        hub.talk_target = "a"
+        to_a = hub.listen("a")
+        hub.talk_start()
+        hub.focus(1)  # as the hold goes on, unwatched, the focus would wander
+        hub.focus(-1)
+        hub.on_overlay({"type": "exited"})
+        self.assertFalse(hub.recorder.recording, "the microphone stayed on")
+        self.assertTrue(to_a.wake.wait(3), "what was said so far was lost")
+        self.assertEqual(hub.collect(to_a), "also add a test")
+        hub.on_overlay({"type": "exited"})  # with no hold, nothing happens
+
+    def test_stopping_the_hub_waits_for_words_on_their_way(self):
+        hub = self.make()
+        hub.transcriber.seconds = 0.3
+        hub.talk_target = "a"
+        to_a = hub.listen("a")
+        hub.talk_start()
+        self.assertFalse(hub.quiet(0.1), "the hub would have stopped in the middle of a sentence")
+        hub.talk_end()
+        self.assertTrue(hub.quiet(3))
+        self.assertTrue(to_a.wake.is_set(), "the hub counted as quiet before the words were handed over")
+
     def test_a_line_that_starts_while_you_talk_does_not_take_your_words(self):
         hub = self.make(duration=0.3)
         hub.transcriber.seconds = 0.15  # B's line is already being heard when the words come back

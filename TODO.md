@@ -9,6 +9,27 @@ started. `CLAUDE.md` has the details of how things work.
 These work in the automated tests or in pictures taken from WSL, but nobody has pressed the
 real keys yet.
 
+- [ ] Side questions: spoken words that open with "by the way" do not wait for a busy session
+      (asked for by the author by voice on 2026-11-17, who compared it to Claude Code's
+      `/btw`: "it lets me skip the queue and ask a by the way question"; of a second talk
+      key or opening words they chose the words: "starting with the words by the way,
+      that's fine"). Built the same evening. A throwaway copy of the session answers from
+      what the session knows, in about 5 s, in that session's voice; the session never sees
+      the question or the answer. Checked with a real copy of a real session in the middle
+      of a turn, through the hub's code but not through the live hub, the microphone or the
+      speakers. **Not tried by the author yet.** To try: while a session works, hold the
+      talk key and say "by the way, what are you doing right now?". Its light should show
+      the moving dots with your words and "Answering on the side", then it answers aloud
+      while it goes on working; `Ctrl+Alt+Backspace` in those seconds drops the question.
+      Open:
+      - does the speech model write "by the way" reliably at the start (the author's own
+        choice came through as "the worst by the way"); other openings go in `aside_words`
+      - the answer comes from `haiku` (`aside_model`); a very long conversation may not fit
+        it, and then the words go to the session as before
+      - only for a session in the middle of a turn (`aside: always` for idle ones too)
+      - a question that needs a file read or a command gets "that cannot be checked from
+        a side question"; nothing offers to pass it on to the session
+      - Italian openings ("a proposito") are not in the default list
 - [x] Push-to-talk in Italian with a real voice. Done by the author on 2026-11-17, twice.
       First a short mixed sentence, English and then "ciao Claude, mi senti?": both halves
       right, except "Claude" written as "cloud" (3.5 s to transcribe 6.6 s of speech, against
@@ -95,7 +116,7 @@ real keys yet.
       before the session got it" a second later; the session never received them. A first
       try had Backspace land before "sent", which is the plain cancel. Not said: whether
       the light showed "Taken back".
-- [ ] Taking words back while `Ctrl+Alt` stay held from talking: the overlay hides those
+- [x] Taking words back while `Ctrl+Alt` stay held from talking: the overlay hides those
       keys from Windows during a hold and believes them held for 3 s after it (`MaskGrace`).
       After that, with the keys never let go, Windows takes them for up, so Backspace is a
       plain Backspace for the program in front and takes nothing back, though the time to
@@ -112,6 +133,21 @@ real keys yet.
       not see the point ("I don't get it. Like what's your point?") and chose to skip it:
       a rare case, left open. `hub.log` now gives the time of a take-back to a tenth of
       a second, so a late press in everyday use will show there by itself.
+      Closed on the author's word later that evening, once the cancel key had become the
+      stop key: "I don't think they are needed anymore, right? Double check it." Checked:
+      the take-back is still the first thing the key does in those four seconds, their
+      two tries with the keys held worked, and the late press stays unproven. One case
+      is left and is rare: `Ctrl+Alt` never let go for longer than the "sent" sign
+      shows, then Backspace to stop the session, is a plain Backspace.
+- [ ] Restarting the overlay or the hub while the talk key is held (2026-11-17: another
+      session restarted the overlay in the middle of a sentence of 48 s; the new window
+      did not know the key was down, the microphone stayed on, and the words went out
+      later, to the session the focus had moved to meanwhile; the author: "I was talking
+      and at some point it got cut out. It seemed like the mic was still on"). Mended:
+      both restarts now wait until the key is up and the words are out, and a window
+      that dies by itself ends the hold and sends what was said so far. Tests only, and
+      live from the next hub restart. To try: hold the talk key, have a session run
+      `claude-speaks overlay restart` while you speak, and finish the sentence.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
       which was right, since nothing had been said since the last message. Not heard yet:
       a real replay, pressed after a session spoke while the author was away from it.
@@ -338,8 +374,11 @@ real keys yet.
       lasted 0.6 to 1.8 s with a peak level of 0.15 or less, which is a press without
       speech. So nothing was built. If a hold with real
       speech comes back empty again, the recording keeper is the next step.
-- [ ] A misheard sentence is sent straight to the session: there is no pause and no confirming
+- [x] A misheard sentence is sent straight to the session: there is no pause and no confirming
       tap any more (the author's choice). `followup_delay` and `followup_confirm` bring them back.
+      Offered to the author on the evening of 2026-11-17 as a decision to confirm ("the
+      next you're saying it's a quick decision. Can you check it?"): it stays as it is.
+      Since the same day the cancel key takes words back and stops the session that got them.
 - [ ] A permission prompt that waited more than six seconds and is then approved in the
       terminal stays "needs you" until that tool finishes.
 - [ ] The number keys only answer single-choice questions with up to four options. The same
@@ -627,33 +666,6 @@ Smaller ideas:
       - instant stopping through the VS Code extension (Esc written into the terminal)
       - the key is now claimed from every program whenever the session in focus works
       - a session waiting at a permission prompt is not stopped by the key in focus
-- [ ] A spoken "by the way" question that does not wait (the author, by voice, 2026-11-17:
-      "I was wondering if you could do a slash, by the way, BTW ... it lets me skip the
-      queue and ask a by the way question"). Today words for a busy session wait until its
-      reply is over. Claude Code's own `/btw` answers a side question at once from what
-      the session knows, without tools, and leaves the session's work and its record
-      untouched; but it has to be typed into the session's prompt, and nothing here can
-      type into a terminal. The request behind it (`side_question`) is only open to
-      programs that started the session themselves or to Remote Control, not to a hook.
-      What does work from outside, measured the same evening on this very session while
-      it was in the middle of a turn (Claude Code 2.1.327):
-      `claude -p --resume <session id> --fork-session --no-session-persistence
-      --setting-sources project --strict-mcp-config --tools "" --model haiku "<question>"`
-      answered correctly from the conversation in 6.4 s. The copy reads the session's
-      record up to that moment, the session itself notices nothing, no record is kept,
-      and without the user's hooks the copy neither speaks nor shows in the overlay.
-      So the hub could run that for the session in focus and say the answer in that
-      session's voice. Nothing built. Open:
-      - how to say "this one is a side question": a second talk key (suggested:
-        `Ctrl+Alt+B`, held like the talk key), or words at the start ("by the way, ...")
-      - which model answers (`haiku` was the 6.4 s; the session's own model would know
-        as much but take longer and cost more on a long conversation)
-      - the answer is not in the session afterwards, as with `/btw`; it would go into
-        the hub's history so repeat and catch-up have it
-      - an answer that needs a file read or a command cannot be given; the copy has to
-        say so, as `/btw` does
-      - what the light shows while the copy thinks, and that its answer must not
-        replace the session's own waiting line in the queue
 - [ ] Easier ways to take back what you said (the author, 2026-11-17: "it would be really
       cool to somehow cancel with a shortcut"; today it is `Ctrl+Alt+Backspace` while the talk
       key is still held, a four-key grip). Built the same day: the same key within four
