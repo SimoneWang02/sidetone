@@ -286,6 +286,8 @@ class OverlayFeed(HubCase):
         with open(record, "a") as f:
             f.write(reply("c", 1000, 2000, 104000) + "\n")  # the last reply reaches the record late
         self.assertTrue(wait_for(lambda: row()["meta"] == "8.0k"))
+        said = lambda: self.overlay.of("state")[-1]["history"][0]
+        self.assertEqual((said()["text"], said()["tokens"]), ("Done.", "8.0k"), "the line it ended on keeps the figure")
         hub.cfg.turn_tokens_label = "tokens"
         hub.publish()
         self.assertEqual(row()["meta"], "8.0k tokens")

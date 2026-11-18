@@ -296,8 +296,8 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
 
 
 COLORS = state.COLORS[:5]  # as five sessions would have them
-HISTORY = [dict(ago="now", name="api-server", color=COLORS[1], text="All forty two tests pass."),
-           dict(ago="3m", name="web-app", color=COLORS[2], text="The login page is fixed and ready for review."),
+HISTORY = [dict(ago="now", name="api-server", color=COLORS[1], text="All forty two tests pass.", tokens="64k"),
+           dict(ago="3m", name="web-app", color=COLORS[2], text="The login page is fixed and ready for review.", tokens="1.2k"),
            dict(ago="12m", name="data-pipeline", color=COLORS[3], text="I hit an error: rate limit")]
 KEYS = {"toggle": "Ctrl+Alt+F9"}
 SAID = "All forty two tests pass. The flaky one was a race in the login mock, which I fixed."

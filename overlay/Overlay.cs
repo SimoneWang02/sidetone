@@ -1713,7 +1713,8 @@ namespace ClaudeSpeaks
                 if (of != null && Str(h, "name") != of) continue;
                 if (historyLines.Children.Count >= (of != null ? 4 : 6)) break;
                 var line = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 2), FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
-                line.Inlines.Add(new Run(Str(h, "ago") + "  ") { Foreground = Ui.Faint });
+                string used = Str(h, "tokens");  // what that turn used, if the hub says
+                line.Inlines.Add(new Run(Str(h, "ago") + (used.Length > 0 ? " \u00b7 " + used : "") + "  ") { Foreground = Ui.Faint });
                 line.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
                 line.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Dim });
                 historyLines.Children.Add(line);

@@ -740,8 +740,9 @@ Bigger pieces:
       the word takes room from the row's text; so it says "64k" now
       (`turn_tokens_label`). **Still to agree:** which figure they mean (the default
       leaves out what is read again at every step, which would make every figure
-      millions) and whether the row is the place. Not built: the figure in the history
-      lines under the rows, said aloud, or while the turn runs.
+      millions) and whether the row is the place. Then asked for "as well in history": each line under the
+      rows now has its turn's figure after its time ("3m · 64k"); seen in a picture
+      only. Not built: the figure said aloud, or while the turn runs.
 - [x] Usage said aloud (the author, 2026-11-17, by voice: "check if in the future it's
       possible to make you say the percentage of the current usage"). Today a session
       cannot answer "what's the current usage?": nothing it can call reports the plan's

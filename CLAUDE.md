@@ -874,8 +874,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   from what was saved; `off`. Measured on this session: a turn of 17 steps wrote 18
   thousand, read 46 thousand for the first time and 2.5 million again; a one-line answer
   0.3, 0.8 and 166 thousand. So `all` mostly says how long the conversation is, which is
-  why it is not the default. A turn ended with Esc has no Stop and shows nothing. Not kept
-  across a hub restart. Not built: the figure in the history lines or said aloud.
+  why it is not the default. A turn ended with Esc has no Stop and shows nothing. The row's
+  figure is not kept across a hub restart. The line the turn ended on keeps it in the
+  history (`tokens` on the entry; asked for by the author "as well in history"), and the
+  overlay writes it after that line's time, "3m · 64k" (`turn_tokens_history`); seen in a
+  picture, not by the author. Not built: the figure said aloud.
+- Restarting the hub cuts off a recording: twice on 2026-11-18 a restart made to put a
+  change live fell into the author's hold of the talk key ("it got cut off. I was saying
+  something"), and once it killed a side question a second after it was asked. No code
+  for it (their rule), but look before restarting: `pgrep -af parec` shows a recorder on
+  the microphone (`RDPSource`) while they talk.
 - "2 messages waiting" is no longer written in the row (2026-11-18; the author: "I don't
   care. Just put three minutes"): the number on the light says it. `waiting_words: true`
   brings the words back.

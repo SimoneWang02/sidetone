@@ -219,6 +219,10 @@ class Config:
     # the label is good, but "just putting the number is better", it takes room from the
     # words of the row) | "tokens" = as it was at first, or any word of your own.
     turn_tokens_label: str = ""
+    # The same figure after the time of each line in the history under the rows ("3m · 64k"):
+    # there it stays, where the row loses it at the next prompt (the author asked for it "as
+    # well in history").
+    turn_tokens_history: bool = True
     # "2 messages waiting" in words at the end of a session's row. Off since the author said
     # of it "I don't care", the number on the light says it already.
     waiting_words: bool = False
@@ -299,7 +303,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "waiting_words",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "waiting_words",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):

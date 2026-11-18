@@ -138,7 +138,7 @@ class Hub(Permissions, Talk):
             with self.lock:
                 s = self.sessions.by_id.get(sid)
                 if s:
-                    s.turn_at, s.turn_tokens = at, None
+                    s.turn_at, s.turn_tokens, s.turn_since = at, None, time.time()
             return
         with self.lock:
             s = self.sessions.by_id.get(sid)
@@ -152,6 +152,12 @@ class Hub(Permissions, Talk):
                 s = self.sessions.by_id.get(sid)
                 if s and s.state != "working":
                     s.turn_tokens = read.tokens(how if isinstance(how, str) else "new")
+                    # The line it ended on keeps the figure in the history. A hub that started
+                    # in the middle of the turn does not know when it began: the last half minute.
+                    said = [e for e in self.history if e.get("session") == sid and e.get("kind") != "aside"
+                            and e["time"] >= (s.turn_since or time.time() - 30)]
+                    if said:
+                        said[-1]["tokens"] = s.turn_tokens
         if again:
             timer = threading.Timer(base.RECOUNT, lambda: (self._count_turn(ev, again=False), self.publish()))
             timer.daemon = True
@@ -587,7 +593,8 @@ class Hub(Permissions, Talk):
             for e in reversed(self.history):
                 if each[e["name"]] < 4 and len(history) < 24:
                     each[e["name"]] += 1
-                    history.append({"ago": _ago(now - e["time"]), "name": e["name"], "color": e.get("color", ""), "text": e["text"]})
+                    history.append({"ago": _ago(now - e["time"]), "name": e["name"], "color": e.get("color", ""), "text": e["text"],
+                                    "tokens": usage.tokens_text(e["tokens"]) if self.cfg.turn_tokens_history and e.get("tokens") else ""})
             new_keys, self._keys = keys != self._keys, keys
             new_rows, self._shown = (rows, history) != self._shown, (rows, history)
         if new_keys:  # claim allow/deny/cancel only while they can do something
