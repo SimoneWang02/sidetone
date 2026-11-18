@@ -199,7 +199,7 @@ class Config:
     aside_timeout: float = 60.0
     aside_claude: str = ""
     projects_dir: str = os.path.expanduser("~/.claude/projects")  # Claude Code's records of each session
-    # How the hub answers a spoken follow-up: "sound" (a short sound the moment it goes out, a
+    # How the hub answers a spoken follow-up, and an answer given with the keys: "sound" (a short sound the moment it goes out, a
     # different one when it has to wait for a busy session or was not sent), "voice" ("Sent."
     # in the session's voice, which waits its turn behind a line being spoken) or "none".
     # Without a way to play sounds, "sound" falls back to the voice.
@@ -769,7 +769,8 @@ class Hub:
     def _answer(self, req: Request, answer: str, why: str, echo: bool = True) -> None:
         """Give `answer` to the question on screen: an option's label, or with `why` "voice" the
         user's own words (Claude gets them as it gets a typed "Other"). After the last question
-        the hook hands all answers to Claude. `echo` says the answer back. Call with the lock held."""
+        the hook hands all answers to Claude. `echo` answers with the sound for "sent" (or says
+        the answer back, see `Config.talk_feedback`). Call with the lock held."""
         req.answers[req.question["question"]] = answer
         req.ticked.clear()  # the next question starts with nothing ticked
         s = self.sessions.by_id.get(req.session)
@@ -779,12 +780,13 @@ class Hub:
             req.shown = time.monotonic()
             if s:
                 s.note = f"asks: {req.question['question']}"
-                self._say(s, f"{answer + '. ' if echo else ''}Next. {_read_out(req.question)}", "needs_you", "question")
+                said = f"{answer}. " if echo and self.cfg.talk_feedback == "voice" else ""
+                self._say(s, f"{said}Next. {_read_out(req.question)}", "needs_you", "question")
             self._show_request()
         else:
             self._resolve(req, "answer", why)
-            if s and echo:
-                self._say(s, f"Answered: {answer}.", "allowed", "decision")
+            if s and echo:  # a short sound; the answer itself is only said back with talk_feedback "voice"
+                self._signal("sent", s, f"Answered: {answer}.")
 
     def abandon(self, req: Request, why: str, interrupted: bool = False) -> None:
         """The request ended without the hub answering it (answered in the terminal, hook killed...)."""

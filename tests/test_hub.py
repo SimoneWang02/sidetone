@@ -567,6 +567,16 @@ class Questions(HubCase):
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["option1", "option2", "option3"])
         self.assertTrue(hub.choose(2))
 
+    def test_an_answer_given_with_the_keys_is_met_with_a_sound_not_read_back(self):
+        hub = self.make()
+        hub.sounds = FakeSounds()
+        hub.request_permission(ask_question(question("Which drink?", "Tea", "Coffee"), question("Which colour?", "Red", "Blue")))
+        self.assertTrue(hub.choose(2))
+        self.assertTrue(hub.choose(1))
+        said = self.spoken()
+        self.assertEqual(hub.sounds.played, ["sent"])  # once, when the last answer went in
+        self.assertFalse([line for line in said if "Coffee" in line or "Red" in line or "Answered" in line], said)
+
     def test_a_question_can_be_answered_in_your_own_words(self):
         hub = self.make(talk_feedback="none")
         req = hub.request_permission(ask_question(question("Which drink?", "Tea", "Coffee"),
