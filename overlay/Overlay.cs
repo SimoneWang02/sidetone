@@ -1073,6 +1073,7 @@ namespace ClaudeSpeaks
         // Held to take hold of the bar with the mouse (drag it, turn the wheel on it). Without
         // them the mouse goes straight through the bar to what is underneath. Empty: any time.
         int[] dragKeys = { VK_CONTROL, VK_MENU };
+        string dragKeysName = "Ctrl+Alt";
         int wheelTurned;
         double wheelUntil, selectorY, selectorShown, heldSince;
         bool wheeling, keysOpen;
@@ -1331,7 +1332,7 @@ namespace ClaudeSpeaks
                     if (wanted != "island") wanted = "bar";
                     if (wanted != layout) { layout = wanted; ApplyLayout(); RegisterHotkeys(); }  // other arrow keys now
                     if (msg.ContainsKey("focus_wheel")) wheelKeys = Keys(Str(msg, "focus_wheel"));
-                    if (msg.ContainsKey("drag_keys")) dragKeys = Keys(Str(msg, "drag_keys"));
+                    if (msg.ContainsKey("drag_keys")) { dragKeys = Keys(Str(msg, "drag_keys")); dragKeysName = Str(msg, "drag_keys"); }
                     Ui.RowLines = Math.Max(1, Math.Min(3, (int)Num(msg, "row_lines", Ui.RowLines)));
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
@@ -1713,11 +1714,19 @@ namespace ClaudeSpeaks
                 if (of != null && Str(h, "name") != of) continue;
                 if (historyLines.Children.Count >= (of != null ? 4 : 6)) break;
                 var line = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 2), FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
-                string used = Str(h, "tokens");  // what that turn used, if the hub says
-                line.Inlines.Add(new Run(Str(h, "ago") + (used.Length > 0 ? " \u00b7 " + used : "") + "  ") { Foreground = Ui.Faint });
+                line.Inlines.Add(new Run(Str(h, "ago") + "  ") { Foreground = Ui.Faint });
                 line.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
                 line.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Dim });
-                historyLines.Children.Add(line);
+                string used = Str(h, "tokens");  // what that turn used, if the hub says: at the right end of its line
+                if (used.Length == 0) { historyLines.Children.Add(line); continue; }
+                var both = new Grid();
+                both.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                both.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                var figure = new TextBlock { Text = used, FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(10, 2, 0, 2), VerticalAlignment = VerticalAlignment.Bottom };
+                Grid.SetColumn(figure, 1);
+                both.Children.Add(line);
+                both.Children.Add(figure);
+                historyLines.Children.Add(both);
             }
         }
 
@@ -2087,7 +2096,8 @@ namespace ClaudeSpeaks
             hasBanner = true;
             bannerTitle.Inlines.Clear();
             bannerTitle.Inlines.Add(new Run("Drag it to where you want it") { FontWeight = FontWeights.SemiBold });
-            bannerHint.Text = "Any monitor \u00b7 You can drag it any time: just grab it with the mouse";
+            bannerHint.Text = dragKeys.Length == 0 ? "Any monitor. Later, just grab it with the mouse"
+                                                   : "Any monitor. Later, hold " + dragKeysName + " to drag it";
             bannerHint.Visibility = Visibility.Visible;
             moveTimer.Stop(); moveTimer.Interval = TimeSpan.FromSeconds(15); moveTimer.Start();
             Render();

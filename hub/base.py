@@ -219,10 +219,15 @@ class Config:
     # the label is good, but "just putting the number is better", it takes room from the
     # words of the row) | "tokens" = as it was at first, or any word of your own.
     turn_tokens_label: str = ""
-    # The same figure after the time of each line in the history under the rows ("3m · 64k"):
-    # there it stays, where the row loses it at the next prompt (the author asked for it "as
-    # well in history").
+    # The same figure at the right end of each line in the history under the rows: there it
+    # stays, where the row loses it at the next prompt (the author asked for it "as well in
+    # history", and then for the end of the message, not right after its time).
     turn_tokens_history: bool = True
+    # What stands between the parts of a line the hub writes for the overlay (tasks and time
+    # in a row, the keys under a request): "" = only a gap (the author, 2026-11-18: "don't
+    # use the dots, the central dots. I don't like them") | a sign of your own, "\u00b7" for
+    # the raised dot it was.
+    separator: str = ""
     # "2 messages waiting" in words at the end of a session's row. Off since the author said
     # of it "I don't care", the number on the light says it already.
     waiting_words: bool = False
@@ -303,7 +308,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "waiting_words",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "separator", "waiting_words",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):
@@ -429,6 +434,14 @@ def _read_out(question: dict, place: str = "") -> str:
 
 def _ago(seconds: float) -> str:
     return "now" if seconds < 60 else _elapsed(seconds)
+
+
+def gap(cfg: Config, wide: bool = False) -> str:
+    """What goes between two parts of a line (see Config.separator); `wide` for a line of keys."""
+    sign = str(cfg.separator or "").strip()
+    if sign:
+        return f"  {sign}  " if wide else f" {sign} "
+    return "    " if wide else "   "
 
 
 def context_mode(cfg: Config) -> str:

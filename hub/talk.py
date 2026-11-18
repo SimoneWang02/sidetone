@@ -143,7 +143,7 @@ class Talk:
             confirm = delay is None and self._needs_confirmation(s)
             pending = self._pending = Pending(s.id, text, confirm)
             if confirm:
-                hint = f"tap {keys.get('talk') or 'the talk key'} to send  \u00b7  {keys.get('cancel', '')} cancels"
+                hint = f"tap {keys.get('talk') or 'the talk key'} to send{base.gap(self.cfg, True)}{keys.get('cancel', '')} cancels"
                 pending.timer = threading.Timer(base.CONFIRM_WINDOW, self._expire, args=(pending,))
             else:
                 hint = f"{keys.get('cancel', '')} cancels" if keys.get("cancel") else ""

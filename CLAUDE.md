@@ -729,7 +729,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `waiting_words`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -877,8 +877,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   why it is not the default. A turn ended with Esc has no Stop and shows nothing. The row's
   figure is not kept across a hub restart. The line the turn ended on keeps it in the
   history (`tokens` on the entry; asked for by the author "as well in history"), and the
-  overlay writes it after that line's time, "3m · 64k" (`turn_tokens_history`); seen in a
-  picture, not by the author. Not built: the figure said aloud.
+  overlay writes it at the right end of that line (`turn_tokens_history`). It stood after
+  the line's time at first ("3m · 64k"); the author: "I don't like where ... right after
+  the time. Maybe put it at the end of the message". Seen in a picture, not by the author.
+- No raised dots (2026-11-18; the author: "don't use the dots, the central dots. I don't
+  like them"). The parts of a line the hub writes (tasks and time in a row, the keys under
+  a request or a question, the confirming tap) are set apart by a gap, three spaces or
+  four for a line of keys (`base.gap`); `separator: "\u00b7"` in `config.json` brings the
+  dot back, or any sign. The terminal title ("name · title", off by default) still has
+  one. The move view's hint now names the keys ("Any monitor. Later, hold Ctrl+Alt to
+  drag it"), which it got wrong before. Not built: the figure said aloud.
 - Restarting the hub cuts off a recording: twice on 2026-11-18 a restart made to put a
   change live fell into the author's hold of the talk key ("it got cut off. I was saying
   something"), and once it killed a side question a second after it was asked. No code

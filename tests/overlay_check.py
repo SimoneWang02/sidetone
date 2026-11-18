@@ -279,7 +279,7 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
     its context is, in percent."""
     rows = [
         dict(name="claude-speaks", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta=""),
-        dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="3/5 · 6m"),
+        dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="3/5   6m"),
         dict(name="web-app", title="Dark mode for settings", state="needs_you", text="asks: Which drink would you like?", meta=""),
         dict(name="data-pipeline", title="Nightly export", state="failed", text="error: rate limit", meta=""),
         dict(name="notes", title="", state="idle", text="", meta=""),
@@ -337,10 +337,10 @@ DRINKS = ["Tea", "Coffee, with milk and one sugar, in the large cup that is stil
 
 def question(text, options, ticked=None, place="", more=0):
     """A question as Hub._show_request sends it: one answer to pick, or with `ticked` several to tick."""
-    keys = f"Ctrl+Alt+1 to Ctrl+Alt+{len(options)} " + ("tick  \u00b7  Ctrl+Alt+Y confirms" if ticked is not None else "answers")
+    keys = f"Ctrl+Alt+1 to Ctrl+Alt+{len(options)} " + ("tick    Ctrl+Alt+Y confirms" if ticked is not None else "answers")
     send(type="request", name="web-app", color=COLORS[2], text=f"asks: {text}", question=text, place=place, options=options,
          detail="\n".join(f"{i}  {o}" for i, o in enumerate(options, 1)),
-         keys=keys + (f"  \u00b7  {more} more waiting" if more else ""),
+         keys=keys + (f"    {more} more waiting" if more else ""),
          **({"ticked": ticked} if ticked is not None else {}))
 
 
@@ -356,7 +356,7 @@ shot("question-tick-none")
 question("Which toppings do you want on it?", TOPPINGS, ticked=[True, False, True, False], place="2 of 2", more=1)
 shot("question-tick-some")
 send(type="request", name="web-app", color=COLORS[2], text="wants to: Push to the remote", detail="git push origin main",
-     keys="Ctrl+Alt+Y allow  \u00b7  Ctrl+Alt+N deny")
+     keys="Ctrl+Alt+Y allow    Ctrl+Alt+N deny")
 shot("permission")
 send(type="request")
 send(type="talk", state="listening", name="web-app")

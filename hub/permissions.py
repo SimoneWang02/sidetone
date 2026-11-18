@@ -157,6 +157,7 @@ class Permissions:
         s = self.sessions.by_id.get(req.session)
         keys = self.cfg.overlay.get("hotkeys", {})
         more = len(self.requests) - 1
+        wide = base.gap(self.cfg, True)  # between the parts of the line about the keys
         if req.question:
             options, several = req.question["options"], bool(req.question.get("multiSelect"))
             self.overlay.send({
@@ -169,14 +170,14 @@ class Permissions:
                 **({"ticked": [i in req.ticked for i in range(len(options))]} if several else {}),
                 "detail": "\n".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
                 "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} "
-                        + (f"tick  \u00b7  {keys.get('allow', '')} confirms" if several else "answers")
-                        + (f"  \u00b7  {more} more waiting" if more else ""),
+                        + (f"tick{wide}{keys.get('allow', '')} confirms" if several else "answers")
+                        + (f"{wide}{more} more waiting" if more else ""),
             })
             return
         self.overlay.send({
             "type": "request", "name": s.name if s else "", "color": s.color if s else "", "text": f"wants to: {req.summary}",
             "detail": req.detail[:300],
-            "keys": f"{keys.get('allow', '')} allow  \u00b7  {keys.get('deny', '')} deny" + (f"  \u00b7  {more} more waiting" if more else ""),
+            "keys": f"{keys.get('allow', '')} allow{wide}{keys.get('deny', '')} deny" + (f"{wide}{more} more waiting" if more else ""),
         })
 
     def place_overlay(self, tell_window: bool = True, **changes) -> None:

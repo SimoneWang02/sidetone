@@ -323,7 +323,7 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("PreToolUse", tool_name="Bash", tool_input={"description": "Run tests"}))
         row = self.overlay.of("state")[-1]["sessions"][0]
         self.assertEqual((row["name"], row["state"], row["text"], row["meta"]),
-                         ("alpha", "working", "Run tests", "0/1 \u00b7 <1m"))
+                         ("alpha", "working", "Run tests", "0/1   <1m"))
         hub.on_event(ev("Stop", last_assistant_message=tag("All done.")))
         self.spoken()
         row = self.overlay.of("state")[-1]["sessions"][0]

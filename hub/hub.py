@@ -566,7 +566,7 @@ class Hub(Permissions, Talk):
                 "state": s.state,
                 "title": s.title,
                 "text": self._stop_words(s.id) if s.id in self._stopping else s.activity if s.state == "working" else s.note,
-                "meta": " \u00b7 ".join(filter(None, [
+                "meta": base.gap(self.cfg).join(filter(None, [
                     f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
                     self._waiting_note(s.id),

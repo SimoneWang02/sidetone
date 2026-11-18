@@ -541,8 +541,7 @@ real keys yet.
       that day (waiting marks, tick boxes, a question's place, stopping, queued, a side
       question). A tool for whoever works on the overlay; nothing a user of it meets.
 - [ ] Seen in those pictures, not mended: a choice that wraps goes on under its box, not
-      under its first word; the move view says "just grab it with the mouse" although
-      `Ctrl+Alt` is needed by default; with the clock mark, "9+" is hardly readable;
+      under its first word; with the clock mark, "9+" is hardly readable;
       the blur and acrylic glass look the same; a tick question's line about the keys
       wraps when "1 more waiting" is added.
 - [x] `install.sh` has only been run in throwaway folders, never with the model download.
@@ -628,6 +627,14 @@ Bigger pieces:
       yet (see the ticked item under "Rough edges"; put off to here by the author).
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.
+      The author, 2026-11-18, by voice (the recording was cut twice, so only its gist):
+      expand to other models "such as Codex, Gemini", and show which one a session is by
+      its logo, the Claude logo "in center" of the light. Told in reply, nothing built:
+      the middle of the light holds the status sign (check, "!", voice bars), as came up
+      with the waiting number, so a small mark at the lower left of the light or before
+      the name in the row would fit better; other companies' logos are trademarks, so
+      marks of our own drawing or files the user supplies; and it only says something
+      once a second agent can be connected. Their answer is open.
 - [ ] An overlay for Linux and macOS. Today it is Windows only.
 - [ ] A version that runs on Windows itself, without WSL (the author, 2026-11-17, on learning
       that Claude Code started from PowerShell or cmd does not start any of this: it reads
@@ -741,8 +748,8 @@ Bigger pieces:
       (`turn_tokens_label`). **Still to agree:** which figure they mean (the default
       leaves out what is read again at every step, which would make every figure
       millions) and whether the row is the place. Then asked for "as well in history": each line under the
-      rows now has its turn's figure after its time ("3m · 64k"); seen in a picture
-      only. Not built: the figure said aloud, or while the turn runs.
+      rows now has its turn's figure, at its right end since they did not like it
+      right after the time; seen in a picture only. Not built: the figure said aloud, or while the turn runs.
 - [x] Usage said aloud (the author, 2026-11-17, by voice: "check if in the future it's
       possible to make you say the percentage of the current usage"). Today a session
       cannot answer "what's the current usage?": nothing it can call reports the plan's
