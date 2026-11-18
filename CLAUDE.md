@@ -459,6 +459,18 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   under a second ago. A focus chosen by hand clears the note. What the overlay draws in
   that moment was checked in pictures and is right (`talk-while-another-speaks`): the
   listening sign stays on the session spoken to, the other light shows its voice.
+- A command allowed in the terminal (2026-11-17, `claude_sessions.tool_shells`, the loop over
+  `requests` in `Hub.reconcile`): no hook reports a yes typed in the terminal, so a prompt
+  that had waited more than six seconds left its session on "needs you" until the command
+  was done. The author, told it was a small flaw and hard to mend: "if it's fixable ...
+  that would be for the best, right?" A `Request` for the Bash tool notes which commands of
+  the session were running when it asked (`shells`); once a second the hub looks for a new
+  one whose command line holds the start of the command asked about (`_runs`; up to its
+  first quote, so another command of the same session starting meanwhile does not count),
+  and closes the request as "allowed in the terminal: its command is running". Tried on a
+  throwaway session: the state went from "needs you" to "working" within half a second of
+  Enter in the terminal. Linux only (it reads `/proc`), Bash only: an edit or a web
+  fetch allowed in the terminal still waits for its end, which comes quickly.
 - Questions: `PermissionRequest` also fires for `AskUserQuestion`, with the questions and options
   in `tool_input`. Single-choice questions with 2 to 4 options become a `Request` with
   `questions`; `choose(n)` records the label and, after the last one, the hook returns allow
@@ -800,8 +812,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   and without rounded corners, for pictures.
 - Session-file facts (measured): `status` is only `busy` or `idle`; it stays `busy` during a
   permission dialog and flips to `idle` within 0.2 s of Esc. The file is removed when the
-  session exits. The Bash tool's process is not a child of the session's pid, so "approved in
-  the terminal, still running" cannot be seen that way.
+  session exits. A command the Bash tool runs is a child of the session's pid (measured
+  2026-11-17 on 2.1.327; an earlier note here said it was not): `/bin/bash -c source
+  ~/.claude/shell-snapshots/snapshot-bash-....sh ... && eval '<the command>' ...`, with a
+  quote inside the command written as `'"'"'`. No such child exists while the permission
+  dialog is open, so "approved in the terminal, still running" can be seen that way.
 - The Notification `permission_prompt` also fires for question dialogs after about 6 s.
 - Memory: the hub holds about 0.5 GB with Kokoro loaded and about 1.2 GB once Whisper `small.en`
   has been loaded by the first push-to-talk.

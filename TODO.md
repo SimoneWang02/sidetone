@@ -397,8 +397,14 @@ real keys yet.
       Offered to the author on the evening of 2026-11-17 as a decision to confirm ("the
       next you're saying it's a quick decision. Can you check it?"): it stays as it is.
       Since the same day the cancel key takes words back and stops the session that got them.
-- [ ] A permission prompt that waited more than six seconds and is then approved in the
+- [x] A permission prompt that waited more than six seconds and is then approved in the
       terminal stays "needs you" until that tool finishes.
+      Mended on the evening of 2026-11-17 for commands, on the author's "if it's fixable
+      ... that would be for the best": the hub sees the command start running and takes
+      that as the yes. Tried on a throwaway session (back to "working" half a second
+      after Enter in the terminal). Live from the next hub restart; the author has not
+      watched it. Other tools (an edit, a web fetch) still wait for their end, which is
+      a moment.
 - [ ] The number keys only answer single-choice questions with up to four options. The same
       limit holds for answering by voice: other questions are only announced, and words
       spoken meanwhile wait until the question is answered in the terminal. A permission

@@ -125,6 +125,7 @@ class Request:
     decision: str | None = None  # allow | deny | answer | None (answered elsewhere)
     questions: list = field(default_factory=list)  # for AskUserQuestion: the questions, each with options
     answers: dict = field(default_factory=dict)  # question text -> chosen option label
+    shells: set | None = None  # the session's commands that were already running when it asked (None: not known)
 
     @property
     def question(self) -> dict | None:
@@ -480,6 +481,16 @@ class Hub:
                 elif s.seen_file and quiet > 5:  # it had a file and no longer does: the session is gone
                     self._forget(s.id, "session gone")
                     changed = True
+            # A command allowed in the terminal: no hook says so, and the session went on showing
+            # "needs you" until the command was done, minutes later for a long one. But the
+            # command then starts, as a child of the session that was not there when it asked.
+            for req in [r for r in self.requests if r.shells is not None]:
+                pid = (live.get(req.session) or {}).get("pid")
+                started = [line for shell, line in claude_sessions.tool_shells(pid).items()
+                           if shell not in req.shells] if pid else []
+                if any(_runs(line, str(req.tool_input.get("command") or "")) for line in started):
+                    self._resolve(req, None, "allowed in the terminal: its command is running")
+                    changed = True
             # A session that was asked to stop: its hook takes the file away as it ends the turn.
             for sid, stopping in list(self._stopping.items()):
                 s = self.sessions.by_id.get(sid)
@@ -693,6 +704,9 @@ class Hub:
             else:
                 summary, detail = permission_summary(tool, tool_input)
                 req = Request(session=sid, tool=tool, tool_input=tool_input, summary=summary, detail=detail)
+                if tool == "Bash":  # to see it start, should it be allowed in the terminal (see reconcile)
+                    pid = (claude_sessions.read(self.cfg.sessions_dir).get(sid) or {}).get("pid")
+                    req.shells = set(claude_sessions.tool_shells(pid)) if pid else None
                 s.state, s.note = "needs_you", f"wants to: {summary}"
             if req:
                 self.requests.append(req)
@@ -1634,6 +1648,15 @@ class Hub:
             timing += f" heard={u.heard * 1000:.0f}ms"
         said = f"{label}. {u.text}" if label else u.text
         log(self.cfg, "voice.log", f"[{u.session[:8] or 'cli'}] src={u.src} {outcome} voice={u.voice} {timing} speech={said}")
+
+
+def _runs(shell: str, command: str) -> bool:
+    """Is this shell of the Bash tool running that command? Its command line holds the command
+    in single quotes, so a command is known by its start, up to its first quote. Two commands
+    of one session can start at the same moment (a helper of the session runs its own), and
+    only the one that was asked about says the question is answered."""
+    start = command.split("'")[0].strip()[:60]
+    return start in shell if len(start) >= 6 else True
 
 
 def _spoken_name(name: str) -> str:

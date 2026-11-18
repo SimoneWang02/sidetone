@@ -1592,6 +1592,60 @@ class ClaudeCodesOwnRecords(HubCase):
         self.assertEqual((self.session()["state"], self.session()["note"]), ("idle", "interrupted"))
         self.assertTrue(req.done.is_set())
 
+    def a_session_that_runs(self, *commands):
+        """A stand-in for a session's process: for each line it is sent, it starts the next of
+        `commands` the way Claude Code starts a Bash tool's command, in a shell of its own."""
+        code = ("import subprocess, sys\n"
+                "for command in sys.argv[1:]:\n"
+                "    sys.stdin.readline()\n"
+                "    subprocess.Popen(['/bin/sh', '-c', 'true /home/x/.claude/shell-snapshots/snap.sh"
+                " && : eval ' + repr(command) + ' ; sleep 30; true'])\n"  # named, not run
+                "    print('started', flush=True)\n"
+                "sys.stdin.readline()\n")
+        proc = subprocess.Popen([sys.executable, "-c", code, *commands], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        self.addCleanup(lambda: subprocess.run(["pkill", "-P", str(proc.pid)]) and None)
+        self.addCleanup(proc.kill)
+
+        def start():
+            proc.stdin.write("go\n")
+            proc.stdin.flush()
+            proc.stdout.readline()
+        return proc, start
+
+    def test_a_command_allowed_in_the_terminal_is_seen_starting(self):
+        """No hook reports a yes typed in the terminal, and the session showed "needs you"
+        until the command was done. The command starting is what tells."""
+        hub = self.make()
+        proc, start = self.a_session_that_runs("npm test")
+        self.record("s1", "busy", pid=proc.pid)
+        hub.on_event(ev("UserPromptSubmit"))
+        req = hub.request_permission(ask())
+        hub.on_event(ev("Notification", notification_type="permission_prompt"))  # still open after six seconds
+        hub.reconcile()
+        self.assertEqual(self.session()["state"], "needs_you")
+        self.assertFalse(req.done.is_set())
+        start()
+        hub.reconcile()
+        self.assertTrue(req.done.is_set())
+        self.assertIsNone(req.decision)  # the hook prints nothing: the terminal has answered
+        self.assertEqual(self.session()["state"], "working")
+
+    def test_another_command_of_the_session_does_not_answer_the_question(self):
+        hub = self.make()
+        proc, start = self.a_session_that_runs("ls -la src", "git status", "npm test")
+        self.record("s1", "busy", pid=proc.pid)
+        hub.on_event(ev("UserPromptSubmit"))
+        start()  # one that was running before it asked
+        req = hub.request_permission(ask())
+        hub.reconcile()
+        start()  # and one that a helper of the session starts meanwhile
+        hub.reconcile()
+        self.assertFalse(req.done.is_set())
+        self.assertEqual(self.session()["state"], "needs_you")
+        start()
+        hub.reconcile()
+        self.assertTrue(req.done.is_set())
+
     def test_a_busy_session_is_left_alone(self):
         hub = self.make()
         hub.on_event(ev("UserPromptSubmit"))

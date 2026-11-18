@@ -43,3 +43,33 @@ def read(directory: str) -> dict[str, dict]:
             found[sid] = {"pid": pid, "status": data.get("status"), "status_at": (data.get("statusUpdatedAt") or 0) / 1000,
                           "name": name}
     return found
+
+
+def tool_shells(pid: int) -> dict[int, str]:
+    """The commands a session's Bash tool is running right now: process id -> command line.
+
+    Claude Code runs each one in a shell of its own, a child of the session, which first reads
+    the session's shell snapshot (`~/.claude/shell-snapshots/...`); that is how they are told
+    from the session's other children, the hooks. Linux only (it reads /proc), and as
+    undocumented as the session files: where it cannot be read, nothing is found.
+    """
+    found: dict[int, str] = {}
+    try:
+        threads = os.listdir(f"/proc/{pid}/task")
+    except OSError:
+        return found
+    for thread in threads:
+        try:
+            with open(f"/proc/{pid}/task/{thread}/children") as f:
+                children = f.read().split()
+        except OSError:
+            continue
+        for child in children:
+            try:
+                with open(f"/proc/{child}/cmdline", "rb") as f:
+                    line = f.read().replace(b"\0", b" ").decode(errors="replace")
+            except OSError:
+                continue
+            if "/shell-snapshots/" in line:
+                found[int(child)] = line
+    return found
