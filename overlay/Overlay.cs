@@ -480,7 +480,15 @@ namespace ClaudeSpeaks
         static void Number(DrawingContext dc, string text, Point at, double size)
         {
             var drawn = new FormattedText(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight, MarkFace, Math.Max(1, size), Brushes.White);
-            dc.DrawText(drawn, new Point(at.X - drawn.Width / 2, at.Y - drawn.Height / 2));
+            // The middle of the strokes themselves goes on the middle of the disc. The line a
+            // digit stands in has room below for letters that hang down, so set by its line
+            // a digit sits low (half a pixel to a pixel here, measured in pictures).
+            Geometry ink = drawn.BuildGeometry(new Point(0, 0));
+            Rect box = ink.Bounds;
+            if (box.IsEmpty) return;
+            dc.PushTransform(new TranslateTransform(at.X - (box.X + box.Width / 2), at.Y - (box.Y + box.Height / 2)));
+            dc.DrawGeometry(Brushes.White, null, ink);
+            dc.Pop();
         }
     }
 
