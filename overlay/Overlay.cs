@@ -2149,6 +2149,26 @@ namespace ClaudeSpeaks
         }
 
         // A permission prompt or question stays on screen until it is answered: the hotkeys act on it.
+        // The box in front of a choice that can be ticked. Drawn here, not taken from a font,
+        // so that it is the same size ticked and unticked and the words beside it stay put.
+        static UIElement TickBox(bool on)
+        {
+            var box = new Border
+            {
+                Width = 14, Height = 14, CornerRadius = new CornerRadius(3.5), BorderThickness = new Thickness(1.5),
+                BorderBrush = Ui.AmberEdge, Background = on ? Ui.AmberEdge : Brushes.Transparent,
+                Margin = new Thickness(0, 2, 0, 2), SnapsToDevicePixels = true,
+            };
+            if (on)
+                box.Child = new System.Windows.Shapes.Path
+                {
+                    Data = Geometry.Parse("M 2.2,5.8 L 4.6,8.2 L 8.8,3"),
+                    Stroke = new SolidColorBrush(Color.FromRgb(0x14, 0x14, 0x18)), StrokeThickness = 1.8,
+                    StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round,
+                };
+            return box;
+        }
+
         void ShowRequest(Dictionary<string, object> msg)
         {
             hasRequest = msg.ContainsKey("text");
@@ -2157,8 +2177,17 @@ namespace ClaudeSpeaks
                 requestTitle.Inlines.Clear();
                 requestTitle.Inlines.Add(new Run("\u25B2  ") { Foreground = Ui.AmberEdge, FontFamily = Ui.Symbols });
                 requestTitle.Inlines.Add(new Run(Str(msg, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(msg, "color")) });
-                requestTitle.Inlines.Add(new Run(Str(msg, "text")));
+                requestTitle.MaxHeight = Str(msg, "question").Length > 0 ? 74 : 54;  // the name's line and three more, or three in all
+                if (Str(msg, "question").Length > 0)  // a question stands on a line of its own, under who asks it
+                {
+                    requestTitle.Inlines.Add(new LineBreak());
+                    requestTitle.Inlines.Add(new Run(Str(msg, "question")) { Foreground = Brushes.White });
+                }
+                else requestTitle.Inlines.Add(new Run(Str(msg, "text")));
                 object[] options = msg.ContainsKey("options") && msg["options"] != null ? (object[])msg["options"] : new object[0];
+                // Several to tick: a box in front of each choice and no number (the keys go by
+                // their order). One to pick: its number.
+                object[] ticked = msg.ContainsKey("ticked") && msg["ticked"] != null ? (object[])msg["ticked"] : null;
                 string detail = Str(msg, "detail");
                 requestDetail.Inlines.Clear();
                 if (options.Length > 0)  // a question: each choice on a line of its own, behind its number
@@ -2168,7 +2197,12 @@ namespace ClaudeSpeaks
                     for (int i = 0; i < options.Length; i++)
                     {
                         if (i > 0) requestDetail.Inlines.Add(new LineBreak());
-                        requestDetail.Inlines.Add(new Run((i + 1) + "   ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.AmberEdge });
+                        if (ticked != null)
+                        {
+                            requestDetail.Inlines.Add(new InlineUIContainer(TickBox(i < ticked.Length && Convert.ToBoolean(ticked[i]))) { BaselineAlignment = BaselineAlignment.Center });
+                            requestDetail.Inlines.Add(new Run("   "));
+                        }
+                        else requestDetail.Inlines.Add(new Run((i + 1) + "   ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.AmberEdge });
                         requestDetail.Inlines.Add(new Run(Convert.ToString(options[i], CultureInfo.InvariantCulture)) { Foreground = Brushes.White });
                     }
                 }

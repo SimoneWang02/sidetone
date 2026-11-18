@@ -606,7 +606,8 @@ class Questions(HubCase):
         req = hub.request_permission(ask_question(question("Which fruits?", "Apple", "Banana", "Cherry", multi=True),
                                                   question("Which drink?", "Tea", "Coffee")))
         shown = lambda: self.overlay.of("request")[-1]
-        self.assertEqual(shown()["options"], ["\u2610 Apple", "\u2610 Banana", "\u2610 Cherry"])
+        self.assertEqual((shown()["question"], shown()["options"], shown()["ticked"]),
+                         ("Which fruits?", ["Apple", "Banana", "Cherry"], [False, False, False]))
         self.assertIn("Ctrl+Alt+Y confirms", shown()["keys"])
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "option1", "option2", "option3"])
         self.assertFalse(hub.decide("allow"), "nothing is ticked yet")
@@ -614,12 +615,13 @@ class Questions(HubCase):
         self.assertTrue(hub.choose(1))
         self.assertTrue(hub.choose(2))
         self.assertTrue(hub.choose(2))  # ticked by mistake: off again
-        self.assertEqual(shown()["options"], ["\u2611 Apple", "\u2610 Banana", "\u2611 Cherry"])
+        self.assertEqual(shown()["ticked"], [True, False, True])
         self.assertEqual(req.answers, {})
         self.assertFalse(hub.decide("deny"))  # a question is not refused with a key
         self.assertTrue(hub.decide("allow"))
         self.assertEqual(req.answers, {"Which fruits?": "Apple, Cherry"})  # in the order they were offered
-        self.assertEqual(shown()["options"], ["Tea", "Coffee"])  # the next one has a single answer: no boxes
+        self.assertEqual(shown()["options"], ["Tea", "Coffee"])
+        self.assertNotIn("ticked", shown())  # the next one has a single answer: numbers, no boxes
         self.assertNotIn("allow", self.overlay.of("keys")[-1]["live"])
         self.assertTrue(hub.choose(2))
         self.assertEqual((req.decision, req.answers), ("answer", {"Which fruits?": "Apple, Cherry", "Which drink?": "Coffee"}))

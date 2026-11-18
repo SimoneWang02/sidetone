@@ -833,8 +833,10 @@ class Hub:
             self.overlay.send({
                 "type": "request", "name": s.name if s else "", "color": s.color if s else "",
                 "text": f"asks: {req.question['question']}",
-                # Drawn one to a line, each behind its number; with several to tick, behind a box too.
-                "options": [(("\u2611 " if i in req.ticked else "\u2610 ") if several else "") + o["label"] for i, o in enumerate(options)],
+                "question": req.question["question"],  # written on a line of its own under the name
+                # Drawn one to a line: behind its number, or, with several to tick, behind a box.
+                "options": [o["label"] for o in options],
+                **({"ticked": [i in req.ticked for i in range(len(options))]} if several else {}),
                 "detail": "\n".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
                 "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} "
                         + (f"tick  \u00b7  {keys.get('allow', '')} confirms" if several else "answers")
