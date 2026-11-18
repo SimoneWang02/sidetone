@@ -139,15 +139,6 @@ real keys yet.
       two tries with the keys held worked, and the late press stays unproven. One case
       is left and is rare: `Ctrl+Alt` never let go for longer than the "sent" sign
       shows, then Backspace to stop the session, is a plain Backspace.
-- [ ] Restarting the overlay or the hub while the talk key is held (2026-11-17: another
-      session restarted the overlay in the middle of a sentence of 48 s; the new window
-      did not know the key was down, the microphone stayed on, and the words went out
-      later, to the session the focus had moved to meanwhile; the author: "I was talking
-      and at some point it got cut out. It seemed like the mic was still on"). Mended:
-      both restarts now wait until the key is up and the words are out, and a window
-      that dies by itself ends the hold and sends what was said so far. Tests only, and
-      live from the next hub restart. To try: hold the talk key, have a session run
-      `claude-speaks overlay restart` while you speak, and finish the sentence.
 - [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
       which was right, since nothing had been said since the last message. Not heard yet:
       a real replay, pressed after a session spoke while the author was away from it.

@@ -719,17 +719,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   "waiting for the session to stop" for an idle session; the words were kept and arrived
   after the next reply). The listener now waits up to `CS_WAIT` seconds (10) for the socket
   and only then takes it that there is no hub.
-- Restarts wait for the talk key (2026-11-17). The overlay is the only thing that knows the
-  key is down. Another session ran `overlay restart` 26 s into a hold of 48 s: the new
-  window knew nothing of the hold, so the release ended nothing, the hub went on
-  recording, and a later press and release sent everything to the session the focus had
-  moved to. Now `Hub.restart_overlay` puts the restart off until the hold is over and the
-  words are out (`_overlay_due`, `_overlay_catch_up`); `/shutdown` waits the same way, up
-  to a minute (`Hub.quiet`), so `hub restart` neither cuts a sentence nor loses one on its
-  way through the speech model; and a window that exits by itself reports `exited`, on
-  which the hub ends the hold and sends what was said so far to the session that was
-  listening. A new window cannot take a hold over: the old one kept the key's press from
-  Windows and told it Ctrl and Alt were up, so nothing can be asked about them.
+- Restarts during a hold of the talk key are left alone (2026-11-17). Another session ran
+  `overlay restart` 26 s into a hold: the new window knew nothing of the hold, the hub
+  went on recording, and the words went out later to the session the focus had moved to.
+  A fix was built (restarts wait for the end of the hold) and taken out again the same
+  hour on the author's word: "it's not needed ... I'm doing maintenance ... there's no
+  need in the final product". It is in commit `211f845` if ever wanted. The rule they
+  gave with it: no code for things that only happen while the tool is being worked on.
 - Editing a hook script while it runs (2026-11-17): bash reads a script from its file as it
   goes, by position. `listen.sh` waits for hours, and when another session edited it in place
   the listeners already running read on in the middle of the new text: "line 19: r: command
