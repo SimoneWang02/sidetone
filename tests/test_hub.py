@@ -601,9 +601,40 @@ class Questions(HubCase):
         hub.on_event(ev("Notification", notification_type="permission_prompt"))
         self.assertEqual(self.spoken(), ["Question: Which drink? One: Tea. Two: Coffee."])
 
+    def test_several_choices_are_ticked_with_the_number_keys_and_handed_in_with_the_allow_key(self):
+        hub = self.make()
+        req = hub.request_permission(ask_question(question("Which fruits?", "Apple", "Banana", "Cherry", multi=True),
+                                                  question("Which drink?", "Tea", "Coffee")))
+        shown = lambda: self.overlay.of("request")[-1]
+        self.assertEqual(shown()["options"], ["\u2610 Apple", "\u2610 Banana", "\u2610 Cherry"])
+        self.assertIn("Ctrl+Alt+Y confirms", shown()["keys"])
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "option1", "option2", "option3"])
+        self.assertFalse(hub.decide("allow"), "nothing is ticked yet")
+        self.assertTrue(hub.choose(3))
+        self.assertTrue(hub.choose(1))
+        self.assertTrue(hub.choose(2))
+        self.assertTrue(hub.choose(2))  # ticked by mistake: off again
+        self.assertEqual(shown()["options"], ["\u2611 Apple", "\u2610 Banana", "\u2611 Cherry"])
+        self.assertEqual(req.answers, {})
+        self.assertFalse(hub.decide("deny"))  # a question is not refused with a key
+        self.assertTrue(hub.decide("allow"))
+        self.assertEqual(req.answers, {"Which fruits?": "Apple, Cherry"})  # in the order they were offered
+        self.assertEqual(shown()["options"], ["Tea", "Coffee"])  # the next one has a single answer: no boxes
+        self.assertNotIn("allow", self.overlay.of("keys")[-1]["live"])
+        self.assertTrue(hub.choose(2))
+        self.assertEqual((req.decision, req.answers), ("answer", {"Which fruits?": "Apple, Cherry", "Which drink?": "Coffee"}))
+        self.assertEqual(self.spoken()[-1], "Answered: Coffee.")  # what each key said was cut by the next
+
+    def test_a_question_with_several_choices_can_be_answered_in_your_own_words(self):
+        hub = self.make(talk_feedback="none")
+        req = hub.request_permission(ask_question(question("Which fruits?", "Apple", "Banana", multi=True)))
+        self.assertTrue(hub.choose(1))
+        hub.follow_up("Apples, and mango, which is not on your list", session="s1", delay=0)
+        time.sleep(0.1)
+        self.assertEqual((req.decision, req.answers), ("answer", {"Which fruits?": "Apples, and mango, which is not on your list"}))
+
     def test_questions_the_keys_cannot_answer_are_only_announced(self):
         hub = self.make()
-        self.assertIsNone(hub.request_permission(ask_question(question("Pick any", "A", "B", multi=True))))
         self.assertIsNone(hub.request_permission(ask_question(question("Too many", "A", "B", "C", "D", "E"))))
         self.assertEqual(self.session()["note"], "has a question for you")
 

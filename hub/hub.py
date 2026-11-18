@@ -125,6 +125,7 @@ class Request:
     decision: str | None = None  # allow | deny | answer | None (answered elsewhere)
     questions: list = field(default_factory=list)  # for AskUserQuestion: the questions, each with options
     answers: dict = field(default_factory=dict)  # question text -> chosen option label
+    ticked: set = field(default_factory=set)  # a question with several choices to tick: those ticked so far, counted from 0
     shells: set | None = None  # the session's commands that were already running when it asked (None: not known)
 
     @property
@@ -718,15 +719,22 @@ class Hub:
         """Answer the request on screen (hotkey or command line). False if there was nothing to answer."""
         with self.lock:
             req = self.requests[0] if self.requests else None
-            if not req or req.question or req.shown is None or time.monotonic() - req.shown < MIN_SHOWN:
-                return False  # nothing there, a question, or it appeared too recently to have been read
-            self.last_seen = time.time()
+            if not req or req.shown is None or time.monotonic() - req.shown < MIN_SHOWN:
+                return False  # nothing there, or it appeared too recently to have been read
             s = self.sessions.by_id.get(req.session)
-            self._resolve(req, decision, "hotkey")
-            if s:
-                self.speech.drop_session(s.id)  # stop "permission needed" if it is still being said
-                self._say(s, "Allowed." if decision == "allow" else "Denied.",
-                          "allowed" if decision == "allow" else "denied", "decision")
+            if req.question:  # only a question with choices to tick takes the allow key: it hands them in
+                ticked = [o["label"] for i, o in enumerate(req.question["options"]) if i in req.ticked]
+                if not (req.question.get("multiSelect") and decision == "allow" and ticked):
+                    return False
+                self.last_seen = time.time()
+                self._answer(req, ", ".join(ticked), "hotkey")  # how Claude Code itself writes several choices
+            else:
+                self.last_seen = time.time()
+                self._resolve(req, decision, "hotkey")
+                if s:
+                    self.speech.drop_session(s.id)  # stop "permission needed" if it is still being said
+                    self._say(s, "Allowed." if decision == "allow" else "Denied.",
+                              "allowed" if decision == "allow" else "denied", "decision")
         self.publish()
         return True
 
@@ -739,7 +747,17 @@ class Hub:
                     or not 1 <= number <= len(question["options"])):
                 return False
             self.last_seen = time.time()
-            self._answer(req, question["options"][number - 1]["label"], "hotkey")
+            label = question["options"][number - 1]["label"]
+            if question.get("multiSelect"):  # tick or untick; the allow key hands the ticked ones in
+                on = number - 1 not in req.ticked
+                (req.ticked.add if on else req.ticked.discard)(number - 1)
+                s = self.sessions.by_id.get(req.session)
+                if s:
+                    self.speech.drop_session(s.id)  # stop reading the options out
+                    self._say(s, f"{label}." if on else f"Not {label}.", "allowed", "decision")
+                self._show_request()
+            else:
+                self._answer(req, label, "hotkey")
         self.publish()
         return True
 
@@ -748,6 +766,7 @@ class Hub:
         user's own words (Claude gets them as it gets a typed "Other"). After the last question
         the hook hands all answers to Claude. `echo` says the answer back. Call with the lock held."""
         req.answers[req.question["question"]] = answer
+        req.ticked.clear()  # the next question starts with nothing ticked
         s = self.sessions.by_id.get(req.session)
         if s:
             self.speech.drop_session(s.id)  # stop reading the options out
@@ -803,13 +822,15 @@ class Hub:
         keys = self.cfg.overlay.get("hotkeys", {})
         more = len(self.requests) - 1
         if req.question:
-            options, total = req.question["options"], len(req.questions)
+            options, total, several = req.question["options"], len(req.questions), bool(req.question.get("multiSelect"))
             self.overlay.send({
                 "type": "request", "name": s.name if s else "", "color": s.color if s else "",
                 "text": f"asks: {req.question['question']}",
-                "options": [o["label"] for o in options],  # drawn one to a line, each behind its number
+                # Drawn one to a line, each behind its number; with several to tick, behind a box too.
+                "options": [(("\u2611 " if i in req.ticked else "\u2610 ") if several else "") + o["label"] for i, o in enumerate(options)],
                 "detail": "\n".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
-                "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} answers"
+                "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} "
+                        + (f"tick  \u00b7  {keys.get('allow', '')} confirms" if several else "answers")
                         + (f"  \u00b7  question {len(req.answers) + 1} of {total}" if total > 1 else "")
                         + (f"  \u00b7  {more} more waiting" if more else ""),
             })
@@ -1530,7 +1551,8 @@ class Hub:
                 "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
             } for s in self.sessions.by_id.values()]
             asking = self.requests[0].question if self.requests else None
-            keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)] if asking
+            keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)]
+                           + (["allow"] if asking.get("multiSelect") else []) if asking
                            else ["allow", "deny"] if self.requests else [])
                           + (["cancel"] if self._talking or self._transcribing or self._pending or current or self._unsendable()
                              or self._asides or self._stoppable() else [])
@@ -1715,13 +1737,13 @@ def _same_call(tool: str, asked: dict, ran: dict) -> bool:
 
 def _answerable(tool_input: dict) -> list:
     """The questions of an AskUserQuestion call if the number keys can answer all of them:
-    single choice, two to four options each. Otherwise an empty list."""
+    two to four options each, one to choose or several to tick. Otherwise an empty list."""
     questions = tool_input.get("questions")
     if not isinstance(questions, list) or not questions:
         return []
     for q in questions:
         options = q.get("options") if isinstance(q, dict) else None
-        if (not isinstance(options, list) or not 2 <= len(options) <= 4 or q.get("multiSelect")
+        if (not isinstance(options, list) or not 2 <= len(options) <= 4
                 or not q.get("question") or not all(isinstance(o, dict) and o.get("label") for o in options)):
             return []
     return questions
@@ -1729,7 +1751,7 @@ def _answerable(tool_input: dict) -> list:
 
 def _read_out(question: dict) -> str:
     options = " ".join(f"{NUMBER_WORDS[i]}: {o['label']}." for i, o in enumerate(question["options"]))
-    return f"Question: {question['question']} {options}"
+    return f"Question: {question['question']} {options}" + (" Tick any, then confirm." if question.get("multiSelect") else "")
 
 
 def _ago(seconds: float) -> str:
