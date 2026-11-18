@@ -589,9 +589,25 @@ Smaller ideas:
         ("Interrupted"). Done through tmux here. For VS Code the extension would have to
         write it (`Terminal.sendText`), which needs the hub to talk to the extension;
         nobody has tried that. Nothing else can type into a terminal on this machine.
-      Open: which key and how. Offered: a double press, since the same key also cuts a
-      line being spoken and one slip would end real work; the author: "double pressing
-      might be too much work". Not decided.
+      Offered: a double press, since the same key also cuts a line being spoken and one
+      slip would end real work; the author: "double pressing might be too much work".
+      Then a key of its own (`Ctrl+Alt+Esc`); the author: "What if Control Alt Backspace
+      does the job ... Isn't that better?" Built that way the same evening, through the
+      hook (`hooks/stop.sh`, now in `~/.claude/settings.json` on the author's machine).
+      One press does the first that applies: throw away a recording; take back what was
+      just sent, ending the session's turn if it has the words; cut the line being
+      spoken; end the turn of the session in focus while it works. `cancel_stops` is
+      `always`, `sent` (not the last of those) or `never` (as before: told to ignore).
+      Checked with the real hook on a throwaway session, before a step and during one.
+      **Not pressed by the author yet.** To try: give a session something with several
+      steps, put the focus on it and press `Ctrl+Alt+Backspace` while nothing is being
+      said; its light should show a red stop sign and its turn should end within a step.
+      Open:
+      - a turn that is only writing, with no step left, cannot be stopped; it ends by
+        itself and what it says is not spoken
+      - instant stopping through the VS Code extension (Esc written into the terminal)
+      - the key is now claimed from every program whenever the session in focus works
+      - a session waiting at a permission prompt is not stopped by the key in focus
 - [ ] Easier ways to take back what you said (the author, 2026-11-17: "it would be really
       cool to somehow cancel with a shortcut"; today it is `Ctrl+Alt+Backspace` while the talk
       key is still held, a four-key grip). Built the same day: the same key within four

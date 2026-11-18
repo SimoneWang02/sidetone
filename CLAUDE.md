@@ -91,6 +91,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 | Stop | `hooks/speak.sh` | Tells the hub the turn ended; the hub speaks the line only if streaming missed it |
 | Notification (`permission_prompt`, `elicitation_dialog`) | `hooks/notify.sh` | Hub marks the session "needs you" and says "I need your input" |
 | PermissionRequest | `hooks/permission.sh` | Holds a request open on the hub until the prompt is answered. Prints the hub's allow/deny, or nothing if it was answered in the terminal |
+| PreToolUse, PostToolUse | `hooks/stop.sh` | Ends the turn when the hub was asked to stop this session (a file named after it in `$CS_RUN/stop`). About 2.5 ms when nobody asked |
 | Stop, SessionStart, UserPromptSubmit (`asyncRewake`) | `hooks/listen.sh` | Background listener: waits on the hub for a spoken follow-up for this session, prints it for Claude and exits 2, which wakes the session |
 | SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse(Failure), TaskCreated, TaskCompleted, StopFailure | `hooks/report.sh` (async) | Forwards the payload so the hub knows what each session is doing. `--start` also starts the hub |
 
@@ -281,6 +282,26 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   plays a short sound (see the next point). Target: the session that spoke last; a quick tap of the talk key picks the next one.
   A busy session gets the follow-up right after its current reply. With no listener yet, the
   text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
+- The cancel key stops a turn (2026-11-17, `Hub._stop_turn`, `hooks/stop.sh`, `cancel_stops`).
+  The author, having learned that taking words back from a session that already has them
+  only tells it to ignore them: "I thought you were already doing that by terminating
+  process", and wanted `Ctrl+Alt+Backspace` to be the stop key in general ("more universal");
+  a double press was "too much work" and a key of its own was turned down for Backspace.
+  One press does the first that applies: throw away a recording; take back what was just
+  sent (words still in the hub are removed, a session that has them is stopped); cut the
+  line being spoken; end the turn of the session in focus while it is `working`
+  (`Hub._stoppable`; the key is claimed for as long as that holds). Stopping: the hub
+  leaves an empty file `$CS_RUN/stop/<session id>` and `stop.sh`, on the session's next
+  `PreToolUse` or `PostToolUse`, removes it and prints `continue: false` (for `PreToolUse`
+  with a refusal of that call), which ends the turn there; Claude sees the reason and does
+  not go on by itself. No `Stop` event follows, so `reconcile` sees the file gone and sets
+  the session idle with the note "stopped". While a stop is asked for the session's own
+  lines are not spoken, its row says "Stopping at its next step" and its light shows a
+  stop sign (`talk` step `stopped`). The asking is called off when the turn ends by
+  itself, when a prompt is typed, when the session is handed new words, and when a hub
+  starts. `cancel_stops`: `always` (default), `sent` (only when taking words back) or
+  `never` (told to ignore, as below). Tried with the real hook on a throwaway session;
+  **the author has not pressed it yet**. A turn that only writes text has no step to stop at.
 - Taking words back after they went out (2026-11-17, `Hub._take_back`, `unsend_seconds`, 4;
   0 = off). The author wanted an easier way to cancel; offered a spoken ending ("never mind")
   and an unsend key, they pointed out that the spoken one could throw away a message they
@@ -557,14 +578,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 148 tests with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 182 tests in all with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `talk_feedback`, `sound_volume`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
