@@ -360,6 +360,10 @@ def question(text, options, ticked=None, place="", more=0):
 
 question("Which drink would you like?", DRINKS)
 shot("question")
+send(type="config", choice_caps=True)  # the numbers as key caps, a setting
+question("Which drink would you like?", DRINKS)
+shot("question-caps")
+send(type="config", choice_caps=False)
 # One of two questions in the same dialog: which one it is stands beside the name.
 question("Which drink would you like?", DRINKS, place="1 of 2")
 shot("question-one-of-two")
@@ -372,6 +376,10 @@ shot("question-tick-some")
 send(type="request", name="web-app", color=COLORS[2], text="wants to: Push to the remote", detail="git push origin main",
      keys="Ctrl+Alt+Y allow    Ctrl+Alt+N deny", hints=[["Ctrl+Alt+Y", "allow", ""], ["Ctrl+Alt+N", "deny", ""]], more=0)
 shot("permission")
+# Another request behind it: said on a line of its own under the keys, as for a question.
+send(type="request", name="web-app", color=COLORS[2], text="wants to: Push to the remote", detail="git push origin main",
+     keys="Ctrl+Alt+Y allow    Ctrl+Alt+N deny    2 more waiting", hints=[["Ctrl+Alt+Y", "allow", ""], ["Ctrl+Alt+N", "deny", ""]], more=2)
+shot("permission-more")
 send(type="request")
 send(type="talk", state="listening", name="web-app")
 send(type="mic", levels=voice(4, 0.05), step=0.05)
@@ -443,6 +451,8 @@ look(waiting_size=6.6, waiting_color="#FF6E8A")
 marks("waiting-small-pink", opened=False)
 look(waiting_mark="clock")
 marks("waiting-clock", opened=False)
+look(waiting_mark="clock", waiting_many="number")
+marks("waiting-clock-nine-plus", opened=False)
 look(waiting_mark="dot")
 marks("waiting-dot", opened=False)
 # The number as it first shows itself, across the whole light. That is a motion, so this one

@@ -479,11 +479,21 @@ namespace ClaudeSpeaks
                 dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.85 + 0.15 * breath), null, corner, 3.8, 3.8);
                 return;
             }
+            if (Waiting > 9)  // two signs do not fit the small clock: the face as with the number, or a disc with room for "9+"
+            {
+                double big = Math.Max(Ui.WaitingSize, 8.4), inward = big - 6.4;
+                var at = new Point(corner.X - inward, corner.Y + inward);
+                if (Ui.WaitingMany == "face") { Dismayed(dc, at, big); return; }
+                dc.DrawEllipse(rim, null, at, big + 1.6, big + 1.6);
+                dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.95), Ui.Line(Colors.White, 0.9, 1.1), at, big, big);
+                Number(dc, count, at, 0.95 * big);
+                return;
+            }
             dc.DrawEllipse(rim, null, corner, 8, 8);
             dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.95), Ui.Line(Colors.White, 0.9, 1.1), corner, 6.4, 6.4);
             if (Waiting > 1)
             {
-                Number(dc, count, corner, count.Length > 1 ? 7.5 : 9.5);
+                Number(dc, count, corner, 9.5);
                 return;
             }
             double turn = t * 1.8;
@@ -1155,6 +1165,9 @@ namespace ClaudeSpeaks
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
         // What the keys do, each key drawn as a small cap: quicker to take in than a line of text.
         readonly WrapPanel requestCaps = new WrapPanel { Margin = new Thickness(0, 2, 0, 0) };
+        // The choices of a question, one row each, and how many more requests wait behind this one.
+        readonly StackPanel requestChoices = new StackPanel { Margin = new Thickness(0, 4, 0, 4), MaxHeight = 190, ClipToBounds = true };
+        readonly TextBlock requestMore = new TextBlock { Foreground = Ui.Faint, FontSize = 12 };
         readonly FontFamily requestMono = new FontFamily("Consolas");
         readonly TextBlock bannerTitle = new TextBlock(), bannerHint = new TextBlock();
         readonly TextBlock emptyLine = new TextBlock { Text = "No Claude sessions", Foreground = Ui.Faint, Margin = new Thickness(12, 13, 12, 13) };
@@ -1254,7 +1267,7 @@ namespace ClaudeSpeaks
             requestDetail.Foreground = Ui.Dim;
             requestDetail.Margin = new Thickness(0, 4, 0, 4);
             requestKeys.Foreground = Ui.AmberEdge;
-            Section(requestBox, requestTitle, requestDetail, requestKeys, requestCaps);
+            Section(requestBox, requestTitle, requestDetail, requestChoices, requestKeys, requestCaps, requestMore);
             bannerTitle.TextWrapping = bannerHint.TextWrapping = TextWrapping.Wrap;
             bannerHint.Foreground = Ui.Faint;
             bannerHint.Margin = new Thickness(0, 2, 0, 0);
@@ -2550,43 +2563,43 @@ namespace ClaudeSpeaks
                 // their order). One to pick: its number.
                 object[] ticked = msg.ContainsKey("ticked") && msg["ticked"] != null ? (object[])msg["ticked"] : null;
                 string detail = Str(msg, "detail");
-                requestDetail.Inlines.Clear();
-                if (options.Length > 0)  // a question: each choice on a line of its own, behind its number
+                requestChoices.Children.Clear();
+                if (options.Length > 0)  // a question: each choice in a row of its own, behind its number
                 {
-                    requestDetail.FontFamily = requestTitle.FontFamily;
-                    requestDetail.MaxHeight = 190;
-                    requestDetail.LineHeight = choiceCaps ? 22 : double.NaN;  // room between one choice's cap and the next
                     for (int i = 0; i < options.Length; i++)
                     {
-                        if (i > 0) requestDetail.Inlines.Add(new LineBreak());
-                        if (ticked != null)
-                        {
-                            requestDetail.Inlines.Add(new InlineUIContainer(TickBox(i < ticked.Length && Convert.ToBoolean(ticked[i]))) { BaselineAlignment = BaselineAlignment.Center });
-                            requestDetail.Inlines.Add(new Run("   "));
-                        }
+                        UIElement mark;
+                        double gap = 10;
+                        if (ticked != null) mark = TickBox(i < ticked.Length && Convert.ToBoolean(ticked[i]));
                         else if (choiceCaps)  // the number as a key cap, like the keys below
                         {
-                            requestDetail.Inlines.Add(new InlineUIContainer(Cap((i + 1).ToString(CultureInfo.InvariantCulture), 0)) { BaselineAlignment = BaselineAlignment.Center });
-                            requestDetail.Inlines.Add(new Run("  "));
+                            mark = Cap((i + 1).ToString(CultureInfo.InvariantCulture), 0);
+                            ((FrameworkElement)mark).Margin = new Thickness(0, 2, 0, 2);
+                            gap = 7;
                         }
-                        else requestDetail.Inlines.Add(new Run((i + 1) + "   ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.AmberEdge });
-                        requestDetail.Inlines.Add(new Run(Convert.ToString(options[i], CultureInfo.InvariantCulture)) { Foreground = Brushes.White });
+                        else mark = new TextBlock { Text = (i + 1).ToString(CultureInfo.InvariantCulture), FontWeight = FontWeights.SemiBold, Foreground = Ui.AmberEdge };
+                        requestChoices.Children.Add(Choice(mark, Convert.ToString(options[i], CultureInfo.InvariantCulture), gap, ticked == null && choiceCaps ? 2 : 0));
                     }
                 }
                 else  // a permission prompt: the exact command or path
                 {
-                    requestDetail.FontFamily = requestMono;
-                    requestDetail.LineHeight = double.NaN;
                     requestDetail.MaxHeight = 70;  // about four lines; the terminal has the full command
                     requestDetail.Text = detail;
                 }
-                requestDetail.Visibility = options.Length > 0 || detail.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+                requestDetail.Visibility = options.Length == 0 && detail.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
+                requestChoices.Visibility = options.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
                 requestKeys.Text = Str(msg, "keys");
                 object[] hints = msg.ContainsKey("hints") && msg["hints"] is object[] ? (object[])msg["hints"] : new object[0];
                 requestCaps.Children.Clear();
-                if (hints.Length > 0) Caps(hints, (int)Num(msg, "more", 0));
+                if (hints.Length > 0) Caps(hints);
                 requestKeys.Visibility = requestCaps.Children.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
                 requestCaps.Visibility = requestCaps.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+                // How many more wait: on a line of its own under the caps, always in the same
+                // place (at the end of the caps it fitted for two keys and broke off for five).
+                // Without caps the line of text about the keys says it.
+                int more = (int)Num(msg, "more", 0);
+                requestMore.Text = more + " more waiting";
+                requestMore.Visibility = more > 0 && requestCaps.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             }
             Render();
         }
@@ -2596,7 +2609,7 @@ namespace ClaudeSpeaks
         // one cap for each with what it does: [Ctrl] [Alt] + [Y] allow  [N] deny. A run of
         // number keys is written out, [1] [2] [3], one cap for each choice in its order (as a
         // range, "1-3", it was not clear to someone who does not know the keys).
-        void Caps(object[] hints, int more)
+        void Caps(object[] hints)
         {
             var parts = new List<string[]>();  // the keys before the last, the last key, what it does, the last key of a run
             foreach (object o in hints)
@@ -2627,7 +2640,22 @@ namespace ClaudeSpeaks
                 else requestCaps.Children.Add(Cap(part[3].Length > 0 && part[3] != part[1] ? part[1] + "\u2013" + part[3] : part[1], CapGap));
                 requestCaps.Children.Add(new TextBlock { Text = part[2], Foreground = Ui.AmberEdge, Margin = new Thickness(2, 0, 14, 4), VerticalAlignment = VerticalAlignment.Center });
             }
-            if (more > 0) requestCaps.Children.Add(new TextBlock { Text = more + " more waiting", Foreground = Ui.Faint, FontSize = 12, Margin = new Thickness(0, 0, 0, 4), VerticalAlignment = VerticalAlignment.Center });
+        }
+
+        // One choice of a question: its mark (number, key cap or tick box) and then its words,
+        // which wrap under their own first word and not under the mark. `down`: how far the
+        // words sit below the top of the row, for a mark that is taller than a line of text.
+        static Grid Choice(UIElement mark, string words, double gap, double down)
+        {
+            var row = new Grid();
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var holder = new Border { Child = mark, VerticalAlignment = VerticalAlignment.Top, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, gap, 0) };
+            var text = new TextBlock { Text = words, Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, down, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+            Grid.SetColumn(text, 1);
+            row.Children.Add(holder);
+            row.Children.Add(text);
+            return row;
         }
 
         const double CapGap = 4;  // between one cap and the next

@@ -32,7 +32,7 @@ DEFAULTS = {
     "offset_y": 96,  # below the title bar and tabs of a maximized app
     "opacity": 0.9,  # closed capsules while nothing is happening
     "list_opacity": 1.0,
-    "glass": "blur",  # blur = Windows blurs what is behind | acrylic = heavier blur | none = plain dark glass
+    "glass": "blur",  # blur = Windows blurs what is behind | acrylic = its heavier blur (the same picture as blur on Windows 11, measured on build 26300) | none = plain dark glass
     "flash_seconds": 4,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",

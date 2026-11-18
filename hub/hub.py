@@ -206,6 +206,11 @@ class Hub(Permissions, Talk):
                     # reply stays in the queue and is spoken in full.
                     self.speech.drop_session(sid)
                     self._unstop(sid, "a new prompt was typed")  # that is a new turn: it must run
+                    # You are at that session: what you say next is for it. Not in the middle
+                    # of push-to-talk, where the words already have their session.
+                    if self.cfg.focus_on_prompt and self._target() is not s and not (self._talking or self._transcribing or self._pending):
+                        self._focus_on(s)
+                        log(self.cfg, "hub.log", f"focus on {s.name}: a prompt was typed to it")
             elif event == "PreToolUse":
                 s.state, s.activity = "working", describe(ev.get("tool_name", ""), ev.get("tool_input") or {})
             elif event in ("PostToolUse", "PostToolUseFailure"):

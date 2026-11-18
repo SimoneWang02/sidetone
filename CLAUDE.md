@@ -629,6 +629,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   shows a written title only with `"terminal.integrated.tabs.title": "${sequence}"`, and Claude
   Code writes its own title unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`; neither
   is set on the author's machine, and nobody has checked which title wins.
+- A typed prompt takes the focus (2026-11-18, `focus_on_prompt`, on by default; built
+  while the author was away, on "list me ... the next things to do ... and you'll do it",
+  **not agreed with them and not seen in use**). In `_apply`, a `UserPromptSubmit` whose
+  prompt is not markup gives that session the focus (`_focus_on`), except while the talk
+  key is held or words are on their way. It fills the gap of the editor not reporting a
+  click back into the terminal you were in last. A session started by a script with the
+  hooks on takes the focus too.
 - The other way round, terminal → session (2026-11-17; the author, by voice: "if I focus on
   a terminal it would be great to automatically select that" session): `vscode/` is a VS
   Code extension of two files (`extension.js`, `package.json`; no build step, no
@@ -722,7 +729,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 182 tests in all with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 276 tests in all with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
@@ -800,6 +807,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   terminal (`tmux send-keys Escape`) interrupts at once, also in the middle of a tool.
   `claude --setting-sources project` starts a test session without the user's hooks, so it
   neither speaks nor shows in the overlay.
+- A question's choices are rows (2026-11-18, `Overlay.Choice`, `requestChoices`): each is a
+  small grid, mark (number, tick box or cap) in the first column and the words wrapping in
+  the second, so a second line starts under the first word and not under the mark. They
+  were runs in one `TextBlock` before. "N more waiting" is its own `TextBlock`
+  (`requestMore`) under the caps, in the same place for a permission prompt and a question;
+  at the end of the caps it fitted for two keys and broke off for five. With
+  `waiting_mark: clock`, ten or more messages draw the face (`waiting_many`) or "9+" in a
+  larger disc. Seen in pictures (`question*.png`, `permission-more.png`,
+  `waiting-clock*.png`), by nobody on a real question. Measured the same day: the glass
+  kinds `blur` and `acrylic` (accent states 3 and 4) give the same picture on build 26300.
 - Questions with several choices to tick (2026-11-17; before, only announced): they get a
   `Request` like the others. `choose(n)` ticks or unticks (`Request.ticked`), the overlay
   gets `ticked` (true or false per choice) and draws a box in front of each, with no number

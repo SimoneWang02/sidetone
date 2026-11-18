@@ -1632,6 +1632,26 @@ class PushToTalk(HubCase):
         hub.talk_start()
         self.assertEqual(self.talks()[-1][:2], ("listening", "b"))
 
+    def test_a_prompt_typed_to_a_session_gives_it_the_focus(self):
+        hub = self.make()
+        hub.talk_target = "a"
+        hub.on_event(ev("UserPromptSubmit", sid="b", cwd="/w/b", prompt="run the tests"))
+        self.assertEqual(self.in_focus(), "b")  # you are there: what you say next is for it
+        # A spoken follow-up reaches its session as a prompt too, wrapped in markup: not typed.
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="<task-notification>and the docs</task-notification>"))
+        self.assertEqual(self.in_focus(), "b")
+        # While you hold the talk key the words have their session, whatever is typed elsewhere.
+        hub.talk_start()
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="something typed"))
+        self.assertEqual(self.in_focus(), "b")
+        hub.cancel()
+
+    def test_typed_prompts_can_be_kept_from_moving_the_focus(self):
+        hub = self.make(focus_on_prompt=False)
+        hub.talk_target = "a"
+        hub.on_event(ev("UserPromptSubmit", sid="b", cwd="/w/b", prompt="run the tests"))
+        self.assertEqual(self.in_focus(), "a")
+
     def test_overlay_claims_keys_only_while_they_can_act(self):
         hub = self.make()
         hub.publish()

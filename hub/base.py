@@ -179,6 +179,11 @@ class Config:
     # words then go to the session that had the focus before. 0 = the key always goes to
     # whoever has the focus in that instant.
     focus_reach_back: float = 1.0
+    # A prompt typed to a session gives it the focus: you are there, so what you say next is
+    # meant for it. It covers what the editor cannot report (going back into the terminal
+    # you were in last, a terminal outside the editor). False: only the keys, the wheel,
+    # the terminal in front and whoever speaks move the focus.
+    focus_on_prompt: bool = True
     repeat: str = "focus"  # what the repeat key says again: the last line of the session in focus | "last" (anyone's)
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
@@ -334,7 +339,7 @@ class Config:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "usage_shown", "usage_every", "usage_warn", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "separator", "waiting_words", "row_metrics", "detail_metrics",
-                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
+                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):
             if key in user:

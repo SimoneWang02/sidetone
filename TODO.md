@@ -540,10 +540,20 @@ real keys yet.
       place free of other programs' always-on-top windows. It also has the views built
       that day (waiting marks, tick boxes, a question's place, stopping, queued, a side
       question). A tool for whoever works on the overlay; nothing a user of it meets.
-- [ ] Seen in those pictures, not mended: a choice that wraps goes on under its box, not
+- [x] Seen in those pictures, not mended: a choice that wraps goes on under its box, not
       under its first word; with the clock mark, "9+" is hardly readable;
       the blur and acrylic glass look the same; a tick question's line about the keys
       wraps when "1 more waiting" is added.
+      Mended 2026-11-18 while the author was away ("list me ... the next things to do
+      ... and you'll do it"), seen in pictures only: a choice is a row of its own, so
+      its second line starts under its first word (numbers, tick boxes and caps alike);
+      "1 more waiting" always has a line of its own under the keys, for a permission
+      prompt too, where it used to fit at the end; with the clock mark, ten or more
+      messages show the face, or "9+" in a disc with room for it. Not mended, because
+      there is nothing to mend on our side: blur and acrylic are the same picture on
+      this Windows (two pictures over the test card differ by one step of 255 at most,
+      outside the spinner). Both names are kept in case an older Windows tells them
+      apart, which nobody has checked. **Not seen by the author on a real question.**
 - [x] `install.sh` has only been run in throwaway folders, never with the model download.
       Done on the evening of 2026-11-17: run in an empty home folder with nothing
       cached, so Python, the packages and both models really came from the network (22 s
@@ -960,7 +970,11 @@ Smaller ideas:
         question itself by a person on a machine that does not have the extension,
         and a "no" is not remembered for the next install.
       - Only VS Code; another terminal program would need its own way.
-      - It could also move at the moment you send a typed prompt (a few lines in the hub).
+      - Done 2026-11-18, while the author was away and without their word on it: a
+        prompt typed to a session gives it the focus (`focus_on_prompt`, on; false
+        turns it off). It covers the first point above for whoever types: back in the
+        terminal you were in last, the first prompt moves the focus there. Tests
+        only; **for the author to notice in use, and to say if it is unwanted**.
 - [ ] More for the VS Code extension, now that it exists: color the tab itself in the
       session's color, and bring the terminal of the session in focus to the front (the
       jump key above). Both need the hub to talk to the extension, which today only

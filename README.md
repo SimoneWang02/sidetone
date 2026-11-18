@@ -51,7 +51,7 @@ its own spoken line as the first line of its reply.
   sent, the same note twice when it waits for a busy session, two notes going down when it was
   not sent (`talk_feedback` can be `sound`, `voice` or `none`; `sound_volume` is 0 to 1). The focus is on
   whichever session spoke last, shown by a frame around its light; hold `Ctrl+Alt` and turn the
-  mouse wheel to move it to another session. Sent the wrong thing? `Ctrl+Alt+Backspace` within
+  mouse wheel to move it to another session, or type a prompt to one (`"focus_on_prompt": false` turns that off). Sent the wrong thing? `Ctrl+Alt+Backspace` within
   four seconds takes it back: words still waiting for a busy session are removed, and a session
   that already has them is told to ignore them (`unsend_seconds`; 0 turns it off). If you would rather check the text first, set
   `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
@@ -272,7 +272,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 - The overlay does not show over games in exclusive fullscreen; use borderless windowed mode.
   The voice still works.
 - The glass has rounded corners on Windows 11 and square ones on Windows 10. `"glass": "none"`
-  gives plain dark glass without the blur; `"acrylic"` is a heavier blur.
+  gives plain dark glass without the blur; `"acrylic"` asks Windows for its heavier blur, which
+  on Windows 11 comes out the same as `"blur"`.
 - A follow-up reaches Claude as a hook message, so in the terminal it reads "Stop hook
   feedback" instead of your words.
 - If a prompt waited more than six seconds and you then approve it in the terminal, the session
