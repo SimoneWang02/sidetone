@@ -990,7 +990,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   and in a question with one answer the number in front of each choice is that same
   cap, so the keys and the choices are seen to match. A question with boxes to tick
   still has no numbers at its choices (their earlier wish); its caps go by the order of
-  the choices. Seen in pictures; **the author has not seen the second try**.
+  the choices. Shown to the author in a real question (tick questions: "Keep as it is",
+  boxes only); on the caps: "Oh, that's cool. Yeah, that's cool."
 - The card follows the focus (2026-11-18; the author: "I focused the second session and it
   still showed ... the first session's metrics"). The card was about the row the mouse had
   been on last, for as long as that session lived, and only before any row was touched
