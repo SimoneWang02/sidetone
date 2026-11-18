@@ -78,6 +78,12 @@ DEFAULTS = {
     "waiting_cover": "never",
     # Its color: the red of a notification | "#RRGGBB" = your own ("#FF6E8A" is the microphone's pink)
     "waiting_color": "#FF3B30",
+    # The arc around a light that says how full that session's context is (whether it is drawn
+    # at all is `context_shown`, beside `overlay` in the settings). From `context_warn` percent
+    # on it takes the second color; 0 = never. Colors: "#RRGGBB".
+    "context_warn": 80,
+    "context_color": "#FFFFFF",
+    "context_warn_color": "#FF8A3D",
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",

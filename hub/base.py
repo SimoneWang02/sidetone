@@ -188,10 +188,14 @@ class Config:
     # I used"): the hub answers aloud, the five-hour window first, and the words do not go to
     # a session. False: such words are a session's like any others.
     usage_by_voice: bool = True
-    # How full each session's context is, as a percentage in its row of the details, counted
-    # from its transcript. `context_window`: the size it is held against, in tokens (the
-    # transcript does not say it; one million for the models measured).
-    context_shown: bool = True
+    # How full each session's context is, counted from its transcript, and where it shows:
+    # arc = a thin arc around the session's light, filling clockwise from the top (the author,
+    # 2026-11-18, found the words too long beside the running time and chose the arc of three
+    # ideas) | text = "context 56%" at the end of its row of the details | both | off.
+    # true and false, from when it was only the text, mean arc and off.
+    # `context_window`: the size it is held against, in tokens (the transcript does not say
+    # it; one million for the models measured).
+    context_shown: str | bool = "arc"
     context_window: int = 1_000_000
     # Stopping at once: where the session runs in a terminal of an editor with the claude-speaks
     # extension, Escape is typed into that terminal, which ends the turn in the same moment.
@@ -396,6 +400,14 @@ def _read_out(question: dict, place: str = "") -> str:
 
 def _ago(seconds: float) -> str:
     return "now" if seconds < 60 else _elapsed(seconds)
+
+
+def context_mode(cfg: Config) -> str:
+    """Where a session's context shows: arc, text, both or off (see Config.context_shown)."""
+    wanted = cfg.context_shown
+    if wanted is False or wanted in ("off", "none", "never"):
+        return "off"
+    return wanted if wanted in ("text", "both") else "arc"
 
 
 def _elapsed(seconds: float) -> str:

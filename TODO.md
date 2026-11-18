@@ -705,6 +705,14 @@ Bigger pieces:
       a sign of its own later. Not built: the arc around the light, a warning color or
       word when it is nearly full, the usage in the overlay. A session that has not
       reported since the hub started shows no figure yet.
+      2026-11-18: the author found the words too long beside the running time and chose
+      the arc ("try 3", of: only the percent, up beside the title, an arc around the
+      light). Built the same night: a thin arc around each light, clockwise from the
+      top, orange from 80 percent on (`context_shown`: `arc`, `text`, `both`, `off`;
+      `overlay.context_warn`, `context_color`, `context_warn_color`). Live on their
+      overlay; **not judged by them yet**. To ask: is the arc readable at a glance, is
+      the orange right (it sits close to the amber of "needs you"), and is the exact
+      figure missed (it is nowhere on screen now). Still not built: usage in the overlay.
       Suggested first step: usage from the headless `/usage` call (overlay and voice,
       no change to anyone's settings); a status line forwarder and the transcript for
       context per session after that.
@@ -809,6 +817,10 @@ Smaller ideas:
         that is working should stop it in the same moment, and `hub.log` should say
         "escape asked of the editor". Not known until then: whether VS Code hands
         the Escape to the terminal as typed.
+        Tried by the author on 2026-11-18, after VS Code had been restarted: the key,
+        pressed while a session ran a command of forty seconds, cut the command off
+        and ended the turn, and the log said "escape asked of the editor for its
+        terminal". They have not said whether it felt instant.
       - the key is now claimed from every program whenever the session in focus works
       - a session waiting at a permission prompt is not stopped by the key in focus
 - [ ] Easier ways to take back what you said (the author, 2026-11-17: "it would be really

@@ -273,9 +273,10 @@ def voice(seconds, step=0.04):
             for i in range(int(seconds / step))]
 
 
-def sessions(speaking=None, focus="api-server", waiting=None, stopping=None):
+def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, context=None):
     """The rows the hub would send. `waiting`: session name -> messages held for it; `stopping`:
-    the name of a session that was asked to end its turn."""
+    the name of a session that was asked to end its turn; `context`: session name -> how full
+    its context is, in percent."""
     rows = [
         dict(name="claude-speaks", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta=""),
         dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="3/5 · 6m"),
@@ -288,6 +289,7 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None):
         row["speaking"] = row["name"] == speaking
         row["target"] = row["name"] == focus
         row["waiting"] = n = (waiting or {}).get(row["name"], 0)
+        row["context"] = (context or {}).get(row["name"])
         if n:  # as Hub._waiting_note writes it
             row["meta"] = " \u00b7 ".join(filter(None, [row["meta"], "1 message waiting" if n == 1 else f"{n} messages waiting"]))
         if row["name"] == stopping:
@@ -436,6 +438,22 @@ marks("waiting-dot", opened=False)
 look(still=False, waiting_cover="each", waiting_hold=60)
 marks("waiting-covers-the-light", opened=False, settle=1.6)
 look()
+# How full each session's context is, as an arc around its light: nearly empty, about half,
+# past the warning, full, and one that is not known; then with words waiting on top of it.
+CONTEXT = {"claude-speaks": 7, "api-server": 56, "web-app": 83, "data-pipeline": 100}
+send(type="state", sessions=sessions(context=CONTEXT), history=HISTORY)
+shot("context")
+send(type="peek", on=True)
+shot("context-open", 0.6)
+send(type="peek", on=False)
+send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY)
+shot("context-waiting")
+send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="island", **HERE)
+send(type="state", sessions=sessions(context=CONTEXT), history=HISTORY)
+shot("context-island", 1.2)
+send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="bar", **HERE)
+send(type="state", sessions=sessions(), history=HISTORY)
+time.sleep(0.3)
 # The same steps with the sign at the right of the session's line instead of in its light.
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, talk_sign="line")
 send(type="talk", state="sent", name="web-app", text="Also add a test for the empty input case.", seconds=6)

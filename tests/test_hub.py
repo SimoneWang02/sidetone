@@ -262,15 +262,26 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("UserPromptSubmit"))
         row = lambda: self.overlay.of("state")[-1]["sessions"][0]
         self.assertIsNone(row()["context"])  # nothing to go on yet
-        self.assertNotIn("context", row()["meta"])
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
-        self.assertEqual(row()["context"], 62.0)
-        self.assertIn("context 62%", row()["meta"])
+        self.assertEqual(row()["context"], 62.0)  # for the arc around its light
+        self.assertNotIn("context", row()["meta"], "the arc says it; the words were too long beside the running time")
         hub.on_event(ev("Stop", transcript_path=os.path.join(self.tmp, "gone.jsonl"), last_assistant_message=tag("Done.")))
         self.assertEqual(row()["context"], 62.0, "a record that cannot be read leaves the last figure")
-        hub.cfg.context_shown = False
-        hub.on_event(ev("UserPromptSubmit"))
-        self.assertNotIn("context", row()["meta"])
+
+    def test_where_the_context_shows_is_a_setting(self):
+        hub = self.make()
+        record = os.path.join(self.tmp, "record.jsonl")
+        with open(record, "w") as f:
+            json.dump({"type": "assistant", "isSidechain": False, "message": {"usage": {
+                "input_tokens": 2, "cache_creation_input_tokens": 150000, "cache_read_input_tokens": 469998, "output_tokens": 14}}}, f)
+        hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
+        row = lambda: self.overlay.of("state")[-1]["sessions"][0]
+        for wanted, arc, words in (("arc", True, False), ("text", False, True), ("both", True, True), ("off", False, False),
+                                   (True, True, False), (False, False, False)):
+            hub.cfg.context_shown = wanted
+            hub.on_event(ev("UserPromptSubmit"))
+            self.assertEqual(row()["context"], 62.0 if arc else None, wanted)
+            self.assertEqual("context 62%" in row()["meta"], words, wanted)
 
     def test_rows_show_activity_tasks_and_how_the_turn_ended(self):
         hub = self.make()

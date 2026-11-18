@@ -724,7 +724,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -835,9 +835,31 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `claude-speaks usage [say]` give the same. `Hub._count_context` runs on Stop, PostToolUse,
   UserPromptSubmit and SessionStart: `usage.context(transcript_path, context_window)` (the
   last main-chain assistant line's input plus both cache counts, or a newer compaction's
-  `postTokens`; 2 ms) goes into `Session.context`, the row's `meta` ("context 56%") and the
-  row's `context` (`context_shown`). The window's size is a setting, one million as measured
+  `postTokens`; 2 ms) goes into `Session.context` and from there into the row
+  (`context_shown`, see the next point). The window's size is a setting, one million as measured
   for the models tried; the transcript does not say it.
+- Context as an arc around the light (2026-11-18, `Orb.Gauge`, `base.context_mode`). The row
+  of the details ended in "context 56%" at first; the author on seeing it: the figure is
+  good, but with "the running time, one beside another one is pretty long". Of three ideas
+  (only the percent, up beside the title, an arc around the light) they said "try 3".
+  `context_shown` is `arc` (default), `text` (the words as before), `both` or `off`; true
+  and false, from when it was only words, mean arc and off. With the arc the row's `context`
+  carries the percent and `meta` says nothing of it. The overlay draws a thin arc at radius
+  16.5, just outside the light, clockwise from the top over a faint full ring, and lets it
+  grow to a new figure in 0.6 s. From `overlay.context_warn` percent (80; 0 = never) it is
+  drawn in `overlay.context_warn_color` (an orange, `#FF8A3D`), below that in
+  `overlay.context_color` (white). The warning color was not asked for; it was on the
+  to-do list as part of the idea. The figure is not kept across a hub restart: a session
+  shows no arc until its next prompt, step or reply. Seen in pictures (`context*.png` of
+  the picture check) and live on the author's overlay; **not judged by the author yet**.
+  The exact figure is nowhere on screen with `arc`.
+- The first number in a row's last line ("2/5 · 3m") is the session's task list: tasks
+  done out of tasks made (`Session.tasks`); the author asked what it was (2026-11-18).
+- Stopping at once, tried by the author (2026-11-18): after a restart of VS Code the
+  extension 0.2.0 was running; they pressed the cancel key while this session ran a
+  command, and `hub.log` said "escape asked of the editor for its terminal", the command
+  was cut off and the turn ended. The hub's own line that the turn had ended came 3 s
+  after the key; why it took that long was not looked into.
 - Where usage and context figures can be read (measured 2026-11-17 by another session,
   Claude Code 2.1.327; nothing built, details in `TODO.md`): `claude -p "/usage"
   --no-session-persistence` prints the five-hour window, the week and the week of the

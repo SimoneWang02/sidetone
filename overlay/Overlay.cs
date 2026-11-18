@@ -77,6 +77,18 @@ namespace ClaudeSpeaks
         public static double WaitingSize = 9.2;  // the radius of the number's disc (and the face's) in its corner
         public static double WaitingHold = 0.9;  // seconds the number covers the whole light before it goes to the corner
 
+        // The arc around a light: how full that session's context is. From ContextWarn percent
+        // on it is drawn in the second color (0 = never).
+        public static double ContextWarn = 80;
+        public static Color Context = Colors.White, ContextFull = Color.FromRgb(0xFF, 0x8A, 0x3D);
+
+        public static Color ColorOr(string hex, Color otherwise)
+        {
+            try { if (hex != null && hex.Length > 0) return (Color)ColorConverter.ConvertFromString(hex); }
+            catch (Exception) { }  // not a color: as it was
+            return otherwise;
+        }
+
         public static void SetWaitingColor(string hex)
         {
             try { if (hex != null && hex.Length > 0) Waiting = (Color)ColorConverter.ConvertFromString(hex); }
@@ -275,6 +287,23 @@ namespace ClaudeSpeaks
         public bool Covers = true;  // that one shows itself across the whole light before it goes to the corner
         public Wave Wave, Listening;  // Listening: your own voice, while you hold the talk key for this session
         public double Born = Ui.Now, Changed = -10, Hot, SignSince;
+        public double Context = -1;  // how full its context is, in percent; below 0 = not known or not shown
+        double contextFrom, contextSince = -10;
+        const double GaugeAt = 16.5, GaugeGrows = 0.6;  // the arc's radius, and the seconds it takes to reach a new figure
+
+        public void SetContext(double percent)
+        {
+            if (Math.Abs(percent - Context) < 0.05) return;
+            contextFrom = Math.Max(0, ContextNow(Ui.Now));  // from where the arc is right now
+            contextSince = Ui.Now;
+            Context = percent;
+        }
+
+        double ContextNow(double t)
+        {
+            double k = Ui.Motionless ? 1 : Ui.EaseOut((t - contextSince) / GaugeGrows);
+            return contextFrom + (Context - contextFrom) * k;
+        }
 
         public Orb() { Width = Height = Size; IsHitTestVisible = false; }
 
@@ -296,6 +325,7 @@ namespace ClaudeSpeaks
                 double t = Ui.Now;
                 if (Signed && (Sign == "dots" || Sign == "wait" || t - SignSince < 0.5)) return true;
                 if (Waiting > 0 && (Ui.WaitingMark != "number" || t - WaitingSince < Ui.WaitingHold + MarkMove + 0.1)) return true;
+                if (Context >= 0 && t - contextSince < GaugeGrows + 0.1) return true;
                 return Speaking || Listening != null || State == "working" || State == "needs_you" || t - Changed < 0.8 || t - Born < 0.45;
             }
         }
@@ -310,6 +340,7 @@ namespace ClaudeSpeaks
             double bump = age < 0.4 ? 0.2 * Math.Sin(Math.PI * age / 0.4) : 0;
             double scale = Ui.Overshoot((t - Born) / 0.4) * (1 + bump + 0.14 * Hot);
             dc.PushTransform(new ScaleTransform(scale, scale, c.X, c.Y));
+            Gauge(dc, c, t);
             if (age < 0.8 && Listening == null && (signed || (!Speaking && State != "idle" && State != "working")))
             {
                 double ring = Ui.EaseOut(age / 0.8);  // a ring that spreads and fades
@@ -391,6 +422,25 @@ namespace ClaudeSpeaks
             }
             Mark(dc, c, t);
             dc.Pop();
+        }
+
+        // How full the session's context is: a thin arc just outside the light that fills
+        // clockwise from the top, over a faint ring that shows where full would be.
+        void Gauge(DrawingContext dc, Point c, double t)
+        {
+            if (Context < 0) return;
+            double share = Ui.Clamp(ContextNow(t) / 100);
+            Color ink = Ui.ContextWarn > 0 && Context >= Ui.ContextWarn ? Ui.ContextFull : Ui.Context;
+            dc.DrawEllipse(null, Ui.Line(Colors.White, 0.12, 2), c, GaugeAt, GaugeAt);
+            if (share >= 0.995) { dc.DrawEllipse(null, Ui.Line(ink, 0.85, 2), c, GaugeAt, GaugeAt); return; }
+            double a = -Math.PI / 2, b = a + 2 * Math.PI * Math.Max(share, 0.004);
+            var arc = new StreamGeometry();
+            using (StreamGeometryContext g = arc.Open())
+            {
+                g.BeginFigure(new Point(c.X + GaugeAt * Math.Cos(a), c.Y + GaugeAt * Math.Sin(a)), false, false);
+                g.ArcTo(new Point(c.X + GaugeAt * Math.Cos(b), c.Y + GaugeAt * Math.Sin(b)), new Size(GaugeAt, GaugeAt), 0, share > 0.5, SweepDirection.Clockwise, true, false);
+            }
+            dc.DrawGeometry(null, Ui.Line(ink, 0.85, 2), arc);
         }
 
         // Words are waiting for this session. By default (waiting_mark "number") the number of
@@ -915,6 +965,7 @@ namespace ClaudeSpeaks
                 Orb.Covers = Ui.WaitingCover == "each" || (Ui.WaitingCover == "first" && Orb.Waiting == 0);
             }
             Orb.Waiting = waits;
+            Orb.SetContext(s.ContainsKey("context") && s["context"] != null ? Convert.ToDouble(s["context"], CultureInfo.InvariantCulture) : -1);
             if (before.Length > 0 && (before != State || was != Speaking)) Orb.Changed = Ui.Now;  // the light pops
             Wave.Synthetic = s.ContainsKey("synth") && Convert.ToBoolean(s["synth"]);
             if (Speaking && !was) Wave.Since = Ui.Now;
@@ -1257,6 +1308,9 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
+                    Ui.ContextWarn = Num(msg, "context_warn", Ui.ContextWarn);
+                    if (msg.ContainsKey("context_color")) Ui.Context = Ui.ColorOr(Str(msg, "context_color"), Colors.White);
+                    if (msg.ContainsKey("context_warn_color")) Ui.ContextFull = Ui.ColorOr(Str(msg, "context_warn_color"), Ui.ContextFull);
                     Ui.WaitingHold = Math.Max(0, Num(msg, "waiting_hold", Ui.WaitingHold));
                     Ui.WaitingSize = Math.Max(5, Math.Min(13, Num(msg, "waiting_size", Ui.WaitingSize)));
                     if (msg.ContainsKey("waiting_many")) Ui.WaitingMany = Str(msg, "waiting_many") == "number" ? "number" : "face";
