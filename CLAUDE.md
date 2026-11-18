@@ -882,8 +882,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - Restarting the hub cuts off a recording: twice on 2026-11-18 a restart made to put a
   change live fell into the author's hold of the talk key ("it got cut off. I was saying
   something"), and once it killed a side question a second after it was asked. No code
-  for it (their rule), but look before restarting: `pgrep -af parec` shows a recorder on
-  the microphone (`RDPSource`) while they talk.
+  for it (their rule), but look before restarting: `pgrep -x parec -a` shows a recorder
+  with `--rate=16000` while they talk (the one with `monitor` in it is the loudness
+  meter). Not `pgrep -af parec`: that also finds the shell running the check, which is
+  how a third recording was cut off the same night, by a check that waited for itself.
 - "2 messages waiting" is no longer written in the row (2026-11-18; the author: "I don't
   care. Just put three minutes"): the number on the light says it. `waiting_words: true`
   brings the words back.
