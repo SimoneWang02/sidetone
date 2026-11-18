@@ -564,7 +564,7 @@ class Hub(Permissions, Talk):
                     f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
                     self._waiting_note(s.id),
-                    f"{usage.tokens_text(s.turn_tokens)} tokens" if s.turn_tokens and s.state != "working" else "",
+                    f"{usage.tokens_text(s.turn_tokens)} {self.cfg.turn_tokens_label}".strip() if s.turn_tokens and s.state != "working" else "",
                     f"context {s.context:.0f}%" if context in ("text", "both") and s.context is not None else "",
                 ])),
                 "context": s.context if context in ("arc", "both") else None,  # percent of its window: the arc around its light

@@ -861,7 +861,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - What a turn used, in the row (2026-11-18, `usage.turn`, `Hub._count_turn`, `turn_tokens`).
   The author, first as a side question and then outright: "for each reply, display the
   metrics, the token you've used". Once a turn has ended the right end of the session's
-  row says "64k tokens", until its next prompt; not while it works, since they had just
+  row says "64k", until its next prompt (it said "64k tokens" at first; the author: "the
+  label is good. Maybe just putting the number is better", since it takes room from the
+  words of the row; `turn_tokens_label: "tokens"` brings the word back); not while it works, since they had just
   found that line too long. A prompt notes how long the session's record is
   (`Session.turn_at`) and the Stop adds up the replies written after that, each once (a
   reply is several lines with the same counts), helpers left out; a hub that started in

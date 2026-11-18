@@ -280,21 +280,24 @@ class OverlayFeed(HubCase):
         with open(record, "a") as f:
             f.write(reply("a", 500, 3000, 100000) + "\n" + reply("a", 500, 3000, 100000) + "\n" + reply("b", 700, 800, 103000) + "\n")
         hub.on_event(ev("PostToolUse", transcript_path=record))
-        self.assertNotIn("tokens", row()["meta"], "not while it works")
+        self.assertEqual(row()["meta"], "<1m", "not while it works")
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
-        self.assertIn("5.0k tokens", row()["meta"])  # 1,200 written and 3,800 read for the first time
+        self.assertEqual(row()["meta"], "5.0k")  # 1,200 written and 3,800 read for the first time
         with open(record, "a") as f:
             f.write(reply("c", 1000, 2000, 104000) + "\n")  # the last reply reaches the record late
-        self.assertTrue(wait_for(lambda: "8.0k tokens" in row()["meta"]))
+        self.assertTrue(wait_for(lambda: row()["meta"] == "8.0k"))
+        hub.cfg.turn_tokens_label = "tokens"
+        hub.publish()
+        self.assertEqual(row()["meta"], "8.0k tokens")
         hub.on_event(ev("UserPromptSubmit", transcript_path=record))
-        self.assertNotIn("tokens", row()["meta"])
+        self.assertEqual(row()["meta"], "<1m")
         hub.cfg.turn_tokens = "all"
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
-        self.assertNotIn("tokens", row()["meta"], "nothing was written in this turn")
+        self.assertEqual(row()["meta"], "", "nothing was written in this turn")
         hub.cfg.turn_tokens = "off"
         hub.on_event(ev("UserPromptSubmit", transcript_path=record))
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
-        self.assertNotIn("tokens", row()["meta"])
+        self.assertEqual(row()["meta"], "")
 
     def test_where_the_context_shows_is_a_setting(self):
         hub = self.make()

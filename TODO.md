@@ -736,7 +736,9 @@ Bigger pieces:
       Asked for outright minutes later ("for each reply, display the metrics, the token
       you've used") and built: when a turn has ended, the session's row says "64k
       tokens" at its right end until the next prompt (`turn_tokens`: `new`, `output`,
-      `all`, `off`). **To agree with the author:** which figure they mean (the default
+      `all`, `off`). On seeing it: "the label is good", but only the number, since
+      the word takes room from the row's text; so it says "64k" now
+      (`turn_tokens_label`). **Still to agree:** which figure they mean (the default
       leaves out what is read again at every step, which would make every figure
       millions) and whether the row is the place. Not built: the figure in the history
       lines under the rows, said aloud, or while the turn runs.
