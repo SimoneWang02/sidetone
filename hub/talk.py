@@ -471,13 +471,22 @@ class Talk:
                 return True
         return False
 
-    def editor_waits(self, pids: list) -> Editor:
+    def editor_waits(self, pids: list, shows: bool = False) -> Editor:
         """An editor's window asks to be told when a key is wanted in one of its terminals,
-        which it names by the process each one runs (its shell)."""
+        which it names by the process each one runs (its shell). `shows`: it can also bring
+        one of them to the front."""
         ttys = {tty: pid for pid in pids for tty in [terminal_mod.tty_of(pid)] if tty}
-        editor = Editor(ttys)
+        editor = Editor(ttys, shows=shows)
         with self.lock:
             self.editors.append(editor)
+            if shows:
+                tty, since = self._show_wanted
+                if tty in ttys and time.monotonic() - since < base.EDITOR_GAP:  # asked for between two requests
+                    editor.show.append(ttys[tty])
+                    editor.wake.set()
+                    self._show_wanted = ("", base.NEVER)
+        if shows:
+            self.publish()  # the key that goes to a terminal can act now
         return editor
 
     def editor_done(self, editor: Editor) -> list:
@@ -485,7 +494,39 @@ class Talk:
         with self.lock:
             if editor in self.editors:
                 self.editors.remove(editor)
+            if editor.shows:
+                self._shown_by.update(dict.fromkeys(editor.ttys, time.monotonic()))
             return editor.keys
+
+    def _showable(self, s) -> bool:
+        """Whether an editor can bring this session's terminal to the front: one that holds
+        it is waiting to be asked, or was a moment ago and is about to ask again. Call with
+        the lock held."""
+        return bool(s and s.tty) and (any(e.shows and s.tty in e.ttys for e in self.editors)
+                                      or time.monotonic() - self._shown_by.get(s.tty, base.NEVER) < base.EDITOR_GAP)
+
+    def show_terminal(self, name: str = "") -> str | None:
+        """Bring the terminal of the session called `name`, or of the one in focus, to the
+        front in its editor, with the keyboard in it: the way from a session chosen in the
+        overlay to the place where you type to it. Only the editor can do that (see
+        vscode/extension.js), and only inside its own window. Returns the session's name, or
+        None when there is no such session or no editor that could show its terminal."""
+        with self.lock:
+            s = (next((x for x in self.sessions.by_id.values() if x.name == name), None) if name
+                 else self._target())
+            if not self._showable(s):
+                return None
+            for editor in self.editors:
+                if editor.shows and s.tty in editor.ttys and not editor.wake.is_set():
+                    editor.show.append(editor.ttys[s.tty])
+                    editor.wake.set()
+                    break
+            else:  # its editor is between two requests: the next one is handed it
+                self._show_wanted = (s.tty, time.monotonic())
+            found = (s.name, s.tty, s.color)
+        log(self.cfg, "hub.log", f"terminal of {found[0]} ({found[1]}) asked to the front")
+        self.terminals.pulse(found[1], found[2])
+        return found[0]
 
     def _stop_words(self, sid: str) -> str:
         stopping = self._stopping.get(sid)

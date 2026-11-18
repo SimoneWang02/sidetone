@@ -2782,7 +2782,8 @@ namespace ClaudeSpeaks
 
         // Claims the global hotkeys. Keys that answer something (allow, deny, cancel, option1-4) are
         // claimed only while the hub says they can act, so those combinations stay free for other
-        // programs the rest of the time. The others (toggle, talk, repeat, missed) are always claimed.
+        // programs the rest of the time; so are the keys that move the focus and the one that goes
+        // to a session's terminal (jump). The others (toggle, talk, repeat, missed) are always claimed.
         void RegisterHotkeys()
         {
             foreach (int id in hotkeys.Keys) UnregisterHotKey(hwnd, id);
@@ -2793,7 +2794,7 @@ namespace ClaudeSpeaks
             int next = 1;
             foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
-                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
+                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key == "jump" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
                 // The focus moves with the arrows that point the way the lights run: up and down
                 // for the bar, left and right for the island. The other pair is left to other programs.
                 bool sideways = entry.Key == "focus_left" || entry.Key == "focus_right";

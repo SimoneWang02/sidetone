@@ -1,5 +1,6 @@
-// claude-speaks for VS Code: tells the hub which terminal you are in, and types Escape into
-// a terminal when the hub asks for a session to be stopped.
+// claude-speaks for VS Code: tells the hub which terminal you are in, types Escape into a
+// terminal when the hub asks for a session to be stopped, and brings a terminal to the front
+// when the hub asks for that.
 //
 // The hub can mark a session's terminal from outside, but only the editor knows which of its
 // terminals you just went to. This reports the process of that terminal (its shell) to the
@@ -11,7 +12,9 @@
 // request open with the hub, naming its terminals by their processes, and when the answer
 // names one of them and a key, it types that key there. The only key it knows is Escape,
 // which interrupts a Claude Code session that is working: the hub cannot have anything else
-// typed, whatever it sends.
+// typed, whatever it sends. The same answer can name terminals to bring to the front (the key
+// that goes to the terminal of the session in focus): that only shows a terminal that is
+// already there and puts the keyboard in it.
 //
 // It runs where the terminals run (the remote side under WSL or SSH), which is where the
 // hub's socket is.
@@ -67,13 +70,22 @@ async function press(keys) {
   }
 }
 
+// Bring the terminals that were asked for to the front, with the keyboard in them.
+async function show(pids) {
+  for (const wanted of Array.isArray(pids) ? pids : []) {
+    for (const terminal of vscode.window.terminals) {
+      if (await terminal.processId === wanted) terminal.show(false);
+    }
+  }
+}
+
 // One request, held by the hub until a key is wanted or about half a minute has passed;
 // then the next one. The hub knows our terminals only from the request it is holding.
 async function listen() {
   if (closed) return;
   const pids = (await Promise.all(vscode.window.terminals.map((terminal) => terminal.processId))).filter(Boolean);
   if (closed || open) return;
-  const data = JSON.stringify({ terminals: pids });
+  const data = JSON.stringify({ terminals: pids, can: ["escape", "show"] });  // what the hub may ask of us
   const request = http.request({
     socketPath: socket(), path: "/editor", method: "POST", timeout: 60000,
     headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) },
@@ -92,7 +104,11 @@ async function listen() {
     response.on("data", (chunk) => { body += chunk; });
     response.on("end", () => {
       if (response.statusCode !== 200) return next(RETRY);
-      try { press(JSON.parse(body || "{}").keys); } catch (e) { /* not ours to read */ }
+      try {
+        const asked = JSON.parse(body || "{}");
+        press(asked.keys);
+        show(asked.show);
+      } catch (e) { /* not ours to read */ }
       next(200);
     });
   });

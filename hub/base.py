@@ -41,9 +41,13 @@ class Editor:
     ttys: dict  # terminal -> the process id the editor knows that terminal by
     keys: list = field(default_factory=list)  # what it is asked for: {"pid": ..., "key": "escape"}
     wake: threading.Event = field(default_factory=threading.Event)
+    shows: bool = False  # it can also bring a terminal to the front (the extension from 0.3.0 on says so)
+    show: list = field(default_factory=list)  # the terminals it is asked to bring to the front, by process id
 
 
 EDITOR_WAIT = 25.0  # seconds an editor's request is held before it is sent back empty and asked again
+EDITOR_GAP = 3.0  # seconds an editor counts as still there after a request of its ended: the next one is on its way
+NEVER = float("-inf")  # "has not happened", for times on the clock that counts from the boot
 RECOUNT = 1.5  # seconds after a turn ended until what it used is added up once more (its last reply may be written late)
 STOP_WAIT = 20.0  # seconds a session that was asked to stop may take to show that it is in a turn at all
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")  # a session id that can be a file name

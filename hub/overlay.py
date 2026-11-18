@@ -97,6 +97,9 @@ DEFAULTS = {
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",
                 "repeat": "Ctrl+Alt+R", "missed": "Ctrl+Alt+U", "layout": "Ctrl+Alt+K",
+                # Go to the terminal of the session in focus; claimed only while an editor with the
+                # claude-speaks extension holds that terminal.
+                "jump": "Ctrl+Alt+T",
                 # Move the focus to the session before or after; claimed only while there are two or more.
                 # The first pair is for the bar, where the lights run down; the second for the island,
                 # where they run across. Only the pair of the layout in use is claimed.

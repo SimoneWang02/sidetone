@@ -78,6 +78,9 @@ its own spoken line as the first line of its reply.
   in VS Code selects the session running there, so push-to-talk goes to the terminal you are
   looking at. VS Code reports a change of terminal, not every click: going back into the
   terminal you were last in changes nothing. `claude-speaks terminal follow off` turns it off.
+  The other way round, `Ctrl+Alt+T` takes you to the terminal of the session in focus: choose a
+  session in the overlay, press it, and type. It works inside VS Code's window and does not
+  bring that window in front of other programs.
 - **How much is used.** Ask by voice ("what's my usage?") and the hub says how much of the
   plan's five hours and week is used and when they start again; the words go to no session.
   `claude-speaks usage` prints the same. A thin arc around each session's light shows how full its context is (`context_shown`: `arc`, `text`, `both`, `off`), and a card under the rows gives the figures of the session under the mouse: context, tokens of the reply, time and tasks.
@@ -133,6 +136,7 @@ work, run `cs demo` in a terminal.
 | `Ctrl+Alt` + mouse wheel | The same with the wheel |
 | hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send |
 | `Ctrl+Alt+Backspace` | Stop recording, take back a follow-up, cut the line being spoken, or stop the session in focus (at once in VS Code with the extension, elsewhere at its next step) |
+| `Ctrl+Alt+T` | Go to the terminal of the session in focus: VS Code brings it to the front with the keyboard in it (needs the extension; claimed only while that can be done) |
 | `Ctrl+Alt+U` | Replay what was said since you were last there |
 | `Ctrl+Alt+R` | Repeat the last line of the session in focus |
 
@@ -164,6 +168,7 @@ claude-speaks overlay monitor N | corner top-left|top-right|bottom-left|bottom-r
 claude-speaks terminal               how sessions' own terminals are marked
 claude-speaks terminal tint focus|all|off     whose terminal wears its session's color
 claude-speaks terminal find [PROJECT]         light a session's terminal up for a moment
+claude-speaks terminal show [PROJECT]         bring a session's terminal to the front in VS Code
 claude-speaks terminal strength N | background COLOR | pulse on|off|N | title on|off
 claude-speaks terminal follow on|off          going to a terminal in VS Code selects its session
 claude-speaks vscode install|uninstall        the VS Code extension that reports the terminal you are in

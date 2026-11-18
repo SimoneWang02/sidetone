@@ -300,3 +300,5 @@ class Permissions:
             self.focus(1 if name == "focus_next" else -1)
         elif name == "layout":
             self.set_layout("next")
+        elif name == "jump":
+            self.show_terminal()

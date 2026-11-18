@@ -925,7 +925,21 @@ Smaller ideas:
       not said yet whether they sound right. "Allowed." and "Denied." are still spoken.
 - [ ] Left or right ear per session
 - [ ] Stay quiet for the session whose terminal is in front
-- [ ] A key that jumps to the terminal of the session in focus
+- [x] A key that jumps to the terminal of the session in focus
+      Built 2026-11-18 while the author was away ("list me ... the next things to do ...
+      and you'll do it"; the key and its letter are not agreed with them): `Ctrl+Alt+T`
+      (`jump` under `hotkeys`; `""` turns it off), or `claude-speaks terminal show
+      [PROJECT]`. The hub asks the VS Code extension (0.3.0), which shows that terminal
+      and puts the keyboard in it. The key is only claimed while an editor with that
+      extension holds the terminal of the session in focus. Tested with the real
+      extension code against a real hub and a stand-in for the editor. Version 0.3.0 is
+      installed, but **VS Code runs 0.2.0 until its extensions are restarted**
+      (Ctrl+Shift+P, "Restart Extension Host"); until then the key is not claimed at
+      all. **For the author to try** after that: move the focus to another session with
+      the arrows, press `Ctrl+Alt+T`, and its terminal should come up ready to type in.
+      Open: it works inside VS Code's window only, so with a browser or a game in front
+      nothing is seen (the overlay could bring the window forward; not built); whether
+      `Ctrl+Alt+T` is free on their machine shows in `hub.log` once the key is claimed.
 - [x] Tell the terminals apart (the author, 2026-11-17, with four terminals open in VS Code:
       "I cannot distinguish which", and later "is there a possibility to highlight the
       terminal" of the session selected in the overlay). Built the same day, no extension:
@@ -976,9 +990,8 @@ Smaller ideas:
         terminal you were in last, the first prompt moves the focus there. Tests
         only; **for the author to notice in use, and to say if it is unwanted**.
 - [ ] More for the VS Code extension, now that it exists: color the tab itself in the
-      session's color, and bring the terminal of the session in focus to the front (the
-      jump key above). Both need the hub to talk to the extension, which today only
-      listens to VS Code and tells the hub.
+      session's color. (Bringing the terminal of the session in focus to the front is
+      done, see the jump key above; the hub can ask the extension since 0.2.0.)
 - [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
       as a small sign on the tab for a moment (its visual bell setting is off by default).
 - [ ] A phone notification when a session needs you and you are away

@@ -82,6 +82,8 @@ class Hub(Permissions, Talk):
         self.talk_target: str | None = None  # session a spoken follow-up goes to
         self._kept_sessions: dict | None = None  # what sessions.json last said (see _keep_sessions)
         self._front = ""  # the terminal the editor last said you were in (see terminal_in_front)
+        self._shown_by: dict[str, float] = {}  # terminal -> when a request of an editor that can show it last ended
+        self._show_wanted: tuple[str, float] = ("", base.NEVER)  # a terminal asked to the front while its editor was between two requests
         self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
         self._restore_sessions()
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
@@ -608,7 +610,8 @@ class Hub(Permissions, Talk):
                            else ["allow", "deny"] if self.requests else [])
                           + (["cancel"] if self._talking or self._transcribing or self._pending or current or self._unsendable()
                              or self._asides or self._stoppable() else [])
-                          + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else []))
+                          + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else [])
+                          + (["jump"] if self._showable(self._target()) else []))
             now = time.time()
             # Newest first, and up to four lines of each session: the overlay shows those of the
             # session under the mouse, so one that talks a lot must not push the others out.

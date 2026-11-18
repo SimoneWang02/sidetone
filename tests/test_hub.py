@@ -1226,6 +1226,35 @@ class PushToTalk(HubCase):
         self.assertEqual((row["state"], row["text"]), ("idle", "stopped"))
         self.assertEqual(self.talks()[-1], ("stopped", "a", "Stopped"))
 
+    def test_a_key_brings_the_terminal_of_the_session_in_focus_to_the_front(self):
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41", 4002: "/dev/pts/42"}.get(pid)
+        hub.sessions.by_id["a"].tty, hub.sessions.by_id["b"].tty = "/dev/pts/41", "/dev/pts/42"
+        hub.talk_target = "a"
+        hub.publish()
+        self.assertNotIn("jump", self.overlay.of("keys")[-1]["live"])  # no editor: the key is left to other programs
+        self.assertIsNone(hub.show_terminal())
+        old = hub.editor_waits([4001, 4002])  # an extension from before this: it only types Escape
+        self.assertNotIn("jump", self.overlay.of("keys")[-1]["live"])
+        self.assertIsNone(hub.show_terminal())
+        hub.editor_done(old)
+        editor = hub.editor_waits([4002, 4001, 9], shows=True)
+        self.assertIn("jump", self.overlay.of("keys")[-1]["live"])
+        hub.on_overlay({"type": "hotkey", "name": "jump"})
+        self.assertTrue(editor.wake.is_set())
+        self.assertEqual((editor.show, hub.editor_done(editor)), ([4001], []))  # shown, and nothing typed
+        # Between two requests of the editor the key still works: the next request is handed it.
+        self.assertEqual(hub.show_terminal("b"), "b")
+        again = hub.editor_waits([4002, 4001], shows=True)
+        self.assertTrue(again.wake.is_set())
+        self.assertEqual(again.show, [4002])
+        hub.editor_done(again)
+        self.assertIsNone(hub.show_terminal("nobody"))
+        # An editor that has been gone for a while cannot be asked.
+        hub._shown_by.clear()
+        self.assertIsNone(hub.show_terminal())
+
     def test_escape_is_asked_for_once_and_only_of_a_session_in_a_turn(self):
         hub = self.got_the_words()  # "a" has the words and has begun on them
         self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
@@ -2786,6 +2815,59 @@ class HubProcess(unittest.TestCase):
         time.sleep(1.5)  # long enough for a second Escape, which must not come
         with open(typed) as f:
             self.assertEqual(json.load(f), [[shell.pid, "\x1b", False]])
+
+    @unittest.skipUnless(__import__("shutil").which("node"), "needs node to run the editor extension")
+    def test_the_editor_extension_brings_a_sessions_terminal_to_the_front(self):
+        """The real extension code, with a stand-in for the editor, against a real hub: asked
+        for a session's terminal, the editor shows that one, with the keyboard in it, and
+        types nothing."""
+        import pty
+        import shutil
+        sessions = os.path.join(self.tmp, ".claude", "sessions")
+        os.makedirs(sessions)
+        ours, theirs = pty.openpty()  # the terminal the session runs in
+        shell = subprocess.Popen(["sleep", "30"], stdin=theirs)
+        os.close(theirs)
+        self.addCleanup(os.close, ours)
+        self.addCleanup(shell.wait)
+        self.addCleanup(shell.kill)
+        with open(os.path.join(sessions, f"{shell.pid}.json"), "w") as f:
+            json.dump({"pid": shell.pid, "sessionId": "a", "status": "idle", "statusUpdatedAt": time.time() * 1000}, f)
+        self.start_hub()
+        self.call("/event", ev("SessionStart", sid="a", cwd="/work/alpha"))
+        self.assertIsNone(self.call("/terminal", {"show": ""})["shown"], "no editor yet")
+        ext = os.path.join(self.tmp, "ext")
+        os.makedirs(os.path.join(ext, "node_modules", "vscode"))
+        shutil.copy(os.path.join(ROOT, "vscode", "extension.js"), ext)
+        done = os.path.join(self.tmp, "done.json")
+        with open(os.path.join(ext, "node_modules", "vscode", "index.js"), "w") as f:
+            f.write("""
+                const fs = require("fs");
+                const done = [];
+                const note = (...what) => { done.push(what); fs.writeFileSync(process.env.DONE, JSON.stringify(done)); };
+                const terminal = (pid) => ({
+                  processId: Promise.resolve(pid),
+                  sendText: (text, enter) => note("typed", pid, text, enter),
+                  show: (keepKeyboard) => note("shown", pid, keepKeyboard),
+                });
+                exports.window = {
+                  state: { focused: true },
+                  terminals: [terminal(1), terminal(Number(process.env.SHELL_PID))],
+                  activeTerminal: undefined,
+                  onDidChangeActiveTerminal: (f) => ({ dispose() {} }),
+                  onDidChangeWindowState: (f) => ({ dispose() {} }),
+                  onDidOpenTerminal: (f) => ({ dispose() {} }),
+                  onDidCloseTerminal: (f) => ({ dispose() {} }),
+                };""")
+        editor = subprocess.Popen(["node", "-e", "require('./extension.js').activate({ subscriptions: [] });"], cwd=ext,
+                                  env={**self.env, "SHELL_PID": str(shell.pid), "DONE": done})
+        self.addCleanup(editor.wait)
+        self.addCleanup(editor.kill)
+        # Once the hub has found the session's terminal and the editor's request is with it.
+        self.assertTrue(wait_for(lambda: self.call("/terminal", {"show": "alpha"})["shown"] == "alpha", 8), "no editor could be asked")
+        self.assertTrue(wait_for(lambda: os.path.exists(done), 8), "the terminal was not shown")
+        with open(done) as f:
+            self.assertEqual(json.load(f)[0], ["shown", shell.pid, False])
 
     def test_a_listener_keeps_working_when_its_script_is_edited_under_it(self):
         """Bash reads a script from its file as it goes. A listener waits for hours, and when the

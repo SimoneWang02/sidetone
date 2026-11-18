@@ -492,7 +492,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   session to show it on, the sign is still in the bubble. The paper plane was redrawn the
   same day (the author: "it doesn't feel centered"): its three corners are equally far from
   the middle and it is the same on both sides of its line of flight (`Badge.Aim`).
-- Hotkeys (rebind or blank them under `overlay.hotkeys`): always claimed are `toggle` Ctrl+Alt+L,
+- Hotkeys (rebind or blank them under `overlay.hotkeys`; `jump` Ctrl+Alt+T is described further down): always claimed are `toggle` Ctrl+Alt+L,
   `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R and `missed` Ctrl+Alt+U (Ctrl+Alt+M is taken by
   another program on the author's machine). Claimed only while they can act: `allow` Ctrl+Alt+Y,
   `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace, and
@@ -654,6 +654,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Installed on the author's machine; **nobody has switched terminals with it yet**. Limit:
   VS Code reports a change of the active terminal, not keyboard focus, so clicking back
   into the terminal you were last in reports nothing.
+- Session → terminal, the jump key (2026-11-18, `Talk.show_terminal`, `_showable`, hotkey
+  `jump` = `Ctrl+Alt+T`, `claude-speaks terminal show [PROJECT]`, `vscode/extension.js`
+  0.3.0; built while the author was away, **key and letter not agreed with them, not
+  pressed by anyone**). The extension's held request now says what it can do (`"can":
+  ["escape", "show"]`), and the hub's answer can carry `show`, a list of process ids; the
+  extension calls `terminal.show(false)` on those, which brings the terminal up with the
+  keyboard in it. An `Editor` without `shows` (0.2.0) is never asked, and the key is only
+  live (`keys` → `jump`) while an editor that shows holds the terminal of the session in
+  focus, or did up to `EDITOR_GAP` (3 s) ago, since its requests end every 25 s and the next
+  comes 0.2 s later; a show asked for in that gap waits in `_show_wanted` for the next
+  request. Inside VS Code's window only: nothing brings the window itself in front of
+  other programs. `Ctrl+Alt+Enter` was passed over as the key because VS Code uses it
+  (replace all). The overlay treats `jump` like the keys that answer: claimed while live.
 - `hub/stale.py`: the hub takes a fingerprint of each of its own files as it starts (of
   what they hold, not their time of change, so a file that was only touched does not count),
   and the overlay does the same for its source when a window is started. `/state` carries
@@ -727,9 +740,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `bin/claude-speaks` (linked by `install.sh` into `~/.local/bin` as `claude-speaks` and `cs`;
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `languages [CODES]`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
-  `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
+  `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | show [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 276 tests in all with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 278 tests in all with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

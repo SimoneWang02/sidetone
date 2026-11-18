@@ -35,6 +35,7 @@ Usage: claude-speaks <command>
   terminal                   show how sessions' own terminals are marked
   terminal tint focus|all|off   whose terminal wears its session's color (focus = the one in focus)
   terminal find [PROJECT]    light up a session's terminal for a moment (default: the one in focus)
+  terminal show [PROJECT]    bring a session's terminal to the front in VS Code (needs: vscode install)
   terminal pulse on|off|N    the brighter moment when the focus is moved by hand; N = how bright, 0 to 1
   terminal title on|off      the session's name as the terminal's title
   terminal follow on|off     going to a terminal in VS Code gives its session the focus (needs: vscode install)
@@ -186,6 +187,7 @@ case ${1:-} in
     case ${2:-} in
       "") request='{}' ;;
       find) request=$(jq -nc --arg p "${3:-}" '{find: $p}') ;;
+      show) request=$(jq -nc --arg p "${3:-}" '{show: $p}') ;;
       tint) request=$(jq -nc --arg t "${3:-}" '{tint: $t}') ;;
       pulse|title|follow)
         case ${3:-} in
@@ -199,7 +201,10 @@ case ${1:-} in
       *) usage; exit 2 ;;
     esac
     reply=$(hub_post /terminal <<<"$request") || { echo "hub is not running, or that is not a choice (tint: focus, all, off)"; exit 1; }
-    if [ "${2:-}" = find ]; then
+    if [ "${2:-}" = show ]; then
+      shown=$(jq -r '.shown // empty' <<<"$reply")
+      [ -n "$shown" ] && echo "to the front: $shown" || { echo "no such session, or no VS Code with the claude-speaks extension holds its terminal"; exit 1; }
+    elif [ "${2:-}" = find ]; then
       found=$(jq -r '.found // empty' <<<"$reply")
       [ -n "$found" ] && echo "lit up: $found" || { echo "no such session, or it has no terminal of its own"; exit 1; }
     else
@@ -213,7 +218,7 @@ case ${1:-} in
         dir=$(mktemp -d) || exit 1
         python3 "$CS_ROOT/vscode/pack.py" "$dir/claude-speaks.vsix" >/dev/null && code --install-extension "$dir/claude-speaks.vsix" --force
         status=$?; rm -rf "$dir"
-        [ $status -eq 0 ] && echo "Go to another terminal in VS Code: the session running there gets the focus. The cancel key now stops a session at once. If this was an update, restart VS Code's extensions once (Ctrl+Shift+P, Restart Extension Host)." || exit $status ;;
+        [ $status -eq 0 ] && echo "Go to another terminal in VS Code: the session running there gets the focus. The cancel key now stops a session at once, and Ctrl+Alt+T goes to the terminal of the session in focus. If this was an update, restart VS Code's extensions once (Ctrl+Shift+P, Restart Extension Host)." || exit $status ;;
       uninstall) code --uninstall-extension claude-speaks.claude-speaks ;;
       *) usage; exit 2 ;;
     esac

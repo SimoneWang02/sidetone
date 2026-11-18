@@ -140,6 +140,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._reply({"focus": hub.terminal_in_front(pid, body.get("why") != "window")})
             if "find" in body:  # light up one session's terminal, to see which it is
                 return self._reply({"found": hub.find_terminal(str(body["find"] or ""))})
+            if "show" in body:  # have the editor bring one session's terminal to the front
+                return self._reply({"shown": hub.show_terminal(str(body["show"] or ""))})
             changes = {k: body[k] for k in terminal_mod.DEFAULTS if k in body}
             if changes.get("tint", "focus") not in terminal_mod.TINTS:
                 return self._reply({"error": "tint is one of: " + ", ".join(terminal_mod.TINTS)}, 400)
@@ -198,11 +200,12 @@ class Handler(BaseHTTPRequestHandler):
             pids = [int(pid) for pid in body.get("terminals") or []]
         except (TypeError, ValueError):
             return self._reply({"error": "terminals is a list of process ids"}, 400)
-        editor = hub.editor_waits(pids)
+        can = body.get("can")
+        editor = hub.editor_waits(pids, shows=isinstance(can, list) and "show" in can)
         end = time.monotonic() + EDITOR_WAIT
         while not editor.wake.wait(0.5) and time.monotonic() < end and not self._client_gone():
             pass
-        self._reply({"keys": hub.editor_done(editor)})
+        self._reply({"keys": hub.editor_done(editor), "show": editor.show})
 
     def _client_gone(self) -> bool:
         try:
