@@ -302,7 +302,7 @@ real keys yet.
 
 ## Rough edges
 
-- [ ] A hub restart still forgets a few things. Names, colors, voices, titles, the order in
+- [x] A hub restart still forgets a few things. Names, colors, voices, titles, the order in
       the bar and the focus are kept since 2026-11-17 (`sessions.json`), and since later
       that day the last 40 lines the sessions said (the author pressed repeat after a
       restart and got "Nothing from ... yet"), but not the task counts of a running turn,
@@ -312,6 +312,10 @@ real keys yet.
       The author, after a hub restart: "when hovering ... I don't see the history
       anymore"; the history only shows while the details are kept out, and the restart
       had put the overlay back to lights only. The mode is now saved like the layout.
+      Closed on the author's word, 2026-11-17: what is still forgotten (the task counts of
+      a running turn, an open permission prompt) is only met while the hub is restarted
+      to work on it, and they want no code for that ("there's no need in the final
+      product"; asked whether to tick this one for the same reason: "Yeah").
 - [x] Titles that say what a session is doing (the author, 2026-11-17, could not tell four
       sessions in one folder apart by their titles, which were the start of each one's
       first spoken sentence). Changed the same day: each session now writes its own title
