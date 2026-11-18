@@ -2198,7 +2198,7 @@ namespace ClaudeSpeaks
                 requestTitle.Inlines.Add(new Run("\u25B2  ") { Foreground = Ui.AmberEdge, FontFamily = Ui.Symbols });
                 requestTitle.Inlines.Add(new Run(Str(msg, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(msg, "color")) });
                 // Several questions in one dialog: which one this is, since the terminal goes on showing the first.
-                if (Str(msg, "place").Length > 0) requestTitle.Inlines.Add(new Run("question " + Str(msg, "place")) { Foreground = Ui.Dim });
+                if (Str(msg, "place").Length > 0) requestTitle.Inlines.Add(new Run("Question " + Str(msg, "place")) { Foreground = Ui.Dim });
                 requestTitle.MaxHeight = Str(msg, "question").Length > 0 ? 74 : 54;  // the name's line and three more, or three in all
                 if (Str(msg, "question").Length > 0)  // a question stands on a line of its own, under who asks it
                 {
