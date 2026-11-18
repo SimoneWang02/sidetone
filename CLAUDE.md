@@ -350,7 +350,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   disc with no border, which covers the whole light for `overlay.waiting_hold` seconds (0.9)
   as the words go into the queue, then shrinks and glides to the upper right
   (`Orb.WaitingSince`, set whenever the count grows). With `number` and `dot` the `queued`
-  step puts no sign in the light. **They have not seen the number move yet.**
+  step puts no sign in the light. **They have not seen the number move yet.** Above nine
+  messages the disc is a shocked face (`Orb.Shocked`, drawn, since WPF here has no color
+  emoji; `overlay.waiting_many`: `face` or `number` for "9+"), the author's idea on
+  seeing "9+": "very dense in that circle".
 - What push-to-talk shows (changed 2026-11-17: the author did not like the text line with
   arrows, "listening → name", and it kept the old name when the focus moved): the hub sends
   `talk` with a step (`listening`, `transcribing`, `ready`, `sent`, `failed`, `focus`), the

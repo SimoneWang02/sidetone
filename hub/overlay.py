@@ -71,6 +71,7 @@ DEFAULTS = {
     # dot = a plain breathing dot
     "waiting_mark": "number",
     "waiting_hold": 0.9,  # seconds the number covers the whole light before it goes to the corner
+    "waiting_many": "face",  # more than nine messages waiting: face = a shocked face | number = "9+"
     # Its color: the red of a notification | "#RRGGBB" = your own ("#FF6E8A" is the microphone's pink)
     "waiting_color": "#FF3B30",
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.

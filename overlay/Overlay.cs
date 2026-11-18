@@ -70,6 +70,7 @@ namespace ClaudeSpeaks
         // or a color of your own (waiting_color, "#RRGGBB").
         public static Color Waiting = Color.FromRgb(0xFF, 0x3B, 0x30);
         public static string WaitingMark = "number";  // or "clock", "dot"
+        public static string WaitingMany = "face";  // above nine messages: a shocked face | "number" = "9+"
         public static double WaitingHold = 0.9;  // seconds the number covers the whole light before it goes to the corner
 
         public static void SetWaitingColor(string hex)
@@ -406,7 +407,8 @@ namespace ClaudeSpeaks
                 var at = new Point(c.X + (corner.X - c.X) * k, c.Y + (corner.Y - c.Y) * k);
                 double r = (13.5 + (6.6 - 13.5) * k) * pop;
                 dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.97), null, at, r, r);
-                Number(dc, count, at, (count.Length > 1 ? 0.95 : 1.25) * r);
+                if (Waiting > 9 && Ui.WaitingMany == "face") Shocked(dc, at, r);
+                else Number(dc, count, at, (count.Length > 1 ? 0.95 : 1.25) * r);
                 return;
             }
             Brush rim = Ui.Alpha(Color.FromRgb(0x14, 0x14, 0x18), 0.9);
@@ -433,6 +435,20 @@ namespace ClaudeSpeaks
 
         const double MarkMove = 0.55;  // seconds the number takes from the middle of the light to its corner
         static readonly Typeface MarkFace = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
+
+        // More than nine messages: the disc becomes a shocked face (two wide eyes under raised
+        // brows, a mouth open in an O), since "9+" is a tight fit in so small a circle.
+        static void Shocked(DrawingContext dc, Point at, double r)
+        {
+            double eye = 0.17 * r;
+            dc.DrawEllipse(Brushes.White, null, new Point(at.X - 0.36 * r, at.Y - 0.22 * r), eye, eye * 1.25);
+            dc.DrawEllipse(Brushes.White, null, new Point(at.X + 0.36 * r, at.Y - 0.22 * r), eye, eye * 1.25);
+            dc.DrawEllipse(Brushes.White, null, new Point(at.X, at.Y + 0.40 * r), 0.22 * r, 0.30 * r);
+            if (r < 9) return;  // too small for brows
+            Pen brow = Ui.Line(Colors.White, 1, 0.11 * r);
+            dc.DrawLine(brow, new Point(at.X - 0.56 * r, at.Y - 0.56 * r), new Point(at.X - 0.20 * r, at.Y - 0.66 * r));
+            dc.DrawLine(brow, new Point(at.X + 0.56 * r, at.Y - 0.56 * r), new Point(at.X + 0.20 * r, at.Y - 0.66 * r));
+        }
 
         static void Number(DrawingContext dc, string text, Point at, double size)
         {
@@ -1162,6 +1178,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
                     Ui.WaitingHold = Math.Max(0, Num(msg, "waiting_hold", Ui.WaitingHold));
+                    if (msg.ContainsKey("waiting_many")) Ui.WaitingMany = Str(msg, "waiting_many") == "number" ? "number" : "face";
                     if (msg.ContainsKey("waiting_mark"))
                     {
                         string mark = Str(msg, "waiting_mark");

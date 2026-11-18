@@ -323,6 +323,10 @@ real keys yet.
       right and stays; it does so again when another message joins. `waiting_mark` is
       `number` (default), `clock` or `dot`. Seen in pictures of both ends of the
       motion; **the author has not seen it move yet.**
+      Having seen "9+" in a picture: "very compact very dense in that circle. Maybe use
+      like a funny emoji ... like a shocked emoji". Above nine messages the disc is now
+      a shocked face, drawn by the overlay (`overlay.waiting_many`: `face`, or `number`
+      for "9+"). In the corner it is three white dots on red, small for a face.
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next
