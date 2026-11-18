@@ -401,8 +401,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (`aside_model: session`); the model and effort are read from the end of Claude Code's
   record of the session (`hub.session_model`, `projects_dir`). A named model works as
   before: no tools, nothing saved. With hooks off the
-  copy neither spoke nor showed up in the hub. **Not tried by the author yet**, and never
-  through the live hub with a real voice.
+  copy neither spoke nor showed up in the hub. Tried by the author with their own voice on
+  2026-11-18, through the live hub, while this session worked: "By the way, what time is
+  it right now?" was answered aloud in 3.2 s ("I can't read the clock from a side
+  question, but the last time I saw in the log was about ten to two"). Their first try,
+  "Oh, by the way ...", waited for the session: the opening had to be the very first
+  word. Since then small words before it are passed over (`base.ASIDE_LEAD`) and the copy
+  is told the day and time (`base.aside_prompt`); neither tried by voice yet.
 - Taking words back after they went out (2026-11-17, `Hub._take_back`, `unsend_seconds`, 4;
   0 = off). The author wanted an easier way to cancel; offered a spoken ending ("never mind")
   and an unsend key, they pointed out that the spoken one could throw away a message they

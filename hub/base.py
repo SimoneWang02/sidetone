@@ -80,7 +80,17 @@ ASIDE_PROMPT = ("This is a side question from me, asked by voice while you work 
                 "conversation, in one or two short sentences of plain spoken English: it is read aloud, so no "
                 "speak tag, no code, no paths, no symbols and no markdown. You cannot use tools here: if the "
                 "answer would need reading a file, running a command or searching, say that it cannot be checked "
-                "from a side question. Do not continue or change the task you were working on. The question: ")
+                "from a side question. Do not continue or change the task you were working on. ")
+# Small words a spoken sentence may begin with before the opening of a side question: the
+# author's first real one was "Oh, by the way, what time is it right now?" (2026-11-18), and
+# with the "oh" it waited for the session like any other words.
+ASIDE_LEAD = "oh|ah|so|hey|and|also|alright|all right|right|ok|okay|um|uh|well|yeah|actually|claude"
+
+
+def aside_prompt(question: str) -> str:
+    """What the copy is asked. It is told the day and the time, which it cannot look up (that
+    first real question got "I can't read the clock from a side question")."""
+    return ASIDE_PROMPT + time.strftime("Right now it is %A, %d %B %Y, %H:%M. ") + "The question: " + question
 # Tools a copy on the session's own model may not use: it would have to ask, and nobody is there.
 ASIDE_ASK = ["Bash", "Edit", "Write", "NotebookEdit", "Read", "Grep", "Glob", "WebFetch", "WebSearch", "Agent", "Skill", "mcp__*"]
 # Variables that tie a new Claude Code process to the session whose hook started the hub.
@@ -319,7 +329,7 @@ def aside_question(text: str, words: list) -> str:
     gives "where is it?"), or "" when they do not, or nothing follows."""
     for opening in sorted((w for w in words if isinstance(w, str) and w.strip()), key=len, reverse=True):
         spaced = r"\s+".join(map(re.escape, opening.split()))
-        m = re.match(rf"\W*{spaced}\b\W*(\w.*)", text, re.IGNORECASE | re.DOTALL)
+        m = re.match(rf"\W*(?:(?:{ASIDE_LEAD})\W+)*{spaced}\b\W*(\w.*)", text, re.IGNORECASE | re.DOTALL)
         if m:
             return m.group(1).strip()
     return ""

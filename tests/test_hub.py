@@ -1569,6 +1569,14 @@ class SideQuestions(HubCase):
         self.assertEqual(q("Run the tests, by the way", ["by the way"]), "")  # only as the opening
         self.assertEqual(q("By the way.", ["by the way"]), "")  # nothing asked
         self.assertEqual(q("By the way, what now?", []), "")
+        self.assertEqual(q("Oh, by the way, what time is it right now?", ["by the way", "btw"]), "what time is it right now?")
+        self.assertEqual(q("Alright, so, btw is it done?", ["by the way", "btw"]), "is it done?")
+        self.assertEqual(q("Oh no, by the way is blocked", ["by the way"]), "")  # "no" is not such a word
+
+    def test_the_copy_is_told_the_time(self):
+        asked = hub_module.base.aside_prompt("what time is it?")
+        self.assertIn(time.strftime("%A, %d %B %Y"), asked)
+        self.assertTrue(asked.endswith("The question: what time is it?"))
 
     def test_an_answer_is_cleaned_for_the_voice(self):
         clean = hub_module.spoken_answer

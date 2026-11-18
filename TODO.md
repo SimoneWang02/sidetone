@@ -9,7 +9,7 @@ started. `CLAUDE.md` has the details of how things work.
 These work in the automated tests or in pictures taken from WSL, but nobody has pressed the
 real keys yet.
 
-- [ ] Side questions: spoken words that open with "by the way" do not wait for a busy session
+- [x] Side questions: spoken words that open with "by the way" do not wait for a busy session
       (asked for by the author by voice on 2026-11-17, who compared it to Claude Code's
       `/btw`: "it lets me skip the queue and ask a by the way question"; of a second talk
       key or opening words they chose the words: "starting with the words by the way,
@@ -21,9 +21,18 @@ real keys yet.
       talk key and say "by the way, what are you doing right now?". Its light should show
       the moving dots with your words and "Answering on the side", then it answers aloud
       while it goes on working; `Ctrl+Alt+Backspace` in those seconds drops the question.
+      Tried by the author on 2026-11-18 with their own voice, while a session worked.
+      "Oh, by the way, what time is it right now?" waited for the session like any
+      words, because of the "oh". Said again without it, the copy answered in 3.2 s
+      and was heard: "I can't read the clock from a side question, but the last time I
+      saw in the log was about ten to two". Mended at once: small words before the
+      opening ("oh", "so", "alright", "hey") are passed over, and the copy is told the
+      day and the time. **Neither fix tried by voice yet**; they have not said how the
+      answer sounded or whether they saw "Answering on the side".
       Open:
       - does the speech model write "by the way" reliably at the start (the author's own
-        choice came through as "the worst by the way"); other openings go in `aside_words`
+        choice came through as "the worst by the way"; both real tries on 2026-11-18
+        were written right); other openings go in `aside_words`
       - the copy now runs on the session's own model and reuses what the session has
         saved, as `/btw` does (the author: cost on Fable does not matter, and ideally
         they want the real `/btw`); 4.5 s on a long Fable session. What it adds to the

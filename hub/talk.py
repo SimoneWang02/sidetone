@@ -320,7 +320,7 @@ class Talk:
         with self.lock:
             if aside.dropped:
                 return "", "dropped"
-            aside.proc = subprocess.Popen(cmd + ["--", ASIDE_PROMPT + question], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+            aside.proc = subprocess.Popen(cmd + ["--", base.aside_prompt(question)], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                           start_new_session=True)
         try:
