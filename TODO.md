@@ -451,8 +451,14 @@ real keys yet.
       follow), its turn ends, and the words arrive as the next message
       (`voice_at_prompt`: `details`, or `wait` as before). Tried on a real session
       through the live hub: asked for a folder, told by voice "make a file named
-      note.txt instead", it made no folder and asked to write the file. **Not tried by
-      the author.** Not built: the terminal's "chat about this" as such.
+      note.txt instead", it made no folder and asked to write the file. Tried by the
+      author the same night on a test session set up for it: the folder request was
+      turned down by their voice ("deny, voice: more details follow"), the session
+      asked to make the file, and they allowed that with the key. Their first try went
+      to the session that had just explained the test, which had the focus for having
+      spoken last; and the point of the exercise was not clear to them ("What's the
+      point? Like what do I have to do right now?"): a check that needs a second
+      session and a move of the focus wants a plainer set-up than it got. Not built: the terminal's "chat about this" as such.
 - [x] Several questions in one dialog: answered by voice or number key, the overlay moves on
       to the second question, but the terminal goes on showing the first until the last one
       is answered (the author, 2026-11-17: "I sent an audio to answer the first question

@@ -780,7 +780,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   end, which is at once; Claude then has them as the user's next message and goes on from
   them with what it knows of the task. `wait` keeps the old way. Tried with a real session
   through the live hub (a folder asked for, a file wanted instead: no folder, the file
-  requested next); **not tried by the author**.
+  requested next), and by the author with their own voice the same night.
 - More permission hook facts (measured 2026-11-17, Claude Code 2.1.327): a multi-select
   `AskUserQuestion` (`multiSelect: true`) is answered through `updatedInput.answers` like a
   single choice, with the labels joined by ", " or with any free text. The `message` of a
