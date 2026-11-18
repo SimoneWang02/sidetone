@@ -397,11 +397,14 @@ real keys yet.
       back word for word. Found on the way: the speech model (464 MB) only came at the
       first hold of the talk key, 21 s in which the key seemed to do nothing; the script
       now fetches it.
-- [ ] `install.sh` on a machine that has nothing yet: no `jq`, `curl`, `uv` or sound
+- [x] `install.sh` on a machine that has nothing yet: no `jq`, `curl`, `uv` or sound
       tools, a real loudspeaker and microphone, and the overlay's first start. The run
       above was on the author's machine, where all of those were there already. A
       container would cover the tools; Docker is on the author's machine but not switched
       on for this WSL.
+      Not done. Ticked on the author's word, 2026-11-17: "you can just tick it because
+      we might as well do it in the end after the app is done." It is now part of
+      "Making the repo public" below.
 
 ## Not started
 
@@ -465,7 +468,8 @@ Bigger pieces:
       - Line written to first sound: about 0.3 s with the hub warm (in `CLAUDE.md`).
       - Still to measure: real voices and a noisy room, the other model sizes, a slower
         CPU, memory, and how often a short recording is taken for the wrong language.
-- [ ] Making the repo public.
+- [ ] Making the repo public. Before that: run `install.sh` on a machine that has nothing
+      yet (see the ticked item under "Rough edges"; put off to here by the author).
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.
 - [ ] An overlay for Linux and macOS. Today it is Windows only.
