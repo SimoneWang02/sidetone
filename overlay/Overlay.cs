@@ -1091,7 +1091,7 @@ namespace ClaudeSpeaks
         // name small above it, the figure large, and under it a thin bar where the figure is a
         // share of a whole. Every figure keeps its place whether it is known or not, so the eye
         // learns where each one is.
-        readonly Border metricsCard = new Border { CornerRadius = new CornerRadius(8), Background = Ui.Paint("#12FFFFFF"), Padding = new Thickness(11, 7, 6, 9), Margin = new Thickness(-3, 1, -3, 3) };
+        readonly Border metricsCard = new Border { CornerRadius = new CornerRadius(8), Background = Ui.Paint("#12FFFFFF"), Padding = new Thickness(11, 7, 11, 12), Margin = new Thickness(-3, 2, -3, -3) };
         readonly StackPanel metricsBody = new StackPanel();
         string detailsStyle = "tiles";
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
@@ -1494,6 +1494,10 @@ namespace ClaudeSpeaks
             bool showMetrics = asked && BuildMetrics();
             metricsLine.Visibility = showMetrics && detailsStyle == "line" ? Visibility.Visible : Visibility.Collapsed;
             metricsCard.Visibility = showMetrics && detailsStyle != "line" ? Visibility.Visible : Visibility.Collapsed;
+            // The same room above the card as below it (10 px), whichever of the two is the
+            // panel's edge and whichever the dividing line; more when the history follows.
+            bool linesFollow = historyLines.Children.Count > 0;
+            metricsCard.Margin = Low ? new Thickness(-3, -1, -3, linesFollow ? 6 : 1) : new Thickness(-3, 2, -3, linesFollow ? 6 : -3);
             historyBox.Visibility = showMetrics || historyLines.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             bool talking = talkState.Length > 0;
             foreach (Row row in order)
@@ -1730,7 +1734,9 @@ namespace ClaudeSpeaks
             metricsLine.Inlines.Clear();
             metricsBody.Children.Clear();
             if (about == null) return false;
-            var tiles = new System.Windows.Controls.Primitives.UniformGrid { Rows = 1 };
+            // Each tile keeps 12 px to its right as the gap to the next; the last one's is taken
+            // back, so that the card has the same room on both sides.
+            var tiles = new System.Windows.Controls.Primitives.UniformGrid { Rows = 1, Margin = new Thickness(0, 0, -12, 0) };
             bool any = false;
             foreach (object o in about.Details)
             {
@@ -1763,7 +1769,7 @@ namespace ClaudeSpeaks
         // whole (the bar's own color when it is nearly the whole, over a faint step of the same).
         static UIElement Tile(string name, string figure, double share, bool warn)
         {
-            var tile = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
+            var tile = new StackPanel { Margin = new Thickness(0, 0, 12, 0) };
             tile.Children.Add(new TextBlock { Text = name, FontSize = 10.5, Foreground = Ui.Faint, TextTrimming = TextTrimming.CharacterEllipsis });
             var number = new TextBlock { FontSize = 16, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 1, 0, 0) };
             int of = figure.IndexOf('/');
@@ -1775,7 +1781,7 @@ namespace ClaudeSpeaks
             }
             else number.Inlines.Add(new Run(figure) { Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Brushes.White });
             tile.Children.Add(number);
-            var bar = new Grid { Height = 4, Margin = new Thickness(0, 4, 6, 0) };
+            var bar = new Grid { Height = 4, Margin = new Thickness(0, 4, 0, 0) };
             if (share >= 0)
             {
                 Color ink = warn ? Ui.ContextFull : Colors.White;

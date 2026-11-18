@@ -919,7 +919,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   A row's `details` are now [name, figure, share or null, "warn" or ""], one for every
   entry of `detail_metrics` (default `context`, `tokens`, `time`, `tasks`), unknown ones
   with "" as their figure. `Session.turn_took` is how long the last turn ran. Seen in
-  pictures in both layouts; **the author has not seen it yet**. Ideas from the same look
+  pictures in both layouts. The author on seeing it: "it's not bad", but "the bottom
+  padding is different compared to the top" of the box. It was: 9 px from the dividing
+  line to the card and 15 from the card to the panel's edge, and inside it more room at
+  the right than at the left. Now 13 px above and below it, for a bar at the top of the
+  screen and at the bottom (measured in `metrics-under.png` and `metrics-other.png`; the
+  card's margin is set in `Render`, since which side is the panel's edge depends on
+  where the bar is), and about 11 px inside on all four sides. Ideas from the same look
   that were not built: the plan's usage as a thin line at the foot of that card, a mark
   for the kind of agent, the row dropping its time now that the card has it.
 - No raised dots (2026-11-18; the author: "don't use the dots, the central dots. I don't
