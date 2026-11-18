@@ -1151,6 +1151,7 @@ namespace ClaudeSpeaks
         readonly Border metricsCard = new Border { CornerRadius = new CornerRadius(8), Background = Ui.Paint("#12FFFFFF"), Padding = new Thickness(11, 7, 11, 12), Margin = new Thickness(-3, 2, -3, -3) };
         readonly StackPanel metricsBody = new StackPanel();
         string detailsStyle = "tiles";
+        bool choiceCaps;  // the number in front of a question's choice drawn as a key cap, not as a plain number
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
         // What the keys do, each key drawn as a small cap: quicker to take in than a line of text.
         readonly WrapPanel requestCaps = new WrapPanel { Margin = new Thickness(0, 2, 0, 0) };
@@ -1384,6 +1385,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
                     if (msg.ContainsKey("details_style")) detailsStyle = Str(msg, "details_style") == "line" ? "line" : "tiles";
+                    if (msg.ContainsKey("choice_caps")) choiceCaps = Convert.ToBoolean(msg["choice_caps"]);
                     Ui.ContextWarn = Num(msg, "context_warn", Ui.ContextWarn);
                     if (msg.ContainsKey("context_color")) Ui.Context = Ui.ColorOr(Str(msg, "context_color"), Colors.White);
                     if (msg.ContainsKey("context_warn_color")) Ui.ContextFull = Ui.ColorOr(Str(msg, "context_warn_color"), Ui.ContextFull);
@@ -2553,7 +2555,7 @@ namespace ClaudeSpeaks
                 {
                     requestDetail.FontFamily = requestTitle.FontFamily;
                     requestDetail.MaxHeight = 190;
-                    requestDetail.LineHeight = 22;  // room between one choice's cap (or box) and the next
+                    requestDetail.LineHeight = choiceCaps ? 22 : double.NaN;  // room between one choice's cap and the next
                     for (int i = 0; i < options.Length; i++)
                     {
                         if (i > 0) requestDetail.Inlines.Add(new LineBreak());
@@ -2562,11 +2564,12 @@ namespace ClaudeSpeaks
                             requestDetail.Inlines.Add(new InlineUIContainer(TickBox(i < ticked.Length && Convert.ToBoolean(ticked[i]))) { BaselineAlignment = BaselineAlignment.Center });
                             requestDetail.Inlines.Add(new Run("   "));
                         }
-                        else
+                        else if (choiceCaps)  // the number as a key cap, like the keys below
                         {
                             requestDetail.Inlines.Add(new InlineUIContainer(Cap((i + 1).ToString(CultureInfo.InvariantCulture), 0)) { BaselineAlignment = BaselineAlignment.Center });
                             requestDetail.Inlines.Add(new Run("  "));
                         }
+                        else requestDetail.Inlines.Add(new Run((i + 1) + "   ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.AmberEdge });
                         requestDetail.Inlines.Add(new Run(Convert.ToString(options[i], CultureInfo.InvariantCulture)) { Foreground = Brushes.White });
                     }
                 }

@@ -86,6 +86,10 @@ DEFAULTS = {
     # the figure large, and a thin bar where it is a share of a whole | line = one line of
     # text, "Context 21%   Last reply 64k"
     "details_style": "tiles",
+    # The number in front of each choice of a question: false = a plain number (the author:
+    # "only number without ... the rectangles with the number inside") | true = drawn as a
+    # key cap, like the keys in the line below the choices
+    "choice_caps": False,
     "context_warn": 80,
     "context_color": "#FFFFFF",
     "context_warn_color": "#FF8A3D",

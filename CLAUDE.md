@@ -991,7 +991,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   cap, so the keys and the choices are seen to match. A question with boxes to tick
   still has no numbers at its choices (their earlier wish); its caps go by the order of
   the choices. Shown to the author in a real question (tick questions: "Keep as it is",
-  boxes only); on the caps: "Oh, that's cool. Yeah, that's cool."
+  boxes only); on the caps: "Oh, that's cool. Yeah, that's cool." Shown a second question,
+  they said of the caps in front of the choices: "I thought keep it as it is like the
+  previous one with only number without ... the rectangles with the number inside". So
+  the choices have their plain amber numbers again (`overlay.choice_caps`, false; true
+  draws them as caps), and only the line of keys under them is caps.
 - The card follows the focus (2026-11-18; the author: "I focused the second session and it
   still showed ... the first session's metrics"). The card was about the row the mouse had
   been on last, for as long as that session lived, and only before any row was touched
