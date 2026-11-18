@@ -2552,7 +2552,8 @@ namespace ClaudeSpeaks
                 if (options.Length > 0)  // a question: each choice on a line of its own, behind its number
                 {
                     requestDetail.FontFamily = requestTitle.FontFamily;
-                    requestDetail.MaxHeight = 170;
+                    requestDetail.MaxHeight = 190;
+                    requestDetail.LineHeight = 22;  // room between one choice's cap (or box) and the next
                     for (int i = 0; i < options.Length; i++)
                     {
                         if (i > 0) requestDetail.Inlines.Add(new LineBreak());
@@ -2561,13 +2562,18 @@ namespace ClaudeSpeaks
                             requestDetail.Inlines.Add(new InlineUIContainer(TickBox(i < ticked.Length && Convert.ToBoolean(ticked[i]))) { BaselineAlignment = BaselineAlignment.Center });
                             requestDetail.Inlines.Add(new Run("   "));
                         }
-                        else requestDetail.Inlines.Add(new Run((i + 1) + "   ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.AmberEdge });
+                        else
+                        {
+                            requestDetail.Inlines.Add(new InlineUIContainer(Cap((i + 1).ToString(CultureInfo.InvariantCulture), 0)) { BaselineAlignment = BaselineAlignment.Center });
+                            requestDetail.Inlines.Add(new Run("  "));
+                        }
                         requestDetail.Inlines.Add(new Run(Convert.ToString(options[i], CultureInfo.InvariantCulture)) { Foreground = Brushes.White });
                     }
                 }
                 else  // a permission prompt: the exact command or path
                 {
                     requestDetail.FontFamily = requestMono;
+                    requestDetail.LineHeight = double.NaN;
                     requestDetail.MaxHeight = 70;  // about four lines; the terminal has the full command
                     requestDetail.Text = detail;
                 }
@@ -2582,12 +2588,14 @@ namespace ClaudeSpeaks
             Render();
         }
 
-        // The keys of a request as caps. Keys that all begin alike ("Ctrl+Alt+Y", "Ctrl+Alt+N")
-        // show that beginning once, fainter, and then one cap for each with what it does:
-        // [Ctrl] [Alt]  [Y] allow  [N] deny. A range is written "1-3" with a dash.
+        // The keys of a request as caps, all alike and all the same distance apart. Keys that
+        // begin alike ("Ctrl+Alt+Y", "Ctrl+Alt+N") show that beginning once, then a plus, then
+        // one cap for each with what it does: [Ctrl] [Alt] + [Y] allow  [N] deny. A run of
+        // number keys is written out, [1] [2] [3], one cap for each choice in its order (as a
+        // range, "1-3", it was not clear to someone who does not know the keys).
         void Caps(object[] hints, int more)
         {
-            var parts = new List<string[]>();  // the keys before the last, the last key, what it does
+            var parts = new List<string[]>();  // the keys before the last, the last key, what it does, the last key of a run
             foreach (object o in hints)
             {
                 var hint = o as object[];
@@ -2597,33 +2605,40 @@ namespace ClaudeSpeaks
                 int cut = combo.LastIndexOf('+');
                 string last = cut >= 0 ? combo.Substring(cut + 1) : combo;
                 if (last.Length == 0) continue;
-                parts.Add(new[] { cut >= 0 ? combo.Substring(0, cut) : "", to.Length > 0 && to != last ? last + "\u2013" + to : last, does });
+                parts.Add(new[] { cut >= 0 ? combo.Substring(0, cut) : "", last, does, to });
             }
             if (parts.Count == 0) return;
             bool alike = parts[0][0].Length > 0;
             foreach (string[] part in parts) alike &= part[0] == parts[0][0];
             if (alike)
             {
-                foreach (string key in parts[0][0].Split('+')) requestCaps.Children.Add(Cap(key, false));
-                requestCaps.Children.Add(new Border { Width = 6 });
+                foreach (string key in parts[0][0].Split('+')) requestCaps.Children.Add(Cap(key, CapGap));
+                requestCaps.Children.Add(new TextBlock { Text = "+", Foreground = Ui.AmberEdge, Margin = new Thickness(1, 0, 1 + CapGap, 4), VerticalAlignment = VerticalAlignment.Center });
             }
             foreach (string[] part in parts)
             {
-                if (!alike && part[0].Length > 0) foreach (string key in part[0].Split('+')) requestCaps.Children.Add(Cap(key, false));
-                requestCaps.Children.Add(Cap(part[1], true));
-                requestCaps.Children.Add(new TextBlock { Text = part[2], Foreground = Ui.AmberEdge, Margin = new Thickness(3, 0, 12, 4), VerticalAlignment = VerticalAlignment.Center });
+                if (!alike && part[0].Length > 0) foreach (string key in part[0].Split('+')) requestCaps.Children.Add(Cap(key, CapGap));
+                int first, last;
+                if (part[3].Length > 0 && int.TryParse(part[1], out first) && int.TryParse(part[3], out last) && last > first && last - first < 9)
+                    for (int n = first; n <= last; n++) requestCaps.Children.Add(Cap(n.ToString(CultureInfo.InvariantCulture), CapGap));
+                else requestCaps.Children.Add(Cap(part[3].Length > 0 && part[3] != part[1] ? part[1] + "\u2013" + part[3] : part[1], CapGap));
+                requestCaps.Children.Add(new TextBlock { Text = part[2], Foreground = Ui.AmberEdge, Margin = new Thickness(2, 0, 14, 4), VerticalAlignment = VerticalAlignment.Center });
             }
             if (more > 0) requestCaps.Children.Add(new TextBlock { Text = more + " more waiting", Foreground = Ui.Faint, FontSize = 12, Margin = new Thickness(0, 0, 0, 4), VerticalAlignment = VerticalAlignment.Center });
         }
 
-        // One key. `main`: the key that tells the choices apart; the others (Ctrl, Alt) are fainter.
-        static Border Cap(string key, bool main)
+        const double CapGap = 4;  // between one cap and the next
+
+        // One key, drawn as a key: every cap has the same look. `gap`: the room to its right
+        // (and under it, where a line of caps may wrap); 0 for one that stands in a line of text.
+        static Border Cap(string key, double gap)
         {
             return new Border {
-                CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(main ? 6 : 5, 0, main ? 6 : 5, 1),
-                Margin = new Thickness(0, 0, 3, 4), VerticalAlignment = VerticalAlignment.Center, MinWidth = 20,
-                BorderBrush = Ui.Alpha(Ui.Amber, main ? 0.85 : 0.40), Background = Ui.Alpha(Ui.Amber, main ? 0.20 : 0.06),
-                Child = new TextBlock { Text = key, FontSize = 11.5, FontWeight = main ? FontWeights.SemiBold : FontWeights.Normal, Foreground = main ? Brushes.White : Ui.Dim, HorizontalAlignment = HorizontalAlignment.Center },
+                CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(5, 0, 5, 1),
+                Margin = new Thickness(0, 0, gap, gap), VerticalAlignment = VerticalAlignment.Center, MinWidth = 21,
+                BorderBrush = Ui.Alpha(Ui.Amber, 0.80), Background = Ui.Alpha(Ui.Amber, 0.16),
+                // Its own line height: a cap in a line of text would take that text's, and grow tall.
+                Child = new TextBlock { Text = key, FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, LineHeight = double.NaN },
             };
         }
 

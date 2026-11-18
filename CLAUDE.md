@@ -980,6 +980,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   none with `still`). The card is rebuilt at every change, so a glide that is under way
   is picked up from where it had got to. Compiles and draws; the motion itself has been
   seen by nobody.
+- The key caps, second try (2026-11-18). The author on the first: "the gap between them is
+  not very consistent ... control alt, they're close and then there's the 1 to 4, which is
+  a bit far ... Not even the same colors and I don't know if it's very intuitive for
+  someone who doesn't know how like 1-4 it's arranged." The first had the keys held
+  (Ctrl, Alt) fainter than the deciding key, a wider gap after them, and a run of number
+  keys as one cap, "1–4". Now every cap looks the same and stands 4 px from the next; a
+  plus follows the keys held; a run of number keys is one cap for each, [1] [2] [3] [4];
+  and in a question with one answer the number in front of each choice is that same
+  cap, so the keys and the choices are seen to match. A question with boxes to tick
+  still has no numbers at its choices (their earlier wish); its caps go by the order of
+  the choices. Seen in pictures; **the author has not seen the second try**.
 - The card follows the focus (2026-11-18; the author: "I focused the second session and it
   still showed ... the first session's metrics"). The card was about the row the mouse had
   been on last, for as long as that session lived, and only before any row was touched
