@@ -54,7 +54,7 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/display":
             self._reply(hub.on_display(body))
         elif self.path == "/say":
-            hub.say(str(body.get("text", "")), body.get("voice"), body.get("kind", "done"))
+            hub.say(str(body.get("text", "")), body.get("voice"), body.get("kind", "done"), str(body.get("session") or ""))
             self._reply({})
         elif self.path == "/permission":
             self._permission(hub, body)

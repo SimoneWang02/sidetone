@@ -733,6 +733,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   for other programs. Not hidden: AltGr and the Windows key. `tests/keys_check.py` checks
   it with left Shift standing in for Ctrl and Alt. The author tried the real keys the same day:
   the click pauses the video, and Backspace with the keys still down cancels.
+- A line a session says with the command is its own (2026-11-18, `Hub.say(session=)`).
+  Asked to "list me right now" what was next before going on working, a session said the
+  list with `claude-speaks say`, since the speak tag is only for the final message. The
+  author: "I've noticed you've talked, but I didn't" see "the audio wave". The line
+  belonged to no session (`[cli]` in `voice.log`), so no bubble, no bars, no wave.
+  `bin/claude-speaks say` now sends `CLAUDE_CODE_SESSION_ID`, which Claude Code hands every
+  command of its Bash tool, and for a session the hub knows the line goes through `_say`
+  as kind `progress`: the session's voice unless `-v` names one, its bubble and wave, a
+  place in its history, the focus. Run by hand in a plain terminal it is tied to nobody,
+  as before. Tried on the live hub (`voice.log` has the session's id); **the wave itself
+  not seen by the author yet**.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event

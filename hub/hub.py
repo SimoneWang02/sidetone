@@ -446,9 +446,17 @@ class Hub(Permissions, Talk):
         elif prompt and not prompt.lstrip().startswith("<"):
             s.title = short_title(prompt)
 
-    def say(self, text: str, voice: str | None = None, kind: str = "notice") -> None:
-        """A line from the command line, not tied to a session."""
-        self.speech.put(Utterance(text=text, voice=voice or self.cfg.default_voice, kind=kind, src="cli"))
+    def say(self, text: str, voice: str | None = None, kind: str = "notice", session: str = "") -> None:
+        """A line from the command line. `session`: the session whose command it is (its Bash
+        tool hands every command the session's id), and then it is that session's line, a
+        word on the way: its voice unless one is named, its bubble and wave in the overlay,
+        and a place in its history. Without one it is tied to no session and only heard."""
+        with self.lock:
+            s = self.sessions.by_id.get(session) if session else None
+            if s:
+                self._say(s, text, "progress", "cli", voice)
+        if not s:
+            self.speech.put(Utterance(text=text, voice=voice or self.cfg.default_voice, kind=kind, src="cli"))
 
     def snapshot(self) -> dict:
         with self.lock:
@@ -712,7 +720,7 @@ class Hub(Permissions, Talk):
         elif mode != "none" and s and words:
             self._say(s, words, "allowed", "follow-up")
 
-    def _say(self, s, text: str, kind: str, src: str) -> None:
+    def _say(self, s, text: str, kind: str, src: str, voice: str | None = None) -> None:
         if s.id in self._stopping and kind in ("done", "progress"):
             log(self.cfg, "hub.log", f"stop [{s.id[:8]}] not spoken, its turn is being stopped: {text[:80]}")
             return
@@ -720,14 +728,14 @@ class Hub(Permissions, Talk):
         entry = None
         if kind in ("done", "failed", "needs_you", "progress"):  # what a session said, not our own feedback
             entry = {"time": time.time(), "session": s.id, "name": s.name, "color": s.color,
-                     "spoken_name": _spoken_name(s.name), "voice": s.voice, "text": text, "kind": kind, "heard": False}
+                     "spoken_name": _spoken_name(s.name), "voice": voice or s.voice, "text": text, "kind": kind, "heard": False}
             self.history.append(entry)
         if self._muted():
             self._flash(s, text, FLASH_LOOK.get(kind, kind))  # voice is off
             if entry:
                 entry["shown"] = True  # read, not heard: nothing was missed
         else:
-            self.speech.put(Utterance(text=text, voice=s.voice, session=s.id, kind=kind, src=src, entry=entry))
+            self.speech.put(Utterance(text=text, voice=voice or s.voice, session=s.id, kind=kind, src=src, entry=entry))
 
     def _spoken_without_hub(self, sid: str, speech: str) -> bool:
         """True if display.sh spoke this line itself while the hub was down (it leaves a marker)."""

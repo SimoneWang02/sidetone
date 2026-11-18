@@ -534,6 +534,14 @@ class OverlayFeed(HubCase):
         hub.say("Not from a session.")  # nothing to draw it on
         self.spoken()
         self.assertEqual(len(self.overlay.of("wave")), 1)
+        # A line a session has said with the command is its own: drawn at its light like any other.
+        hub.say("Here is the list.", session="s1")
+        self.assertEqual(self.spoken()[-1], "Here is the list.")
+        self.assertEqual([w["name"] for w in self.overlay.of("wave")], ["alpha", "alpha"])
+        self.assertEqual((hub.history[-1]["text"], hub.history[-1]["kind"], hub.history[-1]["session"]), ("Here is the list.", "progress", "s1"))
+        hub.say("From a session the hub does not know.", session="nobody")
+        self.spoken()
+        self.assertEqual(len(self.overlay.of("wave")), 2)
 
     def overlay_row(self, hub):
         hub.on_event(ev("SessionStart"))
