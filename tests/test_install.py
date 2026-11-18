@@ -188,6 +188,7 @@ class Installing(unittest.TestCase):
         shown = self.at_a_terminal(typed="\n")
         self.assertIn("Install the extension?", shown)
         self.assertIn("which terminal you are in", shown)  # one line on what it is for
+        self.assertIn("stop a session at once", shown)
         self.assertEqual(self.asked_of_code(), ["--list-extensions", "--install-extension"])
         self.assertIn("Done.", shown)
 

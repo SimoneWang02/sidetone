@@ -111,7 +111,8 @@ for name in claude-speaks cs; do
 done
 
 # The VS Code extension: it tells the hub which terminal you are in, so going to a terminal
-# gives the session running there the focus. Only where VS Code's `code` command is found.
+# gives the session running there the focus, and it types Escape into a session's terminal
+# when the cancel key stops it. Only where VS Code's `code` command is found.
 # Asked once, of a person at a terminal; an extension that is already there is brought up to
 # date without asking. With nobody to ask and no option given, VS Code is left alone.
 if [ $vscode = ask ]; then
@@ -120,7 +121,7 @@ if [ $vscode = ask ]; then
   elif code --list-extensions 2>/dev/null | grep -qix "$EXTENSION"; then
     vscode=yes
   else
-    echo "VS Code is here. Its claude-speaks extension tells the hub which terminal you are in, so going to a terminal gives its session the focus."
+    echo "VS Code is here. Its claude-speaks extension tells the hub which terminal you are in, so going to a terminal gives its session the focus, and it lets the cancel key stop a session at once."
     read -r -p "Install the extension? (Enter = yes, n = no): " answer || answer=n
     case $answer in ""|[Yy]*) vscode=yes ;; *) vscode=no; echo "Not installed. Any time later: claude-speaks vscode install" ;; esac
   fi
