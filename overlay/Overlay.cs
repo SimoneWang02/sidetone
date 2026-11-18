@@ -70,7 +70,10 @@ namespace ClaudeSpeaks
         // or a color of your own (waiting_color, "#RRGGBB").
         public static Color Waiting = Color.FromRgb(0xFF, 0x3B, 0x30);
         public static string WaitingMark = "number";  // or "clock", "dot"
-        public static string WaitingMany = "face";  // above nine messages: a shocked face | "number" = "9+"
+        public static string WaitingMany = "face";  // above nine messages: a silly face | "number" = "9+"
+        // Which messages show their number across the whole light before it goes to the corner:
+        // the first to wait | each | never (the others make the number jump where it is).
+        public static string WaitingCover = "first";
         public static double WaitingHold = 0.9;  // seconds the number covers the whole light before it goes to the corner
 
         public static void SetWaitingColor(string hex)
@@ -268,6 +271,7 @@ namespace ClaudeSpeaks
         public bool Speaking;
         public int Waiting;  // how many messages of yours are held for this session until it can take them
         public double WaitingSince = -10;  // when the last of them joined
+        public bool Covers = true;  // that one shows itself across the whole light before it goes to the corner
         public Wave Wave, Listening;  // Listening: your own voice, while you hold the talk key for this session
         public double Born = Ui.Now, Changed = -10, Hot, SignSince;
 
@@ -400,15 +404,16 @@ namespace ClaudeSpeaks
             string count = Waiting > 9 ? "9+" : Waiting.ToString(CultureInfo.InvariantCulture);
             if (Ui.WaitingMark == "number")
             {
-                // Whole light for a moment, then on its way to the corner.
-                double age = t - WaitingSince, k = Ui.Motionless ? 1 : Ui.Clamp((age - Ui.WaitingHold) / MarkMove);
+                // Whole light for a moment, then on its way to the corner; or, for a message that
+                // joins others, a small jump where it is.
+                double age = t - WaitingSince, k = Ui.Motionless || !Covers ? 1 : Ui.Clamp((age - Ui.WaitingHold) / MarkMove);
                 k = k * k * (3 - 2 * k);  // leaves and lands softly
-                double pop = Ui.Motionless ? 1 : Ui.Overshoot(age / 0.3);
+                double pop = Ui.Motionless ? 1 : Covers ? Ui.Overshoot(age / 0.3) : 1 + (age < 0.4 ? 0.4 * Math.Sin(Math.PI * age / 0.4) : 0);
                 var at = new Point(c.X + (corner.X - c.X) * k, c.Y + (corner.Y - c.Y) * k);
                 double r = (13.5 + (6.6 - 13.5) * k) * pop;
+                if (Waiting > 9 && Ui.WaitingMany == "face") { Silly(dc, at, r); return; }
                 dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.97), null, at, r, r);
-                if (Waiting > 9 && Ui.WaitingMany == "face") Shocked(dc, at, r);
-                else Number(dc, count, at, (count.Length > 1 ? 0.95 : 1.25) * r);
+                Number(dc, count, at, (count.Length > 1 ? 0.95 : 1.25) * r);
                 return;
             }
             Brush rim = Ui.Alpha(Color.FromRgb(0x14, 0x14, 0x18), 0.9);
@@ -436,18 +441,29 @@ namespace ClaudeSpeaks
         const double MarkMove = 0.55;  // seconds the number takes from the middle of the light to its corner
         static readonly Typeface MarkFace = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
 
-        // More than nine messages: the disc becomes a shocked face (two wide eyes under raised
-        // brows, a mouth open in an O), since "9+" is a tight fit in so small a circle.
-        static void Shocked(DrawingContext dc, Point at, double r)
+        // More than nine messages: a silly face in the yellow of a smiley, one eye wide and one
+        // small, grinning with its tongue out ("9+" is a tight fit in so small a circle, and a
+        // first try, a shocked face in white on red, looked frightening, not funny).
+        static readonly Brush FaceSkin = Ui.Alpha(Color.FromRgb(0xFF, 0xD2, 0x3F), 1), FaceInk = Ui.Alpha(Color.FromRgb(0x4A, 0x2E, 0x12), 1),
+            FaceTongue = Ui.Alpha(Color.FromRgb(0xFF, 0x6B, 0x81), 1);
+
+        static void Silly(DrawingContext dc, Point at, double r)
         {
-            double eye = 0.17 * r;
-            dc.DrawEllipse(Brushes.White, null, new Point(at.X - 0.36 * r, at.Y - 0.22 * r), eye, eye * 1.25);
-            dc.DrawEllipse(Brushes.White, null, new Point(at.X + 0.36 * r, at.Y - 0.22 * r), eye, eye * 1.25);
-            dc.DrawEllipse(Brushes.White, null, new Point(at.X, at.Y + 0.40 * r), 0.22 * r, 0.30 * r);
-            if (r < 9) return;  // too small for brows
-            Pen brow = Ui.Line(Colors.White, 1, 0.11 * r);
-            dc.DrawLine(brow, new Point(at.X - 0.56 * r, at.Y - 0.56 * r), new Point(at.X - 0.20 * r, at.Y - 0.66 * r));
-            dc.DrawLine(brow, new Point(at.X + 0.56 * r, at.Y - 0.56 * r), new Point(at.X + 0.20 * r, at.Y - 0.66 * r));
+            dc.DrawEllipse(FaceSkin, null, at, r, r);
+            // The wide eye, looking up and away, and the small one.
+            var wide = new Point(at.X - 0.36 * r, at.Y - 0.24 * r);
+            dc.DrawEllipse(Brushes.White, new Pen(FaceInk, 0.07 * r), wide, 0.30 * r, 0.30 * r);
+            dc.DrawEllipse(FaceInk, null, new Point(wide.X + 0.08 * r, wide.Y - 0.06 * r), 0.13 * r, 0.13 * r);
+            dc.DrawEllipse(FaceInk, null, new Point(at.X + 0.40 * r, at.Y - 0.30 * r), 0.12 * r, 0.14 * r);
+            // A grin, open, with the tongue hanging out of its right side.
+            var grin = new StreamGeometry();
+            using (StreamGeometryContext g = grin.Open())
+            {
+                g.BeginFigure(new Point(at.X - 0.52 * r, at.Y + 0.16 * r), true, true);
+                g.ArcTo(new Point(at.X + 0.56 * r, at.Y + 0.10 * r), new Size(0.56 * r, 0.50 * r), 0, false, SweepDirection.Counterclockwise, true, false);
+            }
+            dc.DrawGeometry(FaceInk, null, grin);
+            dc.DrawEllipse(FaceTongue, null, new Point(at.X + 0.16 * r, at.Y + 0.56 * r), 0.20 * r, 0.27 * r);
         }
 
         static void Number(DrawingContext dc, string text, Point at, double size)
@@ -833,7 +849,11 @@ namespace ClaudeSpeaks
             Speaking = Orb.Speaking = s.ContainsKey("speaking") && Convert.ToBoolean(s["speaking"]);
             Focus = s.ContainsKey("target") && Convert.ToBoolean(s["target"]);
             int waits = s.ContainsKey("waiting") ? (int)Convert.ToDouble(s["waiting"], CultureInfo.InvariantCulture) : 0;
-            if (waits > Orb.Waiting) Orb.WaitingSince = Ui.Now;  // another message joined: the number shows itself again
+            if (waits > Orb.Waiting)  // another message joined: the number shows itself again
+            {
+                Orb.WaitingSince = Ui.Now;
+                Orb.Covers = Ui.WaitingCover == "each" || (Ui.WaitingCover == "first" && Orb.Waiting == 0);
+            }
             Orb.Waiting = waits;
             if (before.Length > 0 && (before != State || was != Speaking)) Orb.Changed = Ui.Now;  // the light pops
             Wave.Synthetic = s.ContainsKey("synth") && Convert.ToBoolean(s["synth"]);
@@ -1179,6 +1199,11 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
                     Ui.WaitingHold = Math.Max(0, Num(msg, "waiting_hold", Ui.WaitingHold));
                     if (msg.ContainsKey("waiting_many")) Ui.WaitingMany = Str(msg, "waiting_many") == "number" ? "number" : "face";
+                    if (msg.ContainsKey("waiting_cover"))
+                    {
+                        string cover = Str(msg, "waiting_cover");
+                        Ui.WaitingCover = cover == "each" || cover == "never" ? cover : "first";
+                    }
                     if (msg.ContainsKey("waiting_mark"))
                     {
                         string mark = Str(msg, "waiting_mark");
@@ -2045,7 +2070,8 @@ namespace ClaudeSpeaks
         }
 
         // Push-to-talk, step by step: listening (with your voice as a wave), transcribing, ready
-        // (waiting for a go-ahead), sent, failed (text says why), focus (a tap moved the focus).
+        // (waiting for a go-ahead), aside (a side question being answered), sent, failed (text
+        // says why), focus (a tap moved the focus).
         // It shows on the session it is about, and moves with the focus.
         void Talk(Dictionary<string, object> msg)
         {
@@ -2066,7 +2092,7 @@ namespace ClaudeSpeaks
             switch (talkState)
             {
                 case "listening": return "mic";
-                case "transcribing": case "ready": return "dots";
+                case "transcribing": case "ready": case "aside": return "dots";
                 case "sent": return "sent";
                 case "queued": return Ui.WaitingMark == "clock" ? "wait" : "";  // else the number on the light says it
                 case "failed": return "failed";
@@ -2082,7 +2108,7 @@ namespace ClaudeSpeaks
             {
                 case "listening": return "Release to send";
                 case "transcribing": return "Working out what you said\u2026";
-                case "ready": return "\u201c" + talkText + "\u201d" + (talkHint.Length > 0 ? "\n" + talkHint : "");
+                case "ready": case "aside": return "\u201c" + talkText + "\u201d" + (talkHint.Length > 0 ? "\n" + talkHint : "");
                 case "sent": return "\u201c" + talkText + "\u201d";
                 case "queued": return "\u201c" + talkText + "\u201d\nIt gets this right after its current reply";
                 case "focus": return "In focus";
@@ -2096,7 +2122,7 @@ namespace ClaudeSpeaks
         Brush TalkInk()
         {
             if (talkState == "listening") return Ui.MicInk;
-            return talkState == "ready" || talkState == "sent" || talkState == "queued" ? Brushes.White : Ui.LiveInk;
+            return talkState == "ready" || talkState == "aside" || talkState == "sent" || talkState == "queued" ? Brushes.White : Ui.LiveInk;
         }
 
         // A permission prompt or question stays on screen until it is answered: the hotkeys act on it.
