@@ -314,6 +314,15 @@ real keys yet.
       first. So the mark is a small clock whose hand goes round, with the number of
       messages when two or more wait (`overlay.waiting_mark`: `clock`, or `dot`). Seen
       in pictures only; **the author has not seen the clock mark yet.**
+      They saw it minutes later: "I don't like the red clock on top right ... it's just
+      feel weird ... maybe just the number is fine", without the white border, and no
+      clock in the light when the words go into the queue either: "just having the
+      number, like covering the whole circle at first and then reducing its size and ...
+      move it top right with an animation". Built that way: the number, white on red,
+      covers the light for 0.9 s (`overlay.waiting_hold`), then shrinks into the upper
+      right and stays; it does so again when another message joins. `waiting_mark` is
+      `number` (default), `clock` or `dot`. Seen in pictures of both ends of the
+      motion; **the author has not seen it move yet.**
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next

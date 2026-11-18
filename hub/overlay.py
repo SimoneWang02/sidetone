@@ -65,10 +65,12 @@ DEFAULTS = {
     # The color of those words: "" = a soft white with a white glint, the color of no session |
     # "#RRGGBB" = your own ("#FF8FA6" is the microphone's pink they had at first)
     "talk_text_color": "",
-    # The mark on the light of a session that has words of yours waiting: clock = a small clock
-    # whose hand goes round, with the number of messages when there are two or more | dot = a
-    # plain breathing dot
-    "waiting_mark": "clock",
+    # The mark on the light of a session that has words of yours waiting: number = how many
+    # messages, white on the color below; it covers the light for a moment as they are taken
+    # in, then shrinks into the upper right | clock = a small clock whose hand goes round |
+    # dot = a plain breathing dot
+    "waiting_mark": "number",
+    "waiting_hold": 0.9,  # seconds the number covers the whole light before it goes to the corner
     # Its color: the red of a notification | "#RRGGBB" = your own ("#FF6E8A" is the microphone's pink)
     "waiting_color": "#FF3B30",
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.

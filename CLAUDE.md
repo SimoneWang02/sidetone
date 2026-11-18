@@ -345,7 +345,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `"#FF6E8A"` for the pink). The red dot they then found "not very intuitive. It doesn't
   feel like there's one in queue", and chose, from three ideas, the clock kept small on
   the light: `overlay.waiting_mark` is `clock` (default; its hand goes round, and with two
-  or more messages it shows the number) or `dot`. **They have not seen the clock mark yet.**
+  or more messages it shows the number) or `dot`. The clock on the light "feel weird" too;
+  their own design, built next: `number` (now the default), the count in white on a red
+  disc with no border, which covers the whole light for `overlay.waiting_hold` seconds (0.9)
+  as the words go into the queue, then shrinks and glides to the upper right
+  (`Orb.WaitingSince`, set whenever the count grows). With `number` and `dot` the `queued`
+  step puts no sign in the light. **They have not seen the number move yet.**
 - What push-to-talk shows (changed 2026-11-17: the author did not like the text line with
   arrows, "listening → name", and it kept the old name when the focus moved): the hub sends
   `talk` with a step (`listening`, `transcribing`, `ready`, `sent`, `failed`, `focus`), the
