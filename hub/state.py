@@ -194,6 +194,7 @@ class Session:
             "turn_seconds": round(now - self.turn_started) if self.turn_started else None,
             "last_speech": self.last_speech,
             "idle_seconds": round(now - self.updated),
+            "context": self.context,
         }
 
 

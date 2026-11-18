@@ -824,6 +824,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   ignoring it"), so a reason or a new instruction has to follow as a spoken message. A test
   session needs `--permission-mode default` to ask at all; without it this machine starts
   sessions in auto mode.
+- Usage by voice and context per session (2026-11-17; `hub/usage.py` by another session,
+  wired in `hub/talk.py` and `hub/hub.py`). `usage.ask` runs `claude -p ... -- /usage` with
+  hooks off and stdin closed (an open, silent stdin makes Claude Code wait 3 s), `usage.parse`
+  reads its lines loosely into the five-hour window, the week and the week per model,
+  `usage.say` makes the sentence. In `Talk._send`, words for which `usage.asks` holds (strict:
+  a short question made only of words from a fixed list) are not handed to the session:
+  `_ask_usage` shows "Reading your usage" on its light and `_answer_usage` says the sentence
+  in that session's voice as a side answer (`usage_by_voice`). `POST /usage` and
+  `claude-speaks usage [say]` give the same. `Hub._count_context` runs on Stop, PostToolUse,
+  UserPromptSubmit and SessionStart: `usage.context(transcript_path, context_window)` (the
+  last main-chain assistant line's input plus both cache counts, or a newer compaction's
+  `postTokens`; 2 ms) goes into `Session.context`, the row's `meta` ("context 56%") and the
+  row's `context` (`context_shown`). The window's size is a setting, one million as measured
+  for the models tried; the transcript does not say it.
 - Where usage and context figures can be read (measured 2026-11-17 by another session,
   Claude Code 2.1.327; nothing built, details in `TODO.md`): `claude -p "/usage"
   --no-session-persistence` prints the five-hour window, the week and the week of the

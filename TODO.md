@@ -699,10 +699,16 @@ Bigger pieces:
         `compact_boundary` line's `postTokens`. The transcript does not hold the size
         of the window.
       - not to build on: the usage address the program calls with the login token.
+      Built the same night for context, as words: each session's row of the details
+      ends in "context 56%", counted from its transcript at every reply, step and
+      prompt (`context_shown`, `context_window`); the row also carries the figure for
+      a sign of its own later. Not built: the arc around the light, a warning color or
+      word when it is nearly full, the usage in the overlay. A session that has not
+      reported since the hub started shows no figure yet.
       Suggested first step: usage from the headless `/usage` call (overlay and voice,
       no change to anyone's settings); a status line forwarder and the transcript for
       context per session after that.
-- [ ] Usage said aloud (the author, 2026-11-17, by voice: "check if in the future it's
+- [x] Usage said aloud (the author, 2026-11-17, by voice: "check if in the future it's
       possible to make you say the percentage of the current usage"). Today a session
       cannot answer "what's the current usage?": nothing it can call reports the plan's
       five-hour and weekly windows, and Claude Code keeps no file with those figures (looked
@@ -711,6 +717,17 @@ Bigger pieces:
       the figures. If it does, the hub could hold them and answer by voice: a hotkey or a
       spoken "how much have I used?" that says, for example, "forty percent of the five
       hours, resets at three", and a warning by itself when a window is nearly used up.
+      Built 2026-11-17 while the author was away, chosen by them from a list ("whenever
+      I ask something about the usage ... tell me about the usage I have ... probably
+      five hour window", to work like the side questions): spoken words that ask for
+      the usage are answered aloud by the hub and reach no session, the five-hour
+      window first, e.g. "35 percent of the five hours used, back at 2:39 AM. The week
+      is at 40 percent, Fable at 76." `claude-speaks usage` prints it, `usage say`
+      speaks it. `hub/usage.py` (by another session) reads it with a headless `/usage`
+      call, 0.8 to 1.5 s, no model request. Which sentences count is strict
+      (`usage.asks`): "add a usage meter to the overlay" goes to the session. Tried on
+      the live hub with words sent as if spoken; **not asked by the author's own voice
+      yet**. Not built: a key for it, the warning by itself near the limit, Italian.
 
 Away from the PC (the author's idea, 2026-11-17: with sessions open and nobody at the desk,
 "is it possible to use like either phone or AirPods interaction to do stuff", for example an

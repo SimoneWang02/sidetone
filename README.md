@@ -78,6 +78,9 @@ its own spoken line as the first line of its reply.
   in VS Code selects the session running there, so push-to-talk goes to the terminal you are
   looking at. VS Code reports a change of terminal, not every click: going back into the
   terminal you were last in changes nothing. `claude-speaks terminal follow off` turns it off.
+- **How much is used.** Ask by voice ("what's my usage?") and the hub says how much of the
+  plan's five hours and week is used and when they start again; the words go to no session.
+  `claude-speaks usage` prints the same. Each session's row also says how full its context is.
 - **Catch up.** `Ctrl+Alt+U` replays what your sessions said since you were last there;
   `Ctrl+Alt+R` repeats the last line of the session in focus. Long turns say "3 of 5 steps done" along the way.
 - **Your own voices.** Pick a voice per project, blend two into a new one, or load a Kokoro
