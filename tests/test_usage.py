@@ -344,6 +344,52 @@ def compaction(kept):
             "compactMetadata": {"trigger": "manual", "preTokens": 53091, "postTokens": kept}}
 
 
+class OneTurn(unittest.TestCase):
+    def record(self, *entries) -> str:
+        fd, path = tempfile.mkstemp(suffix=".jsonl")
+        self.addCleanup(os.unlink, path)
+        with os.fdopen(fd, "w") as f:
+            for entry in entries:
+                f.write(json.dumps(entry) + "\n")
+        return path
+
+    @staticmethod
+    def reply(id, out, new, again, **more):
+        return {"type": "assistant", "message": {"id": id, "usage": {
+            "input_tokens": 1, "cache_creation_input_tokens": new - 1, "cache_read_input_tokens": again, "output_tokens": out}}, **more}
+
+    PROMPT = {"type": "user", "message": {"content": "go on"}}
+    RESULT = {"type": "user", "message": {"content": [{"type": "tool_result", "content": "ok"}]}}
+
+    def test_the_replies_since_the_last_prompt_are_added_up(self):
+        path = self.record(self.PROMPT, self.reply("a", 900, 900, 900), self.PROMPT,
+                           self.reply("b", 100, 2000, 50000), self.reply("b", 100, 2000, 50000),  # one reply, written twice
+                           self.RESULT, self.reply("c", 300, 400, 52000),
+                           self.reply("d", 7000, 7000, 7000, isSidechain=True))  # a helper's
+        self.assertEqual(usage.turn(path), usage.Turn(400, 2400, 102000, 2))
+        self.assertEqual(usage.turn(path).tokens(), 2800)
+        self.assertEqual(usage.turn(path).tokens("output"), 400)
+        self.assertEqual(usage.turn(path).tokens("all"), 104800)
+
+    def test_from_a_known_place_everything_after_it_counts(self):
+        path = self.record(self.PROMPT, self.reply("a", 900, 900, 900))
+        start = os.path.getsize(path)
+        with open(path, "a") as f:
+            f.write(json.dumps(self.reply("b", 100, 2000, 50000)) + "\n" + json.dumps(self.PROMPT) + "\n"
+                    + json.dumps(self.reply("c", 300, 400, 52000)) + "\n")  # words handed over in the middle are no new turn
+        self.assertEqual(usage.turn(path, start).replies, 2)
+        self.assertEqual(usage.turn(path, start + 10_000_000).replies, 1, "a place past the end is not known: the last prompt")
+
+    def test_nothing_to_go_on(self):
+        self.assertIsNone(usage.turn("/nonexistent/record.jsonl"))
+        self.assertIsNone(usage.turn(self.record(self.PROMPT)))
+        self.assertIsNone(usage.turn(self.record(self.PROMPT, {"type": "assistant", "message": "odd"})))
+
+    def test_a_number_of_tokens_in_a_small_place(self):
+        self.assertEqual([usage.tokens_text(n) for n in (640, 1234, 9949, 9950, 64400, 999_499, 999_500, 2_469_596)],
+                         ["640", "1.2k", "9.9k", "10k", "64k", "999k", "1.0M", "2.5M"])
+
+
 class HowFull(unittest.TestCase):
     def record(self, *entries) -> str:
         folder = tempfile.mkdtemp(prefix="cs-test-")

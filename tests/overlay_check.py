@@ -290,8 +290,6 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
         row["target"] = row["name"] == focus
         row["waiting"] = n = (waiting or {}).get(row["name"], 0)
         row["context"] = (context or {}).get(row["name"])
-        if n:  # as Hub._waiting_note writes it
-            row["meta"] = " \u00b7 ".join(filter(None, [row["meta"], "1 message waiting" if n == 1 else f"{n} messages waiting"]))
         if row["name"] == stopping:
             row["text"] = "Stopping at its next step"
     return rows

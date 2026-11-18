@@ -725,7 +725,7 @@ Bigger pieces:
       Suggested first step: usage from the headless `/usage` call (overlay and voice,
       no change to anyone's settings); a status line forwarder and the transcript for
       context per session after that.
-- [ ] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for
+- [x] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for
       each request to ... show me the metrics of how much token you've used? Is it
       important?"). Possible: Claude Code's record of a session has the token counts of
       every reply, which the hub already reads for the context arc, so it could add up
@@ -733,6 +733,13 @@ Bigger pieces:
       session's row when the turn ends, or say it on request. Not built; nothing was
       agreed about where it shows. On a subscription the plan's percent says more than
       tokens do, so this is mostly for seeing which request was heavy.
+      Asked for outright minutes later ("for each reply, display the metrics, the token
+      you've used") and built: when a turn has ended, the session's row says "64k
+      tokens" at its right end until the next prompt (`turn_tokens`: `new`, `output`,
+      `all`, `off`). **To agree with the author:** which figure they mean (the default
+      leaves out what is read again at every step, which would make every figure
+      millions) and whether the row is the place. Not built: the figure in the history
+      lines under the rows, said aloud, or while the turn runs.
 - [x] Usage said aloud (the author, 2026-11-17, by voice: "check if in the future it's
       possible to make you say the percentage of the current usage"). Today a session
       cannot answer "what's the current usage?": nothing it can call reports the plan's

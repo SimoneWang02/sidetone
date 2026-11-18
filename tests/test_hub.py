@@ -268,6 +268,34 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("Stop", transcript_path=os.path.join(self.tmp, "gone.jsonl"), last_assistant_message=tag("Done.")))
         self.assertEqual(row()["context"], 62.0, "a record that cannot be read leaves the last figure")
 
+    def test_a_row_says_what_the_turn_used_once_it_has_ended(self):
+        hub = self.make()
+        record = os.path.join(self.tmp, "record.jsonl")
+        reply = lambda id, out, new, again: json.dumps({"type": "assistant", "isSidechain": False, "message": {"id": id, "usage": {
+            "input_tokens": 2, "cache_creation_input_tokens": new - 2, "cache_read_input_tokens": again, "output_tokens": out}}})
+        with open(record, "w") as f:
+            f.write(reply("old", 9000, 9000, 9000) + "\n")  # an earlier turn: not counted
+        row = lambda: self.overlay.of("state")[-1]["sessions"][0]
+        hub.on_event(ev("UserPromptSubmit", transcript_path=record))
+        with open(record, "a") as f:
+            f.write(reply("a", 500, 3000, 100000) + "\n" + reply("a", 500, 3000, 100000) + "\n" + reply("b", 700, 800, 103000) + "\n")
+        hub.on_event(ev("PostToolUse", transcript_path=record))
+        self.assertNotIn("tokens", row()["meta"], "not while it works")
+        hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
+        self.assertIn("5.0k tokens", row()["meta"])  # 1,200 written and 3,800 read for the first time
+        with open(record, "a") as f:
+            f.write(reply("c", 1000, 2000, 104000) + "\n")  # the last reply reaches the record late
+        self.assertTrue(wait_for(lambda: "8.0k tokens" in row()["meta"]))
+        hub.on_event(ev("UserPromptSubmit", transcript_path=record))
+        self.assertNotIn("tokens", row()["meta"])
+        hub.cfg.turn_tokens = "all"
+        hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
+        self.assertNotIn("tokens", row()["meta"], "nothing was written in this turn")
+        hub.cfg.turn_tokens = "off"
+        hub.on_event(ev("UserPromptSubmit", transcript_path=record))
+        hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
+        self.assertNotIn("tokens", row()["meta"])
+
     def test_where_the_context_shows_is_a_setting(self):
         hub = self.make()
         record = os.path.join(self.tmp, "record.jsonl")
@@ -1017,7 +1045,8 @@ class PushToTalk(HubCase):
         self.assertTrue(wait_for(lambda: hub.followups.get("a")))
         row = lambda: next(r for r in self.overlay.of("state")[-1]["sessions"] if r["name"] == "a")
         self.assertTrue(wait_for(lambda: row()["waiting"] == 1))
-        self.assertIn("1 message waiting", row()["meta"])
+        self.assertNotIn("waiting", row()["meta"], "the number on the light says it; the words are a setting")
+        hub.cfg.waiting_words = True
         hub.follow_up("and run it", "a", delay=0)
         self.assertTrue(wait_for(lambda: row()["waiting"] == 2))
         self.assertIn("2 messages waiting", row()["meta"])

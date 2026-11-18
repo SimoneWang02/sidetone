@@ -176,6 +176,8 @@ class Session:
     tty: str | None = None  # the terminal it runs in ("" = none); not looked for yet while None (see terminal.py)
     order: int = 0  # its place in the bar: lower comes first, and it keeps it across a hub restart
     context: float | None = None  # how full its context is, in percent (see usage.context); None = not known
+    turn_at: int | None = None  # how long its record was when the turn's prompt came (see usage.turn)
+    turn_tokens: int | None = None  # what its last turn used, once that has ended; None = not known, or in a turn
     updated: float = field(default_factory=time.monotonic)
 
     def snapshot(self) -> dict:
@@ -195,6 +197,7 @@ class Session:
             "last_speech": self.last_speech,
             "idle_seconds": round(now - self.updated),
             "context": self.context,
+            "turn_tokens": self.turn_tokens,
         }
 
 

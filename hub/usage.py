@@ -187,6 +187,71 @@ class Context(NamedTuple):
     percent: float  # how full that is, 0 to 100
 
 
+class Turn(NamedTuple):
+    output: int   # written by the model in this turn
+    fresh: int    # read for it that had not been read before: new input and what was saved for later
+    reused: int   # read again from what had been saved
+    replies: int  # requests to the model
+
+    def tokens(self, how: str = "new") -> int:
+        """One figure for it: new = everything but what was read again (the default; the rest
+        grows with the length of the conversation, not with the request) | output | all."""
+        return self.output if how == "output" else self.output + self.fresh + (self.reused if how == "all" else 0)
+
+
+def turn(path: str, start: int | None = None, tail: int = 4_000_000) -> Turn | None:
+    """What the session's last turn used, added up from the replies in its record; None with
+    nothing to go on. `start`: how long the record was when the turn's prompt came, so
+    everything after it is the turn. Without it (the hub started in the middle of the turn)
+    the last `tail` bytes are searched for the last prompt. A reply is written as several
+    lines that all carry its counts, so each is taken once; helpers' replies are left out."""
+    try:
+        size = os.path.getsize(path)
+        known = start is not None and 0 <= start <= size
+        with open(path, "rb") as f:
+            f.seek(start if known else max(0, size - tail))
+            lines = f.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return None
+    replies: dict = {}
+    for line in lines:
+        if '"assistant"' not in line and '"user"' not in line:
+            continue
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(entry, dict) or entry.get("isSidechain"):
+            continue
+        message = entry.get("message") if isinstance(entry.get("message"), dict) else {}
+        if entry.get("type") == "user":
+            content = message.get("content")
+            answer = isinstance(content, list) and any(isinstance(p, dict) and p.get("type") == "tool_result" for p in content)
+            if not known and not answer:  # a prompt: the turn begins here
+                replies = {}
+            continue
+        if entry.get("type") != "assistant" or not isinstance(message.get("usage"), dict):
+            continue
+        count = lambda key: message["usage"].get(key) if isinstance(message["usage"].get(key), int) else 0  # noqa: E731
+        seen = (count("output_tokens"), count("input_tokens") + count("cache_creation_input_tokens"), count("cache_read_input_tokens"))
+        before = replies.get(message.get("id") or len(replies), (0, 0, 0))
+        replies[message.get("id") or len(replies)] = tuple(map(max, seen, before))
+    if not replies:
+        return None
+    return Turn(*(sum(r[i] for r in replies.values()) for i in range(3)), len(replies))
+
+
+def tokens_text(n: int) -> str:
+    """A number of tokens for a small place: 640, 1.2k, 64k, 2.5M."""
+    if n < 1000:
+        return str(n)
+    if n < 9950:
+        return f"{n / 1000:.1f}k"
+    if n < 999_500:
+        return f"{n / 1000:.0f}k"
+    return f"{n / 1_000_000:.1f}M"
+
+
 def transcript(projects_dir: str, sid: str) -> str:
     """Where Claude Code keeps its record of a session; "" if it has none. Hooks are handed
     this as `transcript_path`."""

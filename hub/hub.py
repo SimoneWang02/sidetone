@@ -103,6 +103,7 @@ class Hub(Permissions, Talk):
         if ev.get("session_id"):
             self._apply(ev)
             self._count_context(ev)
+            self._count_turn(ev)
             self.publish()
 
     def _count_context(self, ev: dict) -> None:
@@ -120,6 +121,41 @@ class Hub(Permissions, Talk):
                 s = self.sessions.by_id.get(ev["session_id"])
                 if s:
                     s.context = read.percent
+
+    def _count_turn(self, ev: dict, again: bool = True) -> None:
+        """What the turn that just ended used in tokens (see Config.turn_tokens). A prompt notes
+        how long the session's record is; the end of the turn adds up what came after. The
+        last reply can reach the record a moment after its Stop, so it is counted once more."""
+        how, event, path = self.cfg.turn_tokens, ev.get("hook_event_name"), ev.get("transcript_path")
+        if how in ("off", False, None) or not path or event not in ("UserPromptSubmit", "Stop", "StopFailure"):
+            return
+        sid = ev["session_id"]
+        if event == "UserPromptSubmit":
+            try:
+                at = os.path.getsize(str(path))
+            except OSError:  # its first prompt: nothing written yet
+                at = 0
+            with self.lock:
+                s = self.sessions.by_id.get(sid)
+                if s:
+                    s.turn_at, s.turn_tokens = at, None
+            return
+        with self.lock:
+            s = self.sessions.by_id.get(sid)
+            at = s.turn_at if s else None
+        try:
+            read = usage.turn(str(path), at)
+        except Exception:  # an odd record is no reason to lose the event
+            read = None
+        if read:
+            with self.lock:
+                s = self.sessions.by_id.get(sid)
+                if s and s.state != "working":
+                    s.turn_tokens = read.tokens(how if isinstance(how, str) else "new")
+        if again:
+            timer = threading.Timer(base.RECOUNT, lambda: (self._count_turn(ev, again=False), self.publish()))
+            timer.daemon = True
+            timer.start()
 
     def _apply(self, ev: dict) -> None:
         sid, event = ev["session_id"], ev.get("hook_event_name", "")
@@ -528,6 +564,7 @@ class Hub(Permissions, Talk):
                     f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
                     self._waiting_note(s.id),
+                    f"{usage.tokens_text(s.turn_tokens)} tokens" if s.turn_tokens and s.state != "working" else "",
                     f"context {s.context:.0f}%" if context in ("text", "both") and s.context is not None else "",
                 ])),
                 "context": s.context if context in ("arc", "both") else None,  # percent of its window: the arc around its light
@@ -562,7 +599,7 @@ class Hub(Permissions, Talk):
         return len(self.followups.get(sid, ())) if sid in self._waiting else 0
 
     def _waiting_note(self, sid: str) -> str:
-        n = self._waiting_count(sid)
+        n = self._waiting_count(sid) if self.cfg.waiting_words else 0
         return "" if not n else "1 message waiting" if n == 1 else f"{n} messages waiting"
 
     def _flash(self, s, text: str, state: str | None = None) -> None:

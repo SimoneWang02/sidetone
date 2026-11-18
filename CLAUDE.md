@@ -729,7 +729,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `waiting_words`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -858,6 +858,25 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   shows no arc until its next prompt, step or reply. Seen in pictures (`context*.png` of
   the picture check) and live on the author's overlay; **not judged by the author yet**.
   The exact figure is nowhere on screen with `arc`.
+- What a turn used, in the row (2026-11-18, `usage.turn`, `Hub._count_turn`, `turn_tokens`).
+  The author, first as a side question and then outright: "for each reply, display the
+  metrics, the token you've used". Once a turn has ended the right end of the session's
+  row says "64k tokens", until its next prompt; not while it works, since they had just
+  found that line too long. A prompt notes how long the session's record is
+  (`Session.turn_at`) and the Stop adds up the replies written after that, each once (a
+  reply is several lines with the same counts), helpers left out; a hub that started in
+  the middle of the turn looks for the last prompt in the last 4 MB instead. Counted once
+  more 1.5 s later (`base.RECOUNT`), since the last reply can reach the record after its
+  Stop. Which figure was not agreed, so it is a setting: `new` (default) = what the model
+  wrote plus what it read for the first time; `output`; `all` = with what was read again
+  from what was saved; `off`. Measured on this session: a turn of 17 steps wrote 18
+  thousand, read 46 thousand for the first time and 2.5 million again; a one-line answer
+  0.3, 0.8 and 166 thousand. So `all` mostly says how long the conversation is, which is
+  why it is not the default. A turn ended with Esc has no Stop and shows nothing. Not kept
+  across a hub restart. Not built: the figure in the history lines or said aloud.
+- "2 messages waiting" is no longer written in the row (2026-11-18; the author: "I don't
+  care. Just put three minutes"): the number on the light says it. `waiting_words: true`
+  brings the words back.
 - The first number in a row's last line ("2/5 · 3m") is the session's task list: tasks
   done out of tasks made (`Session.tasks`); the author asked what it was (2026-11-18).
 - Stopping at once, tried by the author (2026-11-18): after a restart of VS Code the

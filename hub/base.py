@@ -44,6 +44,7 @@ class Editor:
 
 
 EDITOR_WAIT = 25.0  # seconds an editor's request is held before it is sent back empty and asked again
+RECOUNT = 1.5  # seconds after a turn ended until what it used is added up once more (its last reply may be written late)
 STOP_WAIT = 20.0  # seconds a session that was asked to stop may take to show that it is in a turn at all
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")  # a session id that can be a file name
 
@@ -207,6 +208,16 @@ class Config:
     # it; one million for the models measured).
     context_shown: str | bool = "arc"
     context_window: int = 1_000_000
+    # What a turn used in tokens, at the right end of the session's row once the turn has
+    # ended ("64k tokens"), until its next prompt (the author, 2026-11-18: "for each reply,
+    # display the metrics, the token you've used"). new = what the model wrote plus what it
+    # read for the first time, the default: what it reads again at every step of a long
+    # conversation would make every figure millions | output = only what it wrote |
+    # all = with what was read again | off.
+    turn_tokens: str | bool = "new"
+    # "2 messages waiting" in words at the end of a session's row. Off since the author said
+    # of it "I don't care", the number on the light says it already.
+    waiting_words: bool = False
     # Stopping at once: where the session runs in a terminal of an editor with the claude-speaks
     # extension, Escape is typed into that terminal, which ends the turn in the same moment.
     # False: only by the hook, at the session's next step (which is also what happens anywhere else).
@@ -284,7 +295,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "context_shown", "context_window",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "context_shown", "context_window", "turn_tokens", "waiting_words",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):
