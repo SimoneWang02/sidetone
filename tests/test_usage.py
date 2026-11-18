@@ -197,6 +197,9 @@ class Asking(unittest.TestCase):
 
 
 YES = """
+    Alright, so what's the usage?
+    All right, what's my usage
+    Yeah, how much have I used of the five hours
     what's my usage
     What's my usage?
     What is my usage?
@@ -306,6 +309,9 @@ NO = """
     is the usage test passing
     stop
     yes
+    alright
+    Alright, so use the usage module
+    yeah sure
 
 """
 

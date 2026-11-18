@@ -156,7 +156,10 @@ WORDS = BARE | frozenset("""
 # "Five hours" alone can be about anything; with one of these it is about the window.
 OF_A_WINDOW = frozenset("usage used use left remaining reset resets back start starts window limit".split())
 OPEN_END = frozenset("of in on for to at about a the my".split())  # a sentence that stops here is not finished
-POLITE = re.compile(r"((hey|hi|ok|okay|so|um|uh|well|and|now|claude|please|by the way|btw) )+")
+# Words a spoken question opens with. "Alright, so what's the usage?" was the author's first
+# real one (2026-11-18), and "alright" sent it to the session.
+POLITE = re.compile(r"((hey|hi|ok|okay|alright|all right|right|yeah|yes|sure|oh|so|um|uh|well|and|also|then|now|"
+                    r"claude|please|by the way|btw) )+")
 CAN_YOU = re.compile(r"(can|could|would|will) you (please |just |quickly )*")
 
 

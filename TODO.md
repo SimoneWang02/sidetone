@@ -734,8 +734,10 @@ Bigger pieces:
       speaks it. `hub/usage.py` (by another session) reads it with a headless `/usage`
       call, 0.8 to 1.5 s, no model request. Which sentences count is strict
       (`usage.asks`): "add a usage meter to the overlay" goes to the session. Tried on
-      the live hub with words sent as if spoken; **not asked by the author's own voice
-      yet**. Not built: a key for it, the warning by itself near the limit, Italian.
+      the live hub with words sent as if spoken. The author's first real one,
+      2026-11-18, was "Alright, so what's the usage?" and went to the session: no
+      sentence opening with "alright" counted. Such openings ("alright", "yeah",
+      "sure", "also") are passed over now; **not asked again by their voice yet**. Not built: a key for it, the warning by itself near the limit, Italian.
 
 Away from the PC (the author's idea, 2026-11-17: with sessions open and nobody at the desk,
 "is it possible to use like either phone or AirPods interaction to do stuff", for example an
