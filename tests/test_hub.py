@@ -558,7 +558,10 @@ class OverlayFeed(HubCase):
         hub.publish()
         history = self.overlay.of("state")[-1]["history"]
         self.assertEqual([(h["ago"], h["name"], h["text"]) for h in history],
-                         [("now", "alpha", "Second."), ("now", "alpha", "First.")])
+                         [("", "alpha", "Second."), ("", "alpha", "First.")])  # how long ago is a setting, off
+        hub.cfg.history_time = True
+        hub.on_event(ev("UserPromptSubmit"))
+        self.assertEqual([h["ago"] for h in self.overlay.of("state")[-1]["history"]], ["now", "now"])
 
     def test_history_keeps_some_lines_of_every_session(self):
         hub = self.make(label="never")

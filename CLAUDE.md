@@ -948,6 +948,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   time and the tokens were one piece of text, so a time stood further left on a line that
   had tokens; they are two columns now, each as wide as its widest entry
   (`SharedSizeGroup`), so times stand under times and tokens under tokens.
+- No time on the history's lines (2026-11-18, `history_time`, off). Asked what the history
+  could give up to make room, the author was offered the tokens on each line and the
+  progress lines; they kept the tokens ("which I find pretty cool. So I don't think it
+  should be removed") and named the time instead: "the timestamp. I don't know how useful
+  it is." So a line ends in its tokens only, and `history_time: true` puts "3m" before
+  them again. The second offer, hiding a turn's progress lines once its final line is
+  there, they did not follow as said aloud; it was explained again and is open.
 - The card follows the focus (2026-11-18; the author: "I focused the second session and it
   still showed ... the first session's metrics"). The card was about the row the mouse had
   been on last, for as long as that session lived, and only before any row was touched

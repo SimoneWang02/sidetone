@@ -299,12 +299,18 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
 
 
 COLORS = state.COLORS[:5]  # as five sessions would have them
-HISTORY = [dict(ago="now", name="api-server", color=COLORS[1], text="All forty two tests pass.", tokens="64k", kind="done", missed=False),
+HISTORY_TIMED = [dict(ago="now", name="api-server", color=COLORS[1], text="All forty two tests pass.", tokens="64k", kind="done", missed=False),
            dict(ago="2m", name="web-app", color=COLORS[2], text="Which drink would you like?", tokens="", kind="needs_you", missed=True),
            dict(ago="3m", name="web-app", color=COLORS[2], text="The login page is fixed and ready for review. I also moved the styles into one file so the dark mode has a single place to change.", tokens="1.2k", kind="done", missed=False),
            dict(ago="9m", name="web-app", color=COLORS[2], text="I can't read the clock from a side question.", tokens="", kind="aside", missed=False),
            dict(ago="14m", name="web-app", color=COLORS[2], text="Half way: the settings page is done.", tokens="", kind="progress", missed=True),
            dict(ago="12m", name="data-pipeline", color=COLORS[3], text="I hit an error: rate limit", kind="failed", missed=False)]
+HISTORY = [dict(ago="", name="api-server", color=COLORS[1], text="All forty two tests pass.", tokens="64k", kind="done", missed=False),
+           dict(ago="", name="web-app", color=COLORS[2], text="Which drink would you like?", tokens="", kind="needs_you", missed=True),
+           dict(ago="", name="web-app", color=COLORS[2], text="The login page is fixed and ready for review. I also moved the styles into one file so the dark mode has a single place to change.", tokens="1.2k", kind="done", missed=False),
+           dict(ago="", name="web-app", color=COLORS[2], text="I can't read the clock from a side question.", tokens="", kind="aside", missed=False),
+           dict(ago="", name="web-app", color=COLORS[2], text="Half way: the settings page is done.", tokens="", kind="progress", missed=True),
+           dict(ago="", name="data-pipeline", color=COLORS[3], text="I hit an error: rate limit", kind="failed", missed=False)]
 KEYS = {"toggle": "Ctrl+Alt+F9"}
 SAID = "All forty two tests pass. The flaky one was a race in the login mock, which I fixed."
 
@@ -493,6 +499,10 @@ send(type="peek", on=True)
 shot("list-history")
 send(type="peek", on=True, over="web-app")
 shot("list-history-other")
+send(type="state", sessions=sessions(), history=HISTORY_TIMED)  # with `history_time` on: how long ago, before the tokens
+send(type="peek", on=True, over="web-app")
+shot("list-history-timed")
+send(type="state", sessions=sessions(), history=HISTORY)
 send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history="all", **HERE)
 send(type="peek", on=True, over="web-app")
 shot("list-history-all")  # every session's lines mixed: under the card, with their names

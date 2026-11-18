@@ -608,7 +608,7 @@ class Hub(Permissions, Talk):
             for e in reversed(self.history):
                 if each[e["name"]] < 4 and len(history) < 24:
                     each[e["name"]] += 1
-                    history.append({"ago": _ago(now - e["time"]), "name": e["name"], "color": e.get("color", ""), "text": e["text"],
+                    history.append({"ago": _ago(now - e["time"]) if self.cfg.history_time else "", "name": e["name"], "color": e.get("color", ""), "text": e["text"],
                                     "tokens": usage.tokens_text(e["tokens"]) if self.cfg.turn_tokens_history and e.get("tokens") else "",
                                     # How that turn ended (done, failed, needs_you, progress, aside), for a
                                     # mark in front of the line; and whether it was never heard to its end:

@@ -1925,7 +1925,7 @@ namespace ClaudeSpeaks
                     line.Children.Add(dot);
                 }
                 string used = Str(h, "tokens");
-                var ago = new TextBlock { Text = Str(h, "ago"), FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(8, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
+                var ago = new TextBlock { Text = Str(h, "ago"), FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(Str(h, "ago").Length > 0 ? 8 : 0, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
                 Grid.SetColumn(ago, 3);
                 line.Children.Add(ago);
                 var spent = new TextBlock { Text = used, FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(used.Length > 0 ? 10 : 0, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
