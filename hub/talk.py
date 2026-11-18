@@ -1,0 +1,644 @@
+"""Push-to-talk and what follows from it: words on their way to a session, side questions,
+taking words back and stopping a turn. A part of the hub (see hub.py).
+"""
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import threading
+import time
+
+import base
+import stt
+import terminal as terminal_mod
+from tts import Utterance
+from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
+                  SAFE_ID, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
+                  session_model, spoken_answer)
+
+
+class Talk:
+    """The hub's methods for the talk and cancel keys. They use the hub's lock, sessions, speech and overlay."""
+
+    # --- push-to-talk ------------------------------------------------------------------------
+
+    def talk_start(self) -> bool:
+        """The talk key went down: go quiet and record."""
+        with self.lock:
+            if self._talking or not self.recorder:
+                return False
+            s = self._target()
+            before, since = self._focus_lost
+            if time.monotonic() - since < self.cfg.focus_reach_back and before in self.sessions.by_id:
+                # Another session began to speak in the moment the key went down and took the
+                # focus: the words are for the one that had it when you decided to speak.
+                s = self.sessions.by_id[before]
+            self._focus_lost = ("", 0.0)
+            if not s:
+                self._talk("failed", None, "No Claude session to talk to", seconds=2)
+                return False
+            self._talking = time.monotonic()
+            self._sent = None  # speaking again: what went out before stays out
+            self.talk_target = s.id  # the session shown as listening is the one that gets it
+            if not (self._pending and self._pending.confirm):  # that one may be about to get its confirming tap
+                self._cancel_pending()
+                self._talk("listening", s)
+        self.speech.pause()
+        self.recorder.start()
+        if self.transcriber:  # load the model while the user is still speaking
+            threading.Thread(target=self.transcriber.load, daemon=True).start()
+        self.publish()
+        return True
+
+    def talk_end(self) -> None:
+        """The talk key came up. A hold is transcribed. A quick tap confirms the follow-up on
+        screen if one is waiting for that, and otherwise picks the next session."""
+        with self.lock:
+            if not self._talking:
+                return
+            held, self._talking = time.monotonic() - self._talking, None
+            confirming = self._pending if self._pending and self._pending.confirm else None
+            tap, said_to, heard = held < base.TAP, None, None
+            if not tap:
+                # Who was listening when the key came up gets the words. Decided here, before
+                # the tail of the recording and the second or two of turning it into text:
+                # the focus may move on in that time, and the words must not follow it.
+                said_to = self._target()
+                self._cancel_pending()
+                self._transcribing = True
+                heard = self._heard = object()
+                self._talk("transcribing", said_to)
+        try:
+            pcm = self.recorder.stop(tail=0 if tap else self.cfg.talk_tail)
+        except Exception:
+            self._transcribing, self._heard = False, None
+            raise
+        # A line cut by the key is said again, unless you held the key to answer that very session.
+        self.speech.resume(answering=said_to.id if said_to else "")
+        if tap and confirming:
+            self._send(confirming)
+        elif tap:
+            with self.lock:
+                ids = list(self.sessions.by_id) if self.cfg.talk_tap == "next" else []
+                if ids:
+                    self.talk_target = ids[(ids.index(self._target().id) + 1) % len(ids)]
+                    self._talk("focus", self.sessions.by_id[self.talk_target], seconds=1.6)
+        else:
+            threading.Thread(target=self._transcribe, args=(pcm, said_to.id if said_to else None, heard),
+                             daemon=True).start()
+        self.publish()
+
+    def _transcribe(self, pcm: bytes, session: str | None = None, job: object | None = None) -> None:
+        started = time.monotonic()
+        try:
+            text = self.transcriber.transcribe(pcm) if self.transcriber else ""
+        except Exception as e:  # a broken model must not take the hub down
+            log(self.cfg, "hub.log", f"transcription failed: {e}")
+            text = ""
+        heard = getattr(self.transcriber, "heard", "") if text else ""
+        log(self.cfg, "hub.log", f"talk: {len(pcm) / 2 / stt.RATE:.1f}s recorded, peak level {stt.loudness(pcm):.2f}, "
+                                 f"transcribed in {time.monotonic() - started:.1f}s"
+                                 f"{' as ' + heard if heard else ''}: {text or '(nothing heard)'}")
+        if self._unload:
+            self._unload.cancel()
+        if self.transcriber and self.cfg.whisper_unload_minutes:
+            self._unload = threading.Timer(self.cfg.whisper_unload_minutes * 60, self.transcriber.unload)
+            self._unload.daemon = True
+            self._unload.start()
+        if job is not None and self._heard is not job:  # the cancel key, while this was being worked out
+            log(self.cfg, "hub.log", "talk: cancelled before it was sent")
+            return
+        try:
+            said_to = self.sessions.by_id.get(session or "")
+            if not text:
+                self._talk("failed", said_to or self._target(), "Didn't catch that", seconds=2)
+                self._signal("failed")
+            elif session and not said_to:  # it ended while the words were being worked out
+                self._talk("failed", None, "That session is gone, not sent", seconds=2.5)
+                self._signal("failed")
+                log(self.cfg, "hub.log", f"follow-up [{session[:8]}] not sent: the session is gone")
+            else:
+                self.follow_up(text, session)
+        finally:
+            if job is None or self._heard is job:
+                self._transcribing, self._heard = False, None
+
+    def follow_up(self, text: str, session: str | None = None, delay: float | None = None) -> bool:
+        """Show a follow-up, then send it to the session.
+
+        A heard follow-up (no `delay` given) goes out after `followup_delay` (at once by default),
+        or, with `followup_confirm` on, only after a confirming tap of the talk key.
+        """
+        with self.lock:
+            s = self.sessions.by_id.get(session) if session else self._target()
+            if not s:
+                return False
+            self._cancel_pending()
+            keys = self.cfg.overlay.get("hotkeys", {})
+            confirm = delay is None and self._needs_confirmation(s)
+            pending = self._pending = Pending(s.id, text, confirm)
+            if confirm:
+                hint = f"tap {keys.get('talk') or 'the talk key'} to send  \u00b7  {keys.get('cancel', '')} cancels"
+                pending.timer = threading.Timer(base.CONFIRM_WINDOW, self._expire, args=(pending,))
+            else:
+                hint = f"{keys.get('cancel', '')} cancels" if keys.get("cancel") else ""
+                pending.timer = threading.Timer(self.cfg.followup_delay if delay is None else delay,
+                                                self._send, args=(pending,))
+            self._talk("ready", s, text, hint)
+            pending.timer.daemon = True
+            pending.timer.start()
+        self.publish()
+        return True
+
+    def _send(self, pending: Pending) -> None:
+        with self.lock:
+            if self._pending is not pending:
+                return  # cancelled or replaced meanwhile
+            pending.timer.cancel()
+            self._pending = None
+            s = self.sessions.by_id.get(pending.session)
+            if not s:
+                self._talk(None)
+                return
+            question = self._aside_question(s, pending.text)
+            if question:
+                self._ask_aside(s, pending.text, question)
+            else:
+                self._hand_over(s, pending.text)
+        self.publish()
+
+    def _hand_over(self, s, text: str) -> None:
+        """Words for a session go out: as the answer to the question it is asking, to its
+        listener, or into the hub to wait for the end of its reply. Call with the lock held."""
+        shown = max(2.5, self.cfg.unsend_seconds)  # what went out, for as long as it can be taken back
+        self._talk("sent", s, text, seconds=shown)
+        asking = next((r for r in self.requests if r.session == s.id and r.question), None)
+        if asking:  # it is waiting on a question, so these words are the answer to it
+            self._answer(asking, text, "voice", echo=False)
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] given as the answer to its question")
+            self._signal("sent", s, "Sent.")
+        else:
+            prompt = next((r for r in self.requests if r.session == s.id), None)
+            if prompt and self.cfg.voice_at_prompt != "wait":
+                # More to go on, said while it waits for a yes or no. A request can only be
+                # allowed or refused, and Claude does not take a refusal's message for the
+                # user's words, so: refused for now, its turn ended, and the words follow as
+                # the next message, which it builds on with all it knows of the task.
+                prompt.message = VOICE_AT_PROMPT
+                self._resolve(prompt, "deny", "voice: more details follow")
+                self._stop_turn(s)
+            listener = self._deliver(s, text)
+            if not listener:
+                self._talk("queued", s, text, seconds=max(3.5, shown))
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
+            self._signal("sent" if listener else "queued", s, "Sent." if listener else "Queued.")
+        if self.cfg.unsend_seconds > 0:
+            self._sent = Sent(s.id, text, time.monotonic(), answer=bool(asking))
+            done = threading.Timer(self.cfg.unsend_seconds + 0.05, self.publish)  # gives the cancel key back
+            done.daemon = True
+            done.start()
+
+    # --- side questions ----------------------------------------------------------------------
+
+    def _aside_question(self, s, text: str) -> str:
+        """The question in words that are a side question for this session right now, else ""."""
+        if self.cfg.aside not in ("busy", "always") or (self.cfg.aside == "busy" and s.state not in BUSY):
+            return ""
+        return aside_question(text, self.cfg.aside_words) if SAFE_ID.match(s.id) else ""
+
+    def _ask_aside(self, s, text: str, question: str) -> None:
+        """Have a throwaway copy of the session answer a side question. Call with the lock held."""
+        self._drop_aside(self._asides.get(s.id))  # a newer question for the same session replaces the older
+        aside = self._asides[s.id] = Aside(s.id, text)
+        self._talk("aside", s, text, "Answering on the side\u2026")
+        self._aside_shown = aside
+        self._signal("sent", s)
+        log(self.cfg, "hub.log", f"side question [{s.id[:8]}] asked: {question[:120]}")
+        threading.Thread(target=self._answer_aside, args=(aside, s.cwd, question), daemon=True).start()
+
+    def _answer_aside(self, aside: Aside, cwd: str, question: str) -> None:
+        started = time.monotonic()
+        try:
+            answer, why = self.aside_run(aside, cwd, question)
+        except Exception as e:  # no such program, no such folder
+            answer, why = "", str(e)
+        took = time.monotonic() - started
+        with self.lock:
+            if self._asides.get(aside.session) is aside:
+                del self._asides[aside.session]
+            shown, s = self._aside_shown is aside, self.sessions.by_id.get(aside.session)
+            if shown:
+                self._talk(None)
+            if aside.dropped or not s:
+                pass  # taken back, replaced by a newer one, or the session ended
+            elif answer:
+                log(self.cfg, "hub.log", f"side question [{s.id[:8]}] answered in {took:.1f}s")
+                self._say_aside(s, answer)
+            else:  # the words are not lost: the session gets them like any others
+                log(self.cfg, "hub.log", f"side question [{s.id[:8]}] not answered after {took:.1f}s ({why[:200]}); "
+                                         "the words go to the session instead")
+                if shown:
+                    self._hand_over(s, aside.text)
+                else:  # push-to-talk is showing something newer: hand them over without a sign
+                    self._deliver(s, aside.text)
+        self.publish()
+
+    def aside_run(self, aside: Aside, cwd: str, question: str) -> tuple[str, str]:
+        """Ask a copy of the session and wait for it: (the answer, "") or ("", why there is none).
+
+        `--resume` with `--fork-session` reads the session's record up to this moment under a
+        new id, and `--no-session-persistence` keeps no record of the copy, so the session is
+        not touched. Hooks are off for the copy: it must neither speak nor show up here as a
+        session. Measured on a session in the middle of a turn: an answer in about 5 s.
+
+        On the session's own model (`aside_model: session`) the request must begin exactly as
+        the session's own requests do, or what the session has saved is not reused: same
+        model, same effort, same tools. So no tool is taken away (measured: `--tools ""` and
+        `--disallowedTools` both make the copy read everything anew, and so does plan mode
+        for a part). Rules that make every acting tool ask keep the reuse, and asking is a
+        refusal where nobody can answer: a copy told to run a command was refused."""
+        program = self.cfg.aside_claude or shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
+        cmd = [program, "-p", "--resume", aside.session, "--fork-session", "--no-session-persistence"]
+        env = {k: v for k, v in os.environ.items() if not OWN_SESSION.match(k)}
+        if self.cfg.aside_model in ("", "session"):
+            model, effort = session_model(self.cfg.projects_dir, aside.session)
+            cmd += ["--permission-mode", "default",
+                    "--settings", json.dumps({"disableAllHooks": True, "permissions": {"ask": ASIDE_ASK}})]
+            cmd += ["--model", model] if model else []
+            cmd += ["--effort", effort] if effort else []
+        else:
+            cmd += ["--settings", '{"disableAllHooks": true}', "--strict-mcp-config", "--tools", "",
+                    "--model", self.cfg.aside_model]
+            # Another model reads the whole conversation once and is gone. Saving it for reuse
+            # costs up to twice the price of reading it, and a second question seconds later was
+            # measured not to reuse it: 16 cents with the saving against 10 without.
+            env["DISABLE_PROMPT_CACHING"] = "1"
+        with self.lock:
+            if aside.dropped:
+                return "", "dropped"
+            aside.proc = subprocess.Popen(cmd + ["--", ASIDE_PROMPT + question], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+                                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                          start_new_session=True)
+        try:
+            out, err = aside.proc.communicate(timeout=self.cfg.aside_timeout)
+        except subprocess.TimeoutExpired:
+            _end(aside.proc)
+            aside.proc.communicate()
+            return "", f"no answer in {self.cfg.aside_timeout:.0f}s"
+        if aside.proc.returncode != 0:
+            return "", (err or out).strip() or f"exit {aside.proc.returncode}"
+        return spoken_answer(out), "" if out.strip() else "an empty answer"
+
+    def _say_aside(self, s, answer: str) -> None:
+        """Say the answer in the session's voice. It is not what the session said, so it neither
+        replaces the session's waiting line nor is replaced by it; it is in the history, so the
+        repeat key and catching up have it. Call with the lock held."""
+        entry = {"time": time.time(), "session": s.id, "name": s.name, "color": s.color,
+                 "spoken_name": _spoken_name(s.name), "voice": s.voice, "text": answer, "kind": "aside", "heard": False}
+        self.history.append(entry)
+        if self._muted():
+            self._flash(s, answer)  # voice is off
+        else:
+            self.speech.put(Utterance(text=answer, voice=s.voice, session=s.id, kind="notice", src="aside", entry=entry))
+
+    def _drop_aside(self, aside: Aside | None) -> bool:
+        """Stop waiting for a side question's answer. Call with the lock held."""
+        if not aside or aside.dropped:
+            return False
+        aside.dropped = True
+        if aside.proc:
+            _end(aside.proc)
+        return True
+
+    def _deliver(self, s, text: str) -> bool:
+        """Hand words to a session. True: its listener has them now. False: they wait in the
+        hub. Call with the lock held."""
+        self.followups.setdefault(s.id, []).append(text)
+        self._keep_followups()
+        # A session has a listener all the time (see listen.sh), also in the middle of
+        # a reply; then the words wait and it gets them right after (see reconcile).
+        listener = self.listeners.get(s.id) if s.state not in BUSY else None
+        if listener:
+            listener.wake.set()
+        else:
+            self._waiting.add(s.id)
+        return bool(listener)
+
+    def _unsendable(self) -> Sent | None:
+        """The follow-up the cancel key would take back right now, if any."""
+        sent = self._sent
+        return sent if sent and time.monotonic() - sent.at < self.cfg.unsend_seconds else None
+
+    def _take_back(self) -> bool:
+        """The cancel key shortly after sending: words still waiting in the hub are removed;
+        words the session already has cannot be, so it is told to ignore them. Call with the
+        lock held."""
+        sent, self._sent = self._unsendable(), None
+        s = self.sessions.by_id.get(sent.session) if sent else None
+        if not s:
+            return False
+        waiting = self.followups.get(s.id, [])
+        after = f"{time.monotonic() - sent.at:.1f} s after it went out"  # the log's own times are whole seconds
+        if not sent.answer and sent.text in waiting:
+            del waiting[len(waiting) - 1 - waiting[::-1].index(sent.text)]
+            if not waiting:
+                self.followups.pop(s.id, None)
+                self._waiting.discard(s.id)
+            self._keep_followups()
+            self._talk("failed", s, "Taken back", seconds=2)
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, before the session got it")
+        elif self.cfg.cancel_stops != "never" and self._stop_turn(s):
+            self._talk("stopped", s, "Taken back: stopping it", seconds=3)
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, when the session had it: its turn is being stopped")
+        else:
+            self._deliver(s, TAKE_BACK)
+            self._talk("failed", s, "Taken back: it is told to ignore that", seconds=3)
+            log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, when the session had it: told to ignore it")
+        self._signal("failed")
+        return True
+
+    # --- stopping a turn ---------------------------------------------------------------------
+
+    def _stop_file(self, sid: str) -> str:
+        return os.path.join(self.cfg.run, "stop", sid)
+
+    def _stop_turn(self, s) -> bool:
+        """Ask a session to end the turn it is in. Nothing outside a terminal can press Esc in
+        it, and a signal ends the whole session, so a file named after the session is left
+        for hooks/stop.sh, which ends the turn at the session's next tool call or as the one
+        that is running finishes. Until then the session is not spoken for: what it says
+        about that turn is not wanted. Call with the lock held."""
+        if not SAFE_ID.match(s.id):
+            return False
+        try:
+            os.makedirs(os.path.dirname(self._stop_file(s.id)), mode=0o700, exist_ok=True)
+            os.close(os.open(self._stop_file(s.id), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600))
+        except OSError:
+            return False
+        self._stopping[s.id] = Stopping(time.monotonic(), s.state in BUSY, s.state in BUSY and self._press(s))
+        self.speech.drop_session(s.id)
+        return True
+
+    def _press(self, s, key: str = "escape") -> bool:
+        """Have the editor type a key into the session's terminal, if an editor that holds
+        that terminal is waiting to be asked. One Escape interrupts a session that is working
+        (measured: so does one Ctrl+C, but a second Ctrl+C closes the session, and a second
+        Escape at an idle prompt opens its rewind list), so it is asked for once, and only of
+        a session in the middle of a turn. Call with the lock held."""
+        if not self.cfg.stop_at_once or not s.tty:
+            return False
+        for editor in self.editors:
+            if s.tty in editor.ttys and not editor.wake.is_set():
+                editor.keys.append({"pid": editor.ttys[s.tty], "key": key})
+                editor.wake.set()
+                log(self.cfg, "hub.log", f"stop [{s.id[:8]}] {key} asked of the editor for its terminal ({s.tty})")
+                return True
+        return False
+
+    def editor_waits(self, pids: list) -> Editor:
+        """An editor's window asks to be told when a key is wanted in one of its terminals,
+        which it names by the process each one runs (its shell)."""
+        ttys = {tty: pid for pid in pids for tty in [terminal_mod.tty_of(pid)] if tty}
+        editor = Editor(ttys)
+        with self.lock:
+            self.editors.append(editor)
+        return editor
+
+    def editor_done(self, editor: Editor) -> list:
+        """Its request ends: what it is asked to type, if anything."""
+        with self.lock:
+            if editor in self.editors:
+                self.editors.remove(editor)
+            return editor.keys
+
+    def _stop_words(self, sid: str) -> str:
+        stopping = self._stopping.get(sid)
+        return "Stopping" if stopping and stopping.pressed else "Stopping at its next step"
+
+    def _unstop(self, sid: str, why: str = "") -> None:
+        """The turn is over, or another one is wanted: nothing is to be stopped any more."""
+        if self._stopping.pop(sid, None) is None:
+            return
+        try:
+            os.unlink(self._stop_file(sid))
+        except OSError:
+            pass
+        if why:
+            log(self.cfg, "hub.log", f"stop [{sid[:8]}] not needed: {why}")
+
+    def _clear_stops(self) -> None:
+        try:
+            for name in os.listdir(os.path.join(self.cfg.run, "stop")):
+                os.unlink(os.path.join(self.cfg.run, "stop", name))
+        except OSError:
+            pass
+
+    def _stoppable(self):
+        """The session whose turn the cancel key would end when there is nothing else for it
+        to cancel: the one in focus, while it works."""
+        s = self._target() if self.cfg.cancel_stops == "always" else None
+        return s if s and s.state == "working" and s.id not in self._stopping else None
+
+    def _expire(self, pending: Pending) -> None:
+        """Nobody confirmed it in time: better dropped than sent late and out of context."""
+        with self.lock:
+            if self._pending is not pending:
+                return
+            self._pending = None
+            self._talk("failed", self.sessions.by_id.get(pending.session), "Not sent", seconds=2)
+            self._signal("failed")
+        self.publish()
+
+    def cancel(self) -> None:
+        """The cancel key: stop recording, or take back a follow-up (one still being worked
+        out, one on screen, or one sent in the last few seconds), or cut the line being spoken,
+        or, with none of those, end the turn of the session in focus."""
+        stopped = dropped = False
+        with self.lock:
+            talking, self._talking = self._talking, None
+            about = self.sessions.by_id.get(self._pending.session) if self._pending else self._target()
+            had_pending = self._cancel_pending()
+            # Let go already, the words not out of the speech model yet: they are dropped when they come.
+            hearing, took_back = self._transcribing and self._heard is not None, False
+            if hearing:
+                self._transcribing, self._heard = False, None
+            if talking or had_pending or hearing:
+                self._talk("failed", about, "Cancelled", seconds=1.5)
+                self._signal("failed")
+            elif self._asides:  # a side question is being answered: that is what the key takes back
+                asked = self._asides.get(about.id if about else "") or list(self._asides.values())[-1]
+                dropped = self._drop_aside(asked)
+                self._talk("failed", self.sessions.by_id.get(asked.session), "Cancelled", seconds=1.5)
+                self._signal("failed")
+                log(self.cfg, "hub.log", f"side question [{asked.session[:8]}] dropped with the cancel key")
+            else:
+                took_back = self._take_back()
+                s = self._stoppable()
+                if not took_back and s and not self.speech.current and self._stop_turn(s):
+                    stopped = True
+                    self._talk("stopped", s, self._stop_words(s.id), seconds=3)
+                    self._signal("failed")
+                    log(self.cfg, "hub.log", f"stop [{s.id[:8]}] asked for with the cancel key")
+        if talking:
+            self.recorder.stop()
+            self.speech.resume()
+        elif not (had_pending or took_back or hearing or stopped or dropped):
+            self.speech.skip()
+        self.publish()
+
+    def listen(self, sid: str, cwd: str = "") -> Listener:
+        """A session's hook starts waiting for follow-ups; it replaces that session's older one."""
+        with self.lock:
+            self.sessions.touch(sid, cwd)  # after a hub restart this is how an idle session reappears
+            self._release(sid)
+            listener = self.listeners[sid] = Listener(sid)
+            s = self.sessions.by_id.get(sid)
+            if self.followups.get(sid) and not (s and s.state in BUSY):
+                listener.wake.set()
+            return listener
+
+    def collect(self, listener: Listener) -> str | None:
+        """What the hook should hand to Claude, or None if it should just exit."""
+        with self.lock:
+            if listener.released or self.listeners.get(listener.session) is not listener:
+                return None
+            del self.listeners[listener.session]
+            text = " ".join(self.followups.pop(listener.session, [])) or None
+            self._keep_followups()
+            waited = listener.session in self._waiting
+            self._waiting.discard(listener.session)
+            if text:
+                self._unstop(listener.session, "it was given new words")  # they start a turn that must run
+            s = self.sessions.by_id.get(listener.session)
+            # Words that had to wait are now with the session: say so on its light, unless
+            # push-to-talk is showing something of its own there.
+            last = self._unsendable()  # words that can still be taken back keep their own sign
+            if (text and waited and s and TAKE_BACK not in text and (not last or last.session == s.id)
+                    and not (self._talking or self._transcribing or self._pending)):
+                self._talk("sent", s, text, seconds=2.5)
+        if text and waited:
+            self.publish()  # the mark for waiting words leaves the light
+        return text
+
+    def stop_listening(self, listener: Listener) -> None:
+        with self.lock:
+            if self.listeners.get(listener.session) is listener:
+                del self.listeners[listener.session]
+
+    def _followups_file(self) -> str:
+        return os.path.join(self.cfg.run, "followups.json")
+
+    def _kept_followups(self) -> dict[str, list[str]]:
+        """Follow-ups an earlier hub had not delivered yet, unless they are stale (over an hour old)."""
+        try:
+            path = self._followups_file()
+            if time.time() - os.path.getmtime(path) > 3600:
+                return {}
+            with open(path) as f:
+                kept = json.load(f)
+            return {str(sid): [str(t) for t in texts] for sid, texts in kept.items() if texts}
+        except (OSError, ValueError, AttributeError):
+            return {}
+
+    def _keep_followups(self) -> None:
+        try:
+            path = self._followups_file()
+            if not self.followups:
+                if os.path.exists(path):
+                    os.unlink(path)
+                return
+            with os.fdopen(os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+                json.dump(self.followups, f)
+            os.replace(path + ".tmp", path)
+        except OSError:
+            pass
+
+    def _release(self, sid: str) -> None:
+        old = self.listeners.pop(sid, None)
+        if old:
+            old.released = True
+            old.wake.set()
+
+    def focus(self, step: int) -> str | None:
+        """Move the focus (who a spoken follow-up goes to) to the next or previous session.
+        It stops at the first and the last one: turning the wheel further does not jump round."""
+        with self.lock:
+            ids = list(self.sessions.by_id)
+            if not ids:
+                return None
+            s = self.sessions.by_id[ids[max(0, min(len(ids) - 1, ids.index(self._target().id) + step))]]
+            self._focus_on(s)
+            name, tty, color = s.name, s.tty, s.color
+        self.publish()
+        if tty:  # chosen by hand: its terminal lights up for a moment, so it can be found
+            self.terminals.pulse(tty, color)
+        return name
+
+    def _focus_on(self, s) -> None:
+        """Give this session the focus because the user chose it. Call with the lock held."""
+        self.talk_target = s.id
+        self._focus_lost = ("", 0.0)  # chosen by hand: nothing to reach back to
+        if self._talk_shown:  # what is on screen for push-to-talk follows the focus
+            if self._pending:
+                self._pending.session = s.id
+            self._talk(self._talk_shown[0], s, *self._talk_shown[1:])
+
+    def terminal_in_front(self, pid: int, switched: bool = True) -> str | None:
+        """The editor says you are now in the terminal that process `pid` (its shell) runs in:
+        the session running there gets the focus. Returns its name, or None when nothing changed.
+
+        `switched`: you went to another terminal inside the editor. Otherwise the editor's
+        window only came to the front, which counts when that is another terminal than the
+        last one reported (several windows), and not when it is the same one: coming back to
+        the window should not take the focus away from a session that spoke meanwhile.
+        No pulse: you are looking at that terminal already."""
+        if not self.cfg.terminal.get("follow", True):
+            return None
+        tty = terminal_mod.tty_of(pid)
+        with self.lock:
+            same, self._front = tty == self._front, tty
+            s = next((x for x in self.sessions.by_id.values() if tty and x.tty == tty), None)
+            if not s or (same and not switched) or self._target() is s:
+                return None
+            self.last_seen = time.time()  # you are there
+            self._focus_on(s)
+            name = s.name
+        log(self.cfg, "hub.log", f"focus on {name}: its terminal ({tty}) came to the front")
+        self.publish()
+        return name
+
+    def _target(self):
+        """Who a follow-up goes to: the chosen session, else the one that spoke last, else the newest."""
+        s = self.sessions.by_id.get(self.talk_target or "")
+        if not s and self.sessions.by_id:
+            s = max(self.sessions.by_id.values(), key=lambda x: x.updated)
+        return s
+
+    def _cancel_pending(self) -> bool:
+        if not self._pending:
+            return False
+        self._pending.timer.cancel()
+        self._pending = None
+        self._talk(None)
+        return True
+
+    def _needs_confirmation(self, s) -> bool:
+        wanted = self.cfg.followup_confirm
+        return s.permission_mode not in PROMPTING_MODES if wanted == "auto" else bool(wanted)
+
+    def _talk(self, state: str | None, s=None, text: str = "", hint: str = "", seconds: float = 0) -> None:
+        """Tell the overlay where push-to-talk stands: listening, transcribing, ready (waiting for a
+        go-ahead), sent, failed (the text says why), focus (a tap moved it), or None for nothing.
+        It is shown on the session it is about; it stays until replaced unless `seconds` is given."""
+        self._talk_shown = (state, text, hint) if state in ("listening", "ready") else None
+        self._aside_shown = None  # whatever is shown now, it is not a side question being answered
+        if self.overlay:
+            self.overlay.send({"type": "talk", "state": state, "name": s.name if s else "", "text": text,
+                               "hint": hint, "seconds": seconds} if state else {"type": "talk"})
+
+    def _mic_heard(self, chunk: bytes) -> None:
+        """A moment of the microphone while the talk key is held: the overlay shows it as a wave."""
+        if self.overlay:
+            self.overlay.send({"type": "mic", "levels": [self._mic_meter.level(chunk)], "step": len(chunk) / 2 / stt.RATE})

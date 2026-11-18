@@ -17,6 +17,7 @@ import unittest.mock
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
 import hub as hub_module  # noqa: E402
+import base  # noqa: E402  (what the hub's parts share; the waits these tests shorten are read from it)
 from hub import Config, Hub, serve  # noqa: E402
 import sounds  # noqa: E402
 import terminal  # noqa: E402
@@ -493,8 +494,8 @@ class Permissions(HubCase):
     def make(self, **kw):
         hub = super().make(**kw)
         hub.overlay = self.overlay = FakeOverlay()
-        self.addCleanup(setattr, hub_module, "MIN_SHOWN", hub_module.MIN_SHOWN)
-        hub_module.MIN_SHOWN = 0
+        self.addCleanup(setattr, base, "MIN_SHOWN", base.MIN_SHOWN)
+        base.MIN_SHOWN = 0
         return hub
 
     def test_request_shows_and_allow_answers_it(self):
@@ -513,7 +514,7 @@ class Permissions(HubCase):
 
     def test_a_request_just_shown_cannot_be_answered_yet(self):
         hub = self.make()
-        hub_module.MIN_SHOWN = 30
+        base.MIN_SHOWN = 30
         req = hub.request_permission(ask())
         self.assertFalse(hub.decide("allow"))
         self.assertIsNone(req.decision)
@@ -570,8 +571,8 @@ class Questions(HubCase):
     def make(self, **kw):
         hub = super().make(**kw)
         hub.overlay = self.overlay = FakeOverlay()
-        self.addCleanup(setattr, hub_module, "MIN_SHOWN", hub_module.MIN_SHOWN)
-        hub_module.MIN_SHOWN = 0
+        self.addCleanup(setattr, base, "MIN_SHOWN", base.MIN_SHOWN)
+        base.MIN_SHOWN = 0
         return hub
 
     def test_number_keys_answer_each_question_in_turn(self):
@@ -828,8 +829,8 @@ class PushToTalk(HubCase):
         hub = super().make(followup_delay=0.05, talk_tail=0, label="never", **kw)
         hub.overlay = self.overlay = FakeOverlay()
         hub.recorder, hub.transcriber = FakeRecorder(), FakeTranscriber()
-        self.addCleanup(setattr, hub_module, "TAP", hub_module.TAP)
-        hub_module.TAP = 0  # every press in these tests counts as a hold
+        self.addCleanup(setattr, base, "TAP", base.TAP)
+        base.TAP = 0  # every press in these tests counts as a hold
         hub.on_event(ev("SessionStart", sid="a", cwd="/w/a"))
         hub.on_event(ev("SessionStart", sid="b", cwd="/w/b"))
         return hub
@@ -1198,7 +1199,7 @@ class PushToTalk(HubCase):
 
     def test_a_quick_tap_can_be_set_to_pick_the_next_session(self):
         hub = self.make(talk_tap="next")
-        hub_module.TAP = 30
+        base.TAP = 30
         hub.talk_target = "a"
         hub.talk_start()
         hub.talk_end()
@@ -1208,7 +1209,7 @@ class PushToTalk(HubCase):
 
     def test_a_quick_tap_does_nothing_by_itself(self):
         hub = self.make()
-        hub_module.TAP = 30
+        base.TAP = 30
         hub.talk_target = "a"
         hub.talk_start()
         hub.talk_end()
@@ -1392,7 +1393,7 @@ class PushToTalk(HubCase):
         self.assertIn("tap Ctrl+Alt+Space to send", self.overlay.of("talk")[-1]["hint"])
         time.sleep(0.2)  # well past followup_delay: it must still be waiting
         self.assertFalse(listener.wake.is_set())
-        hub_module.TAP = 30  # the next press is a tap
+        base.TAP = 30  # the next press is a tap
         hub.talk_start()
         hub.talk_end()
         self.assertTrue(listener.wake.wait(2))
@@ -1400,8 +1401,8 @@ class PushToTalk(HubCase):
 
     def test_unconfirmed_follow_up_is_dropped_not_sent(self):
         hub = self.make(followup_confirm=True)
-        self.addCleanup(setattr, hub_module, "CONFIRM_WINDOW", hub_module.CONFIRM_WINDOW)
-        hub_module.CONFIRM_WINDOW = 0.1
+        self.addCleanup(setattr, base, "CONFIRM_WINDOW", base.CONFIRM_WINDOW)
+        base.CONFIRM_WINDOW = 0.1
         hub.talk_start()
         hub.talk_end()
         self.assertTrue(wait_for(lambda: "Not sent" in [text for _, _, text in self.talks()]))
@@ -2135,8 +2136,8 @@ class ThroughTheHooks(HubCase):
         self.fail("the hub never saw the request")
 
     def test_permission_hook_prints_the_hotkey_decision(self):
-        hub_module.MIN_SHOWN, old = 0, hub_module.MIN_SHOWN
-        self.addCleanup(setattr, hub_module, "MIN_SHOWN", old)
+        base.MIN_SHOWN, old = 0, base.MIN_SHOWN
+        self.addCleanup(setattr, base, "MIN_SHOWN", old)
         proc = self.start_permission_hook()
         self.assertTrue(self.hub.decide("deny"))
         decision = json.loads(proc.communicate(timeout=5)[0])["hookSpecificOutput"]["decision"]
@@ -2168,15 +2169,15 @@ class ThroughTheHooks(HubCase):
         self.assertTrue(wait_for(lambda: hub.followups.get("s1")))
         self.assertEqual(len(hub.requests), 1, "the request is still open")
         self.assertFalse(os.path.exists(os.path.join(self.tmp, "stop", "s1")))
-        hub_module.MIN_SHOWN, old = 0, hub_module.MIN_SHOWN
-        self.addCleanup(setattr, hub_module, "MIN_SHOWN", old)
+        base.MIN_SHOWN, old = 0, base.MIN_SHOWN
+        self.addCleanup(setattr, base, "MIN_SHOWN", old)
         self.assertTrue(hub.decide("allow"))
         proc.communicate(timeout=5)
         self.spoken()
 
     def test_permission_hook_hands_claude_the_chosen_option(self):
-        hub_module.MIN_SHOWN, old = 0, hub_module.MIN_SHOWN
-        self.addCleanup(setattr, hub_module, "MIN_SHOWN", old)
+        base.MIN_SHOWN, old = 0, base.MIN_SHOWN
+        self.addCleanup(setattr, base, "MIN_SHOWN", old)
         env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp}
         proc = subprocess.Popen([os.path.join(ROOT, "hooks", "permission.sh")], stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE, text=True, env=env)

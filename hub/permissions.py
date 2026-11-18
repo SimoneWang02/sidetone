@@ -1,0 +1,294 @@
+"""Permission prompts and questions: what a session asks is shown, said, and answered with
+the keys or by voice. A part of the hub (see hub.py), which is the only thing that uses it.
+"""
+from __future__ import annotations
+
+import json
+import os
+import time
+
+import base
+import claude_sessions
+import overlay as overlay_mod
+import stt
+from state import permission_summary
+from base import OWN_DIALOG, Request, _answerable, _read_out, _same_call, log
+
+
+class Permissions:
+    """The hub's methods for requests. They use the hub's lock, sessions, speech and overlay."""
+
+    # --- permission prompts ------------------------------------------------------------------
+
+    def request_permission(self, ev: dict) -> Request | None:
+        """A session is showing a permission prompt. Returns a request the caller waits on,
+        or None when there is nothing for the hub to answer."""
+        sid, tool = ev.get("session_id"), str(ev.get("tool_name") or "")
+        if not sid:
+            return None
+        with self.lock:
+            self.last_event = time.monotonic()
+            s = self.sessions.touch(sid, ev.get("cwd", ""))
+            tool_input = ev.get("tool_input") or {}
+            questions = _answerable(tool_input) if tool == "AskUserQuestion" else []
+            if questions:  # the number keys can answer these
+                req = Request(session=sid, tool=tool, tool_input=tool_input, summary=questions[0]["question"],
+                              detail="", questions=questions)
+                s.state, s.note = "needs_you", f"asks: {questions[0]['question']}"
+            elif tool in OWN_DIALOG:
+                s.state, s.note = "needs_you", "has a question for you" if tool == "AskUserQuestion" else "has a plan for you"
+                req = None
+            else:
+                summary, detail = permission_summary(tool, tool_input)
+                req = Request(session=sid, tool=tool, tool_input=tool_input, summary=summary, detail=detail)
+                if tool == "Bash":  # to see it start, should it be allowed in the terminal (see reconcile)
+                    pid = (claude_sessions.read(self.cfg.sessions_dir).get(sid) or {}).get("pid")
+                    req.shells = set(claude_sessions.tool_shells(pid)) if pid else None
+                s.state, s.note = "needs_you", f"wants to: {summary}"
+            if req:
+                self.requests.append(req)
+                self._show_request()
+        self.publish()
+        return req
+
+    def decide(self, decision: str) -> bool:
+        """Answer the request on screen (hotkey or command line). False if there was nothing to answer."""
+        with self.lock:
+            req = self.requests[0] if self.requests else None
+            if not req or req.shown is None or time.monotonic() - req.shown < base.MIN_SHOWN:
+                return False  # nothing there, or it appeared too recently to have been read
+            s = self.sessions.by_id.get(req.session)
+            if req.question:  # only a question with choices to tick takes the allow key: it hands them in
+                ticked = [o["label"] for i, o in enumerate(req.question["options"]) if i in req.ticked]
+                if not (req.question.get("multiSelect") and decision == "allow" and ticked):
+                    return False
+                self.last_seen = time.time()
+                self._answer(req, ", ".join(ticked), "hotkey")  # how Claude Code itself writes several choices
+            else:
+                self.last_seen = time.time()
+                self._resolve(req, decision, "hotkey")
+                if s:
+                    self.speech.drop_session(s.id)  # stop "permission needed" if it is still being said
+                    self._say(s, "Allowed." if decision == "allow" else "Denied.",
+                              "allowed" if decision == "allow" else "denied", "decision")
+        self.publish()
+        return True
+
+    def choose(self, number: int) -> bool:
+        """Answer the question on screen with its option number (1 to 4)."""
+        with self.lock:
+            req = self.requests[0] if self.requests else None
+            question = req.question if req else None
+            if (not question or req.shown is None or time.monotonic() - req.shown < base.MIN_SHOWN
+                    or not 1 <= number <= len(question["options"])):
+                return False
+            self.last_seen = time.time()
+            label = question["options"][number - 1]["label"]
+            if question.get("multiSelect"):  # tick or untick; the allow key hands the ticked ones in
+                on = number - 1 not in req.ticked
+                (req.ticked.add if on else req.ticked.discard)(number - 1)
+                if req.session in self.sessions.by_id:
+                    self.speech.drop_session(req.session)  # stop reading the options out
+                self._show_request()  # the box shows it; said aloud at every press it was a nuisance
+            else:
+                self._answer(req, label, "hotkey")
+        self.publish()
+        return True
+
+    def _answer(self, req: Request, answer: str, why: str, echo: bool = True) -> None:
+        """Give `answer` to the question on screen: an option's label, or with `why` "voice" the
+        user's own words (Claude gets them as it gets a typed "Other"). After the last question
+        the hook hands all answers to Claude. `echo` answers with the sound for "sent" (or says
+        the answer back, see `Config.talk_feedback`). Call with the lock held."""
+        req.answers[req.question["question"]] = answer
+        req.ticked.clear()  # the next question starts with nothing ticked
+        s = self.sessions.by_id.get(req.session)
+        if s:
+            self.speech.drop_session(s.id)  # stop reading the options out
+        if req.question:  # more questions in the same prompt: on to the next
+            req.shown = time.monotonic()
+            if s:
+                s.note = f"asks: {req.question['question']}"
+                said = f"{answer}. " if echo and self.cfg.talk_feedback == "voice" else ""
+                self._say(s, f"{said}Next. {_read_out(req.question, req.place)}", "needs_you", "question")
+            self._show_request()
+        else:
+            self._resolve(req, "answer", why)
+            if s and echo:  # a short sound; the answer itself is only said back with talk_feedback "voice"
+                self._signal("sent", s, f"Answered: {answer}.")
+
+    def abandon(self, req: Request, why: str, interrupted: bool = False) -> None:
+        """The request ended without the hub answering it (answered in the terminal, hook killed...)."""
+        with self.lock:
+            s = self.sessions.by_id.get(req.session)
+            self._resolve(req, None, why)
+            if interrupted and s and not req.decision:
+                s.state, s.activity, s.note, s.turn_started = "idle", "", "interrupted", None
+        self.publish()
+
+    def _settle(self, sid: str, why: str, tool: str | None = None, tool_input: dict | None = None) -> None:
+        """Close a session's open requests; with a tool given, only the one for that exact call."""
+        for req in [r for r in self.requests if r.session == sid]:
+            if tool is None or (req.tool == tool and _same_call(tool, req.tool_input, tool_input or {})):
+                self._resolve(req, None, why)
+
+    def _resolve(self, req: Request, decision: str | None, why: str) -> None:
+        if req.done.is_set():
+            return
+        req.decision = decision
+        self.requests.remove(req)
+        req.done.set()
+        s = self.sessions.by_id.get(req.session)
+        if s and s.state == "needs_you" and not any(r.session == req.session for r in self.requests):
+            s.state, s.note = "working", ""
+        log(self.cfg, "hub.log", f"permission [{req.session[:8]}] {req.tool}: {decision or 'no answer'} ({why})")
+        self._show_request()
+
+    def _show_request(self) -> None:
+        """Keep the overlay showing the oldest open request; that is the one the hotkeys answer."""
+        req = self.requests[0] if self.requests else None
+        if req and req.shown is None:
+            req.shown = time.monotonic()
+        if not self.overlay:
+            return
+        if not req:
+            self.overlay.send({"type": "request"})
+            return
+        s = self.sessions.by_id.get(req.session)
+        keys = self.cfg.overlay.get("hotkeys", {})
+        more = len(self.requests) - 1
+        if req.question:
+            options, several = req.question["options"], bool(req.question.get("multiSelect"))
+            self.overlay.send({
+                "type": "request", "name": s.name if s else "", "color": s.color if s else "",
+                "text": f"asks: {req.question['question']}",
+                "question": req.question["question"],  # written on a line of its own under the name
+                "place": req.place,  # "1 of 2", beside the name
+                # Drawn one to a line: behind its number, or, with several to tick, behind a box.
+                "options": [o["label"] for o in options],
+                **({"ticked": [i in req.ticked for i in range(len(options))]} if several else {}),
+                "detail": "\n".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
+                "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} "
+                        + (f"tick  \u00b7  {keys.get('allow', '')} confirms" if several else "answers")
+                        + (f"  \u00b7  {more} more waiting" if more else ""),
+            })
+            return
+        self.overlay.send({
+            "type": "request", "name": s.name if s else "", "color": s.color if s else "", "text": f"wants to: {req.summary}",
+            "detail": req.detail[:300],
+            "keys": f"{keys.get('allow', '')} allow  \u00b7  {keys.get('deny', '')} deny" + (f"  \u00b7  {more} more waiting" if more else ""),
+        })
+
+    def place_overlay(self, tell_window: bool = True, **changes) -> None:
+        """Change where the overlay sits (monitor, corner, offsets) and remember it."""
+        self.cfg.overlay.update(changes)
+        if tell_window and self.overlay and hasattr(self.overlay, "reconfigure"):
+            self.overlay.reconfigure()
+        self._save_settings("overlay", changes)
+
+    def _save_settings(self, section: str, changes: dict) -> None:
+        """Write settings chosen while running into that section of the user's config.json."""
+        if not self.cfg.config_path:
+            return
+        try:
+            with open(self.cfg.config_path) as f:
+                saved = json.load(f)
+        except (OSError, ValueError):
+            saved = {}
+        saved.setdefault(section, {}).update(changes)
+        try:
+            os.makedirs(os.path.dirname(self.cfg.config_path), exist_ok=True)
+            with open(self.cfg.config_path, "w") as f:
+                json.dump(saved, f, indent=2)
+        except OSError as e:
+            log(self.cfg, "hub.log", f"could not save the {section} settings: {e}")
+
+    def reload_languages(self) -> dict:
+        """Take up the languages chosen with `claude-speaks languages` (written to config.json)
+        without a restart: the next push-to-talk loads the model for them."""
+        try:
+            with open(self.cfg.config_path) as f:
+                saved = json.load(f)
+        except (OSError, ValueError):
+            saved = {}
+        model = saved.get("whisper_model") or self.cfg.whisper_model
+        language = saved.get("whisper_language") or self.cfg.whisper_language
+        if (model, language) != (self.cfg.whisper_model, self.cfg.whisper_language):
+            self.cfg.whisper_model, self.cfg.whisper_language = model, language
+            if self.transcriber:
+                self.transcriber = stt.Transcriber(model, language)
+            log(self.cfg, "hub.log", f"push-to-talk now listens with {model} for: {language}")
+        return {"model": model, "languages": language, "push_to_talk": bool(self.transcriber)}
+
+    def set_terminal(self, **changes) -> None:
+        """Change how sessions' terminals are marked (see terminal.py), at once, and remember it."""
+        self.cfg.terminal.update(changes)
+        self.terminals.settings.update(changes)
+        self.publish()
+        self._save_settings("terminal", changes)
+
+    def find_terminal(self, name: str = "") -> str | None:
+        """Light up the terminal of the session called `name`, or of the one in focus. Returns
+        the session's name, or None when there is no such session or it has no terminal."""
+        with self.lock:
+            s = (next((x for x in self.sessions.by_id.values() if x.name == name), None) if name
+                 else self._target())
+            found = (s.name, s.tty, s.color) if s and s.tty else None
+        if not found:
+            return None
+        self.terminals.pulse(found[1], found[2], asked=True)
+        return found[0]
+
+    def set_layout(self, name: str) -> str | None:
+        """Show the sessions in another layout ("next" goes round them) and remember the choice."""
+        names = overlay_mod.LAYOUTS
+        if name == "next":
+            current = self.cfg.overlay.get("layout", names[0])
+            name = names[(names.index(current) + 1) % len(names)] if current in names else names[0]
+        if name not in names:
+            return None
+        self.place_overlay(layout=name)
+        self.say(f"{name} layout", kind="notice")
+        return name
+
+    def on_overlay(self, msg: dict) -> None:
+        if msg.get("type") == "ready":
+            # A window that has just started is handed the sessions again by its own module, and
+            # nothing else: tell it the question that is still open and the keys that are live.
+            with self.lock:
+                self._keys = None
+                if self.requests:
+                    self._show_request()
+            self.publish()
+            return
+        if msg.get("type") == "moved":  # dragged to a new place
+            placed = {k: msg[k] for k in ("monitor", "corner", "offset_x", "offset_y", "island_x", "island_y") if k in msg}
+            self.place_overlay(False, **placed)  # the window already knows; this saves it
+            return
+        if msg.get("type") == "mode":  # details kept out, or only the lights: the same after a hub restart
+            if msg.get("mode") in ("dots", "list"):
+                self.place_overlay(False, mode=msg["mode"])
+            return
+        if msg.get("type") != "hotkey":
+            return
+        name = msg.get("name")
+        if name != "missed":  # any other key press shows the user is there
+            self.last_seen = time.time()
+        if name in ("allow", "deny"):
+            self.decide(name)
+        elif name and name.startswith("option"):
+            self.choose(int(name[6:]))
+        elif name == "repeat":
+            self.repeat()
+        elif name == "missed":
+            self.catch_up()
+        elif name == "talk":
+            self.talk_start()
+        elif name == "talk_end":
+            self.talk_end()
+        elif name == "cancel":
+            self.cancel()
+        elif name in ("focus_next", "focus_prev"):
+            self.focus(1 if name == "focus_next" else -1)
+        elif name == "layout":
+            self.set_layout("next")
