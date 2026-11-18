@@ -1884,6 +1884,7 @@ namespace ClaudeSpeaks
         void FillHistory(Panel into, string of, int most, bool named)
         {
             int n = 0;
+            Grid.SetIsSharedSizeScope(into, true);
             foreach (object o in history)
             {
                 var h = (Dictionary<string, object>)o;
@@ -1899,13 +1900,23 @@ namespace ClaudeSpeaks
                 words.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Alpha(Colors.White, n == 0 ? 0.94 : n == 1 ? 0.76 : n == 2 ? 0.64 : 0.55) });
                 Grid.SetColumn(words, 1);
                 line.Children.Add(words);
-                var when = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+                // Two columns at the right, each as wide as its widest entry in this list, so the
+                // times stand under one another and so do the tokens, with or without a figure.
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "ago" });
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "used" });
                 if (h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"]))
-                    when.Children.Add(new System.Windows.Shapes.Ellipse { Width = 5, Height = 5, Fill = Ui.Alpha(Colors.White, 0.95), Margin = new Thickness(0, 1, 6, 0), VerticalAlignment = VerticalAlignment.Center });
+                {
+                    var dot = new System.Windows.Shapes.Ellipse { Width = 5, Height = 5, Fill = Ui.Alpha(Colors.White, 0.95), Margin = new Thickness(8, 6, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+                    Grid.SetColumn(dot, 2);
+                    line.Children.Add(dot);
+                }
                 string used = Str(h, "tokens");
-                when.Children.Add(new TextBlock { Text = Str(h, "ago") + (used.Length > 0 ? "   " + used : ""), FontSize = 12, Foreground = Ui.Faint });
-                Grid.SetColumn(when, 2);
-                line.Children.Add(when);
+                var ago = new TextBlock { Text = Str(h, "ago"), FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(8, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
+                Grid.SetColumn(ago, 3);
+                line.Children.Add(ago);
+                var spent = new TextBlock { Text = used, FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(used.Length > 0 ? 10 : 0, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
+                Grid.SetColumn(spent, 4);
+                line.Children.Add(spent);
                 into.Children.Add(line);
                 n++;
             }

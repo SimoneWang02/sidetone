@@ -943,8 +943,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   waiting to be (`SpeechQueue.waiting`), so one that was cut, too old, or replaced by a
   newer one. Lines also carry `kind`. With `history: all` (every session's lines mixed),
   or with `details_style: line`, the lines stay below the card and keep their names.
-  It still only shows with the details kept out and the mouse at rest on them. Seen in
-  pictures (`list-history*.png`); **the author has not seen it yet**.
+  It still only shows with the details kept out and the mouse at rest on them. The author
+  on seeing it: "it's not bad having two columns", and asked what could be better. The
+  time and the tokens were one piece of text, so a time stood further left on a line that
+  had tokens; they are two columns now, each as wide as its widest entry
+  (`SharedSizeGroup`), so times stand under times and tokens under tokens.
 - No raised dots (2026-11-18; the author: "don't use the dots, the central dots. I don't
   like them"). The parts of a line the hub writes (tasks and time in a row, the keys under
   a request or a question, the confirming tap) are set apart by a gap, three spaces or
