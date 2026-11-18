@@ -1,11 +1,15 @@
 """Manual check of the overlay window from WSL: python3 tests/overlay_check.py OUT_DIR [--glass]
 
 Starts the overlay by itself, feeds it made-up content, and saves a PNG of each view to OUT_DIR.
-The window is drawn opaque and only its own rectangle is captured, so nothing else on the
-screen ends up in the pictures. With --glass it also checks the real see-through glass: for a
-few seconds it puts a striped test card of its own behind the overlay and captures that, so
-again nothing of the screen is in the picture. It uses spare hotkeys so it can run next to the
-live overlay.
+The window is drawn opaque, and its picture is asked from the window itself, not copied from
+the screen (tests/overlay_capture.ps1), so nothing else on the screen ends up in the pictures:
+not what is behind the overlay and not what lies over it, such as the live overlay, which can
+be anywhere. The check proves that to itself at the start: it lays a window of one color of
+its own over the overlay and the picture must hold none of that color (proof-*.png).
+With --glass it also checks the real see-through glass, which only exists on the screen: for a
+few seconds it puts a striped test card of its own behind the overlay and copies that from the
+screen, and a picture is dropped if any always-on-top window of another program reached into
+it. It uses spare hotkeys so it can run next to the live overlay, and sends that one nothing.
 """
 import json
 import math
@@ -19,6 +23,7 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, f"{ROOT}/hub")
 import overlay  # noqa: E402
+import state  # noqa: E402
 
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 out = os.path.abspath(args[0] if args else ".")
@@ -59,17 +64,55 @@ def wait(kind, timeout=20):
     return None
 
 
-def capture(name, pieces, pad=0):
-    """Save a picture of just these screen rectangles (x, y, w, h), on black, in their real arrangement."""
-    x0, y0 = min(p[0] for p in pieces) - pad, min(p[1] for p in pieces) - pad
-    x1, y1 = max(p[0] + p[2] for p in pieces) + pad, max(p[1] + p[3] for p in pieces) + pad
-    copies = "".join(f"$g.CopyFromScreen({x},{y},{x - x0},{y - y0},(New-Object System.Drawing.Size {w},{h})); "
-                     for x, y, w, h in ([(x0, y0, x1 - x0, y1 - y0)] if pad else pieces))
-    script = (f"Add-Type -AssemblyName System.Drawing; $b = New-Object System.Drawing.Bitmap {x1 - x0},{y1 - y0}; "
-              f"$g = [System.Drawing.Graphics]::FromImage($b); $g.Clear([System.Drawing.Color]::Black); {copies}"
-              f"$b.Save('{win(out)}\\{name}.png')")
-    subprocess.run(["powershell.exe", "-NoProfile", "-Command", script], cwd="/mnt/c/Windows")
-    return x0, y0, x1 - x0, y1 - y0
+# The one process that takes all the pictures (see overlay_capture.ps1 for what it is asked).
+camera = subprocess.Popen(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", win(f"{ROOT}/tests/overlay_capture.ps1")],
+                          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, cwd="/mnt/c/Windows")
+answers = queue.Queue()
+threading.Thread(target=lambda: [answers.put(line.decode(errors="replace").strip()) for line in camera.stdout], daemon=True).start()
+
+
+def ask(timeout=30, **request):
+    """One request to the camera and its answer; {"ok": False, ...} when there is none."""
+    if request:
+        camera.stdin.write((json.dumps(request) + "\n").encode())
+        camera.stdin.flush()
+    end = time.time() + timeout
+    while time.time() < end:
+        try:
+            return json.loads(answers.get(timeout=0.2))
+        except queue.Empty:
+            if camera.poll() is not None:
+                break
+        except ValueError:
+            continue
+    return {"ok": False, "error": "the camera did not answer"}
+
+
+def capture(name, pieces):
+    """Save a picture of the overlay's own windows at these rectangles (x, y, w, h), on black,
+    in their real arrangement. Asked from the windows, so what covers them is not in it."""
+    answer = ask(do="window", path=f"{win(out)}\\{name}.png", pieces=pieces)
+    if not answer.get("ok"):
+        print(f"  {name}: no picture, {answer.get('error')}")
+    return bool(answer.get("ok"))
+
+
+def screen(name, pieces, pad=0, ours=()):
+    """Save a copy of the screen around these rectangles. Returns the always-on-top windows of
+    other programs that reached into it (a list; empty = the picture holds only our own), or
+    None when there is no picture."""
+    answer = ask(do="screen", path=f"{win(out)}\\{name}.png", pieces=pieces, pad=pad, ours=list(pieces) + list(ours))
+    if not answer.get("ok"):
+        print(f"  {name}: no picture, {answer.get('error')}")
+        return None
+    return answer.get("foreign") or []
+
+
+def drop(name):
+    try:
+        os.remove(os.path.join(out, f"{name}.png"))
+    except OSError:
+        pass
 
 
 def bounds():
@@ -86,17 +129,78 @@ def shot(name, settle=0.9):
         if not b or not b.get("visible"):
             print(f"  {name}: not visible")
             return b
-        capture(name, b["pieces"])
+        taken = capture(name, b["pieces"])
         after = bounds()
-        if after and after.get("pieces") == b["pieces"]:
+        if taken and after and after.get("pieces") == b["pieces"]:
             break
         time.sleep(0.5)
     else:
-        os.remove(os.path.join(out, f"{name}.png"))
-        print(f"  {name}: kept changing size, no picture kept")
+        drop(name)
+        print(f"  {name}: kept changing size or could not be taken, no picture kept")
         return b
     print(f"  {name}.png  pieces {b['pieces']}  open: {b.get('open')}  monitor {b.get('monitor')}  catches mouse: {b.get('catches_mouse')}")
     return b
+
+
+# A window of one plain color, laid over the overlay for a few seconds without taking focus:
+# it stands in for anything that may lie over it on the screen, such as the live overlay.
+DECOY = "#FF00FF"
+COVER = r"""
+Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
+$w = New-Object System.Windows.Window
+$w.WindowStyle = 'None'; $w.ResizeMode = 'NoResize'; $w.ShowActivated = $false; $w.ShowInTaskbar = $false; $w.Topmost = $true
+$w.WindowStartupLocation = 'Manual'; $w.Left = %d; $w.Top = %d; $w.Width = %d; $w.Height = %d
+$inside = New-Object System.Windows.Controls.Border  # a window with nothing in it never says it was drawn
+$inside.Background = '%s'
+$w.Content = $inside
+$w.Add_ContentRendered({ [Console]::Out.WriteLine('up') })
+$timer = New-Object System.Windows.Threading.DispatcherTimer
+$timer.Interval = [TimeSpan]::FromSeconds(%d)
+$timer.Add_Tick({ $w.Close() })
+$timer.Start()
+[void]$w.ShowDialog()
+"""
+
+
+def prove(name="proof", seconds=10):
+    """Show that a picture of the overlay holds nothing of what lies over it on the screen.
+
+    A window of one color is laid over the overlay. A copy of the screen must then show that
+    color (it really is in the way), and the picture asked from the overlay's windows must
+    show none of it. Both pictures are kept. Returns True when that is so."""
+    b = bounds()
+    if not b or not b.get("visible"):
+        print(f"  {name}: the overlay is not visible, nothing proved")
+        return False
+    pieces, pad = b["pieces"], 40
+    x0, y0 = min(p[0] for p in pieces) - pad, min(p[1] for p in pieces) - pad
+    x1, y1 = max(p[0] + p[2] for p in pieces) + pad, max(p[1] + p[3] for p in pieces) + pad
+    for attempt in range(4):
+        cover = subprocess.Popen(["powershell.exe", "-NoProfile", "-Command", COVER % (x0, y0, x1 - x0, y1 - y0, DECOY, seconds)],
+                                 cwd="/mnt/c/Windows", stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        up = cover.stdout.readline().strip() == b"up"
+        # The overlay climbs back over the cover every two seconds, so the screen is copied
+        # right away, while the cover is on top, and once more after the picture.
+        covered = 0
+        if up and cover.poll() is None:
+            screen(f"{name}-screen", pieces)
+            covered = ask(do="count", path=f"{win(out)}\\{name}-screen.png", color=DECOY).get("count", 0)
+            taken = capture(f"{name}-window", pieces)
+            still_up = cover.poll() is None and bounds().get("pieces") == pieces
+            inside = ask(do="count", path=f"{win(out)}\\{name}-window.png", color=DECOY) if taken else {}
+            if not still_up:  # the cover left meanwhile: the copy of the screen may hold the screen itself
+                drop(f"{name}-screen")
+        cover.kill()
+        cover.wait()
+        if up and covered and taken and still_up:
+            share = 100 * covered // max(1, inside.get("of", 1))
+            print(f"  {name}: a {DECOY} window lay over the overlay ({share}% of {name}-screen.png is that color); "
+                  f"{name}-window.png, asked from the overlay itself, holds {inside.get('count')} dots of it")
+            return inside.get("count") == 0
+        drop(f"{name}-screen")
+        time.sleep(1.0)
+    print(f"  {name}: could not get the cover over the overlay, nothing proved")
+    return False
 
 
 # A striped card with text, shown behind the overlay for a few seconds without taking focus.
@@ -134,20 +238,32 @@ def glass_shot(name, seconds=12):
     pad = 14
     x0, y0 = min(p[0] for p in b["pieces"]) - pad, min(p[1] for p in b["pieces"]) - pad
     x1, y1 = max(p[0] + p[2] for p in b["pieces"]) + pad, max(p[1] + p[3] for p in b["pieces"]) + pad
-    card = subprocess.Popen(["powershell.exe", "-NoProfile", "-Command", BACKDROP % (x0 - 30, y0 - 30, x1 - x0 + 60, y1 - y0 + 60, seconds)],
+    behind = (x0 - 30, y0 - 30, x1 - x0 + 60, y1 - y0 + 60)
+    card = subprocess.Popen(["powershell.exe", "-NoProfile", "-Command", BACKDROP % (*behind, seconds)],
                             cwd="/mnt/c/Windows", stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     up = card.stdout.readline().strip() == b"up"  # blocks until the card is drawn (or its process ended)
     time.sleep(2.6)  # the overlay climbs back on top of the card (it does so every 2 s)
     after = bounds()
     if up and card.poll() is None and after and after.get("pieces") == b["pieces"]:
-        capture(name, b["pieces"], pad)
-        if card.poll() is None:
+        for attempt in range(3):  # something of another program in the way (the live overlay talking, say) may be gone in a moment
+            others = screen(name, b["pieces"], pad, ours=[behind])
+            if not others:
+                break
+            drop(name)
+            time.sleep(1.5)
+        if others is None:
+            pass
+        elif others:
+            print(f"  {name}: no picture kept, on the screen there was in the way: "
+                  + "; ".join(sorted({f"{o.get('process') or o.get('kind')} at {o.get('area')}" for o in others})))
+        elif card.poll() is None:
             print(f"  {name}.png  (over the test card)")
         else:  # the card left while the picture was being taken
-            os.remove(os.path.join(out, f"{name}.png"))
+            drop(name)
             print(f"  {name}: the test card closed too early, no picture kept")
     else:
         print(f"  {name}: the test card was not up or the overlay moved, no picture taken")
+    card.kill()
     card.wait()
 
 
@@ -157,7 +273,9 @@ def voice(seconds, step=0.04):
             for i in range(int(seconds / step))]
 
 
-def sessions(speaking=None, focus="api-server"):
+def sessions(speaking=None, focus="api-server", waiting=None, stopping=None):
+    """The rows the hub would send. `waiting`: session name -> messages held for it; `stopping`:
+    the name of a session that was asked to end its turn."""
     rows = [
         dict(name="claude-speaks", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta=""),
         dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="3/5 · 6m"),
@@ -165,21 +283,29 @@ def sessions(speaking=None, focus="api-server"):
         dict(name="data-pipeline", title="Nightly export", state="failed", text="error: rate limit", meta=""),
         dict(name="notes", title="", state="idle", text="", meta=""),
     ]
-    for row, color in zip(rows, ["#8AB4FF", "#FFB86B", "#C6A0F6", "#7FDBCA", "#FF8FA3"]):
+    for row, color in zip(rows, COLORS):
         row["color"] = color
         row["speaking"] = row["name"] == speaking
         row["target"] = row["name"] == focus
+        row["waiting"] = n = (waiting or {}).get(row["name"], 0)
+        if n:  # as Hub._waiting_note writes it
+            row["meta"] = " \u00b7 ".join(filter(None, [row["meta"], "1 message waiting" if n == 1 else f"{n} messages waiting"]))
+        if row["name"] == stopping:
+            row["text"] = "Stopping at its next step"
     return rows
 
 
-HISTORY = [dict(ago="now", name="api-server", color="#FFB86B", text="All forty two tests pass."),
-           dict(ago="3m", name="web-app", color="#C6A0F6", text="The login page is fixed and ready for review."),
-           dict(ago="12m", name="data-pipeline", color="#7FDBCA", text="I hit an error: rate limit")]
+COLORS = state.COLORS[:5]  # as five sessions would have them
+HISTORY = [dict(ago="now", name="api-server", color=COLORS[1], text="All forty two tests pass."),
+           dict(ago="3m", name="web-app", color=COLORS[2], text="The login page is fixed and ready for review."),
+           dict(ago="12m", name="data-pipeline", color=COLORS[3], text="I hit an error: rate limit")]
 KEYS = {"toggle": "Ctrl+Alt+F9"}
 SAID = "All forty two tests pass. The flaky one was a race in the login mock, which I fixed."
 
-if not wait("ready", 40):
+if not wait("ready", 40) or not ask(timeout=60).get("ready"):
+    print("  !! the overlay or the camera did not start")
     proc.kill()
+    camera.kill()
     sys.exit(1)
 
 
@@ -194,6 +320,10 @@ HERE = dict(monitor=0, corner="bottom-right", offset_x=420, offset_y=260)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, **HERE)
 send(type="state", sessions=sessions(), history=HISTORY)
 shot("closed")
+send(type="peek", on=True)
+time.sleep(1.2)
+proved = prove()
+send(type="peek", on=False)
 say(3)
 shot("speaking-closed", 1.6)
 send(type="peek", on=True)
@@ -202,11 +332,30 @@ send(type="state", sessions=sessions(), history=HISTORY)
 time.sleep(2.5)
 shot("open", 0.3)
 send(type="peek", on=False)
-send(type="request", name="web-app", color="#C6A0F6", text="asks: Which drink would you like?",
-     options=["Tea", "Coffee, with milk and one sugar, in the large cup that is still in the cupboard above the sink", "Water"],
-     keys="Ctrl+Alt+1 to Ctrl+Alt+3 answers  \u00b7  question 1 of 2")
+DRINKS = ["Tea", "Coffee, with milk and one sugar, in the large cup that is still in the cupboard above the sink", "Water"]
+
+
+def question(text, options, ticked=None, place="", more=0):
+    """A question as Hub._show_request sends it: one answer to pick, or with `ticked` several to tick."""
+    keys = f"Ctrl+Alt+1 to Ctrl+Alt+{len(options)} " + ("tick  \u00b7  Ctrl+Alt+Y confirms" if ticked is not None else "answers")
+    send(type="request", name="web-app", color=COLORS[2], text=f"asks: {text}", question=text, place=place, options=options,
+         detail="\n".join(f"{i}  {o}" for i, o in enumerate(options, 1)),
+         keys=keys + (f"  \u00b7  {more} more waiting" if more else ""),
+         **({"ticked": ticked} if ticked is not None else {}))
+
+
+question("Which drink would you like?", DRINKS)
 shot("question")
-send(type="request", name="web-app", text="wants to: Push to the remote", detail="git push origin main",
+# One of two questions in the same dialog: which one it is stands beside the name.
+question("Which drink would you like?", DRINKS, place="1 of 2")
+shot("question-one-of-two")
+# Several choices to tick: a box before each, none ticked yet, then two of them.
+TOPPINGS = ["Mushrooms", "Olives, the green ones from the jar that is already open", "Peppers", "Onions"]
+question("Which toppings do you want on it?", TOPPINGS, ticked=[False] * 4)
+shot("question-tick-none")
+question("Which toppings do you want on it?", TOPPINGS, ticked=[True, False, True, False], place="2 of 2", more=1)
+shot("question-tick-some")
+send(type="request", name="web-app", color=COLORS[2], text="wants to: Push to the remote", detail="git push origin main",
      keys="Ctrl+Alt+Y allow  \u00b7  Ctrl+Alt+N deny")
 shot("permission")
 send(type="request")
@@ -229,6 +378,64 @@ send(type="talk", state="failed", name="web-app", text="Didn't catch that", seco
 shot("talk-failed", 0.5)
 send(type="talk", state="transcribing", name="web-app")
 shot("talk-transcribing", 0.5)
+# A side question being answered by a copy of the session.
+send(type="talk", state="aside", name="web-app", text="By the way, which file was that?", hint="Answering on the side\u2026")
+shot("talk-aside", 0.5)
+# Words for a busy session: they wait, and its light carries the number from then on.
+HELD = "Also add a test for the empty input case."
+send(type="state", sessions=sessions(focus="api-server", waiting={"api-server": 1}), history=HISTORY)
+send(type="talk", state="queued", name="api-server", text=HELD, seconds=6)
+shot("talk-queued", 0.8)
+send(type="peek", on=True)
+shot("talk-queued-open", 0.5)
+send(type="peek", on=False)
+# A session asked to end its turn: the stop sign in its light, and its row says so.
+send(type="state", sessions=sessions(focus="api-server", stopping="api-server"), history=HISTORY)
+send(type="talk", state="stopped", name="api-server", text="Stopping at its next step", seconds=6)
+shot("stopping", 0.5)
+send(type="peek", on=True)
+shot("stopping-open", 0.5)
+send(type="peek", on=False)
+send(type="talk")
+send(type="state", sessions=sessions(), history=HISTORY)
+time.sleep(0.4)
+
+# Words waiting for a session, marked on its light: one message, several, and more than nine.
+WAITING = {"api-server": 1, "web-app": 3, "data-pipeline": 12}
+
+
+def look(**settings):
+    """The overlay with these settings for the mark, and the hub's own defaults for the rest of
+    them: the overlay keeps a setting it is not sent again, so each look names them all."""
+    mark = {key: value for key, value in overlay.DEFAULTS.items() if key.startswith("waiting_")}
+    send(type="config", opaque=True, still=settings.pop("still", True), mode="dots", hotkeys=KEYS, **HERE, **{**mark, **settings})
+
+
+def marks(name, waiting=WAITING, opened=True, settle=0.8):
+    send(type="state", sessions=sessions(waiting=waiting), history=HISTORY)
+    shot(name, settle)
+    if opened:
+        send(type="peek", on=True)
+        shot(f"{name}-open", 0.6)
+        send(type="peek", on=False)
+    send(type="state", sessions=sessions(), history=HISTORY)  # nothing waits any more, so the next look starts afresh
+    time.sleep(0.3)
+
+
+marks("waiting")  # the number in the upper right; above nine a dismayed face
+look(waiting_many="number")
+marks("waiting-nine-plus", opened=False)
+look(waiting_size=6.6, waiting_color="#FF6E8A")
+marks("waiting-small-pink", opened=False)
+look(waiting_mark="clock")
+marks("waiting-clock", opened=False)
+look(waiting_mark="dot")
+marks("waiting-dot", opened=False)
+# The number as it first shows itself, across the whole light. That is a motion, so this one
+# picture is taken with motion on, and the number is held there for longer than the check takes.
+look(still=False, waiting_cover="each", waiting_hold=60)
+marks("waiting-covers-the-light", opened=False, settle=1.6)
+look()
 # The same steps with the sign at the right of the session's line instead of in its light.
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, talk_sign="line")
 send(type="talk", state="sent", name="web-app", text="Also add a test for the empty input case.", seconds=6)
@@ -271,9 +478,32 @@ shot("island-moved-open", 1.0)
 send(type="peek", on=False)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="bar", island_x=0.5, island_y=10, **HERE)
 
+def free_place(room=420):
+    """A place for the glass views where no always-on-top window of another program is: those
+    views are copied from the screen, and the live overlay can be anywhere on it. `room` is how
+    far the panel, the bubble and the test card reach around the bar."""
+    places = [dict(monitor=0, corner=corner, offset_x=x, offset_y=y)
+              for x, y in ((60, 140), (460, 300), (900, 420)) for corner in ("top-right", "bottom-right", "bottom-left", "top-left")]
+    for place in places:
+        send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, **place)
+        time.sleep(0.5)
+        b = bounds()
+        if not b or not b.get("visible"):
+            continue
+        others = ask(do="others", pieces=b["pieces"], pad=room, ours=b["pieces"]).get("foreign")
+        if others == []:
+            return place
+        print(f"  glass: not at {place['corner']} {place['offset_x']},{place['offset_y']}, in the way there: "
+              + "; ".join(sorted({str(o.get("process") or o.get("kind")) for o in others or [{"kind": "no answer"}]})))
+    return None
+
+
 if "--glass" in sys.argv:
-    for kind in ("blur", "acrylic"):
-        send(type="config", opaque=False, glass=kind, mode="dots", hotkeys=KEYS, monitor=0, corner="top-right", offset_x=60, offset_y=140)
+    spot = free_place()
+    if not spot:
+        print("  glass: no place on the first screen is free of other programs' always-on-top windows, no glass pictures")
+    for kind in ("blur", "acrylic") if spot else ():
+        send(type="config", opaque=False, glass=kind, mode="dots", hotkeys=KEYS, **spot)
         say(9)
         time.sleep(1.0)
         glass_shot(f"glass-{kind}-closed")
@@ -291,3 +521,10 @@ try:
 except subprocess.TimeoutExpired:
     print("  !! did not exit when its input closed")
     proc.kill()
+ask(timeout=1, do="quit")
+try:
+    camera.wait(5)
+except subprocess.TimeoutExpired:
+    camera.kill()
+print("  pictures hold only the overlay under test:", "proved" if proved else "NOT PROVED (see above)")
+sys.exit(0 if proved else 1)
