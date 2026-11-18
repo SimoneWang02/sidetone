@@ -66,6 +66,16 @@ namespace ClaudeSpeaks
             return brush;
         }
 
+        // The dot on a light whose session has words of yours waiting: the red of a notification,
+        // or a color of your own (waiting_color, "#RRGGBB").
+        public static Color Waiting = Color.FromRgb(0xFF, 0x3B, 0x30);
+
+        public static void SetWaitingColor(string hex)
+        {
+            try { if (hex != null && hex.Length > 0) Waiting = (Color)ColorConverter.ConvertFromString(hex); }
+            catch (Exception) { }  // not a color: as it was
+        }
+
         public static void SetTalkColor(string hex)
         {
             Color soft = Color.FromArgb(0x8C, 0xFF, 0xFF, 0xFF), glint = Colors.White, full = Color.FromArgb(0xDC, 0xFF, 0xFF, 0xFF);
@@ -373,16 +383,16 @@ namespace ClaudeSpeaks
             dc.Pop();
         }
 
-        // Words are waiting for this session: a small dot in the microphone's color at the
-        // upper right of the light, breathing, for as long as they wait.
+        // Words are waiting for this session: a small red dot at the upper right of the light,
+        // like the one on an app with something unread, breathing for as long as they wait.
         void Mark(DrawingContext dc, Point c, double t)
         {
             if (!Waiting) return;
             var at = new Point(c.X + 10, c.Y - 10);
             double breath = 0.5 + 0.5 * Math.Sin(t * 3.2);
-            dc.DrawEllipse(Ui.Alpha(Ui.Mic, 0.22 * breath), null, at, 5.2 + 2 * breath, 5.2 + 2 * breath);
+            dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.22 * breath), null, at, 5.2 + 2 * breath, 5.2 + 2 * breath);
             dc.DrawEllipse(Ui.Alpha(Color.FromRgb(0x14, 0x14, 0x18), 0.85), null, at, 5.2, 5.2);
-            dc.DrawEllipse(Ui.Alpha(Ui.Mic, 0.8 + 0.2 * breath), null, at, 3.8, 3.8);
+            dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.85 + 0.15 * breath), null, at, 3.8, 3.8);
         }
     }
 
@@ -1096,6 +1106,7 @@ namespace ClaudeSpeaks
                     still = Ui.Motionless = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
+                    if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
                     glass = Str(msg, "glass", glass);
                     islandX = Num(msg, "island_x", islandX);
                     islandY = Num(msg, "island_y", islandY);

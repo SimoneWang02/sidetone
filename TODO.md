@@ -291,7 +291,7 @@ real keys yet.
       of a few words into its speak tag and updates it when the work moves on. The author
       on seeing the first one: "that's perfect. Yeah, it's clear now." Still to watch over
       a longer day: whether titles change too often or too rarely.
-- [ ] Something said to a busy session waits until its reply ends, and a turn stuck on an
+- [x] Something said to a busy session waits until its reply ends, and a turn stuck on an
       unanswered dialog in the terminal holds it back for as long as the dialog is open. The
       overlay shows "waiting" for 3.5 s only; the author took it as not heard (2026-11-17).
       Keep the waiting sign on that session's light until the words are delivered. (Done
@@ -303,6 +303,11 @@ real keys yet.
       a clock, where it showed the plane of words that went out. Seen in pictures only.
       To try: speak to a session in the middle of a reply and watch its light until the
       reply ends. Not built: a sound at the moment the words are handed over.
+      The author tried it at once, speaking to a session kept busy for half a minute; the
+      words waited and arrived when it stopped. "I saw the clock was good. Instead of the
+      pink notification icon, maybe a red would be better. It's more intuitive." So the
+      dot is red by default (`overlay.waiting_color`; `"#FF6E8A"` is the pink). They have
+      not said whether they saw the plane at the handover, nor seen the red one yet.
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next
