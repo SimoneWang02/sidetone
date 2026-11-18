@@ -381,7 +381,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   looked "mentally ill"; they asked for one that is fed up with so many requests, so it is
   yellow; the fourth is drawn after a picture they gave as the look to go for: brows raised
   in the middle, oval eyes with a line under each, a wavy mouth turned down (`Orb.Dismayed`;
-  in the corner it is drawn larger than a digit, or it cannot be read). `overlay.waiting_cover` says which messages show their number across
+  in the corner it needs a radius of about 9 to be read, and the number's disc was made the
+  same size on the author's word, `overlay.waiting_size`). The author on the face and the
+  number in its corner: "That's really perfect." Digits are centered by the box of their own
+  strokes (`Orb.Number`): placed by their line of text they sat up to a pixel low. `overlay.waiting_cover` says which messages show their number across
   the whole light: `never` (default since the author said "just put it top right"; the
   number comes up in its corner with a small jump), `first` or `each`. To show the mark on the live overlay: `claude-speaks follow-up -s NAME TEXT`
   several times for a session that is busy.

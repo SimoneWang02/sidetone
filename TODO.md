@@ -373,7 +373,11 @@ real keys yet.
       turned down); the face is drawn after it, the fourth, and larger in the corner
       than a digit. And on the first number covering the light: "just put it top
       right", so `waiting_cover` is `never` by default and every number comes up in
-      its corner with a small jump. Shown live; **no word on either yet.**
+      its corner with a small jump. Shown live: "Yeah, that's perfect. That's really
+      perfect." They asked whether the digits are centered both ways: across yes, down
+      they sat up to a pixel low, mended (placed by their own strokes, measured in
+      pictures). And the number's disc is now as large as the face's, their choice
+      (`overlay.waiting_size`, a radius of 9.2 where it was 6.6).
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next
