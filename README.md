@@ -55,6 +55,14 @@ its own spoken line as the first line of its reply.
   that already has them is told to ignore them (`unsend_seconds`; 0 turns it off). If you would rather check the text first, set
   `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
   `followup_confirm` to `true` (nothing is sent until you tap the talk key again).
+- **Side questions.** Words for a busy session normally wait until its reply is over. Start
+  with "by the way" ("by the way, which file was that?") and they do not wait: a throwaway
+  copy of that session answers within a few seconds from what the session already knows, in
+  the session's voice, while the session works on undisturbed. It never sees the question or
+  the answer, and the copy cannot read files or run commands, like Claude Code's own `/btw`.
+  `Ctrl+Alt+Backspace` drops the question while it is being answered; if no answer comes,
+  the words go to the session after all. `aside` is `busy` (default), `always` (idle sessions
+  too) or `off`; `aside_words` are the openings, `aside_model` the model that answers (`haiku`).
 - **Which terminal is which.** With several sessions open, the terminal of the session in focus
   takes a faint tint of that session's color, the color its name has in the overlay, and lights
   up brighter for a moment when you move the focus to it. No extension is needed: the hub
@@ -171,6 +179,8 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
   "unsend_seconds": 4,
   "talk_feedback": "sound",
   "sound_volume": 0.3,
+  "aside": "busy",
+  "aside_words": ["by the way", "btw"],
   "overlay": {
     "layout": "bar",
     "corner": "top-right",

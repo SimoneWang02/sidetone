@@ -12,6 +12,7 @@ import threading
 import time
 import types
 import unittest
+import unittest.mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
@@ -1388,6 +1389,178 @@ class PushToTalk(HubCase):
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "deny"] + arrows)
         hub.talk_start()
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "cancel", "deny"] + arrows)
+
+
+class SideQuestions(HubCase):
+    """Spoken words that open with "by the way" are answered at once by a copy of a busy session."""
+
+    def make(self, answer="It is in the hub folder.", why="", **kw):
+        hub = super().make(label="never", **kw)
+        hub.overlay = self.overlay = FakeOverlay()
+        hub.sounds = FakeSounds()
+        self.asked, self.go = [], threading.Event()  # what the copy was asked; set `go` to let it answer
+        self.go.set()
+
+        def run(aside, cwd, question):
+            self.asked.append((aside.session, cwd, question))
+            self.go.wait(5)
+            return answer, why
+        hub.aside_run = run
+        hub.on_event(ev("SessionStart", sid="a", cwd="/w/a"))
+        hub.on_event(ev("SessionStart", sid="b", cwd="/w/b"))
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="build it"))  # A is in the middle of a turn
+        return hub
+
+    def talks(self):
+        return [(m.get("state"), m.get("name", ""), m.get("text", "")) for m in self.overlay.of("talk")]
+
+    def test_the_opening_words_make_a_side_question(self):
+        q = hub_module.aside_question
+        self.assertEqual(q("By the way, where is the socket?", ["by the way", "btw"]), "where is the socket?")
+        self.assertEqual(q("by  the way where is it", ["by the way"]), "where is it")
+        self.assertEqual(q("BTW: is it done?", ["by the way", "btw"]), "is it done?")
+        self.assertEqual(q("A proposito, a che punto sei?", ["by the way", "a proposito"]), "a che punto sei?")
+        self.assertEqual(q("By the wayside inn we stopped", ["by the way"]), "")
+        self.assertEqual(q("Run the tests, by the way", ["by the way"]), "")  # only as the opening
+        self.assertEqual(q("By the way.", ["by the way"]), "")  # nothing asked
+        self.assertEqual(q("By the way, what now?", []), "")
+
+    def test_an_answer_is_cleaned_for_the_voice(self):
+        clean = hub_module.spoken_answer
+        self.assertEqual(clean('<speak title="Side">It is `done`.</speak>\n'), "It is done.")
+        self.assertEqual(clean("**Yes.**\nTwo  tests\tfail.\n"), "Yes. Two tests fail.")
+        self.assertEqual(clean("One. " + "word " * 200, limit=40), "One.")
+        self.assertEqual(clean("  \n"), "")
+
+    def test_a_busy_session_answers_on_the_side_and_never_gets_the_words(self):
+        hub = self.make()
+        listener = hub.listen("a")
+        self.go.clear()
+        hub.follow_up("By the way, where is the socket?", "a", delay=0)
+        self.assertTrue(wait_for(lambda: self.asked))
+        self.assertEqual(self.asked, [("a", "/w/a", "where is the socket?")])
+        self.assertEqual(self.talks()[-1], ("aside", "a", "By the way, where is the socket?"))
+        self.assertIn("cancel", self.overlay.of("keys")[-1]["live"])  # it can be taken back while the copy thinks
+        self.go.set()
+        self.assertTrue(wait_for(lambda: self.engine.spoken))
+        self.assertEqual(self.spoken(), ["It is in the hub folder."])
+        self.assertEqual(self.engine.spoken[0][1], next(s["voice"] for s in hub.snapshot()["sessions"] if s["id"] == "a"))
+        self.assertEqual(self.talks()[-1][0], None)  # the sign is gone once the answer is there
+        self.assertEqual(hub.sounds.played, ["sent"])
+        self.assertFalse(hub.followups.get("a"))
+        self.assertFalse(listener.wake.is_set())
+        self.assertEqual(self.session("a")["state"], "working")
+        self.assertEqual(hub.history[-1]["text"], "It is in the hub folder.")  # the repeat key has it
+
+    def test_an_idle_session_gets_the_words_as_usual(self):
+        hub = self.make()
+        listener = hub.listen("b")
+        hub.follow_up("By the way, run the tests too", "b", delay=0)
+        self.assertTrue(listener.wake.wait(3))
+        self.assertEqual(hub.collect(listener), "By the way, run the tests too")
+        self.assertEqual(self.asked, [])
+
+    def test_always_asks_on_the_side_and_off_never_does(self):
+        hub = self.make(aside="always")
+        hub.follow_up("By the way, what is left?", "b", delay=0)
+        self.assertTrue(wait_for(lambda: self.asked))
+        self.assertFalse(hub.followups.get("b"))
+        hub = self.make(aside="off")
+        hub.follow_up("By the way, what is left?", "a", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("a")))
+        self.assertEqual(self.asked, [])
+
+    def test_other_words_for_a_busy_session_still_wait(self):
+        hub = self.make()
+        hub.follow_up("and add a test", "a", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("a")))
+        self.assertEqual(self.asked, [])
+
+    def test_the_answer_does_not_replace_the_sessions_own_waiting_line(self):
+        hub = self.make(duration=0.3)
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B talks for a while.")))
+        time.sleep(0.05)
+        hub.on_event(ev("Notification", sid="a", cwd="/w/a", notification_type="permission_prompt"))  # A's own line waits
+        hub.follow_up("By the way, where is the socket?", "a", delay=0)
+        self.assertTrue(wait_for(lambda: len(self.engine.spoken) >= 3))
+        self.assertEqual(sorted(self.spoken()), sorted(["B talks for a while.", "I need your input", "It is in the hub folder."]))
+
+    def test_with_no_answer_the_words_go_to_the_session(self):
+        hub = self.make(answer="", why="no answer in 60s")
+        hub.follow_up("By the way, where is the socket?", "a", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("a")))
+        self.assertEqual(hub.followups["a"], ["By the way, where is the socket?"])
+        self.assertEqual(self.talks()[-1][0], "queued")
+        self.assertEqual(self.spoken(), [])
+        self.assertTrue(wait_for(lambda: hub.sounds.played == ["sent", "queued"]))
+
+    def test_the_cancel_key_drops_the_question_and_leaves_the_session_working(self):
+        hub = self.make()
+        self.go.clear()
+        hub.follow_up("By the way, where is the socket?", "a", delay=0)
+        self.assertTrue(wait_for(lambda: self.asked))
+        hub.cancel()
+        self.assertEqual(self.talks()[-1], ("failed", "a", "Cancelled"))
+        self.assertEqual(hub._stopping, {})  # the key did not go on to stop A's turn
+        self.go.set()
+        self.assertTrue(wait_for(lambda: not hub._asides))
+        self.assertEqual(self.spoken(), [])
+        self.assertFalse(hub.followups.get("a"))
+        self.assertEqual(self.session("a")["state"], "working")
+
+    def test_a_session_that_ends_takes_its_side_question_with_it(self):
+        hub = self.make()
+        self.go.clear()
+        hub.follow_up("By the way, where is the socket?", "a", delay=0)
+        self.assertTrue(wait_for(lambda: self.asked))
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a"))
+        self.go.set()
+        self.assertTrue(wait_for(lambda: not hub._asides))
+        self.assertEqual(self.spoken(), [])
+
+    def test_the_copy_is_a_real_process_that_leaves_the_session_alone(self):
+        tmp = tempfile.mkdtemp(prefix="cs-aside-")
+        program, seen = os.path.join(tmp, "claude"), os.path.join(tmp, "seen.json")
+        with open(program, "w") as f:
+            f.write("#!/usr/bin/env python3\nimport json, os, sys\n"
+                    f"json.dump({{'args': sys.argv[1:], 'cwd': os.getcwd(), 'inside': os.environ.get('CLAUDECODE'),\n"
+                    f"           'kept': os.environ.get('CLAUDE_CONFIG_DIR')}}, open({seen!r}, 'w'))\n"
+                    "print('<speak title=\"Side\">It listens on a socket.</speak>')\n")
+        os.chmod(program, 0o755)
+        hub = self.make(aside_claude=program, aside_model="haiku")
+        del hub.aside_run  # the real one
+        hub.on_event(ev("UserPromptSubmit", sid="c0ffee-12", cwd=tmp, prompt="build it"))
+        with unittest.mock.patch.dict(os.environ, {"CLAUDECODE": "1", "CLAUDE_CODE_SESSION_ID": "x", "CLAUDE_CONFIG_DIR": "/cfg"}):
+            hub.follow_up("By the way, how does it listen?", "c0ffee-12", delay=0)
+            self.assertTrue(wait_for(lambda: self.engine.spoken))
+        self.assertEqual(self.spoken(), ["It listens on a socket."])
+        with open(seen) as f:
+            seen = json.load(f)
+        args = seen["args"]
+        self.assertEqual(args[:5], ["-p", "--resume", "c0ffee-12", "--fork-session", "--no-session-persistence"])
+        self.assertEqual(json.loads(args[args.index("--settings") + 1]), {"disableAllHooks": True})
+        self.assertEqual((args[args.index("--tools") + 1], args[args.index("--model") + 1]), ("", "haiku"))
+        self.assertTrue(args[-1].endswith("The question: how does it listen?"))
+        self.assertEqual((seen["cwd"], seen["inside"], seen["kept"]), (os.path.realpath(tmp), None, "/cfg"))
+
+    def test_a_copy_that_fails_or_takes_too_long_gives_the_words_to_the_session(self):
+        tmp = tempfile.mkdtemp(prefix="cs-aside-")
+        program = os.path.join(tmp, "claude")
+        with open(program, "w") as f:
+            f.write("#!/bin/sh\necho 'No conversation found' >&2\nexit 1\n")
+        os.chmod(program, 0o755)
+        hub = self.make(aside_claude=program)
+        del hub.aside_run
+        hub.follow_up("By the way, how does it listen?", "a", delay=0)  # its folder /w/a does not exist either
+        self.assertTrue(wait_for(lambda: hub.followups.get("a")))
+        hub.on_event(ev("UserPromptSubmit", sid="slow", cwd=tmp, prompt="build it"))
+        with open(program, "w") as f:
+            f.write("#!/bin/sh\nsleep 30\n")
+        hub.cfg.aside_timeout = 0.2
+        started = time.monotonic()
+        hub.follow_up("By the way, are you there?", "slow", delay=0)
+        self.assertTrue(wait_for(lambda: hub.followups.get("slow")))
+        self.assertLess(time.monotonic() - started, 3)
 
 
 class SpokenLanguages(unittest.TestCase):
