@@ -141,6 +141,12 @@ class Request:
     def question(self) -> dict | None:
         """The question the number keys answer next, if this is a question at all."""
         return self.questions[len(self.answers)] if len(self.answers) < len(self.questions) else None
+
+    @property
+    def place(self) -> str:
+        """Where that question stands when the dialog has several ("1 of 2"), else nothing. The
+        terminal goes on showing the first one until the last is answered, so we say it."""
+        return f"{len(self.answers) + 1} of {len(self.questions)}" if len(self.questions) > 1 and self.question else ""
     done: threading.Event = field(default_factory=threading.Event)
 
 
@@ -376,7 +382,7 @@ class Hub:
                     if waiting:  # we know what it is asking for, so say that
                         waiting[0].confirmed = True
                         if waiting[0].question:
-                            self._say(s, _read_out(waiting[0].question), "needs_you", "question")
+                            self._say(s, _read_out(waiting[0].question, waiting[0].place), "needs_you", "question")
                         else:
                             self._say(s, f"Permission needed: {waiting[0].summary}", "needs_you", "permission")
                     else:
@@ -796,7 +802,7 @@ class Hub:
             if s:
                 s.note = f"asks: {req.question['question']}"
                 said = f"{answer}. " if echo and self.cfg.talk_feedback == "voice" else ""
-                self._say(s, f"{said}Next. {_read_out(req.question)}", "needs_you", "question")
+                self._say(s, f"{said}Next. {_read_out(req.question, req.place)}", "needs_you", "question")
             self._show_request()
         else:
             self._resolve(req, "answer", why)
@@ -844,18 +850,18 @@ class Hub:
         keys = self.cfg.overlay.get("hotkeys", {})
         more = len(self.requests) - 1
         if req.question:
-            options, total, several = req.question["options"], len(req.questions), bool(req.question.get("multiSelect"))
+            options, several = req.question["options"], bool(req.question.get("multiSelect"))
             self.overlay.send({
                 "type": "request", "name": s.name if s else "", "color": s.color if s else "",
                 "text": f"asks: {req.question['question']}",
                 "question": req.question["question"],  # written on a line of its own under the name
+                "place": req.place,  # "1 of 2", beside the name
                 # Drawn one to a line: behind its number, or, with several to tick, behind a box.
                 "options": [o["label"] for o in options],
                 **({"ticked": [i in req.ticked for i in range(len(options))]} if several else {}),
                 "detail": "\n".join(f"{i}  {o['label']}" for i, o in enumerate(options, 1)),
                 "keys": f"{keys.get('option1', '')} to {keys.get(f'option{len(options)}', '')} "
                         + (f"tick  \u00b7  {keys.get('allow', '')} confirms" if several else "answers")
-                        + (f"  \u00b7  question {len(req.answers) + 1} of {total}" if total > 1 else "")
                         + (f"  \u00b7  {more} more waiting" if more else ""),
             })
             return
@@ -1822,9 +1828,9 @@ def _answerable(tool_input: dict) -> list:
     return questions
 
 
-def _read_out(question: dict) -> str:
+def _read_out(question: dict, place: str = "") -> str:
     options = " ".join(f"{NUMBER_WORDS[i]}: {o['label']}." for i, o in enumerate(question["options"]))
-    return f"Question: {question['question']} {options}" + (" Tick any, then confirm." if question.get("multiSelect") else "")
+    return f"Question{' ' + place if place else ''}: {question['question']} {options}" + (" Tick any, then confirm." if question.get("multiSelect") else "")
 
 
 def _ago(seconds: float) -> str:

@@ -580,13 +580,15 @@ class Questions(HubCase):
                                                   question("Which colour?", "Red", "Blue")))
         shown = self.overlay.of("request")[-1]
         self.assertEqual((shown["text"], shown["options"]), ("asks: Which drink?", ["Tea", "Coffee", "Water"]))
-        self.assertIn("question 1 of 2", shown["keys"])
+        self.assertEqual(shown["place"], "1 of 2")
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["option1", "option2", "option3"])
         self.assertFalse(hub.decide("allow"))  # a question is not a yes/no
         self.assertFalse(hub.choose(4))  # there is no fourth option
         self.assertTrue(hub.choose(2))
         self.assertFalse(req.done.is_set())
         self.assertEqual(self.overlay.of("request")[-1]["text"], "asks: Which colour?")
+        self.assertEqual(self.overlay.of("request")[-1]["place"], "2 of 2")
+        self.assertEqual(self.spoken()[-1][:39], "Next. Question 2 of 2: Which colour? On")
         self.assertTrue(hub.choose(1))
         self.assertEqual((req.decision, req.answers), ("answer", {"Which drink?": "Coffee", "Which colour?": "Red"}))
         self.assertEqual(self.session()["state"], "working")
