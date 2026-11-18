@@ -732,6 +732,14 @@ Bigger pieces:
       Suggested first step: usage from the headless `/usage` call (overlay and voice,
       no change to anyone's settings); a status line forwarder and the transcript for
       context per session after that.
+- [ ] Room for a session's figures (the author, 2026-11-18: "so many metrics for each
+      session ... revamp a bit the design of the layout ... to have space for them").
+      Built the same night, the first of three ideas, on "let's try your pick": a row
+      keeps only its running time, and a line under the rows names the figures of the
+      session the mouse is on ("context 21%   last reply 64k   tasks 3/5   waiting 2";
+      `row_metrics`, `detail_metrics`). **For them to judge on screen.** If not liked,
+      the other two: a small column of two figures at the right of every row, or a
+      third line in the row under the mouse (which stretches the bar).
 - [x] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for
       each request to ... show me the metrics of how much token you've used? Is it
       important?"). Possible: Claude Code's record of a session has the token counts of

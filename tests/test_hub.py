@@ -268,8 +268,31 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("Stop", transcript_path=os.path.join(self.tmp, "gone.jsonl"), last_assistant_message=tag("Done.")))
         self.assertEqual(row()["context"], 62.0, "a record that cannot be read leaves the last figure")
 
+    def test_figures_go_under_the_rows_with_their_names_and_only_the_time_stays_in_the_row(self):
+        hub = self.make()
+        record = os.path.join(self.tmp, "record.jsonl")
+        with open(record, "w") as f:
+            json.dump({"type": "assistant", "isSidechain": False, "message": {"id": "a", "usage": {
+                "input_tokens": 2, "cache_creation_input_tokens": 149998, "cache_read_input_tokens": 470000, "output_tokens": 4000}}}, f)
+        row = lambda: self.overlay.of("state")[-1]["sessions"][0]
+        hub.on_event(ev("UserPromptSubmit"))
+        hub.on_event(ev("TaskCreated", task_id="1"))
+        hub.on_event(ev("PostToolUse", transcript_path=record))
+        self.assertEqual(row()["meta"], "<1m")
+        self.assertEqual(row()["details"], [["context", "62%"], ["tasks", "0/1"]])
+        hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
+        self.assertEqual(row()["meta"], "")
+        self.assertEqual(row()["details"], [["context", "62%"], ["last reply", "154k"], ["tasks", "0/1"]])
+        hub.cfg.row_metrics, hub.cfg.detail_metrics = ["tasks", "tokens"], ["time", "context"]  # a choice of one's own
+        hub.publish()
+        self.assertEqual((row()["meta"], row()["details"]), ("0/1   154k", [["context", "62%"]]))
+        hub.cfg.detail_metrics = []
+        hub.publish()
+        self.assertEqual(row()["details"], [])
+
     def test_a_row_says_what_the_turn_used_once_it_has_ended(self):
         hub = self.make()
+        hub.cfg.row_metrics = ["time", "tokens"]  # in the row, where it was at first
         record = os.path.join(self.tmp, "record.jsonl")
         reply = lambda id, out, new, again: json.dumps({"type": "assistant", "isSidechain": False, "message": {"id": id, "usage": {
             "input_tokens": 2, "cache_creation_input_tokens": new - 2, "cache_read_input_tokens": again, "output_tokens": out}}})
@@ -322,8 +345,8 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("TaskCreated", task_id="1"))
         hub.on_event(ev("PreToolUse", tool_name="Bash", tool_input={"description": "Run tests"}))
         row = self.overlay.of("state")[-1]["sessions"][0]
-        self.assertEqual((row["name"], row["state"], row["text"], row["meta"]),
-                         ("alpha", "working", "Run tests", "0/1   <1m"))
+        self.assertEqual((row["name"], row["state"], row["text"], row["meta"], row["details"]),
+                         ("alpha", "working", "Run tests", "<1m", [["tasks", "0/1"]]))
         hub.on_event(ev("Stop", last_assistant_message=tag("All done.")))
         self.spoken()
         row = self.overlay.of("state")[-1]["sessions"][0]

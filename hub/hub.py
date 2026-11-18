@@ -559,6 +559,8 @@ class Hub(Permissions, Talk):
         current = self.speech.current
         speaking = current.session if current else None
         context = context_mode(self.cfg)
+        # A row's right end: what the settings name, and what older settings still ask for there.
+        in_row = list(self.cfg.row_metrics) + ["waiting"] * bool(self.cfg.waiting_words) + ["context"] * (context in ("text", "both"))
         with self.lock:
             rows = [{
                 "name": s.name,
@@ -566,19 +568,15 @@ class Hub(Permissions, Talk):
                 "state": s.state,
                 "title": s.title,
                 "text": self._stop_words(s.id) if s.id in self._stopping else s.activity if s.state == "working" else s.note,
-                "meta": base.gap(self.cfg).join(filter(None, [
-                    f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
-                    _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
-                    self._waiting_note(s.id),
-                    f"{usage.tokens_text(s.turn_tokens)} {self.cfg.turn_tokens_label}".strip() if s.turn_tokens and s.state != "working" else "",
-                    f"context {s.context:.0f}%" if context in ("text", "both") and s.context is not None else "",
-                ])),
+                "meta": base.gap(self.cfg).join(figures[key][0] for key in in_row if figures.get(key)),
+                # The line under the rows about this session: [what it is, the figure] each.
+                "details": [list(figures[key][1:]) for key in self.cfg.detail_metrics if figures.get(key)],
                 "context": s.context if context in ("arc", "both") else None,  # percent of its window: the arc around its light
                 "waiting": self._waiting_count(s.id),  # words of yours it has not been handed yet
                 "speaking": s.id == speaking,
                 "target": len(self.sessions.by_id) > 1 and self._target() is s,  # in focus: follow-ups go here
                 "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
-            } for s in self.sessions.by_id.values()]
+            } for s in self.sessions.by_id.values() for figures in [self._figures(s)]]
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)]
                            + (["allow"] if asking.get("multiSelect") else []) if asking
@@ -602,12 +600,28 @@ class Hub(Permissions, Talk):
         if new_rows:
             self.overlay.send({"type": "state", "sessions": rows, "history": history})
 
+    def _figures(self, s) -> dict:
+        """What can be said in figures about a session right now: for each (see
+        Config.row_metrics) how the right end of its row writes it, what it is called in the
+        line under the rows, and the figure there. Call with the lock held."""
+        working, waiting, found = s.state == "working", self._waiting_count(s.id), {}
+        if s.tasks:
+            done = f"{sum(s.tasks.values())}/{len(s.tasks)}"
+            found["tasks"] = (done, "tasks", done)
+        if working and s.turn_started:
+            ran = _elapsed(time.monotonic() - s.turn_started)
+            found["time"] = (ran, "this turn", ran)
+        if waiting:
+            found["waiting"] = ("1 message waiting" if waiting == 1 else f"{waiting} messages waiting", "waiting", str(waiting))
+        if s.context is not None and context_mode(self.cfg) != "off":
+            found["context"] = (f"context {s.context:.0f}%", "context", f"{s.context:.0f}%")
+        if s.turn_tokens and not working:
+            used = usage.tokens_text(s.turn_tokens)
+            found["tokens"] = (f"{used} {self.cfg.turn_tokens_label}".strip(), "last reply", used)
+        return found
+
     def _waiting_count(self, sid: str) -> int:
         return len(self.followups.get(sid, ())) if sid in self._waiting else 0
-
-    def _waiting_note(self, sid: str) -> str:
-        n = self._waiting_count(sid) if self.cfg.waiting_words else 0
-        return "" if not n else "1 message waiting" if n == 1 else f"{n} messages waiting"
 
     def _flash(self, s, text: str, state: str | None = None) -> None:
         """Expand the overlay's dots into one line about this session for a few seconds."""

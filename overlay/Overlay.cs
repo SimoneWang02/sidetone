@@ -914,6 +914,7 @@ namespace ClaudeSpeaks
         Brush talkInk = Brushes.White;  // white for your words, dim for a note, the microphone's color for what to do
         public double FlashUntil, Hot, Lit;
         string rowText = "", metaText = "";
+        public object[] Details = new object[0];  // its figures for the line under the rows: [what it is, the figure] each
 
         public Row(bool right, Wave wave)
         {
@@ -976,6 +977,7 @@ namespace ClaudeSpeaks
                 line2.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0.15, 1, TimeSpan.FromMilliseconds(260)));
             rowText = text;
             metaText = Overlay.Str(s, "meta");
+            Details = s.ContainsKey("details") && s["details"] is object[] ? (object[])s["details"] : new object[0];
             Refresh();
             Orb.InvalidateVisual();
         }
@@ -1082,6 +1084,9 @@ namespace ClaudeSpeaks
         readonly StackPanel rowsPanel = new StackPanel();
         readonly StackPanel requestBox = new StackPanel(), bannerBox = new StackPanel(), historyBox = new StackPanel();
         readonly StackPanel historyLines = new StackPanel();
+        // The figures of one session, each with its name in front, under the rows: the session
+        // the mouse is on, else the one in focus. The hub says which figures (`details` of a row).
+        readonly TextBlock metricsLine = new TextBlock { FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 1, 0, 2) };
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
         readonly FontFamily requestMono = new FontFamily("Consolas");
         readonly TextBlock bannerTitle = new TextBlock(), bannerHint = new TextBlock();
@@ -1185,7 +1190,7 @@ namespace ClaudeSpeaks
             bannerHint.Foreground = Ui.Faint;
             bannerHint.Margin = new Thickness(0, 2, 0, 0);
             Section(bannerBox, bannerTitle, bannerHint);
-            Section(historyBox, historyLines);
+            Section(historyBox, metricsLine, historyLines);
             panel.Body = sections;
             Stack();
 
@@ -1473,9 +1478,13 @@ namespace ClaudeSpeaks
             bannerBox.Visibility = hasBanner ? Visibility.Visible : Visibility.Collapsed;
             emptyLine.Visibility = sessions.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             bool showHistory = isList && peek && history.Length > 0;
-            historyBox.Visibility = showHistory ? Visibility.Visible : Visibility.Collapsed;
-            if (showHistory) BuildHistory();
-            if (historyLines.Children.Count == 0) historyBox.Visibility = Visibility.Collapsed;  // that session has said nothing yet
+            if (showHistory) BuildHistory(); else historyLines.Children.Clear();
+            // The figures show whenever the details were asked for (not when the panel is only
+            // out for a request or to be moved); the history, as before, in list mode at rest.
+            bool asked = !dragging && !moving && (isList || hover || keysOpen || Ui.Now < wheelUntil);
+            bool showMetrics = asked && BuildMetrics();
+            metricsLine.Visibility = showMetrics ? Visibility.Visible : Visibility.Collapsed;
+            historyBox.Visibility = showMetrics || historyLines.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             bool talking = talkState.Length > 0;
             foreach (Row row in order)
                 if (talking && row.Name == talkName) row.SetTalk(TalkKind(), TalkWords(), TalkInk(), talkState == "listening" ? mic : null);
@@ -1699,6 +1708,28 @@ namespace ClaudeSpeaks
         // its history, not the same lines as before). The session stays chosen while the mouse
         // moves on to the lines themselves. Before any row was touched it is the one in focus.
         // With `history: all` it is every session's lines, as it used to be.
+        // Writes the line of figures for the session the mouse is on (it stays chosen when the
+        // mouse moves off, like the history), else the one in focus, else the only one. False
+        // when there is nothing to say.
+        bool BuildMetrics()
+        {
+            Row about = hot;
+            if (about == null) foreach (Row row in order) if (row.Name == historyOf) about = row;
+            if (about == null) foreach (Row row in order) if (row.Focus) about = row;
+            if (about == null && order.Count == 1) about = order[0];
+            metricsLine.Inlines.Clear();
+            if (about == null) return false;
+            foreach (object o in about.Details)
+            {
+                var pair = o as object[];
+                if (pair == null || pair.Length < 2) continue;
+                if (metricsLine.Inlines.Count > 0) metricsLine.Inlines.Add(new Run("     "));
+                metricsLine.Inlines.Add(new Run(Convert.ToString(pair[0], CultureInfo.InvariantCulture) + " ") { Foreground = Ui.Faint });
+                metricsLine.Inlines.Add(new Run(Convert.ToString(pair[1], CultureInfo.InvariantCulture)) { Foreground = Brushes.White });
+            }
+            return metricsLine.Inlines.Count > 0;
+        }
+
         void BuildHistory()
         {
             historyLines.Children.Clear();
@@ -1768,7 +1799,7 @@ namespace ClaudeSpeaks
             {
                 hot = under;
                 Run(true);
-                if (hot != null && hot.Name != historyOf) { historyOf = hot.Name; if (peek && wantPeek) Render(); }
+                if (hot != null && hot.Name != historyOf) { historyOf = hot.Name; if (IsOpen()) Render(); }  // its figures, and in list mode its history
             }
             if (wantHover == hover && wantPeek == peek) return;
             hover = wantHover;

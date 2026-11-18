@@ -278,9 +278,12 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
     the name of a session that was asked to end its turn; `context`: session name -> how full
     its context is, in percent."""
     rows = [
-        dict(name="claude-speaks", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta=""),
-        dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="3/5   6m"),
-        dict(name="web-app", title="Dark mode for settings", state="needs_you", text="asks: Which drink would you like?", meta=""),
+        dict(name="claude-speaks", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta="",
+             details=[["context", "7%"], ["last reply", "64k"]]),
+        dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="6m",
+             details=[["context", "56%"], ["tasks", "3/5"]]),
+        dict(name="web-app", title="Dark mode for settings", state="needs_you", text="asks: Which drink would you like?", meta="",
+             details=[["context", "83%"], ["last reply", "1.2k"], ["tasks", "2/9"], ["waiting", "3"]]),
         dict(name="data-pipeline", title="Nightly export", state="failed", text="error: rate limit", meta=""),
         dict(name="notes", title="", state="idle", text="", meta=""),
     ]
@@ -446,9 +449,19 @@ shot("context-open", 0.6)
 send(type="peek", on=False)
 send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY)
 shot("context-waiting")
+# A session's figures in a line of their own under the rows: of the session in focus, and
+# of the one the mouse is on (which has four of them).
+send(type="peek", on=True)
+shot("metrics", 0.6)
+send(type="peek", on=True, over="web-app")
+shot("metrics-other", 0.6)
+send(type="peek", on=False)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="island", **HERE)
 send(type="state", sessions=sessions(context=CONTEXT), history=HISTORY)
 shot("context-island", 1.2)
+send(type="peek", on=True, over="web-app")
+shot("metrics-island", 1.0)
+send(type="peek", on=False)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="bar", **HERE)
 send(type="state", sessions=sessions(), history=HISTORY)
 time.sleep(0.3)

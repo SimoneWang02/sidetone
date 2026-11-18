@@ -729,7 +729,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -880,6 +880,24 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   overlay writes it at the right end of that line (`turn_tokens_history`). It stood after
   the line's time at first ("3m · 64k"); the author: "I don't like where ... right after
   the time. Maybe put it at the end of the message". Seen in a picture, not by the author.
+- A line of figures under the rows (2026-11-18, `Hub._figures`, `BuildMetrics`,
+  `row_metrics`, `detail_metrics`). With tasks, running time, context, tokens and waiting
+  messages all at the right end of a row, the author asked to "revamp a bit the design of
+  the layout ... to have space for them", and of three ideas (a line under the rows, a
+  small column at the right of each row, a third line in the row under the mouse) said
+  "let's try your pick. If I don't like it, we can just go over to get others". So a row's
+  right end now says only how long the turn has run (`row_metrics`, `["time"]`), and under
+  the rows, in the box the history is in and above it, one line gives the figures of one
+  session with their names: "context 21%   last reply 64k   tasks 3/5   waiting 2"
+  (`detail_metrics`; `[]` = no line). It is about the session the mouse is on, which stays
+  chosen when the mouse moves off, else the one in focus, else the only one, and shows
+  whenever the details were asked for (mouse, keys, kept out), not when the panel is only
+  out for a request or being moved. The hub sends each row `details`, a list of
+  [name, figure]; the overlay only writes them. Both settings are lists of `tasks`, `time`,
+  `context`, `tokens`, `waiting`; the older `waiting_words` and `context_shown: text` still
+  put their words in the row. For a bar at the bottom of the screen the line is above the
+  rows, like everything else there. Seen in pictures (`metrics*.png`); **the author has
+  not seen it yet**, and the other two ideas are what to offer if they do not like it.
 - No raised dots (2026-11-18; the author: "don't use the dots, the central dots. I don't
   like them"). The parts of a line the hub writes (tasks and time in a row, the keys under
   a request or a question, the confirming tap) are set apart by a gap, three spaces or
