@@ -50,6 +50,10 @@ from server import Handler, Server, serve  # noqa: E402,F401
 from talk import Talk  # noqa: E402
 
 
+# What a figure is called under the rows while it is not known (see Hub._figures).
+DETAIL_NAMES = {"context": "Context", "tokens": "Last reply", "time": "Last turn", "tasks": "Tasks", "waiting": "Waiting"}
+
+
 class Hub(Permissions, Talk):
     def __init__(self, cfg: Config, engine):
         self.cfg = cfg
@@ -101,7 +105,15 @@ class Hub(Permissions, Talk):
     def on_event(self, ev: dict) -> None:
         """Update a session from any hook payload other than MessageDisplay."""
         if ev.get("session_id"):
+            with self.lock:
+                s = self.sessions.by_id.get(ev["session_id"])
+                began = s.turn_started if s else None
             self._apply(ev)
+            if began and ev.get("hook_event_name") in ("Stop", "StopFailure"):
+                with self.lock:
+                    s = self.sessions.by_id.get(ev["session_id"])
+                    if s:
+                        s.turn_took = time.monotonic() - began  # how long the turn that just ended ran
             self._count_context(ev)
             self._count_turn(ev)
             self.publish()
@@ -127,8 +139,9 @@ class Hub(Permissions, Talk):
         how long the session's record is; the end of the turn adds up what came after. The
         last reply can reach the record a moment after its Stop, so it is counted once more."""
         how, event, path = self.cfg.turn_tokens, ev.get("hook_event_name"), ev.get("transcript_path")
-        if how in ("off", False, None) or not path or event not in ("UserPromptSubmit", "Stop", "StopFailure"):
+        if how in ("off", False, None) or not path or event not in ("UserPromptSubmit", "PostToolUse", "Stop", "StopFailure"):
             return
+        ended = event != "PostToolUse"  # after a step it is what the turn has used so far
         sid = ev["session_id"]
         if event == "UserPromptSubmit":
             try:
@@ -150,15 +163,15 @@ class Hub(Permissions, Talk):
         if read:
             with self.lock:
                 s = self.sessions.by_id.get(sid)
-                if s and s.state != "working":
+                if s and (s.state == "working") != ended:  # not a late count of a turn after the next one began
                     s.turn_tokens = read.tokens(how if isinstance(how, str) else "new")
                     # The line it ended on keeps the figure in the history. A hub that started
                     # in the middle of the turn does not know when it began: the last half minute.
                     said = [e for e in self.history if e.get("session") == sid and e.get("kind") != "aside"
-                            and e["time"] >= (s.turn_since or time.time() - 30)]
+                            and e["time"] >= (s.turn_since or time.time() - 30)] if ended else []
                     if said:
                         said[-1]["tokens"] = s.turn_tokens
-        if again:
+        if again and ended:
             timer = threading.Timer(base.RECOUNT, lambda: (self._count_turn(ev, again=False), self.publish()))
             timer.daemon = True
             timer.start()
@@ -568,9 +581,12 @@ class Hub(Permissions, Talk):
                 "state": s.state,
                 "title": s.title,
                 "text": self._stop_words(s.id) if s.id in self._stopping else s.activity if s.state == "working" else s.note,
-                "meta": base.gap(self.cfg).join(figures[key][0] for key in in_row if figures.get(key)),
-                # The line under the rows about this session: [what it is, the figure] each.
-                "details": [list(figures[key][1:]) for key in self.cfg.detail_metrics if figures.get(key)],
+                "meta": base.gap(self.cfg).join(figures[key][0] for key in in_row if figures.get(key, ("",))[0]),
+                # Its figures for under the rows, each [what it is, the figure, its share of a
+                # whole or None, "warn" or ""], in the order of the settings. One that is not
+                # known is not left out: its figure is "", so that each keeps its place.
+                "details": [list(figures[key][1:]) if figures.get(key) else [DETAIL_NAMES.get(key, str(key)), "", None, ""]
+                            for key in self.cfg.detail_metrics],
                 "context": s.context if context in ("arc", "both") else None,  # percent of its window: the arc around its light
                 "waiting": self._waiting_count(s.id),  # words of yours it has not been handed yet
                 "speaking": s.id == speaking,
@@ -601,23 +617,30 @@ class Hub(Permissions, Talk):
             self.overlay.send({"type": "state", "sessions": rows, "history": history})
 
     def _figures(self, s) -> dict:
-        """What can be said in figures about a session right now: for each (see
-        Config.row_metrics) how the right end of its row writes it, what it is called in the
-        line under the rows, and the figure there. Call with the lock held."""
+        """What can be said in figures about a session right now. For each (see
+        Config.row_metrics): how the right end of its row writes it ("" = not there), what
+        it is called under the rows, the figure there, how much of a whole it is (0 to 1, for
+        a small bar; None = no whole) and "warn" when that is nearly all of it. Call with the
+        lock held."""
         working, waiting, found = s.state == "working", self._waiting_count(s.id), {}
         if s.tasks:
-            done = f"{sum(s.tasks.values())}/{len(s.tasks)}"
-            found["tasks"] = (done, "tasks", done)
+            done, of = sum(s.tasks.values()), len(s.tasks)
+            found["tasks"] = (f"{done}/{of}", "Tasks", f"{done}/{of}", done / of, "")
         if working and s.turn_started:
             ran = _elapsed(time.monotonic() - s.turn_started)
-            found["time"] = (ran, "this turn", ran)
+            found["time"] = (ran, "This turn", ran, None, "")
+        elif s.turn_took is not None:
+            found["time"] = ("", "Last turn", _elapsed(s.turn_took), None, "")
         if waiting:
-            found["waiting"] = ("1 message waiting" if waiting == 1 else f"{waiting} messages waiting", "waiting", str(waiting))
+            found["waiting"] = ("1 message waiting" if waiting == 1 else f"{waiting} messages waiting", "Waiting", str(waiting), None, "")
         if s.context is not None and context_mode(self.cfg) != "off":
-            found["context"] = (f"context {s.context:.0f}%", "context", f"{s.context:.0f}%")
-        if s.turn_tokens and not working:
+            warn = float(self.cfg.overlay.get("context_warn") or 0)
+            found["context"] = (f"context {s.context:.0f}%", "Context", f"{s.context:.0f}%", s.context / 100,
+                                "warn" if warn and s.context >= warn else "")
+        if s.turn_tokens:
             used = usage.tokens_text(s.turn_tokens)
-            found["tokens"] = (f"{used} {self.cfg.turn_tokens_label}".strip(), "last reply", used)
+            found["tokens"] = ("" if working else f"{used} {self.cfg.turn_tokens_label}".strip(),
+                               "This reply" if working else "Last reply", used, None, "")
         return found
 
     def _waiting_count(self, sid: str) -> int:

@@ -896,8 +896,32 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   [name, figure]; the overlay only writes them. Both settings are lists of `tasks`, `time`,
   `context`, `tokens`, `waiting`; the older `waiting_words` and `context_shown: text` still
   put their words in the row. For a bar at the bottom of the screen the line is above the
-  rows, like everything else there. Seen in pictures (`metrics*.png`); **the author has
-  not seen it yet**, and the other two ideas are what to offer if they do not like it.
+  rows, like everything else there. Seen in pictures (`metrics*.png`); the other two ideas
+  are what to offer if they do not like it.
+- That line became a card of tiles within the hour (`overlay.details_style`: `tiles`,
+  default, or `line`; `Overlay.Tile`). The author, before having judged the line: "to me
+  this is the most important ... the visualization so make sure to spend a lot of time
+  thinking about how to make it as better as possible ... do research". What was read:
+  Apple's guidance for Live Activities (show only what is needed at a glance; key figures
+  in larger, heavier type and small type sparingly; keep each thing in the same place
+  between the small and the large view; set a block apart in an inset rounded shape),
+  work on glanceable displays (position and shape are read before text; a display that
+  keeps its places is learned), a competing notch app's pages (title, agent, a timer, and
+  the plan's usage as "5h 11%"), and this harness's own rules for figures (a handful of
+  numbers is a row of tiles: small name, large figure; a share of a limit is a thin bar
+  whose track is a faint step of its own color and whose color says when it is nearly
+  full; text is not written in a data color). So: an inset card under the rows, headed by
+  the session's name and title when there are several sessions; four tiles in fixed
+  places, Context, Last reply (This reply while it works, counted after every step),
+  Last turn (This turn), Tasks; the figure in 16 px semibold, its name in 10.5 px above;
+  a 4 px bar under Context and Tasks; a figure that is not known is a faint dash in its
+  place; from `context_warn` on the context figure and its bar are orange, as the arc is.
+  A row's `details` are now [name, figure, share or null, "warn" or ""], one for every
+  entry of `detail_metrics` (default `context`, `tokens`, `time`, `tasks`), unknown ones
+  with "" as their figure. `Session.turn_took` is how long the last turn ran. Seen in
+  pictures in both layouts; **the author has not seen it yet**. Ideas from the same look
+  that were not built: the plan's usage as a thin line at the foot of that card, a mark
+  for the kind of agent, the row dropping its time now that the card has it.
 - No raised dots (2026-11-18; the author: "don't use the dots, the central dots. I don't
   like them"). The parts of a line the hub writes (tasks and time in a row, the keys under
   a request or a question, the confirming tap) are set apart by a gap, three spaces or

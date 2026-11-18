@@ -737,7 +737,14 @@ Bigger pieces:
       Built the same night, the first of three ideas, on "let's try your pick": a row
       keeps only its running time, and a line under the rows names the figures of the
       session the mouse is on ("context 21%   last reply 64k   tasks 3/5   waiting 2";
-      `row_metrics`, `detail_metrics`). **For them to judge on screen.** If not liked,
+      `row_metrics`, `detail_metrics`). Before judging it they asked for research and
+      more thought ("the most important ... the visualization"), and the line became a
+      card of four tiles, each a small name, a large figure and, for context and tasks,
+      a thin bar (`overlay.details_style`: `tiles`, or `line`). What was read and why
+      it looks as it does is in `CLAUDE.md`. **For them to judge on screen.** Ideas
+      from that look, not built: the plan's usage ("5h 41%, week 40%") as a thin line
+      at the foot of the card, which would settle "Usage in the overlay" below; a mark
+      for the kind of agent; the row dropping its time. If the card is not liked,
       the other two: a small column of two figures at the right of every row, or a
       third line in the row under the mouse (which stretches the bar).
 - [x] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for

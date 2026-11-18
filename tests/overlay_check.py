@@ -279,11 +279,11 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
     its context is, in percent."""
     rows = [
         dict(name="claude-speaks", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta="",
-             details=[["context", "7%"], ["last reply", "64k"]]),
+             details=[["Context", "7%", 0.07, ""], ["Last reply", "64k", None, ""], ["Last turn", "12m", None, ""], ["Tasks", "", None, ""]]),
         dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="6m",
-             details=[["context", "56%"], ["tasks", "3/5"]]),
+             details=[["Context", "56%", 0.56, ""], ["This reply", "18k", None, ""], ["This turn", "6m", None, ""], ["Tasks", "3/5", 0.6, ""]]),
         dict(name="web-app", title="Dark mode for settings", state="needs_you", text="asks: Which drink would you like?", meta="",
-             details=[["context", "83%"], ["last reply", "1.2k"], ["tasks", "2/9"], ["waiting", "3"]]),
+             details=[["Context", "83%", 0.83, "warn"], ["Last reply", "1.2k", None, ""], ["Last turn", "<1m", None, ""], ["Tasks", "2/9", 0.22, ""]]),
         dict(name="data-pipeline", title="Nightly export", state="failed", text="error: rate limit", meta=""),
         dict(name="notes", title="", state="idle", text="", meta=""),
     ]
@@ -455,6 +455,12 @@ send(type="peek", on=True)
 shot("metrics", 0.6)
 send(type="peek", on=True, over="web-app")
 shot("metrics-other", 0.6)
+send(type="peek", on=True, over="claude-speaks")
+shot("metrics-unknown", 0.6)
+send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, details_style="line", **HERE)
+send(type="peek", on=True, over="web-app")
+shot("metrics-line", 0.6)
+send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, details_style="tiles", **HERE)
 send(type="peek", on=False)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="island", **HERE)
 send(type="state", sessions=sessions(context=CONTEXT), history=HISTORY)

@@ -226,13 +226,14 @@ class Config:
     # Where a session's figures go (the author, 2026-11-18, with tasks, time, context, tokens
     # and waiting messages all wanting the right end of a row: "revamp a bit the design ...
     # to have space for them", and chose a line of their own under the rows). `row_metrics`:
-    # what the right end of each row says, as bare figures. `detail_metrics`: what the line
-    # under the rows says about the session the mouse is on (else the one in focus), each
-    # with its name in front; [] = no such line. Both are lists of: tasks (done/all of its
-    # task list), time (how long the turn has run), context, tokens (what its last turn
-    # used), waiting (messages of yours held for it).
+    # what the right end of each row says, as bare figures. `detail_metrics`: what is said
+    # under the rows about the session the mouse is on (else the one in focus), each with
+    # its name; [] = nothing. How that looks is the overlay's `details_style`. Both are
+    # lists of: tasks (done/all of its task list), time (how long the turn has run, or the
+    # last one ran), context, tokens (what the turn has used, or the last one did), waiting
+    # (messages of yours held for it).
     row_metrics: list = field(default_factory=lambda: ["time"])
-    detail_metrics: list = field(default_factory=lambda: ["context", "tokens", "tasks", "waiting"])
+    detail_metrics: list = field(default_factory=lambda: ["context", "tokens", "time", "tasks"])
     # What stands between the parts of a line the hub writes for the overlay (tasks and time
     # in a row, the keys under a request): "" = only a gap (the author, 2026-11-18: "don't
     # use the dots, the central dots. I don't like them") | a sign of your own, "\u00b7" for

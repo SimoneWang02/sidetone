@@ -81,6 +81,11 @@ DEFAULTS = {
     # The arc around a light that says how full that session's context is (whether it is drawn
     # at all is `context_shown`, beside `overlay` in the settings). From `context_warn` percent
     # on it takes the second color; 0 = never. Colors: "#RRGGBB".
+    # How a session's figures are set out under the rows (which figures: `detail_metrics`,
+    # beside `overlay` in the settings): tiles = a card with a tile for each, its name small,
+    # the figure large, and a thin bar where it is a share of a whole | line = one line of
+    # text, "Context 21%   Last reply 64k"
+    "details_style": "tiles",
     "context_warn": 80,
     "context_color": "#FFFFFF",
     "context_warn_color": "#FF8A3D",

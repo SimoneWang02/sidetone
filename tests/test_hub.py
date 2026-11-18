@@ -276,16 +276,22 @@ class OverlayFeed(HubCase):
                 "input_tokens": 2, "cache_creation_input_tokens": 149998, "cache_read_input_tokens": 470000, "output_tokens": 4000}}}, f)
         row = lambda: self.overlay.of("state")[-1]["sessions"][0]
         hub.on_event(ev("UserPromptSubmit"))
+        self.assertEqual(row()["details"], [["Context", "", None, ""], ["Last reply", "", None, ""], ["This turn", "<1m", None, ""],
+                                            ["Tasks", "", None, ""]], "what is not known keeps its place")
         hub.on_event(ev("TaskCreated", task_id="1"))
+        hub.on_event(ev("TaskCreated", task_id="2"))
+        hub.on_event(ev("TaskCompleted", task_id="1"))
         hub.on_event(ev("PostToolUse", transcript_path=record))
         self.assertEqual(row()["meta"], "<1m")
-        self.assertEqual(row()["details"], [["context", "62%"], ["tasks", "0/1"]])
+        self.assertEqual(row()["details"], [["Context", "62%", 0.62, ""], ["This reply", "154k", None, ""], ["This turn", "<1m", None, ""],
+                                            ["Tasks", "1/2", 0.5, ""]])
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
         self.assertEqual(row()["meta"], "")
-        self.assertEqual(row()["details"], [["context", "62%"], ["last reply", "154k"], ["tasks", "0/1"]])
-        hub.cfg.row_metrics, hub.cfg.detail_metrics = ["tasks", "tokens"], ["time", "context"]  # a choice of one's own
+        self.assertEqual([d[:2] for d in row()["details"]], [["Context", "62%"], ["Last reply", "154k"], ["Last turn", "<1m"], ["Tasks", "1/2"]])
+        hub.cfg.overlay["context_warn"] = 60
+        hub.cfg.row_metrics, hub.cfg.detail_metrics = ["tasks", "tokens"], ["waiting", "context"]  # a choice of one's own
         hub.publish()
-        self.assertEqual((row()["meta"], row()["details"]), ("0/1   154k", [["context", "62%"]]))
+        self.assertEqual((row()["meta"], row()["details"]), ("1/2   154k", [["Waiting", "", None, ""], ["Context", "62%", 0.62, "warn"]]))
         hub.cfg.detail_metrics = []
         hub.publish()
         self.assertEqual(row()["details"], [])
@@ -345,8 +351,8 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("TaskCreated", task_id="1"))
         hub.on_event(ev("PreToolUse", tool_name="Bash", tool_input={"description": "Run tests"}))
         row = self.overlay.of("state")[-1]["sessions"][0]
-        self.assertEqual((row["name"], row["state"], row["text"], row["meta"], row["details"]),
-                         ("alpha", "working", "Run tests", "<1m", [["tasks", "0/1"]]))
+        self.assertEqual((row["name"], row["state"], row["text"], row["meta"], row["details"][3]),
+                         ("alpha", "working", "Run tests", "<1m", ["Tasks", "0/1", 0.0, ""]))
         hub.on_event(ev("Stop", last_assistant_message=tag("All done.")))
         self.spoken()
         row = self.overlay.of("state")[-1]["sessions"][0]

@@ -1087,6 +1087,13 @@ namespace ClaudeSpeaks
         // The figures of one session, each with its name in front, under the rows: the session
         // the mouse is on, else the one in focus. The hub says which figures (`details` of a row).
         readonly TextBlock metricsLine = new TextBlock { FontSize = 12, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 1, 0, 2) };
+        // The same as a card (details_style "tiles", the default): one tile for each figure, its
+        // name small above it, the figure large, and under it a thin bar where the figure is a
+        // share of a whole. Every figure keeps its place whether it is known or not, so the eye
+        // learns where each one is.
+        readonly Border metricsCard = new Border { CornerRadius = new CornerRadius(8), Background = Ui.Paint("#12FFFFFF"), Padding = new Thickness(11, 7, 6, 9), Margin = new Thickness(-3, 1, -3, 3) };
+        readonly StackPanel metricsBody = new StackPanel();
+        string detailsStyle = "tiles";
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
         readonly FontFamily requestMono = new FontFamily("Consolas");
         readonly TextBlock bannerTitle = new TextBlock(), bannerHint = new TextBlock();
@@ -1190,7 +1197,8 @@ namespace ClaudeSpeaks
             bannerHint.Foreground = Ui.Faint;
             bannerHint.Margin = new Thickness(0, 2, 0, 0);
             Section(bannerBox, bannerTitle, bannerHint);
-            Section(historyBox, metricsLine, historyLines);
+            metricsCard.Child = metricsBody;
+            Section(historyBox, metricsLine, metricsCard, historyLines);
             panel.Body = sections;
             Stack();
 
@@ -1314,6 +1322,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
+                    if (msg.ContainsKey("details_style")) detailsStyle = Str(msg, "details_style") == "line" ? "line" : "tiles";
                     Ui.ContextWarn = Num(msg, "context_warn", Ui.ContextWarn);
                     if (msg.ContainsKey("context_color")) Ui.Context = Ui.ColorOr(Str(msg, "context_color"), Colors.White);
                     if (msg.ContainsKey("context_warn_color")) Ui.ContextFull = Ui.ColorOr(Str(msg, "context_warn_color"), Ui.ContextFull);
@@ -1483,7 +1492,8 @@ namespace ClaudeSpeaks
             // out for a request or to be moved); the history, as before, in list mode at rest.
             bool asked = !dragging && !moving && (isList || hover || keysOpen || Ui.Now < wheelUntil);
             bool showMetrics = asked && BuildMetrics();
-            metricsLine.Visibility = showMetrics ? Visibility.Visible : Visibility.Collapsed;
+            metricsLine.Visibility = showMetrics && detailsStyle == "line" ? Visibility.Visible : Visibility.Collapsed;
+            metricsCard.Visibility = showMetrics && detailsStyle != "line" ? Visibility.Visible : Visibility.Collapsed;
             historyBox.Visibility = showMetrics || historyLines.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             bool talking = talkState.Length > 0;
             foreach (Row row in order)
@@ -1718,16 +1728,66 @@ namespace ClaudeSpeaks
             if (about == null) foreach (Row row in order) if (row.Focus) about = row;
             if (about == null && order.Count == 1) about = order[0];
             metricsLine.Inlines.Clear();
+            metricsBody.Children.Clear();
             if (about == null) return false;
+            var tiles = new System.Windows.Controls.Primitives.UniformGrid { Rows = 1 };
+            bool any = false;
             foreach (object o in about.Details)
             {
-                var pair = o as object[];
-                if (pair == null || pair.Length < 2) continue;
-                if (metricsLine.Inlines.Count > 0) metricsLine.Inlines.Add(new Run("     "));
-                metricsLine.Inlines.Add(new Run(Convert.ToString(pair[0], CultureInfo.InvariantCulture) + " ") { Foreground = Ui.Faint });
-                metricsLine.Inlines.Add(new Run(Convert.ToString(pair[1], CultureInfo.InvariantCulture)) { Foreground = Brushes.White });
+                var part = o as object[];
+                if (part == null || part.Length < 2) continue;
+                string name = Convert.ToString(part[0], CultureInfo.InvariantCulture), figure = Convert.ToString(part[1], CultureInfo.InvariantCulture);
+                double share = part.Length > 2 && part[2] != null ? Ui.Clamp(Convert.ToDouble(part[2], CultureInfo.InvariantCulture)) : -1;
+                bool warn = part.Length > 3 && Convert.ToString(part[3], CultureInfo.InvariantCulture) == "warn";
+                any |= figure.Length > 0;
+                if (figure.Length > 0)
+                {
+                    if (metricsLine.Inlines.Count > 0) metricsLine.Inlines.Add(new Run("     "));
+                    metricsLine.Inlines.Add(new Run(name + " ") { Foreground = Ui.Faint });
+                    metricsLine.Inlines.Add(new Run(figure) { Foreground = Brushes.White });
+                }
+                tiles.Children.Add(Tile(name, figure, share, warn));
             }
-            return metricsLine.Inlines.Count > 0;
+            if (!any) return false;
+            if (order.Count > 1)  // whose figures they are, where there is a choice
+            {
+                var whose = new TextBlock { FontSize = 12, Margin = new Thickness(0, 0, 0, 5), TextTrimming = TextTrimming.CharacterEllipsis };
+                Heading(whose, about.Name, about.Title, about.Color);
+                metricsBody.Children.Add(whose);
+            }
+            metricsBody.Children.Add(tiles);
+            return true;
+        }
+
+        // One figure of a session: its name, the figure, and a thin bar if it is a share of a
+        // whole (the bar's own color when it is nearly the whole, over a faint step of the same).
+        static UIElement Tile(string name, string figure, double share, bool warn)
+        {
+            var tile = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
+            tile.Children.Add(new TextBlock { Text = name, FontSize = 10.5, Foreground = Ui.Faint, TextTrimming = TextTrimming.CharacterEllipsis });
+            var number = new TextBlock { FontSize = 16, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 1, 0, 0) };
+            int of = figure.IndexOf('/');
+            if (figure.Length == 0) number.Inlines.Add(new Run("\u2013") { Foreground = Ui.Paint("#50FFFFFF"), FontWeight = FontWeights.Normal });  // not known
+            else if (of > 0)  // "3/5": the part that is done stands out
+            {
+                number.Inlines.Add(new Run(figure.Substring(0, of)) { Foreground = Brushes.White });
+                number.Inlines.Add(new Run(figure.Substring(of)) { Foreground = Ui.Faint, FontWeight = FontWeights.Normal });
+            }
+            else number.Inlines.Add(new Run(figure) { Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Brushes.White });
+            tile.Children.Add(number);
+            var bar = new Grid { Height = 4, Margin = new Thickness(0, 4, 6, 0) };
+            if (share >= 0)
+            {
+                Color ink = warn ? Ui.ContextFull : Colors.White;
+                bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(share, 0.02), GridUnitType.Star) });
+                bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Math.Max(1 - share, 0), GridUnitType.Star) });
+                var track = new Border { CornerRadius = new CornerRadius(2), Background = Ui.Alpha(ink, 0.18) };
+                Grid.SetColumnSpan(track, 2);
+                bar.Children.Add(track);
+                bar.Children.Add(new Border { CornerRadius = new CornerRadius(2), Background = Ui.Alpha(ink, warn ? 1 : 0.82) });
+            }
+            tile.Children.Add(bar);
+            return tile;
         }
 
         void BuildHistory()
