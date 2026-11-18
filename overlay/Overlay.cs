@@ -549,6 +549,60 @@ namespace ClaudeSpeaks
     // (whose ticked and unticked boxes differ in size, so the words beside them moved) and not
     // made of a border around a filling (a seam shows between the two): unticked it is an
     // outline, ticked it is one filled square with the tick in its middle.
+    // The small sign in front of a line of the history: how the turn it closed had ended. A
+    // check for done, a cross for failed, "!" for something asked of you, a ring for a word
+    // on the way, a small speech bubble for an answer on the side.
+    class EndMark : FrameworkElement
+    {
+        readonly string kind;
+
+        public EndMark(string kind)
+        {
+            this.kind = kind;
+            Width = 13; Height = 16; Margin = new Thickness(0, 0, 6, 0);
+            VerticalAlignment = VerticalAlignment.Top;
+            IsHitTestVisible = false;
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            switch (kind)
+            {
+                case "done":
+                {
+                    Pen pen = Ui.Line(Ui.Tint("done"), 1, 1.7);
+                    dc.DrawLine(pen, new Point(2.5, 8.6), new Point(5.1, 11.2));
+                    dc.DrawLine(pen, new Point(5.1, 11.2), new Point(10.4, 5.4));
+                    break;
+                }
+                case "failed":
+                {
+                    Pen pen = Ui.Line(Ui.Tint("failed"), 1, 1.7);
+                    dc.DrawLine(pen, new Point(3.4, 5.4), new Point(9.4, 11.4));
+                    dc.DrawLine(pen, new Point(9.4, 5.4), new Point(3.4, 11.4));
+                    break;
+                }
+                case "needs_you":
+                    dc.DrawLine(Ui.Line(Ui.Amber, 1, 1.8), new Point(6.4, 4.6), new Point(6.4, 9.2));
+                    dc.DrawEllipse(Ui.Alpha(Ui.Amber, 1), null, new Point(6.4, 12.2), 1.1, 1.1);
+                    break;
+                case "progress":
+                    dc.DrawEllipse(null, Ui.Line(Ui.Tint("working"), 1, 1.5), new Point(6.4, 8.4), 3.1, 3.1);
+                    break;
+                case "aside":
+                {
+                    Pen pen = Ui.Line(Colors.White, 0.7, 1.3);
+                    dc.DrawRoundedRectangle(null, pen, new Rect(2.2, 4.4, 8.6, 6.2), 2, 2);
+                    dc.DrawLine(pen, new Point(4.6, 10.6), new Point(3.6, 12.8));
+                    break;
+                }
+                default:
+                    dc.DrawEllipse(Ui.Alpha(Colors.White, 0.45), null, new Point(6.4, 8.4), 1.6, 1.6);
+                    break;
+            }
+        }
+    }
+
     class TickMark : FrameworkElement
     {
         const double Side = 14;
@@ -1487,11 +1541,16 @@ namespace ClaudeSpeaks
             bannerBox.Visibility = hasBanner ? Visibility.Visible : Visibility.Collapsed;
             emptyLine.Visibility = sessions.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
             bool showHistory = isList && peek && history.Length > 0;
-            if (showHistory) BuildHistory(); else historyLines.Children.Clear();
+            historyLines.Children.Clear();
             // The figures show whenever the details were asked for (not when the panel is only
             // out for a request or to be moved); the history, as before, in list mode at rest.
             bool asked = !dragging && !moving && (isList || hover || keysOpen || Ui.Now < wheelUntil);
-            bool showMetrics = asked && BuildMetrics();
+            // One session's lines go into its card, under its figures. All sessions' lines mixed
+            // (history "all"), or lines with no card to go into, stand below it as before.
+            bool inCard = showHistory && detailsStyle != "line" && !historyAll;
+            bool showMetrics = asked && BuildMetrics(inCard);
+            if (showHistory && !(inCard && showMetrics)) BuildHistory();
+            metricsCard.Padding = new Thickness(11, 7, 11, inCard && showMetrics && metricsBody.Children.Count > 2 ? 8 : 12);
             metricsLine.Visibility = showMetrics && detailsStyle == "line" ? Visibility.Visible : Visibility.Collapsed;
             metricsCard.Visibility = showMetrics && detailsStyle != "line" ? Visibility.Visible : Visibility.Collapsed;
             // The same room above the card as below it (10 px), whichever of the two is the
@@ -1725,7 +1784,7 @@ namespace ClaudeSpeaks
         // Writes the line of figures for the session the mouse is on (it stays chosen when the
         // mouse moves off, like the history), else the one in focus, else the only one. False
         // when there is nothing to say.
-        bool BuildMetrics()
+        bool BuildMetrics(bool withLines)
         {
             Row about = hot;
             if (about == null) foreach (Row row in order) if (row.Name == historyOf) about = row;
@@ -1762,6 +1821,16 @@ namespace ClaudeSpeaks
                 metricsBody.Children.Add(whose);
             }
             metricsBody.Children.Add(tiles);
+            if (withLines)  // what it said last, in the same card, under a faint line
+            {
+                var said = new StackPanel();
+                FillHistory(said, about.Name, 4, false);
+                if (said.Children.Count > 0)
+                {
+                    metricsBody.Children.Add(new Border { Height = 1, Background = Ui.Paint("#22FFFFFF"), Margin = new Thickness(0, 10, 0, 6) });
+                    metricsBody.Children.Add(said);
+                }
+            }
             return true;
         }
 
@@ -1805,25 +1874,40 @@ namespace ClaudeSpeaks
                 foreach (Row row in order) if (row.Name == historyOf) of = row.Name;
                 if (of == null) foreach (Row row in order) if (row.Focus) of = row.Name;
             }
+            FillHistory(historyLines, of, of != null ? 4 : 6, true);
+        }
+
+        // The last lines said, newest first: of one session (`of`), or of all of them. Each
+        // line has a small mark in front for how that turn ended, the sentence (the newest
+        // brightest, older ones dimmer), and at its right end how long ago it was and what the
+        // turn used; a white dot there marks a line that was never heard to its end.
+        void FillHistory(Panel into, string of, int most, bool named)
+        {
+            int n = 0;
             foreach (object o in history)
             {
                 var h = (Dictionary<string, object>)o;
                 if (of != null && Str(h, "name") != of) continue;
-                if (historyLines.Children.Count >= (of != null ? 4 : 6)) break;
-                var line = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 2), FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
-                line.Inlines.Add(new Run(Str(h, "ago") + "  ") { Foreground = Ui.Faint });
-                line.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
-                line.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Dim });
-                string used = Str(h, "tokens");  // what that turn used, if the hub says: at the right end of its line
-                if (used.Length == 0) { historyLines.Children.Add(line); continue; }
-                var both = new Grid();
-                both.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                both.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                var figure = new TextBlock { Text = used, FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(10, 2, 0, 2), VerticalAlignment = VerticalAlignment.Bottom };
-                Grid.SetColumn(figure, 1);
-                both.Children.Add(line);
-                both.Children.Add(figure);
-                historyLines.Children.Add(both);
+                if (n >= most) break;
+                var line = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                line.Children.Add(new EndMark(Str(h, "kind")));
+                var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
+                if (named) words.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
+                words.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Alpha(Colors.White, n == 0 ? 0.94 : n == 1 ? 0.76 : n == 2 ? 0.64 : 0.55) });
+                Grid.SetColumn(words, 1);
+                line.Children.Add(words);
+                var when = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(10, 0, 0, 0), VerticalAlignment = VerticalAlignment.Top };
+                if (h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"]))
+                    when.Children.Add(new System.Windows.Shapes.Ellipse { Width = 5, Height = 5, Fill = Ui.Alpha(Colors.White, 0.95), Margin = new Thickness(0, 1, 6, 0), VerticalAlignment = VerticalAlignment.Center });
+                string used = Str(h, "tokens");
+                when.Children.Add(new TextBlock { Text = Str(h, "ago") + (used.Length > 0 ? "   " + used : ""), FontSize = 12, Foreground = Ui.Faint });
+                Grid.SetColumn(when, 2);
+                line.Children.Add(when);
+                into.Children.Add(line);
+                n++;
             }
         }
 

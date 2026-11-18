@@ -336,6 +336,12 @@ class SpeechQueue:
         self._thread = threading.Thread(target=self._run, name="speech", daemon=True)
         self._thread.start()
 
+    def waiting(self) -> list:
+        """The lines that are being said or are still to be said: the current one, the queued
+        ones, and one that push-to-talk cut and will bring back."""
+        with self._cond:
+            return [u for u in [self.current, self._cut, *self.queued] if u]
+
     def put(self, u: Utterance) -> None:
         with self._cond:
             if u.session and u.kind not in FEEDBACK:  # a session's newer line replaces its queued one

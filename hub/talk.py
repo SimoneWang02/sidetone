@@ -342,6 +342,7 @@ class Talk:
         self.history.append(entry)
         if self._muted():
             self._flash(s, answer)  # voice is off
+            entry["shown"] = True
         else:
             self.speech.put(Utterance(text=answer, voice=s.voice, session=s.id, kind="notice", src="aside", entry=entry))
 

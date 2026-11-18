@@ -749,6 +749,13 @@ Bigger pieces:
       for the kind of agent; the row dropping its time. If the card is not liked,
       the other two: a small column of two figures at the right of every row, or a
       third line in the row under the mouse (which stretches the bar).
+- [ ] The history, reworked on the author's "do all of them" (2026-11-18): in the
+      session's card, a mark per line for how the turn ended, time and tokens at the
+      right, the newest brightest, a white dot on lines never heard to the end. **For
+      them to judge on screen** (keep the details out with `Ctrl+Alt+L` and rest the
+      mouse on a session). Offered and open: showing it on plain hover too, and, from
+      the list before it, the plan's usage at the foot of the card, key caps in
+      requests, bars that glide, a red step for context near full.
 - [x] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for
       each request to ... show me the metrics of how much token you've used? Is it
       important?"). Possible: Claude Code's record of a session has the token counts of

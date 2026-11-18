@@ -299,9 +299,12 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
 
 
 COLORS = state.COLORS[:5]  # as five sessions would have them
-HISTORY = [dict(ago="now", name="api-server", color=COLORS[1], text="All forty two tests pass.", tokens="64k"),
-           dict(ago="3m", name="web-app", color=COLORS[2], text="The login page is fixed and ready for review.", tokens="1.2k"),
-           dict(ago="12m", name="data-pipeline", color=COLORS[3], text="I hit an error: rate limit")]
+HISTORY = [dict(ago="now", name="api-server", color=COLORS[1], text="All forty two tests pass.", tokens="64k", kind="done", missed=False),
+           dict(ago="2m", name="web-app", color=COLORS[2], text="Which drink would you like?", tokens="", kind="needs_you", missed=True),
+           dict(ago="3m", name="web-app", color=COLORS[2], text="The login page is fixed and ready for review. I also moved the styles into one file so the dark mode has a single place to change.", tokens="1.2k", kind="done", missed=False),
+           dict(ago="9m", name="web-app", color=COLORS[2], text="I can't read the clock from a side question.", tokens="", kind="aside", missed=False),
+           dict(ago="14m", name="web-app", color=COLORS[2], text="Half way: the settings page is done.", tokens="", kind="progress", missed=True),
+           dict(ago="12m", name="data-pipeline", color=COLORS[3], text="I hit an error: rate limit", kind="failed", missed=False)]
 KEYS = {"toggle": "Ctrl+Alt+F9"}
 SAID = "All forty two tests pass. The flaky one was a race in the login mock, which I fixed."
 
@@ -485,6 +488,10 @@ send(type="peek", on=True)
 shot("list-history")
 send(type="peek", on=True, over="web-app")
 shot("list-history-other")
+send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history="all", **HERE)
+send(type="peek", on=True, over="web-app")
+shot("list-history-all")  # every session's lines mixed: under the card, with their names
+send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history="session", **HERE)
 send(type="peek", on=False)
 send(type="mode", mode="dots")
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, monitor=1, corner="bottom-left", offset_x=30, offset_y=30)

@@ -268,6 +268,23 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("Stop", transcript_path=os.path.join(self.tmp, "gone.jsonl"), last_assistant_message=tag("Done.")))
         self.assertEqual(row()["context"], 62.0, "a record that cannot be read leaves the last figure")
 
+    def test_the_history_says_how_a_line_ended_and_whether_it_was_missed(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit"))
+        hub.on_event(ev("Stop", last_assistant_message=tag("All done.")))
+        self.spoken()
+        hub.publish()
+        line = lambda: self.overlay.of("state")[-1]["history"][0]
+        self.assertEqual((line()["text"], line()["kind"], line()["missed"]), ("All done.", "done", False))
+        # A line that never reached the voice (replaced by a newer one, too old, cut off) and is not waiting to be said.
+        hub.history.append({"time": time.time(), "session": "s1", "name": "alpha", "color": "", "spoken_name": "alpha",
+                            "voice": "af_heart", "text": "Half way.", "kind": "progress", "heard": False})
+        hub.publish()
+        self.assertEqual((line()["text"], line()["kind"], line()["missed"]), ("Half way.", "progress", True))
+        hub.history[-1]["shown"] = True  # the voice was off and it was shown instead
+        hub.on_event(ev("UserPromptSubmit"))
+        self.assertFalse(line()["missed"])
+
     def test_figures_go_under_the_rows_with_their_names_and_only_the_time_stays_in_the_row(self):
         hub = self.make()
         record = os.path.join(self.tmp, "record.jsonl")
@@ -317,6 +334,7 @@ class OverlayFeed(HubCase):
         self.assertTrue(wait_for(lambda: row()["meta"] == "8.0k"))
         said = lambda: self.overlay.of("state")[-1]["history"][0]
         self.assertEqual((said()["text"], said()["tokens"]), ("Done.", "8.0k"), "the line it ended on keeps the figure")
+        self.assertEqual(said()["kind"], "done")  # for the mark in front of it
         hub.cfg.turn_tokens_label = "tokens"
         hub.publish()
         self.assertEqual(row()["meta"], "8.0k tokens")

@@ -571,6 +571,7 @@ class Hub(Permissions, Talk):
             return
         current = self.speech.current
         speaking = current.session if current else None
+        to_say = {id(u.entry) for u in self.speech.waiting() if u.entry is not None}  # asked for before our own lock is taken
         context = context_mode(self.cfg)
         # A row's right end: what the settings name, and what older settings still ask for there.
         in_row = list(self.cfg.row_metrics) + ["waiting"] * bool(self.cfg.waiting_words) + ["context"] * (context in ("text", "both"))
@@ -608,7 +609,12 @@ class Hub(Permissions, Talk):
                 if each[e["name"]] < 4 and len(history) < 24:
                     each[e["name"]] += 1
                     history.append({"ago": _ago(now - e["time"]), "name": e["name"], "color": e.get("color", ""), "text": e["text"],
-                                    "tokens": usage.tokens_text(e["tokens"]) if self.cfg.turn_tokens_history and e.get("tokens") else ""})
+                                    "tokens": usage.tokens_text(e["tokens"]) if self.cfg.turn_tokens_history and e.get("tokens") else "",
+                                    # How that turn ended (done, failed, needs_you, progress, aside), for a
+                                    # mark in front of the line; and whether it was never heard to its end:
+                                    # cut off, too old when its turn came, or replaced by a newer one.
+                                    "kind": e.get("kind", ""),
+                                    "missed": not (e.get("heard") or e.get("shown") or id(e) in to_say)})
             new_keys, self._keys = keys != self._keys, keys
             new_rows, self._shown = (rows, history) != self._shown, (rows, history)
         if new_keys:  # claim allow/deny/cancel only while they can do something
@@ -706,6 +712,8 @@ class Hub(Permissions, Talk):
             self.history.append(entry)
         if self._muted():
             self._flash(s, text, FLASH_LOOK.get(kind, kind))  # voice is off
+            if entry:
+                entry["shown"] = True  # read, not heard: nothing was missed
         else:
             self.speech.put(Utterance(text=text, voice=s.voice, session=s.id, kind=kind, src=src, entry=entry))
 

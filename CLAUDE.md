@@ -929,6 +929,22 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   it's perfect." Ideas from the same look
   that were not built: the plan's usage as a thin line at the foot of that card, a mark
   for the kind of agent, the row dropping its time now that the card has it.
+- The history in the card (2026-11-18, `FillHistory`, `EndMark`). Asked what else was
+  worth doing about the design, the author picked on the history ("Could it be improved?
+  What do you think?") and, given five points, said "Sure, do all of them". (1) The lines
+  of one session are in its card, under its figures and a faint line, no longer a block of
+  their own below. (2) In front of each, instead of the session's name, a small mark for
+  how that turn ended: green check = done, red cross = failed, amber "!" = something asked
+  of you, blue ring = a word on the way in a long turn, small speech bubble = an answer on
+  the side. (3) At the right end, faint, how long ago and what the turn used ("3m   64k").
+  (4) The newest line is brightest, older ones dimmer. (5) A white dot before the time
+  marks a line never heard to its end: the hub sends `missed` for an entry that is not
+  `heard`, was not shown with the voice off (`shown`), and is neither being said nor
+  waiting to be (`SpeechQueue.waiting`), so one that was cut, too old, or replaced by a
+  newer one. Lines also carry `kind`. With `history: all` (every session's lines mixed),
+  or with `details_style: line`, the lines stay below the card and keep their names.
+  It still only shows with the details kept out and the mouse at rest on them. Seen in
+  pictures (`list-history*.png`); **the author has not seen it yet**.
 - No raised dots (2026-11-18; the author: "don't use the dots, the central dots. I don't
   like them"). The parts of a line the hub writes (tasks and time in a row, the keys under
   a request or a question, the confirming tap) are set apart by a gap, three spaces or
