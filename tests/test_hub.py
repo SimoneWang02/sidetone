@@ -1088,6 +1088,49 @@ class PushToTalk(HubCase):
         self.assertNotIn("cancel", self.overlay.of("keys")[-1]["live"])  # asked already
         self.assertFalse(os.path.exists(os.path.join(self.tmp, "stop", "b")), "only the session in focus")
 
+    def test_the_cancel_key_stops_at_once_where_an_editor_can_type_escape(self):
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41", 4002: "/dev/pts/42"}.get(pid)
+        hub.sessions.by_id["a"].tty, hub.sessions.by_id["b"].tty = "/dev/pts/41", "/dev/pts/42"
+        editor = hub.editor_waits([4002, 4001, 9])  # one window of the editor, with both terminals and a plain shell
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        hub.talk_target = "a"
+        hub.cancel()
+        self.assertTrue(editor.wake.is_set())
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "escape"}])
+        self.assertEqual(self.talks()[-1], ("stopped", "a", "Stopping"))
+        self.assertTrue(os.path.exists(os.path.join(self.tmp, "stop", "a")), "the hook stays as the way that always works")
+        hub.on_event(ev("PostToolUse", sid="a", cwd="/w/a", tool_name="Bash", is_interrupt=True))  # what Escape does
+        hub.reconcile()
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "stop", "a")), "its next turn would be stopped too")
+        row = next(r for r in self.overlay.of("state")[-1]["sessions"] if r["name"] == "a")
+        self.assertEqual((row["state"], row["text"]), ("idle", "stopped"))
+        self.assertEqual(self.talks()[-1], ("stopped", "a", "Stopped"))
+
+    def test_escape_is_asked_for_once_and_only_of_a_session_in_a_turn(self):
+        hub = self.got_the_words()  # "a" has the words and has begun on them
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41"}.get(pid)
+        hub.sessions.by_id["a"].tty = "/dev/pts/41"
+        hub.cancel()  # taken back: no editor is waiting, so the hook has to do it
+        self.assertEqual(self.talks()[-1], ("stopped", "a", "Taken back: stopping it"))
+        editor = hub.editor_waits([4001])  # the editor asks a moment later
+        hub.reconcile()
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "escape"}])
+        again = hub.editor_waits([4001])
+        hub.reconcile()
+        self.assertEqual(hub.editor_done(again), [], "a second Escape would open the session's rewind list")
+        hub.cfg.stop_at_once = False
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Stopped.")))
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        off = hub.editor_waits([4001])
+        self.assertTrue(hub.speech.wait_idle(5))
+        hub.talk_target = "a"
+        hub.cancel()
+        self.assertEqual(hub.editor_done(off), [], "switched off: only the hook")
+        self.assertEqual(self.talks()[-1], ("stopped", "a", "Stopping at its next step"))
+
     def test_the_cancel_key_cuts_a_line_before_it_stops_anyone(self):
         hub = self.make(duration=2.0)
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
@@ -2481,16 +2524,71 @@ class HubProcess(unittest.TestCase):
                 exports.went = went;
                 exports.window = {
                   state: { focused: true },
+                  terminals: [],
                   activeTerminal: { processId: Promise.resolve(Number(process.env.SHELL_PID)) },
                   onDidChangeActiveTerminal: (f) => { went.push(f); return { dispose() {} }; },
                   onDidChangeWindowState: (f) => ({ dispose() {} }),
+                  onDidOpenTerminal: (f) => ({ dispose() {} }),
+                  onDidCloseTerminal: (f) => ({ dispose() {} }),
                 };""")
-        go = "const x = require('./extension.js'); x.activate({ subscriptions: [] }); require('vscode').went[0]();"
+        # It also keeps a request open with the hub (see the next test), so it is ended by hand.
+        go = ("const x = require('./extension.js'); x.activate({ subscriptions: [] }); require('vscode').went[0]();"
+              "setTimeout(() => process.exit(0), 600);")
         # Told within two seconds of the hub starting, or the hub has not looked for the terminals yet.
         self.assertTrue(wait_for(lambda: subprocess.run(
             ["node", "-e", go], cwd=ext, env={**self.env, "SHELL_PID": str(pids["a"])}, timeout=10).returncode == 0
             and self.call("/target", {})["target"] == "alpha", 8), "the hub did not move the focus")
 
+
+    @unittest.skipUnless(__import__("shutil").which("node"), "needs node to run the editor extension")
+    def test_the_editor_extension_types_escape_into_the_terminal_of_a_session_that_is_stopped(self):
+        """The real extension code, with a stand-in for the editor, against a real hub: the
+        cancel key on a working session ends in one Escape, without Enter, in its terminal."""
+        import pty
+        import shutil
+        sessions = os.path.join(self.tmp, ".claude", "sessions")
+        os.makedirs(sessions)
+        ours, theirs = pty.openpty()  # the terminal the session runs in
+        shell = subprocess.Popen(["sleep", "30"], stdin=theirs)
+        os.close(theirs)
+        self.addCleanup(os.close, ours)
+        self.addCleanup(shell.wait)
+        self.addCleanup(shell.kill)
+        with open(os.path.join(sessions, f"{shell.pid}.json"), "w") as f:
+            json.dump({"pid": shell.pid, "sessionId": "a", "status": "busy", "statusUpdatedAt": time.time() * 1000}, f)
+        self.start_hub()
+        self.call("/event", ev("UserPromptSubmit", sid="a", cwd="/work/alpha", prompt="go"))
+        ext = os.path.join(self.tmp, "ext")
+        os.makedirs(os.path.join(ext, "node_modules", "vscode"))
+        shutil.copy(os.path.join(ROOT, "vscode", "extension.js"), ext)
+        typed = os.path.join(self.tmp, "typed.json")
+        with open(os.path.join(ext, "node_modules", "vscode", "index.js"), "w") as f:
+            f.write("""
+                const fs = require("fs");
+                const typed = [];
+                const terminal = (pid) => ({
+                  processId: Promise.resolve(pid),
+                  sendText: (text, enter) => { typed.push([pid, text, enter]); fs.writeFileSync(process.env.TYPED, JSON.stringify(typed)); },
+                });
+                exports.window = {
+                  state: { focused: true },
+                  terminals: [terminal(1), terminal(Number(process.env.SHELL_PID))],
+                  activeTerminal: undefined,
+                  onDidChangeActiveTerminal: (f) => ({ dispose() {} }),
+                  onDidChangeWindowState: (f) => ({ dispose() {} }),
+                  onDidOpenTerminal: (f) => ({ dispose() {} }),
+                  onDidCloseTerminal: (f) => ({ dispose() {} }),
+                };""")
+        editor = subprocess.Popen(["node", "-e", "require('./extension.js').activate({ subscriptions: [] });"], cwd=ext,
+                                  env={**self.env, "SHELL_PID": str(shell.pid), "TYPED": typed})
+        self.addCleanup(editor.wait)
+        self.addCleanup(editor.kill)
+        time.sleep(1.5)  # the hub has found the session's terminal, and the editor's request is with it
+        self.call("/talk", {"action": "cancel"})
+        self.assertTrue(wait_for(lambda: os.path.exists(typed), 8), "nothing was typed into the terminal")
+        time.sleep(1.5)  # long enough for a second Escape, which must not come
+        with open(typed) as f:
+            self.assertEqual(json.load(f), [[shell.pid, "\x1b", False]])
 
     def test_a_listener_keeps_working_when_its_script_is_edited_under_it(self):
         """Bash reads a script from its file as it goes. A listener waits for hours, and when the

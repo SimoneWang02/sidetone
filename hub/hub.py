@@ -51,8 +51,19 @@ class Stopping:
     """A session that was asked to end its turn (see Hub._stop_turn)."""
     at: float
     busy: bool  # it has been seen in the middle of a turn since it was asked
+    pressed: bool = False  # Escape was typed into its terminal through the editor: stopped at once
 
 
+@dataclass
+class Editor:
+    """A window of the editor that waits to be asked for a key in one of its terminals (see
+    vscode/extension.js): only the editor can type into them."""
+    ttys: dict  # terminal -> the process id the editor knows that terminal by
+    keys: list = field(default_factory=list)  # what it is asked for: {"pid": ..., "key": "escape"}
+    wake: threading.Event = field(default_factory=threading.Event)
+
+
+EDITOR_WAIT = 25.0  # seconds an editor's request is held before it is sent back empty and asked again
 STOP_WAIT = 20.0  # seconds a session that was asked to stop may take to show that it is in a turn at all
 SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}\Z")  # a session id that can be a file name
 
@@ -193,6 +204,10 @@ class Config:
     # to cancel the key ends the turn of the session in focus | "sent" = only the first |
     # "never" = neither; a session that already has the words is told to ignore them
     cancel_stops: str = "always"
+    # Stopping at once: where the session runs in a terminal of an editor with the claude-speaks
+    # extension, Escape is typed into that terminal, which ends the turn in the same moment.
+    # False: only by the hook, at the session's next step (which is also what happens anywhere else).
+    stop_at_once: bool = True
     # Words spoken to a session that waits at a permission prompt: "details" = they are neither
     # a yes nor a no but more to go on: the request is turned down for now, the turn is ended
     # and the words are the session's next message, so it goes on from them (the terminal's
@@ -266,7 +281,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "voice_at_prompt",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):
@@ -297,6 +312,7 @@ class Hub:
         self.transcriber = None  # stt.Transcriber
         self.sounds = None  # sounds.Sounds, set by main() or the tests
         self.listeners: dict[str, Listener] = {}  # session id -> its waiting hook
+        self.editors: list[Editor] = []  # editor windows waiting to be asked for a key
         # session id -> text not yet picked up. Kept on disk too (in the run folder, owner-only),
         # so what was said to a busy session is not lost when the hub restarts.
         self.followups: dict[str, list[str]] = self._kept_followups()
@@ -535,8 +551,14 @@ class Hub:
                     changed = True
                 elif s.state in BUSY:
                     stopping.busy = True
+                    if not stopping.pressed:  # it had not begun when it was asked, or no editor was waiting yet
+                        stopping.pressed = self._press(s)
                 elif stopping.busy or time.monotonic() - stopping.at > STOP_WAIT:
-                    self._unstop(sid, "its turn ended by itself")
+                    if stopping.pressed and stopping.busy:
+                        s.note = "stopped"
+                        if not (self._talking or self._transcribing or self._pending):
+                            self._talk("stopped", s, "Stopped", seconds=2.5)
+                    self._unstop(sid, "Escape in its terminal ended the turn" if stopping.pressed else "its turn ended by itself")
                     changed = True
             # Words that waited for a busy session go out once it is no longer busy. After a
             # reply that happens by itself (its new listener asks for them); after an interrupt
@@ -1340,9 +1362,45 @@ class Hub:
             os.close(os.open(self._stop_file(s.id), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600))
         except OSError:
             return False
-        self._stopping[s.id] = Stopping(time.monotonic(), s.state in BUSY)
+        self._stopping[s.id] = Stopping(time.monotonic(), s.state in BUSY, s.state in BUSY and self._press(s))
         self.speech.drop_session(s.id)
         return True
+
+    def _press(self, s, key: str = "escape") -> bool:
+        """Have the editor type a key into the session's terminal, if an editor that holds
+        that terminal is waiting to be asked. One Escape interrupts a session that is working
+        (measured: so does one Ctrl+C, but a second Ctrl+C closes the session, and a second
+        Escape at an idle prompt opens its rewind list), so it is asked for once, and only of
+        a session in the middle of a turn. Call with the lock held."""
+        if not self.cfg.stop_at_once or not s.tty:
+            return False
+        for editor in self.editors:
+            if s.tty in editor.ttys and not editor.wake.is_set():
+                editor.keys.append({"pid": editor.ttys[s.tty], "key": key})
+                editor.wake.set()
+                log(self.cfg, "hub.log", f"stop [{s.id[:8]}] {key} asked of the editor for its terminal ({s.tty})")
+                return True
+        return False
+
+    def editor_waits(self, pids: list) -> Editor:
+        """An editor's window asks to be told when a key is wanted in one of its terminals,
+        which it names by the process each one runs (its shell)."""
+        ttys = {tty: pid for pid in pids for tty in [terminal_mod.tty_of(pid)] if tty}
+        editor = Editor(ttys)
+        with self.lock:
+            self.editors.append(editor)
+        return editor
+
+    def editor_done(self, editor: Editor) -> list:
+        """Its request ends: what it is asked to type, if anything."""
+        with self.lock:
+            if editor in self.editors:
+                self.editors.remove(editor)
+            return editor.keys
+
+    def _stop_words(self, sid: str) -> str:
+        stopping = self._stopping.get(sid)
+        return "Stopping" if stopping and stopping.pressed else "Stopping at its next step"
 
     def _unstop(self, sid: str, why: str = "") -> None:
         """The turn is over, or another one is wanted: nothing is to be stopped any more."""
@@ -1405,7 +1463,7 @@ class Hub:
                 s = self._stoppable()
                 if not took_back and s and not self.speech.current and self._stop_turn(s):
                     stopped = True
-                    self._talk("stopped", s, "Stopping at its next step", seconds=3)
+                    self._talk("stopped", s, self._stop_words(s.id), seconds=3)
                     self._signal("failed")
                     log(self.cfg, "hub.log", f"stop [{s.id[:8]}] asked for with the cancel key")
         if talking:
@@ -1591,7 +1649,7 @@ class Hub:
                 "color": s.color,
                 "state": s.state,
                 "title": s.title,
-                "text": "Stopping at its next step" if s.id in self._stopping else s.activity if s.state == "working" else s.note,
+                "text": self._stop_words(s.id) if s.id in self._stopping else s.activity if s.state == "working" else s.note,
                 "meta": " \u00b7 ".join(filter(None, [
                     f"{sum(s.tasks.values())}/{len(s.tasks)}" if s.tasks else "",
                     _elapsed(time.monotonic() - s.turn_started) if s.state == "working" and s.turn_started else "",
@@ -1899,6 +1957,8 @@ class Handler(BaseHTTPRequestHandler):
             self._permission(hub, body)
         elif self.path == "/listen":
             self._listen(hub, body)
+        elif self.path == "/editor":
+            self._editor(hub, body)
         elif self.path == "/voice":
             action = body.get("action", "set")
             if action == "set":
@@ -2019,6 +2079,19 @@ class Handler(BaseHTTPRequestHandler):
                 return hub.stop_listening(listener)
         text = hub.collect(listener)
         self._reply({"text": text} if text else None)
+
+    def _editor(self, hub: Hub, body: dict) -> None:
+        """Hold an editor's request until a key is wanted in one of its terminals, or for a
+        while; it asks again at once (and anew when its terminals change)."""
+        try:
+            pids = [int(pid) for pid in body.get("terminals") or []]
+        except (TypeError, ValueError):
+            return self._reply({"error": "terminals is a list of process ids"}, 400)
+        editor = hub.editor_waits(pids)
+        end = time.monotonic() + EDITOR_WAIT
+        while not editor.wake.wait(0.5) and time.monotonic() < end and not self._client_gone():
+            pass
+        self._reply({"keys": hub.editor_done(editor)})
 
     def _client_gone(self) -> bool:
         try:
