@@ -70,6 +70,7 @@ DEFAULTS = {
     # in, then shrinks into the upper right | clock = a small clock whose hand goes round |
     # dot = a plain breathing dot
     "waiting_mark": "number",
+    "waiting_size": 9.2,  # the radius of the number's disc in its corner, 5 to 13 (6.6 is what it was at first)
     "waiting_hold": 0.9,  # seconds the number covers the whole light before it goes to the corner
     "waiting_many": "face",  # more than nine messages waiting: face = a dismayed face | number = "9+"
     # Whether a number first shows itself across the whole light: never = it comes up in its

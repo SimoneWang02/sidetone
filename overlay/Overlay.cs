@@ -74,6 +74,7 @@ namespace ClaudeSpeaks
         // Which messages show their number across the whole light before it goes to the corner:
         // never (it comes up in its corner, with a small jump) | first = the first to wait | each.
         public static string WaitingCover = "never";
+        public static double WaitingSize = 9.2;  // the radius of the number's disc (and the face's) in its corner
         public static double WaitingHold = 0.9;  // seconds the number covers the whole light before it goes to the corner
 
         public static void SetWaitingColor(string hex)
@@ -410,9 +411,11 @@ namespace ClaudeSpeaks
                 k = k * k * (3 - 2 * k);  // leaves and lands softly
                 double pop = Ui.Motionless ? 1 : Covers ? Ui.Overshoot(age / 0.3) : 1 + (age < 0.4 ? 0.4 * Math.Sin(Math.PI * age / 0.4) : 0);
                 var at = new Point(c.X + (corner.X - c.X) * k, c.Y + (corner.Y - c.Y) * k);
-                bool face = Waiting > 9 && Ui.WaitingMany == "face";  // a face needs more room than a digit to be read
-                double small = face ? 9.2 : 6.6, r = (13.5 + (small - 13.5) * k) * pop;
-                if (face) { Dismayed(dc, new Point(at.X - 1.5 * k, at.Y + 1.5 * k), r); return; }
+                // In its corner the disc is as large as a face needs to be read (waiting_size),
+                // and the number's disc is the same size; it sits a little further in for it.
+                double r = (13.5 + (Ui.WaitingSize - 13.5) * k) * pop, inward = Math.Max(0, Ui.WaitingSize - 7.7) * k;
+                at = new Point(at.X - inward, at.Y + inward);
+                if (Waiting > 9 && Ui.WaitingMany == "face") { Dismayed(dc, at, r); return; }
                 dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.97), null, at, r, r);
                 Number(dc, count, at, (count.Length > 1 ? 0.95 : 1.25) * r);
                 return;
@@ -1217,6 +1220,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
                     Ui.WaitingHold = Math.Max(0, Num(msg, "waiting_hold", Ui.WaitingHold));
+                    Ui.WaitingSize = Math.Max(5, Math.Min(13, Num(msg, "waiting_size", Ui.WaitingSize)));
                     if (msg.ContainsKey("waiting_many")) Ui.WaitingMany = Str(msg, "waiting_many") == "number" ? "number" : "face";
                     if (msg.ContainsKey("waiting_cover"))
                     {
