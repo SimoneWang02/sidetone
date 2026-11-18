@@ -106,6 +106,7 @@ DEFAULTS = {
 }
 LAYOUTS = ["bar", "island"]
 RETRY_AFTER = 30.0  # seconds before a crashed overlay is started again
+NEVER = float("-inf")  # "not started yet"; 0 would be the moment the machine booted, as the clock here counts from then
 ASSEMBLIES = ["PresentationFramework", "PresentationCore", "WindowsBase", "System.Xaml", "System.Web.Extensions",
               "System.Windows.Forms", "System.Drawing"]
 
@@ -179,7 +180,7 @@ class Overlay:
         self.ready = False
         self._lock = threading.Lock()
         self._state: dict | None = None  # last state message, replayed when the window (re)starts
-        self._started = 0.0
+        self._started = NEVER
         self._source: dict = {}  # the overlay's source files as they were when the window was started
 
     def outdated(self) -> bool:
@@ -209,7 +210,7 @@ class Overlay:
     def restart(self) -> None:
         self.stop()
         with self._lock:
-            self._started = 0.0
+            self._started = NEVER
             self._start()
 
     def stop(self) -> None:

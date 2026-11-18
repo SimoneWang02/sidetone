@@ -1134,6 +1134,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   has the same C# 5 limit. The default position is the top right, 96 px down, below the title
   bar and tabs of a maximized window. `opaque: true` in `config` draws it without see-through
   and without rounded corners, for pictures.
+- The window was half a minute late after a boot (2026-11-18; the author, in the first
+  session after WSL had started: "the program didnt start"). `Overlay._start` holds off for
+  `RETRY_AFTER` (30 s) after the last start, so that a window that crashes is not started
+  over and over, and "never started" was written as 0. `time.monotonic()` counts from the
+  boot, so a hub started 18 s after it took the window for one started 18 s ago and waited
+  until the machine had been up 30 s (boot 11:24:39, hub 11:24:57, window 11:25:12). It is
+  `overlay.NEVER` (minus infinity) now; `tests/test_overlay_start.py`. A timer that starts
+  at 0 and is compared with that clock has the same fault; the others in the hub were
+  looked at and are safe. The same log had "overlay could not start: [Errno 5] Input/output
+  error: 'powershell.exe'" from 03:35 the night before: that was WSL going down, not a fault.
 - Session-file facts (measured): `status` is only `busy` or `idle`; it stays `busy` during a
   permission dialog and flips to `idle` within 0.2 s of Esc. The file is removed when the
   session exits. A command the Bash tool runs is a child of the session's pid (measured
