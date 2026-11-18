@@ -369,7 +369,11 @@ real keys yet.
       covering the light each time or staying in the corner and counting up there;
       built as suggested to them: only the first message to wait covers the light, the
       ones that join make the number jump in its corner (`overlay.waiting_cover`:
-      `first`, `each`, `never`). Shown live again; **no word on either yet.**
+      `first`, `each`, `never`). Shown live again. On the grinning face: the yellow is
+      good, but "it looks like he's mentally ill"; rather "a more like disgusted face
+      ... like you have so many requests". Third face, the same evening: lids half
+      down, a sideways look, one brow up, a flat mouth. Shown live; **no word on it
+      yet**, nor on the number jumping in its corner.
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next

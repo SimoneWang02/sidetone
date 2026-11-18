@@ -377,8 +377,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   messages the disc is a shocked face (`Orb.Shocked`, drawn, since WPF here has no color
   emoji; `overlay.waiting_many`: `face` or `number` for "9+"), the author's idea on
   seeing "9+": "very dense in that circle". That face was first a shocked one in white on
-  red, which they found "kind of scary ... not funny"; it is now yellow, one eye wide, tongue
-  out (`Orb.Silly`). `overlay.waiting_cover` says which messages show their number across
+  red, which they found "kind of scary ... not funny", then yellow with its tongue out, which
+  looked "mentally ill"; they asked for one that is fed up with so many requests, so it is
+  yellow with half-closed lids, a sideways look, one brow up and a flat mouth
+  (`Orb.Unimpressed`). `overlay.waiting_cover` says which messages show their number across
   the whole light: `first` (default; the ones that join make it jump in the corner), `each`
   or `never`. To show the mark on the live overlay: `claude-speaks follow-up -s NAME TEXT`
   several times for a session that is busy.
