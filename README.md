@@ -99,8 +99,8 @@ voice model (about 350 MB), and adds the hooks to `~/.claude/settings.json`. You
 hooks are kept and a backup of the file is written first. It also links the command into
 `~/.local/bin` as `claude-speaks` and the shorter `cs`. It asks once which languages you will
 speak to it (`./install.sh --languages en,it` answers in advance; `claude-speaks languages`
-changes it later). The Whisper model for push-to-talk (about 250 MB) is downloaded the first
-time you use the talk key. `./uninstall.sh` removes the hooks again.
+changes it later). The Whisper model for push-to-talk (about 460 MB for the default size) is
+downloaded too; `--no-models` leaves it for the first time you use the talk key. `./uninstall.sh` removes the hooks again.
 
 Start a new Claude Code session and it speaks. To see and hear everything without doing real
 work, run `cs demo` in a terminal.

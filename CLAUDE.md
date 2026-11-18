@@ -16,7 +16,10 @@ you → session) so you can keep your eyes on your own work.
 - Not yet packaged as a plugin. Paths outside the repo: `~/.local/share/{kokoro,piper}`.
 - `README.md`, `LICENSE` (MIT) and `install.sh` / `uninstall.sh` exist since 2026-11-16. The
   install script merges the hooks into an existing `settings.json` (tested on a throwaway home
-  folder) but its download and environment steps have not been run on a clean machine.
+  folder). Its download and environment steps ran on 2026-11-17 in an empty home folder
+  with nothing cached (22 s, 906 MB; the hub from that install spoke and its speech model
+  wrote the sentence back), not yet on a machine without the apt tools and `uv`. It also
+  fetches the Whisper model since then; before, the first push-to-talk waited for it.
 - Private GitHub repo: github.com/SimoneWang02/claude-speaks. Claude may commit and push.
 
 ## Roadmap (decided with the author 2026-11-16)

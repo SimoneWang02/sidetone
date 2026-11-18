@@ -391,6 +391,15 @@ real keys yet.
 - [ ] The picture check can catch the live overlay when the two overlap on screen.
 - [ ] `install.sh` has only been run in throwaway folders, never on a clean machine with the
       model download.
+      Half done on the evening of 2026-11-17: run in an empty home folder with nothing
+      cached, so Python, the packages and both models really came from the network (22 s
+      on the author's line, 906 MB on disk). A hub started from that install spoke a
+      sentence through a stand-in player, and the install's own speech model wrote it
+      back word for word. Found on the way: the speech model (464 MB) only came at the
+      first hold of the talk key, 21 s in which the key seemed to do nothing; the script
+      now fetches it. Still open: a machine without `jq`, `curl`, `uv` and the sound
+      tools already there, a real loudspeaker and microphone, and the overlay's first
+      start. Docker is on the author's machine but not switched on for this WSL.
 
 ## Not started
 

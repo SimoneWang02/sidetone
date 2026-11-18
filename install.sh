@@ -62,6 +62,15 @@ elif [ $hooks_only = 0 ] && [ -t 0 ] && [ -t 1 ] &&
   echo "Change it any time with: claude-speaks languages en,it"
 fi
 
+# The speech model for push-to-talk. Without this it is fetched at the first hold of the talk
+# key, which then seems to do nothing for as long as the download takes.
+if [ $hooks_only = 0 ] && [ $models = 1 ] && command -v parec >/dev/null; then
+  model=$(jq -r '.whisper_model // empty' "$CONFIG" 2>/dev/null) || model=
+  echo "Fetching the speech model ${model:=small.en} for push-to-talk (several hundred MB the first time)"
+  "$KOKORO_DIR/venv/bin/python" -I -c 'import sys; from faster_whisper import download_model; download_model(sys.argv[1])' "$model" >/dev/null 2>&1 ||
+    echo "Note: that did not work now; it will be fetched at the first push-to-talk instead."
+fi
+
 # Add our hooks next to whatever is already registered. An entry of ours from an earlier
 # install (any command under this checkout's hooks/) is replaced, so paths stay current.
 mkdir -p "$(dirname "$SETTINGS")"
