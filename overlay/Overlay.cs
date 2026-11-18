@@ -70,10 +70,10 @@ namespace ClaudeSpeaks
         // or a color of your own (waiting_color, "#RRGGBB").
         public static Color Waiting = Color.FromRgb(0xFF, 0x3B, 0x30);
         public static string WaitingMark = "number";  // or "clock", "dot"
-        public static string WaitingMany = "face";  // above nine messages: a face that has had enough | "number" = "9+"
+        public static string WaitingMany = "face";  // above nine messages: a dismayed face | "number" = "9+"
         // Which messages show their number across the whole light before it goes to the corner:
-        // the first to wait | each | never (the others make the number jump where it is).
-        public static string WaitingCover = "first";
+        // never (it comes up in its corner, with a small jump) | first = the first to wait | each.
+        public static string WaitingCover = "never";
         public static double WaitingHold = 0.9;  // seconds the number covers the whole light before it goes to the corner
 
         public static void SetWaitingColor(string hex)
@@ -410,8 +410,9 @@ namespace ClaudeSpeaks
                 k = k * k * (3 - 2 * k);  // leaves and lands softly
                 double pop = Ui.Motionless ? 1 : Covers ? Ui.Overshoot(age / 0.3) : 1 + (age < 0.4 ? 0.4 * Math.Sin(Math.PI * age / 0.4) : 0);
                 var at = new Point(c.X + (corner.X - c.X) * k, c.Y + (corner.Y - c.Y) * k);
-                double r = (13.5 + (6.6 - 13.5) * k) * pop;
-                if (Waiting > 9 && Ui.WaitingMany == "face") { Unimpressed(dc, at, r); return; }
+                bool face = Waiting > 9 && Ui.WaitingMany == "face";  // a face needs more room than a digit to be read
+                double small = face ? 9.2 : 6.6, r = (13.5 + (small - 13.5) * k) * pop;
+                if (face) { Dismayed(dc, new Point(at.X - 1.5 * k, at.Y + 1.5 * k), r); return; }
                 dc.DrawEllipse(Ui.Alpha(Ui.Waiting, 0.97), null, at, r, r);
                 Number(dc, count, at, (count.Length > 1 ? 0.95 : 1.25) * r);
                 return;
@@ -441,39 +442,40 @@ namespace ClaudeSpeaks
         const double MarkMove = 0.55;  // seconds the number takes from the middle of the light to its corner
         static readonly Typeface MarkFace = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
 
-        // More than nine messages: a face in the yellow of a smiley that has had enough: lids
-        // half down, a sideways look, one brow up, a flat mouth pulled down at one end ("so many,
-        // really?"). "9+" was a tight fit in so small a circle; a shocked face in white on red
-        // looked frightening and a grinning one with its tongue out looked unwell.
-        static readonly Brush FaceSkin = Ui.Alpha(Color.FromRgb(0xFF, 0xD2, 0x3F), 1), FaceInk = Ui.Alpha(Color.FromRgb(0x4A, 0x2E, 0x12), 1);
+        // More than nine messages: a dismayed face in the yellow of a smiley, after a picture
+        // the author gave as the look to go for: brows raised in the middle, oval eyes with a
+        // line under each, and a wavy mouth turned down ("so many, what are you doing?").
+        // Before it: "9+", a tight fit in so small a circle; a shocked face in white on red,
+        // which looked frightening; a grinning one, which looked unwell; an unimpressed one.
+        static readonly Brush FaceSkin = Ui.Alpha(Color.FromRgb(0xFF, 0xCE, 0x4A), 1), FaceInk = Ui.Alpha(Color.FromRgb(0x5E, 0x40, 0x0A), 1);
 
-        static void Unimpressed(DrawingContext dc, Point at, double r)
+        static void Dismayed(DrawingContext dc, Point at, double r)
         {
             dc.DrawEllipse(FaceSkin, null, at, r, r);
-            var ink = new Pen(FaceInk, Math.Max(1, 0.10 * r)) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
-            for (int side = -1; side <= 1; side += 2)
+            var thick = new Pen(FaceInk, Math.Max(1.1, 0.12 * r)) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
+            var thin = new Pen(FaceInk, Math.Max(0.9, 0.08 * r)) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+            var lines = new StreamGeometry();
+            using (StreamGeometryContext g = lines.Open())
             {
-                // The lower half of an eye under a straight lid, looking to the right.
-                double x = at.X + side * 0.37 * r, y = at.Y - 0.14 * r, half = 0.23 * r;
-                var eye = new StreamGeometry();
-                using (StreamGeometryContext g = eye.Open())
-                {
-                    g.BeginFigure(new Point(x - half, y), true, true);
-                    g.ArcTo(new Point(x + half, y), new Size(half, 0.24 * r), 0, false, SweepDirection.Counterclockwise, true, false);
-                }
-                dc.DrawGeometry(Brushes.White, null, eye);
-                dc.PushClip(eye);
-                dc.DrawEllipse(FaceInk, null, new Point(x + 0.10 * r, y + 0.04 * r), 0.11 * r, 0.11 * r);
-                dc.Pop();
-                dc.DrawLine(ink, new Point(x - half, y), new Point(x + half, y));
+                // Brows: from the outside in, rising to a small hook over the nose.
+                g.BeginFigure(P(at, r, -0.70, -0.28), false, false);
+                g.QuadraticBezierTo(P(at, r, -0.34, -0.30), P(at, r, -0.24, -0.52), true, true);
+                g.BeginFigure(P(at, r, 0.66, -0.28), false, false);
+                g.QuadraticBezierTo(P(at, r, 0.28, -0.30), P(at, r, 0.18, -0.54), true, true);
+                // The mouth: up from the left, a dip, and down again on the right.
+                g.BeginFigure(P(at, r, -0.36, 0.66), false, false);
+                g.QuadraticBezierTo(P(at, r, -0.26, 0.44), P(at, r, -0.04, 0.47), true, true);
+                g.QuadraticBezierTo(P(at, r, 0.14, 0.50), P(at, r, 0.22, 0.42), true, true);
+                g.QuadraticBezierTo(P(at, r, 0.38, 0.36), P(at, r, 0.42, 0.60), true, true);
             }
-            // One brow low and flat, the other up.
-            dc.DrawLine(ink, new Point(at.X - 0.62 * r, at.Y - 0.36 * r), new Point(at.X - 0.16 * r, at.Y - 0.34 * r));
-            dc.DrawLine(ink, new Point(at.X + 0.16 * r, at.Y - 0.52 * r), new Point(at.X + 0.60 * r, at.Y - 0.64 * r));
-            // The mouth: flat, a little askew, turned down at its left end.
-            dc.DrawLine(ink, new Point(at.X - 0.28 * r, at.Y + 0.50 * r), new Point(at.X + 0.34 * r, at.Y + 0.44 * r));
-            dc.DrawLine(ink, new Point(at.X - 0.28 * r, at.Y + 0.50 * r), new Point(at.X - 0.40 * r, at.Y + 0.60 * r));
+            dc.DrawGeometry(null, thick, lines);
+            dc.DrawEllipse(FaceInk, null, P(at, r, -0.36, -0.06), 0.13 * r, 0.17 * r);
+            dc.DrawEllipse(FaceInk, null, P(at, r, 0.36, -0.06), 0.13 * r, 0.17 * r);
+            dc.DrawLine(thin, P(at, r, -0.46, 0.14), P(at, r, -0.24, 0.10));  // the lines under the eyes
+            dc.DrawLine(thin, P(at, r, 0.22, 0.10), P(at, r, 0.52, 0.09));
         }
+
+        static Point P(Point at, double r, double x, double y) { return new Point(at.X + x * r, at.Y + y * r); }
 
         static void Number(DrawingContext dc, string text, Point at, double size)
         {
@@ -1211,7 +1213,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("waiting_cover"))
                     {
                         string cover = Str(msg, "waiting_cover");
-                        Ui.WaitingCover = cover == "each" || cover == "never" ? cover : "first";
+                        Ui.WaitingCover = cover == "each" || cover == "first" ? cover : "never";
                     }
                     if (msg.ContainsKey("waiting_mark"))
                     {
