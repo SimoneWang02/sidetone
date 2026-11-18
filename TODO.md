@@ -378,6 +378,9 @@ real keys yet.
       they sat up to a pixel low, mended (placed by their own strokes, measured in
       pictures). And the number's disc is now as large as the face's, their choice
       (`overlay.waiting_size`, a radius of 9.2 where it was 6.6).
+      Asked by the author, and left as it is: the number in the middle of the light
+      instead of a disc of its own. The middle holds the status sign (the "!", the
+      voice bars) in the very states in which words wait; told so, they agreed.
 - [x] Some push-to-talk holds record sound and come back as "nothing heard". Some were
       Italian before the multilingual model, but at least one was English. Cause not found: the
       microphone delivers signal at once, and loudness made no difference in tests. Next
