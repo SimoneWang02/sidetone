@@ -453,12 +453,15 @@ real keys yet.
       through the live hub: asked for a folder, told by voice "make a file named
       note.txt instead", it made no folder and asked to write the file. **Not tried by
       the author.** Not built: the terminal's "chat about this" as such.
-- [ ] Several questions in one dialog: answered by voice or number key, the overlay moves on
+- [x] Several questions in one dialog: answered by voice or number key, the overlay moves on
       to the second question, but the terminal goes on showing the first until the last one
       is answered (the author, 2026-11-17: "I sent an audio to answer the first question
       but on the terminal I still view the first question"). Both answers did arrive. The
       hook can only answer a whole dialog at once, so the terminal cannot be moved along;
       what could be done: say and show "question 1 of 2" so it is clear more are coming.
+      Done 2026-11-17: the overlay writes "question 1 of 2" beside the name of who asks
+      (it stood small at the end of the line about the keys) and the voice reads
+      "Question 2 of 2: ..." for the next one. Seen in a picture; not seen by the author.
 - [x] With two or more languages, working out which one a recording is costs about 0.6 s,
       nearly as much as writing the sentence down (measured 2026-11-17, see "Numbers to
       publish"). Likely because the recording goes through the first half of the model
