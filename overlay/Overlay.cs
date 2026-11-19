@@ -852,8 +852,11 @@ namespace ClaudeSpeaks
             WindowStyle = WindowStyle.None;
             AllowsTransparency = true;
             Background = Brushes.Transparent;
-            Topmost = true;
-            ShowInTaskbar = false;
+            // The lights stay above everything. A window that takes input is a program's window
+            // like any other: it can go behind others, has its place in the taskbar and in
+            // Alt+Tab, and can be put away there.
+            Topmost = !takesInput;
+            ShowInTaskbar = takesInput;
             ShowActivated = takesInput;
             Focusable = takesInput;
             IsHitTestVisible = takesInput;
@@ -871,8 +874,8 @@ namespace ClaudeSpeaks
             Content = Panel;
             Handle = new WindowInteropHelper(this).EnsureHandle();
             // Click-through, no taskbar or Alt+Tab entry, never takes focus from the app in front.
-            // One that takes input keeps only the middle of those.
-            SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) | WS_EX_TOOLWINDOW | (takesInput ? 0 : WS_EX_TRANSPARENT | WS_EX_NOACTIVATE));
+            // One that takes input is none of those.
+            if (!takesInput) SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
         }
 
         public FrameworkElement Body
@@ -1048,13 +1051,13 @@ namespace ClaudeSpeaks
     class SettingsWindow
     {
         public static readonly Color Accent = Color.FromRgb(0x4F, 0xC3, 0xF7);
-        const double High = 560, Broad = 780, NavWidth = 172;
+        const double High = 560, Broad = 790, NavWidth = 176;
         public readonly Glass Window = new Glass(0, true);
         readonly Action<string, object> choose;  // a setting was chosen
         readonly Action closed;                  // the window was closed from here
         readonly Action<bool> typingKey;         // a hotkey is being typed: the overlay's own hotkeys must let the keys through
-        readonly StackPanel nav = new StackPanel { Margin = new Thickness(10, 2, 8, 12) };
-        readonly StackPanel list = new StackPanel { Margin = new Thickness(8, 0, 20, 20) };
+        readonly StackPanel nav = new StackPanel { Margin = new Thickness(10, 2, 10, 12) };
+        readonly StackPanel list = new StackPanel { Margin = new Thickness(18, 0, 22, 20) };
         readonly ScrollViewer scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
         readonly Border thumb = new Border { Width = 3, CornerRadius = new CornerRadius(1.5), Background = Ui.Paint("#4DFFFFFF"), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 0, 7, 0), Visibility = Visibility.Collapsed, IsHitTestVisible = false };
         object[] sections = new object[0];
@@ -1068,44 +1071,69 @@ namespace ClaudeSpeaks
             Window.Width = Broad; Window.Height = High;
             Window.Title = "claude-speaks settings";
 
+            // Two columns over the whole height: the sections at the left on a darker ground of
+            // their own (the author: "the menu ... a different background color to compare to
+            // the right"), what one section holds at the right. The window is moved by the top
+            // of either.
             var root = new Grid();
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(52) });
-            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NavWidth) });
+            root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            MouseButtonEventHandler move = delegate(object sender, MouseButtonEventArgs e) { try { Window.DragMove(); } catch (InvalidOperationException) { } };
 
-            // The head: what this is, and the way out. The window is moved by it.
+            var side = new Grid();
+            side.RowDefinitions.Add(new RowDefinition { Height = new GridLength(54) });
+            side.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            side.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            var name = new Border { Background = Brushes.Transparent, Child = new TextBlock { Text = "Settings", FontSize = 15, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(22, 6, 0, 0) } };
+            name.MouseLeftButtonDown += move;
+            side.Children.Add(name);
+            Grid.SetRow(nav, 1);
+            side.Children.Add(nav);
+            // Whose settings these are, small, out of the way (the author did not want it beside the heading).
+            var maker = new TextBlock { Text = "claude-speaks", FontSize = 11, Foreground = Ui.Paint("#59FFFFFF"), Margin = new Thickness(22, 0, 0, 16) };
+            Grid.SetRow(maker, 2);
+            side.Children.Add(maker);
+            root.Children.Add(new Border { Background = Ui.Paint("#47000000"), BorderBrush = Ui.Paint("#14FFFFFF"), BorderThickness = new Thickness(0, 0, 1, 0), Child = side });
+
+            var main = new Grid();
+            main.RowDefinitions.Add(new RowDefinition { Height = new GridLength(44) });
+            main.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             var head = new Grid { Background = Brushes.Transparent };
-            var title = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(22, 4, 0, 0) };
-            title.Children.Add(new TextBlock { Text = "Settings", FontSize = 15, FontWeight = FontWeights.SemiBold });
-            title.Children.Add(new TextBlock { Text = "claude-speaks", FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(10, 0, 0, 1), VerticalAlignment = VerticalAlignment.Bottom });
-            head.Children.Add(title);
-            var cross = new System.Windows.Shapes.Path { Data = Geometry.Parse("M0,0 L9,9 M9,0 L0,9"), Stroke = Ui.Dim, StrokeThickness = 1.4, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
-            var close = new Border { Width = 30, Height = 30, CornerRadius = new CornerRadius(7), Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 4, 12, 0), Cursor = Cursors.Hand, Child = cross };
-            Lit(close, "#00FFFFFF", "#24FFFFFF");
-            close.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; };  // not the start of a move
-            close.MouseLeftButtonUp += delegate { Close(); };
-            head.Children.Add(close);
-            head.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { try { Window.DragMove(); } catch (InvalidOperationException) { } };
-            root.Children.Add(head);
-
-            var body = new Grid();
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NavWidth) });
-            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            body.Children.Add(nav);
+            head.MouseLeftButtonDown += move;
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 4, 10, 0) };
+            buttons.Children.Add(HeadButton("M0,5 L9,5", delegate { Window.WindowState = WindowState.Minimized; }));
+            buttons.Children.Add(HeadButton("M0,0 L9,9 M9,0 L0,9", delegate { Close(); }));
+            head.Children.Add(buttons);
+            main.Children.Add(head);
             scroll.Content = list;
             scroll.ScrollChanged += delegate { ShowThumb(); };
-            Grid.SetColumn(scroll, 1);
-            body.Children.Add(scroll);
-            Grid.SetColumn(thumb, 1);
-            body.Children.Add(thumb);
-            Grid.SetRow(body, 1);
-            root.Children.Add(body);
+            Grid.SetRow(scroll, 1);
+            main.Children.Add(scroll);
+            Grid.SetRow(thumb, 1);
+            main.Children.Add(thumb);
+            Grid.SetColumn(main, 1);
+            root.Children.Add(main);
 
             Window.Panel.Child = root;
             Window.PreviewKeyDown += OnKey;
             Window.Deactivated += delegate { if (capturing.Length > 0) StopTyping(); };
         }
 
+        // One of the small buttons at the top right: a sign drawn with a few strokes.
+        static Border HeadButton(string strokes, Action pressed)
+        {
+            var sign = new System.Windows.Shapes.Path { Data = Geometry.Parse(strokes), Stroke = Ui.Dim, StrokeThickness = 1.4, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, Width = 9, Height = 9, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            var button = new Border { Width = 30, Height = 30, CornerRadius = new CornerRadius(7), Margin = new Thickness(2, 0, 0, 0), Cursor = Cursors.Hand, Child = sign };
+            Lit(button, "#00FFFFFF", "#24FFFFFF");
+            button.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; };  // not the start of a move
+            button.MouseLeftButtonUp += delegate { pressed(); };
+            return button;
+        }
+
         public bool IsOpen { get { return Window.IsVisible; } }
+
+        // In front of you, to be typed in: not behind another program, not put away.
+        public bool InFront { get { return Window.IsVisible && Window.IsActive && Window.WindowState != WindowState.Minimized; } }
 
         public void Look(string kind)
         {
@@ -1134,8 +1162,10 @@ namespace ClaudeSpeaks
                 }
                 Window.ShowActivated = !quiet;
                 Window.Show();
-                if (!quiet) Window.Activate();
             }
+            if (quiet) return;
+            if (Window.WindowState == WindowState.Minimized) Window.WindowState = WindowState.Normal;
+            Window.Activate();
         }
 
         // A click at a place in the window, as the mouse would make it, without the mouse: for
@@ -1778,7 +1808,7 @@ namespace ClaudeSpeaks
             holdTimer.Tick += delegate { if (!Down((int)heldKey)) EndHold(); };
             // Other always-on-top windows (and some games) push us down; climb back regularly.
             topTimer.Interval = TimeSpan.FromSeconds(2);
-            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); if (settings != null) settings.Window.Raise(); };
+            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); };
 
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
             SetGlass();
@@ -1966,7 +1996,14 @@ namespace ClaudeSpeaks
                     Render();
                     break;
                 case "settings":  // the settings window: open with what there is to set, or closed
-                    if (msg.ContainsKey("open") && Convert.ToBoolean(msg["open"]))
+                    // "toggle" (the key): shut it if it is in front of you, else bring it there. Only
+                    // the window knows which, now that it can lie behind other programs.
+                    if (msg.ContainsKey("toggle") && Convert.ToBoolean(msg["toggle"]) && settings != null && settings.InFront)
+                    {
+                        settings.Hide();
+                        Write(new Dictionary<string, object> { { "type", "settings" }, { "open", false } });
+                    }
+                    else if (msg.ContainsKey("open") && Convert.ToBoolean(msg["open"]))
                     {
                         if (settings == null)
                         {

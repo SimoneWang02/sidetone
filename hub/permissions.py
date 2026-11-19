@@ -265,10 +265,12 @@ class Permissions:
     _settings_open = False
 
     def show_settings(self, open: bool | None = None) -> bool:
-        """Open or close the settings window; None = the other of what it is now."""
-        self._settings_open = (not self._settings_open) if open is None else bool(open)
+        """Open or close the settings window. None = the key: the window shuts if it is in
+        front of you and comes to the front if it is not, which only the window can tell (it
+        may be open behind another program); it says so if it shut."""
+        self._settings_open = True if open is None else bool(open)
         if self.overlay:
-            self.overlay.send({"type": "settings", "open": True, "sections": settings_mod.describe(self)}
+            self.overlay.send({"type": "settings", "open": True, "sections": settings_mod.describe(self), **({"toggle": True} if open is None else {})}
                               if self._settings_open else {"type": "settings", "open": False})
         return self._settings_open
 

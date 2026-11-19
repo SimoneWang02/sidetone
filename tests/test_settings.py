@@ -194,13 +194,19 @@ class Chosen(SettingsCase):
 
 
 class Shown(SettingsCase):
-    def test_the_key_opens_the_window_and_closes_it(self):
+    def test_the_key_leaves_it_to_the_window_whether_to_shut_or_come_forward(self):
         hub = self.make()
         hub.on_overlay({"type": "hotkey", "name": "settings"})
         opened = self.window.of("settings")[-1]
-        self.assertTrue(opened["open"])
+        self.assertTrue(opened["open"] and opened["toggle"])
         self.assertEqual([s["name"] for s in opened["sections"]], ["Voice", "Talking", "Overlay", "Figures", "Terminal", "Keys"])
-        hub.on_overlay({"type": "hotkey", "name": "settings"})
+        hub.on_overlay({"type": "settings", "open": False})  # it was in front, so the window shut and said so
+        self.assertFalse(hub._settings_open)
+        hub.on_overlay({"type": "hotkey", "name": "settings"})  # behind another program it would only come forward
+        self.assertTrue(self.window.of("settings")[-1]["toggle"])
+        self.assertTrue(hub._settings_open)
+        self.assertNotIn("toggle", hub.show_settings(True) and self.window.of("settings")[-1])  # the command opens, whatever
+        hub.show_settings(False)
         self.assertEqual(self.window.of("settings")[-1], {"type": "settings", "open": False})
 
     def test_a_choice_made_in_the_window_comes_back_as_it_stands(self):
