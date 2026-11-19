@@ -18,6 +18,9 @@ TONES = {
     "sent": [(659.3, 0.07), (987.8, 0.13)],
     "queued": [(659.3, 0.07), (0, 0.06), (659.3, 0.11)],
     "failed": [(440.0, 0.08), (329.6, 0.16)],
+    # The mute key: lower and slower than the three above, so they are not taken for them.
+    "voice_off": [(392.0, 0.09), (261.6, 0.2)],
+    "voice_on": [(261.6, 0.09), (392.0, 0.2)],
 }
 
 

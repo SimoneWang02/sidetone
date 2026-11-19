@@ -113,6 +113,7 @@ SECTIONS = [
         hotkey("talk", "Talk", "Hold it and speak."),
         hotkey("cancel", "Cancel or stop", "Drop a recording, take words back, cut a line, or stop a turn."),
         hotkey("toggle", "Keep the details out"),
+        hotkey("mute", "Mute", "Turns the voice off for every session, and on again."),
         hotkey("repeat", "Say it again"),
         hotkey("missed", "What did I miss"),
         hotkey("layout", "Switch layout"),

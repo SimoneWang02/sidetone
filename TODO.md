@@ -9,6 +9,13 @@ started. `CLAUDE.md` has the details of how things work.
 These work in the automated tests or in pictures taken from WSL, but nobody has pressed the
 real keys yet.
 
+- [ ] The mute key, `Ctrl+Alt+Q` (asked for and built 2026-11-19: "I would rather have ... a
+      mute shortcut"). Press it while a session speaks: the line stops, two low notes go
+      down, and the overlay shows "Voice off" with a struck-out speaker for 2.5 s. While
+      muted, what sessions say is shown instead. Press again: two low notes go up, "Voice
+      on". The same as `sidetone off` and `on`; rebind it in the settings window, Keys.
+      Open: mute is for every session, not only the one in focus; and once the notice
+      is gone nothing on screen says the voice is off.
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
       Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
       the talk key and say "clear the chat" to a session that is idle: its terminal should
@@ -1027,7 +1034,9 @@ Smaller ideas:
       has them since 2026-11-17 (`hub/sounds.py`: sent, waiting, not sent); the author has
       not said yet whether they sound right. "Allowed." and "Denied." are still spoken.
 - [ ] Left or right ear per session
-- [ ] Stay quiet for the session whose terminal is in front
+- [x] Stay quiet for the session whose terminal is in front. Offered on 2026-11-19 and turned
+      down: "I don't think I need it ... I would rather have a mute shortcut." Built
+      instead: the mute key (see "To try by hand").
 - [x] A key that jumps to the terminal of the session in focus
       Built 2026-11-18 while the author was away ("list me ... the next things to do ...
       and you'll do it"; the key and its letter are not agreed with them): `Ctrl+Alt+T`

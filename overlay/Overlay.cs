@@ -3527,7 +3527,11 @@ namespace ClaudeSpeaks
             if (hasBanner)
             {
                 bannerTitle.Inlines.Clear();
-                bannerTitle.Inlines.Add(new Run("\uD83C\uDFA4  ") { Foreground = Ui.Alpha(Ui.Tint("working"), 1), FontFamily = Ui.Symbols });
+                // The microphone (moving the bar), or a speaker struck out or sounding (the mute key).
+                string icon = Str(msg, "icon", "");
+                bannerTitle.Inlines.Add(new Run(icon == "muted" ? "\uD83D\uDD07  " : icon == "voice" ? "\uD83D\uDD0A  " : "\uD83C\uDFA4  ")
+                    { Foreground = icon == "muted" ? Ui.Dim : Ui.Alpha(Ui.Tint("working"), 1), FontFamily = Ui.Symbols,
+                      FontSize = icon.Length > 0 ? 17 : bannerTitle.FontSize });  // the speaker's stroke is lost at the size of the words
                 bannerTitle.Inlines.Add(new Run(Str(msg, "text")) { FontWeight = FontWeights.SemiBold });
                 bannerHint.Text = Str(msg, "hint");
                 bannerHint.Visibility = bannerHint.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;

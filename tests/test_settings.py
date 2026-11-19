@@ -241,5 +241,35 @@ class Shown(SettingsCase):
         self.assertEqual(self.window.of("settings"), [])
 
 
+class Muted(SettingsCase):
+    """The mute key: the voice off for every session and on again, with a sound and a notice."""
+
+    def test_the_key_switches_the_voice_and_says_so(self):
+        hub = self.make()
+        played = []
+        hub.sounds = unittest.mock.Mock(play=played.append)
+        hub.speech.stop_all = unittest.mock.Mock()
+        hub.on_overlay({"type": "hotkey", "name": "mute"})
+        self.assertTrue(os.path.exists(self.cfg.mute_file))
+        hub.speech.stop_all.assert_called_once()  # the line being said is cut
+        banner = self.window.of("banner")[-1]
+        self.assertEqual((banner["icon"], banner["text"], banner["hint"]), ("muted", "Voice off", "Ctrl+Alt+Q turns it on again"))
+        hub.on_overlay({"type": "hotkey", "name": "mute"})
+        self.assertFalse(os.path.exists(self.cfg.mute_file))
+        self.assertEqual((self.window.of("banner")[-1]["text"], played), ("Voice on", ["voice_off", "voice_on"]))
+
+    def test_no_sound_when_feedback_is_off(self):
+        hub = self.make(talk_feedback="none")
+        played = []
+        hub.sounds = unittest.mock.Mock(play=played.append)
+        hub.toggle_mute()
+        hub.toggle_mute()
+        self.assertEqual(played, [])
+
+    def test_the_key_is_in_the_window(self):
+        hub = self.make()
+        self.assertEqual(settings.read(hub, "overlay.hotkeys.mute"), "Ctrl+Alt+Q")
+
+
 if __name__ == "__main__":
     unittest.main()

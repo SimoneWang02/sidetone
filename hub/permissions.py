@@ -274,6 +274,28 @@ class Permissions:
                               if self._settings_open else {"type": "settings", "open": False})
         return self._settings_open
 
+    def toggle_mute(self) -> bool:
+        """The mute key: the voice off for every session, or on again (the same as `sidetone
+        off` and `on`). Muting cuts the line being said and drops those waiting; while muted,
+        what sessions say is shown instead. Answered with a sound and a moment's notice on the
+        overlay. Returns True if the voice is now off."""
+        muted = not self._muted()
+        if muted and self.sounds and self.cfg.talk_feedback != "none":
+            self.sounds.play("voice_off")  # before the file: sounds are quiet while muted
+        settings_mod.apply(self, "voice", not muted)
+        if not muted and self.sounds and self.cfg.talk_feedback != "none":
+            self.sounds.play("voice_on")
+        log(self.cfg, "hub.log", "voice " + ("off" if muted else "on") + " (mute key)")
+        if self.overlay:
+            key = self.cfg.overlay.get("hotkeys", {}).get("mute", "")
+            self.overlay.send({"type": "banner", "icon": "muted" if muted else "voice",
+                               "text": "Voice off" if muted else "Voice on",
+                               "hint": f"{key} turns it on again" if muted and key else "",
+                               "seconds": 2.5 if muted else 1.5})
+        if self._settings_open and self.overlay:
+            self.overlay.send({"type": "settings", "open": True, "title": settings_mod.NAME, "sections": settings_mod.describe(self)})
+        return muted
+
     def set_setting(self, key: str, value) -> str | None:
         """Something was chosen, in the window or with `sidetone settings KEY VALUE`. Returns
         what is wrong with it, or None. The window is then told how things stand: it draws
@@ -345,3 +367,5 @@ class Permissions:
             self.show_terminal()
         elif name == "settings":
             self.show_settings()
+        elif name == "mute":
+            self.toggle_mute()

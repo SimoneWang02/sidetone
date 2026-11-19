@@ -121,6 +121,9 @@ DEFAULTS = {
                 "jump": "",
                 # Open and close the settings window.
                 "settings": "Ctrl+Alt+S",
+                # The voice off for every session, or on again (the author, 2026-11-19: "I would
+                # rather have ... a mute shortcut"). Q for quiet: Ctrl+Alt+M is taken on their machine.
+                "mute": "Ctrl+Alt+Q",
                 # Move the focus to the session before or after; claimed only while there are two or more.
                 # The first pair is for the bar, where the lights run down; the second for the island,
                 # where they run across. Only the pair of the layout in use is claimed.
