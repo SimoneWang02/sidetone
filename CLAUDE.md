@@ -1007,6 +1007,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   it can be minimized, and a WPF window with `ResizeMode.NoResize` does not. It is
   `CanMinimize` now, with `WS_MINIMIZEBOX` and `WS_SYSMENU` set on the window (the size is
   unchanged, seen in a picture). **The click itself not tried again by them yet.**
+  Asked to try it, they did not see the window at all ("I don't see it open"): opened by
+  the command and not by the key, Windows does not let it take the keyboard from the
+  program in front, and since it is no longer always on top it came up behind that
+  program. `Show` now puts it on top for an instant (`Topmost` on and off) before asking
+  for the keyboard. **Not confirmed by them that it shows.**
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.

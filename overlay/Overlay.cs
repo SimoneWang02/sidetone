@@ -1235,6 +1235,11 @@ namespace ClaudeSpeaks
             }
             if (quiet) return;
             if (Window.WindowState == WindowState.Minimized) Window.WindowState = WindowState.Normal;
+            // Asked for with the command and not the key, Windows does not let it take the
+            // keyboard from the program in front, and it opened behind that program, unseen
+            // (the author: "I don't see it open"). Being on top for a moment brings it up.
+            Window.Topmost = true;
+            Window.Topmost = false;
             Window.Activate();
         }
 
