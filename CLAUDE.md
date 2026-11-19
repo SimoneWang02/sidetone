@@ -1,10 +1,5 @@
 # Sidetone
 
-Called claude-speaks until 2026-11-18; the folders under `~/.config`, `~/.local/state`,
-`~/.local/share` and the run folder, the `CLAUDE_SPEAKS_*` variables, the VS Code extension and
-the overlay program's file name still carry the old name. Ask before renaming those
-(`docs/dev/name-and-logo.md` has the story of the name, the color `#006896` and the logo).
-
 Eyes-free Claude Code. A local voice reads a 1–2 sentence spoken summary of each turn, never the
 full output, and starts while the reply is still streaming. With several sessions open they
 speak one at a time, each with its own label and voice.
@@ -25,7 +20,8 @@ the author's asking, and the rest was moved unchanged:
   before changing a feature, and add to it when you change one.
 - `docs/dev/facts.md`: measured facts about Claude Code's hooks and session files, Windows, WPF,
   glass and motion, sound, the speech models, this machine.
-- `docs/dev/history.md`, `docs/dev/name-and-logo.md`, `docs/dev/similar-projects.md`.
+- `docs/dev/history.md`, `docs/dev/name-and-logo.md` (the name, the color `#006896`, the logo),
+  `docs/dev/similar-projects.md`.
 
 ## Rules for working here
 
