@@ -80,6 +80,16 @@ by the author with the real keys, voice or eyes.
       paying attention." So it stays open until it happens again; then `hub.log` will
       show a short press if that was it. If it was a real hold that would not end, the
       place to look is the overlay's keyboard hook losing the release (see `CLAUDE.md`).
+- [ ] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
+      take a light with the mouse and drop it where it should sit in the bar. The hub keeps
+      the order (by project, so it survives restarts) and new sessions join at the end. Fits
+      the dragging the bar already has: with the keys held a drag moves one light, without
+      them the whole bar.
+      Built 2026-11-19 (see `CLAUDE.md`): `drag_keys` is `""` again, so a plain
+      drag moves the bar, and with `Ctrl+Alt` held a press on a light lifts it and it
+      can be dropped elsewhere; the order is kept in `sessions.json`. Tried by the
+      author the same night and mended four times; the last fix (the panel no longer
+      folds away while a light is held) **not tried yet**.
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
       A first one built on the evening of 2026-11-18 and put on their screen:
@@ -100,16 +110,8 @@ by the author with the real keys, voice or eyes.
       better"); putting it away and bringing it back from the taskbar: "It works
       perfectly". Still untried by hand: a slider, the list of voices, typing a new
       hotkey.
-- [ ] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
-      take a light with the mouse and drop it where it should sit in the bar. The hub keeps
-      the order (by project, so it survives restarts) and new sessions join at the end. Fits
-      the dragging the bar already has: with the keys held a drag moves one light, without
-      them the whole bar.
-      Built 2026-11-19 (see `CLAUDE.md`): `drag_keys` is `""` again, so a plain
-      drag moves the bar, and with `Ctrl+Alt` held a press on a light lifts it and it
-      can be dropped elsewhere; the order is kept in `sessions.json`. Tried by the
-      author the same night and mended four times; the last fix (the panel no longer
-      folds away while a light is held) **not tried yet**.
+      On 2026-11-19 the author put it last of the things to try: "the settings are the
+      last things to try because there are so many".
 
 ## To decide
 
