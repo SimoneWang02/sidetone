@@ -312,6 +312,10 @@ To choose before release: which of these the first version has, and which wait.
         speech), Chatterbox if it does not sound real enough, ElevenLabs as the paid
         yardstick
       - the recording stays on the author's machine, never in the repo
+      Asked again 2026-11-19, now with their own voice: "an option of selecting my voice
+      for [a] session, and I'll train the model that uses my voice". So the first
+      recording is the author's own (their consent is given), and their voice becomes one
+      to choose per session in the settings window, Voices.
 - [ ] `install.sh` fetching the voices of the languages chosen: Piper's
       `it_IT-paola-medium` when Italian is chosen (`tts.PREFERRED_VOICE` asks for it), and
       Kokoro's Chinese model v1.1-zh with `misaki-fork[zh]` when Chinese is. Both were put on
