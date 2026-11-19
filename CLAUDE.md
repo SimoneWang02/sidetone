@@ -1004,6 +1004,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   time and the tokens were one piece of text, so a time stood further left on a line that
   had tokens; they are two columns now, each as wide as its widest entry
   (`SharedSizeGroup`), so times stand under times and tokens under tokens.
+- The history comes with the details (2026-11-18, `overlay.history_after`, 0.1 s). The
+  author, judging the card: history lines "good", usage bars "good", the arc "pretty good.
+  It's very intuitive", and one thing: "when hovering the box detail, the history appears
+  a bit later. There's a bit of latency." It waited for the mouse to rest 0.66 s
+  (`insideTicks >= 22`), from when it was a block of its own that should not pop up under
+  a passing mouse. Now it is as quick as the details; 0.66 brings the wait back. A new
+  default in `hub/overlay.py` needs a hub restart to reach the window, not only an overlay
+  restart. **Not seen by the author yet.**
 - No time on the history's lines (2026-11-18, `history_time`, off). Asked what the history
   could give up to make room, the author was offered the tokens on each line and the
   progress lines; they kept the tokens ("which I find pretty cool. So I don't think it

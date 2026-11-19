@@ -53,6 +53,9 @@ DEFAULTS = {
     # What the history under the kept-out details shows: session = the lines of the session the
     # mouse is on (before it touched one: the session in focus) | all = every session's lines
     "history": "session",
+    # Seconds the mouse rests on the kept-out details before the history joins them (0.66 is
+    # what it was at first; the details themselves come after 0.1)
+    "history_after": 0.1,
     # Lines a sentence may take in a session's row of the details: 1 = cut with dots, and the bar
     # never changes size; 2 or 3 = the row grows and the bar stretches to keep lights and rows level.
     "row_lines": 1,

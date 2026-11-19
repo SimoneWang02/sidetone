@@ -771,7 +771,7 @@ Bigger pieces:
       for the kind of agent; the row dropping its time. If the card is not liked,
       the other two: a small column of two figures at the right of every row, or a
       third line in the row under the mouse (which stretches the bar).
-- [ ] The history, reworked on the author's "do all of them" (2026-11-18): in the
+- [x] The history, reworked on the author's "do all of them" (2026-11-18): in the
       session's card, a mark per line for how the turn ended, time and tokens at the
       right, the newest brightest, a white dot on lines never heard to the end. **For
       them to judge on screen** (keep the details out with `Ctrl+Alt+L` and rest the
@@ -781,6 +781,12 @@ Bigger pieces:
       history on plain hover too, a red step for context near full, hiding a turn's
       half-way word once its last line is there. Bars that glide: built on their
       spoken answer to a question (heard as "barstack live"); the motion is unseen.
+      Judged by the author that evening: history lines "good", usage bars "good", the
+      arc around the light "pretty good. It's very intuitive". One fault: the history
+      came "a bit later" than the details; it waited two thirds of a second, now a
+      tenth (`overlay.history_after`). **The quicker history is not seen by them yet.**
+      They asked for more design ideas for the usage bars ("show me"). The offers
+      above are still open.
 - [x] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for
       each request to ... show me the metrics of how much token you've used? Is it
       important?"). Possible: Claude Code's record of a session has the token counts of

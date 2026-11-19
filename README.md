@@ -205,6 +205,7 @@ Settings are optional and live in `~/.config/claude-speaks/config.json`:
     "drag_keys": "Ctrl+Alt",
     "row_lines": 1,
     "history": "session",
+    "history_after": 0.1,
     "hover": "always",
     "hotkeys": { "talk": "Ctrl+Alt+Space", "toggle": "Ctrl+Alt+L" }
   },

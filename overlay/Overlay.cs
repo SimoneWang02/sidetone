@@ -1217,6 +1217,7 @@ namespace ClaudeSpeaks
         object[] usage = new object[0];  // the plan's usage, from the hub: [what, percent, "warn" or ""] each
         string focusWas = "";  // the session in focus as of the last state, to notice when it moves
         string historyOf = "";  // the session whose lines the history shows: the one the mouse was on last
+        int historyTicks = 3;  // looks of 30 ms the mouse rests on the details before the history shows (`history_after`)
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
         string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
@@ -1427,6 +1428,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
                     if (msg.ContainsKey("history")) historyAll = Str(msg, "history") == "all";
+                    historyTicks = (int)Math.Max(1, Math.Round(Num(msg, "history_after", historyTicks * 0.03) / 0.03));
                     if (msg.ContainsKey("hover")) hoverOpens = Str(msg, "hover") != "keys";
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
                     SetGlass();
@@ -2032,7 +2034,7 @@ namespace ClaudeSpeaks
             bool inside = onBar || (panel.IsVisible && panel.Goal > 0 && (Within(cursor, panel.Area(), 4) || Within(cursor, Between(bar, panel.Area()), 0)));
             if (inside) { insideTicks++; outsideTicks = 0; } else { outsideTicks++; insideTicks = 0; }
             bool wantHover = inside ? insideTicks >= 3 || hover : hover && outsideTicks < 9;  // 0.1 s to open, 0.3 s to close
-            bool wantPeek = mode == "list" && (inside ? insideTicks >= 22 || peek : peek && outsideTicks < 9);
+            bool wantPeek = mode == "list" && (inside ? insideTicks >= historyTicks || peek : peek && outsideTicks < 9);
             if (!hoverOpens) wantHover = false;  // only the keys (or the list key) bring the details out
             Row under = null;
             // Nor does a light grow under a mouse that is only passing: nothing answers until the details are out.
