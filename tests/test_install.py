@@ -15,11 +15,11 @@ import unittest
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-EXTENSION = "claude-speaks.claude-speaks"
+EXTENSION = "sidetone.sidetone"
 CODE = """#!/bin/sh
 echo "$*" >> "$CODE_LOG"
 case $1 in
-  --list-extensions) echo someone.else; [ ! -f "$CODE_LOG.installed" ] || echo claude-speaks.claude-speaks ;;
+  --list-extensions) echo someone.else; [ ! -f "$CODE_LOG.installed" ] || echo sidetone.sidetone ;;
   --install-extension) [ -z "${CODE_FAILS:-}" ] || exit 1; cp "$2" "$CODE_LOG.vsix" && : > "$CODE_LOG.installed" ;;
   --uninstall-extension) rm -f "$CODE_LOG.installed" ;;
 esac
@@ -150,7 +150,7 @@ class Installing(unittest.TestCase):
         self.assertEqual(self.asked_of_code(), ["--install-extension"])
         with zipfile.ZipFile(self.log + ".vsix") as packed:  # what VS Code was handed is the extension
             self.assertIn("extension/extension.js", packed.namelist())
-            self.assertEqual(json.loads(packed.read("extension/package.json"))["name"], "claude-speaks")
+            self.assertEqual(json.loads(packed.read("extension/package.json"))["name"], "sidetone")
 
     def test_with_nobody_to_ask_vs_code_is_left_alone(self):
         self.vs_code()

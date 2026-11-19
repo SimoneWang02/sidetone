@@ -158,8 +158,8 @@ Questions for the author; nothing to build until they answer.
       left from before: remove the link `~/personal/claude-speaks`, and open the
       editor on the new folder.
       Done 2026-11-19 on their word: the link and the old commands removed, the
-      folders and variables renamed (see `docs/dev/name-and-logo.md`). Left: the VS
-      Code extension's name and id.
+      folders and variables renamed, then the VS Code extension and every other
+      mention (see `docs/dev/name-and-logo.md`).
 - [ ] Session names in the terminal's tab. The hub can write "name · title" as the
       terminal's title (`terminal title on`), but a VS Code tab only shows it with
       `"terminal.integrated.tabs.title": "${sequence}"`, and Claude Code overwrites it

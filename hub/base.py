@@ -296,7 +296,7 @@ class Config:
     # "2 messages waiting" in words at the end of a session's row. Off since the author said
     # of it "I don't care", the number on the light says it already.
     waiting_words: bool = False
-    # Stopping at once: where the session runs in a terminal of an editor with the claude-speaks
+    # Stopping at once: where the session runs in a terminal of an editor with the Sidetone
     # extension, Escape is typed into that terminal, which ends the turn in the same moment.
     # False: only by the hook, at the session's next step (which is also what happens anywhere else).
     stop_at_once: bool = True

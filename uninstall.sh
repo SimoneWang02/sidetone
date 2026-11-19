@@ -4,7 +4,7 @@
 # leaves it). Models, the Python environment and logs are left in place.
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-EXTENSION=claude-speaks.claude-speaks
+EXTENSION=sidetone.sidetone
 keep_vscode=0
 for option in "$@"; do
   case $option in
@@ -34,7 +34,7 @@ jq --arg ours "$ROOT/hooks/" --arg home_form "\$HOME${ROOT#"$HOME"}/hooks/" '
 jq -e . "$SETTINGS.tmp" >/dev/null
 mv "$SETTINGS.tmp" "$SETTINGS"
 "$ROOT/bin/sidetone" hub stop >/dev/null 2>&1 || true
-for name in sidetone st claude-speaks cs; do  # the last two: its names until 2026-11-18
+for name in sidetone st; do
   link=$HOME/.local/bin/$name
   if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$ROOT/bin/sidetone" ]; then rm -f "$link"; fi
 done

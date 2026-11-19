@@ -191,7 +191,7 @@ class Session:
     note: str = ""  # how the last turn ended, shown when not working
     tasks: dict[str, bool] = field(default_factory=dict)  # task id -> completed
     turn_started: float | None = None
-    spoken: str | None = None  # line already spoken this turn, so Stop doesn't repeat it
+    spoken: str | None = None  # line already spoken this turn, so neither Stop nor a late batch repeats it
     last_speech: str = ""
     permission_mode: str = ""  # default | plan | acceptEdits | auto | ... as last reported by a hook
     seen_file: bool = False  # Claude Code's own session file was seen for it (see claude_sessions.py)

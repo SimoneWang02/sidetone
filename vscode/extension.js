@@ -1,4 +1,4 @@
-// claude-speaks for VS Code: tells the hub which terminal you are in, types Escape into a
+// Sidetone for VS Code: tells the hub which terminal you are in, types Escape into a
 // terminal when the hub asks for a session to be stopped, types /clear into one when you
 // told a session by voice to clear its conversation, and brings a terminal to the front
 // when the hub asks for that.

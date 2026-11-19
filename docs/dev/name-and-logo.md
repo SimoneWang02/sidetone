@@ -30,8 +30,10 @@ folders, asked "if it doesn't change anything, that's good": `~/.config/sidetone
 `~/.local/state/sidetone`, `~/.local/share/sidetone`, the run folder `$XDG_RUNTIME_DIR/sidetone`,
 `%LOCALAPPDATA%\sidetone` with `sidetone-overlay-*.exe`, and the `SIDETONE_*` variables (were
 `CLAUDE_SPEAKS_*`). The author's folders were moved, not copied, with the hub stopped; no code
-looks for the old ones, since nobody else has them. Still claude-speaks: the VS Code
-extension's name and id (`claude-speaks.claude-speaks`), only its run folder changed.
+looks for the old ones, since nobody else has them. Then the rest, "my goal was just to
+rename all the previous stuff ... just for coherency": the VS Code extension is `sidetone.sidetone`
+(shown as Sidetone; the old one uninstalled by hand), and the comments, test data and examples
+say sidetone. The old name is left only where it is history or the author's own words.
 
 The mark's color is theirs too: on seeing the logo in the microphone's pink they typed
 "#006896", taken as the color for it (they said nothing else). The logo runs from a lighter

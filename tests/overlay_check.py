@@ -283,7 +283,7 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
     the name of a session that was asked to end its turn; `context`: session name -> how full
     its context is, in percent."""
     rows = [
-        dict(name="claude-speaks", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta="",
+        dict(name="sidetone", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta="",
              details=[["Context", "7%", 0.07, ""], ["Last reply", "64k", None, ""], ["Last turn", "12m", None, ""], ["Tasks", "", None, ""]]),
         dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="6m",
              details=[["Context", "56%", 0.56, ""], ["This reply", "18k", None, ""], ["This turn", "6m", None, ""], ["Tasks", "3/5", 0.6, ""]]),
@@ -391,19 +391,19 @@ send(type="mic", levels=voice(4, 0.05), step=0.05)
 shot("talk-listening", 1.5)
 # Another session starts to speak in the very moment you start to talk (its line is cut at once).
 send(type="flash", state="done", name="api-server", text=SAID, seconds=4)
-send(type="state", sessions=sessions("api-server", focus="claude-speaks"), history=HISTORY)
+send(type="state", sessions=sessions("api-server", focus="sidetone"), history=HISTORY)
 send(type="wave", name="api-server", levels=voice(2), step=0.04, delay=0.0)
 shot("talk-while-another-speaks", 0.5)
-send(type="state", sessions=sessions(focus="claude-speaks"), history=HISTORY)
+send(type="state", sessions=sessions(focus="sidetone"), history=HISTORY)
 shot("talk-after-the-other-was-cut", 0.5)
 # Words that waited are handed to a session while another one is speaking: a sign on its light,
 # and the bubble stays with the sentence that is being said.
 send(type="flash", state="done", name="api-server", text=SAID, seconds=4)
-send(type="state", sessions=sessions("api-server", focus="claude-speaks"), history=HISTORY)
+send(type="state", sessions=sessions("api-server", focus="sidetone"), history=HISTORY)
 send(type="wave", name="api-server", levels=voice(2), step=0.04, delay=0.0)
 send(type="talk", state="sent", name="web-app", text="Also add a test for the empty input case.", seconds=6, quiet=True)
 shot("talk-handed-over-while-another-speaks", 0.5)
-send(type="state", sessions=sessions(focus="claude-speaks"), history=HISTORY)
+send(type="state", sessions=sessions(focus="sidetone"), history=HISTORY)
 send(type="talk", state="sent", name="web-app", text="Also add a test for the empty input case.", seconds=6)
 shot("talk-sent")
 send(type="peek", on=True)
@@ -475,7 +475,7 @@ marks("waiting-covers-the-light", opened=False, settle=1.6)
 look()
 # How full each session's context is, as an arc around its light: nearly empty, about half,
 # past the warning, full, and one that is not known; then with words waiting on top of it.
-CONTEXT = {"claude-speaks": 7, "api-server": 56, "web-app": 83, "data-pipeline": 100}
+CONTEXT = {"sidetone": 7, "api-server": 56, "web-app": 83, "data-pipeline": 100}
 send(type="state", sessions=sessions(context=CONTEXT), history=HISTORY)
 shot("context")
 send(type="peek", on=True)
@@ -501,11 +501,11 @@ send(type="peek", on=True, over="web-app")
 send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE[:1] + [["Week", 47, ""], ["Fable", 89, "warn"]])
 shot("metrics-model", 0.6)
 send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE)
-send(type="peek", on=True, over="claude-speaks")
+send(type="peek", on=True, over="sidetone")
 shot("metrics-unknown", 0.6)
 # The mouse was on web-app last; then the focus moves to another session: the card follows it.
 send(type="peek", on=True, over="web-app")
-send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING, focus="claude-speaks"), history=HISTORY)
+send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING, focus="sidetone"), history=HISTORY)
 shot("metrics-follows-focus", 0.6)
 send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, monitor=0, corner="top-right", offset_x=420, offset_y=260)
@@ -533,11 +533,11 @@ import settings as settings_mod  # noqa: E402
 class FakeHub:
     cfg = base.Config(run="", state="")
     lock = threading.Lock()
-    sessions = type("Open", (), {"by_id": {n: type("S", (), {"name": n}) for n in ("claude-speaks", "api-server", "web-app")}})
+    sessions = type("Open", (), {"by_id": {n: type("S", (), {"name": n}) for n in ("sidetone", "api-server", "web-app")}})
 
     def voices(self):
         return {"choosable": True, "builtin": sorted(state.VOICE_POOL) + ["if_sara", "im_nicola"], "custom": ["my_mix"],
-                "pool": list(state.VOICE_POOL), "projects": {"claude-speaks": "af_heart", "api-server": "bm_fable", "web-app": "af_bella"}}
+                "pool": list(state.VOICE_POOL), "projects": {"sidetone": "af_heart", "api-server": "bm_fable", "web-app": "af_bella"}}
 
 
 SETTINGS = settings_mod.describe(FakeHub())

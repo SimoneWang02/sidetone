@@ -11,7 +11,7 @@ SETTINGS=$HOME/.claude/settings.json
 MODELS=https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}/sidetone/config.json
 models=1 hooks_only=0 languages= vscode=ask
-EXTENSION=claude-speaks.claude-speaks
+EXTENSION=sidetone.sidetone
 while [ $# -gt 0 ]; do
   case $1 in
     --no-models) models=0 ;;
@@ -121,7 +121,7 @@ if [ $vscode = ask ]; then
   elif code --list-extensions 2>/dev/null | grep -qix "$EXTENSION"; then
     vscode=yes
   else
-    echo "VS Code is here. Its claude-speaks extension tells the hub which terminal you are in, so going to a terminal gives its session the focus, and it lets the cancel key stop a session at once."
+    echo "VS Code is here. Its Sidetone extension tells the hub which terminal you are in, so going to a terminal gives its session the focus, and it lets the cancel key stop a session at once."
     read -r -p "Install the extension? (Enter = yes, n = no): " answer || answer=n
     case $answer in ""|[Yy]*) vscode=yes ;; *) vscode=no; echo "Not installed. Any time later: sidetone vscode install" ;; esac
   fi

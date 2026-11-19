@@ -13,7 +13,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 |---|---|---|
 | UserPromptSubmit | `hooks/voice-reminder.sh` | Injects an instruction: open the final message with ONE line that is exactly a speak tag |
 | MessageDisplay | `hooks/display.sh` | Runs per streamed batch. Sends a batch containing a speak tag to the hub, which queues the speech and returns the "🔊 …" rewrite |
-| Stop | `hooks/speak.sh` | Tells the hub the turn ended; the hub speaks the line only if streaming missed it |
+| Stop | `hooks/speak.sh` | Tells the hub the turn ended; the hub speaks the line only if streaming missed it. A batch with the same line that arrives after Stop (seen once, 2026-11-19: six seconds late, so the line was said twice) is not spoken again; the next turn may say the same words |
 | Notification (`permission_prompt`, `elicitation_dialog`) | `hooks/notify.sh` | Hub marks the session "needs you" and says "I need your input" |
 | PermissionRequest | `hooks/permission.sh` | Holds a request open on the hub until the prompt is answered. Prints the hub's allow/deny, or nothing if it was answered in the terminal |
 | PreToolUse, PostToolUse | `hooks/stop.sh` | Ends the turn when the hub was asked to stop this session (a file named after it in `$CS_RUN/stop`). About 2.5 ms when nobody asked |
@@ -99,7 +99,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `hub/overlay.py` + `overlay/Overlay.cs` (+ `overlay/overlay.ps1` as fallback): the on-screen
   overlay, a child process of the hub (only where `powershell.exe` exists). `overlay.build()`
   compiles `Overlay.cs` with `csc.exe` of .NET Framework 4 (ships with Windows; about 0.2 s)
-  into `%LOCALAPPDATA%\sidetone\claude-speaks-overlay-<hash of the source>.exe`, once per
+  into `%LOCALAPPDATA%\sidetone\sidetone-overlay-<hash of the source>.exe`, once per
   version of the source; if that fails the same source runs through PowerShell `Add-Type`
   (`SIDETONE_OVERLAY=script` forces that). The hub sends `config`, `state` (one
   ready-to-draw row per session, with `title` and `synth`), `flash` (a line shown for a few
@@ -271,10 +271,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   from the number of letters). The author on seeing it: "It works, I like it. Yeah, that's
   perfect."
 - Titles: `Session.title` is Claude Code's own name for the session (the `name` field of its
-  session file, a slug such as `eyes-free-claude-speaks`, turned into words). Claude Code
+  session file, a slug such as `eyes-free-sidetone`, turned into words). Claude Code
   writes that name within a second of the first typed prompt, but a session started by voice
   only ever has the placeholder it gets at start (`nameSource: "derived"`, the folder plus two
-  characters, `claude-speaks-3f`), which is ignored. Without a name the hub makes its own title
+  characters, `sidetone-3f`), which is ignored. Without a name the hub makes its own title
   (`Hub._title_from`): the spoken line of the first reply, cut to 44 characters
   (`state.short_title`), which then stays; before that reply, the first line of a typed
   prompt. The author asked for this on 2026-11-17 ("can't you just wait for the first response

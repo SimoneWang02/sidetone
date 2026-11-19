@@ -79,6 +79,16 @@ class Display(HubCase):
         hub.on_event(ev("Stop", last_assistant_message=f"Intro\n{tag('Finished.')}\nBody"))
         self.assertEqual(self.spoken(), ["Finished."])
 
+    def test_a_batch_that_comes_after_stop_does_not_repeat_the_line(self):
+        hub = self.make()
+        hub.on_event(ev("Stop", last_assistant_message=f"{tag('All done.')}\n\nBody"))
+        shown = hub.on_display(ev("MessageDisplay", delta=tag("All done.") + "\n"))
+        self.assertEqual(self.spoken(), ["All done."])
+        self.assertIsNotNone(shown)  # the tag is still turned into the "🔊" line
+        hub.on_event(ev("UserPromptSubmit", prompt="again"))
+        hub.on_display(ev("MessageDisplay", delta=tag("All done.") + "\n"))
+        self.assertEqual(self.spoken(), ["All done.", "All done."])  # the next turn may say the same
+
     def test_stop_skips_a_line_the_hook_spoke_without_the_hub(self):
         hub = self.make()
         os.makedirs(os.path.join(self.tmp, ".state"))
@@ -514,7 +524,7 @@ class OverlayFeed(HubCase):
         self.assertGreater(state.color_distance("#FF8FA3", "#7FDBCA"), 70)  # pink and teal: nobody mixes those up
         hub = self.make()
         for i in range(5):  # also sessions of one project, which is where it was seen
-            hub.on_event(ev("SessionStart", sid=f"s{i}", cwd="/w/claude-speaks"))
+            hub.on_event(ev("SessionStart", sid=f"s{i}", cwd="/w/sidetone"))
         colors = [r["color"] for r in self.overlay.of("state")[-1]["sessions"]]
         apart = min(state.color_distance(a, b) for i, a in enumerate(colors) for b in colors[:i])
         self.assertGreaterEqual(apart, state.TOO_CLOSE, colors)
@@ -524,7 +534,7 @@ class OverlayFeed(HubCase):
 
         hub = self.make()
         for i in range(21):
-            hub.on_event(ev("SessionStart", sid=f"s{i}", cwd="/w/claude-speaks"))
+            hub.on_event(ev("SessionStart", sid=f"s{i}", cwd="/w/sidetone"))
         colors = [r["color"] for r in self.overlay.of("state")[-1]["sessions"]]
         self.assertTrue(set(colors[:5]) <= set(state.COLORS[:state.SOFT]), colors[:5])
         self.assertEqual(len(set(colors[:20])), 20)
@@ -2402,11 +2412,11 @@ class ClaudeCodesOwnRecords(HubCase):
         hub = self.make()
         hub.on_event(ev("UserPromptSubmit", prompt="what is this project about?"))
         self.assertEqual(self.session()["title"], "What is this project about?")
-        self.record("s1", "busy", name="eyes-free-claude-speaks")
+        self.record("s1", "busy", name="eyes-free-sidetone")
         hub.reconcile()
-        self.assertEqual(self.session()["title"], "Eyes free claude speaks")
+        self.assertEqual(self.session()["title"], "Eyes free sidetone")
         hub.on_event(ev("UserPromptSubmit", prompt="something else"))  # a later prompt does not replace the name
-        self.assertEqual(self.session()["title"], "Eyes free claude speaks")
+        self.assertEqual(self.session()["title"], "Eyes free sidetone")
 
     def test_a_placeholder_name_is_not_a_title(self):
         hub = self.make()  # at start Claude Code calls a session after its folder plus two letters
@@ -2993,7 +3003,7 @@ class ARealTerminal(unittest.TestCase):
         pack = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(pack)
         out = os.path.join(tempfile.mkdtemp(prefix="cs-test-"), "x.vsix")
-        self.assertEqual(pack.pack(out), "claude-speaks.claude-speaks")
+        self.assertEqual(pack.pack(out), "sidetone.sidetone")
         with zipfile.ZipFile(out) as z:
             self.assertEqual(sorted(z.namelist()), ["[Content_Types].xml", "extension.vsixmanifest",
                                                     "extension/extension.js", "extension/package.json"])

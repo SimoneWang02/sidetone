@@ -231,7 +231,7 @@ case ${1:-} in
     reply=$(hub_post /terminal <<<"$request") || { echo "hub is not running, or that is not a choice (tint: focus, all, off)"; exit 1; }
     if [ "${2:-}" = show ]; then
       shown=$(jq -r '.shown // empty' <<<"$reply")
-      [ -n "$shown" ] && echo "to the front: $shown" || { echo "no such session, or no VS Code with the claude-speaks extension holds its terminal"; exit 1; }
+      [ -n "$shown" ] && echo "to the front: $shown" || { echo "no such session, or no VS Code with the Sidetone extension holds its terminal"; exit 1; }
     elif [ "${2:-}" = find ]; then
       found=$(jq -r '.found // empty' <<<"$reply")
       [ -n "$found" ] && echo "lit up: $found" || { echo "no such session, or it has no terminal of its own"; exit 1; }
@@ -244,10 +244,10 @@ case ${1:-} in
     case ${2:-} in
       install)
         dir=$(mktemp -d) || exit 1
-        python3 "$CS_ROOT/vscode/pack.py" "$dir/claude-speaks.vsix" >/dev/null && code --install-extension "$dir/claude-speaks.vsix" --force
+        python3 "$CS_ROOT/vscode/pack.py" "$dir/sidetone.vsix" >/dev/null && code --install-extension "$dir/sidetone.vsix" --force
         status=$?; rm -rf "$dir"
         [ $status -eq 0 ] && echo "Go to another terminal in VS Code: the session running there gets the focus. The cancel key now stops a session at once, and "clear the chat" said to an idle session types /clear. If this was an update, restart VS Code's extensions once (Ctrl+Shift+P, Restart Extension Host)." || exit $status ;;
-      uninstall) code --uninstall-extension claude-speaks.claude-speaks ;;
+      uninstall) code --uninstall-extension sidetone.sidetone ;;
       *) usage; exit 2 ;;
     esac
     ;;

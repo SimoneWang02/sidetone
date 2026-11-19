@@ -129,7 +129,7 @@ DEFAULTS = {
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",
                 "repeat": "Ctrl+Alt+R", "missed": "Ctrl+Alt+U", "layout": "Ctrl+Alt+K",
                 # Go to the terminal of the session in focus; claimed only while an editor with the
-                # claude-speaks extension holds that terminal. No key unless you give it one
+                # Sidetone extension holds that terminal. No key unless you give it one
                 # ("Ctrl+Alt+T" was its first): the author saw no use for it with terminals side by side.
                 "jump": "",
                 # Open and close the settings window.

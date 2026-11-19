@@ -267,7 +267,9 @@ class Hub(Permissions, Talk):
                 elif not speech:
                     self._flash(s, "done")  # nothing is spoken for this turn, so show it instead
                 self._unstop(sid, "its turn ended by itself")
-                s.spoken = None
+                # Kept until the next turn starts: once, the streamed batch with the line reached
+                # the hub six seconds after Stop had already said it, and it was said again.
+                s.spoken = speech or None
             elif event == "StopFailure":
                 s.state, s.activity, s.turn_started = "failed", "", None
                 error = str(ev.get("error") or "unknown").replace("_", " ")
@@ -436,9 +438,11 @@ class Hub(Permissions, Talk):
         with self.lock:
             self.last_event = time.monotonic()
             s = self.sessions.touch(sid, ev.get("cwd", ""))
+            late = s.state == "done" and speech == s.spoken  # Stop got here first and said it
             s.spoken = speech
             self._title_from(s, reply=speech, given=title)
-            self._say(s, speech, "done", "stream", self._voice_for(s, lang))
+            if not late:
+                self._say(s, speech, "done", "stream", self._voice_for(s, lang))
         self.publish()
         return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
 
