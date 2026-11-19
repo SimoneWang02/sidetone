@@ -190,6 +190,8 @@ Roughly easiest first.
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
       too short to tell the language and English wins. Perhaps lean to the language of the
       session's last line, or of the user's last longer recording.
+      Again 2026-11-19 14:53 with `en,it,zh`: a 2.4 s clip came back as Chinese, "是很多的"
+      ("it's a lot"), and took 2.9 s to write where 0.8 s is usual; what was said is not known.
 - [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
       as a small sign on the tab for a moment (its visual bell setting is off by default).
 - [ ] The terminal tint on a light theme: the color is mixed into `terminal.background`,
