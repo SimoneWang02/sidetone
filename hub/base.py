@@ -344,6 +344,10 @@ class Config:
     talk_feedback: str = "sound"
     sound_volume: float = 0.3  # 0 to 1
     whisper_language: str = "en"  # for multilingual models such as "small": "it", "en,it" (the ones you speak), or "auto"
+    # With several languages: a short recording whose language the model is unsure of is also
+    # written in the language you last spoke clearly in, and kept so unless clearly worse
+    # (see stt.Transcriber.UNSURE). False: the model's guess always stands.
+    whisper_lean: bool = True
     whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
     config_path: str = ""  # the user's config.json; overlay placement chosen by dragging is saved there
@@ -384,7 +388,7 @@ class Config:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
-                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
+                    "followup_confirm", "whisper_language", "whisper_lean", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):
             if key in user:

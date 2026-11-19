@@ -85,6 +85,54 @@ class OnePass(unittest.TestCase):
         self.assertEqual((asked["multilingual"], listener.heard), (True, "it"))
 
 
+class LeaningToTheLastLanguage(unittest.TestCase):
+    """A short recording the model is unsure of is also written in the language last heard for sure."""
+
+    def listener(self, guess, sure, readings):
+        """`readings`: language -> (text, mean log-probability) the fake model writes in it."""
+        listener = stt.Transcriber("small", "en,it,zh")
+        named = listener._named = stt.Named(None, listener.languages)
+        named.detect_language = lambda _: None
+        asked = self.asked = []
+
+        class Whisper:
+            def transcribe(self, audio, language, **options):
+                asked.append(language if not options.get("multilingual") else "guess")
+                if options.get("multilingual"):
+                    named.heard, named.sure, language = guess, sure, guess
+                text, score = readings[language]
+                return [types.SimpleNamespace(text=text, avg_logprob=score, tokens=[1, 2, 3])], types.SimpleNamespace(language=language)
+
+        listener._model = Whisper()
+        return listener
+
+    SI = {"en": ("See you.", -0.64), "it": ("Sì.", -0.66)}  # measured on Paola saying "Sì."
+
+    def test_unsure_and_close_it_keeps_to_the_last_language(self):
+        listener = self.listener("en", 0.66, self.SI)
+        listener.last = "it"
+        self.assertEqual((listener.transcribe(bytes(32000)), listener.heard, listener.leaned), ("Sì.", "it", True))
+        self.assertEqual(self.asked, ["guess", "it"])
+        self.assertEqual(listener.last, "it")  # a lean does not change what was last heard for sure
+
+    def test_sure_long_switched_off_or_clearly_better_the_guess_stands(self):
+        listener = self.listener("en", 0.97, self.SI)
+        listener.last = "it"
+        self.assertEqual((listener.transcribe(bytes(32000)), listener.leaned, listener.last), ("See you.", False, "en"))
+        listener = self.listener("en", 0.66, self.SI)
+        listener.last = "it"
+        self.assertEqual(listener.transcribe(bytes(int(stt.RATE * 2 * 4.5))), "See you.")  # 4.5 s: long enough
+        listener = self.listener("en", 0.66, self.SI)
+        listener.last, listener.lean = "it", False
+        self.assertEqual(listener.transcribe(bytes(32000)), "See you.")
+        listener = self.listener("it", 0.17, {"it": ("Procedi.", -0.74), "en": ("Pochedy", -1.09)})  # measured
+        listener.last = "en"
+        self.assertEqual((listener.transcribe(bytes(32000)), listener.heard, listener.last), ("Procedi.", "it", "it"))
+        listener = self.listener("en", 0.66, self.SI)  # nothing heard for sure yet
+        self.assertEqual(listener.transcribe(bytes(32000)), "See you.")
+        self.assertEqual(self.asked, ["guess"])
+
+
 class TheCommand(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="cs-test-")

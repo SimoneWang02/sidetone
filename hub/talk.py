@@ -105,14 +105,17 @@ class Talk:
     def _transcribe(self, pcm: bytes, session: str | None = None, job: object | None = None) -> None:
         started = time.monotonic()
         try:
+            if self.transcriber:
+                self.transcriber.lean = self.cfg.whisper_lean
             text = self.transcriber.transcribe(pcm) if self.transcriber else ""
         except Exception as e:  # a broken model must not take the hub down
             log(self.cfg, "hub.log", f"transcription failed: {e}")
             text = ""
         heard = getattr(self.transcriber, "heard", "") if text else ""
+        leaned = " (leaned to it: unsure, and the last language)" if text and getattr(self.transcriber, "leaned", False) else ""
         log(self.cfg, "hub.log", f"talk: {len(pcm) / 2 / stt.RATE:.1f}s recorded, peak level {stt.loudness(pcm):.2f}, "
                                  f"transcribed in {time.monotonic() - started:.1f}s"
-                                 f"{' as ' + heard if heard else ''}: {text or '(nothing heard)'}")
+                                 f"{' as ' + heard if heard else ''}{leaned}: {text or '(nothing heard)'}")
         if self._unload:
             self._unload.cancel()
         if self.transcriber and self.cfg.whisper_unload_minutes:

@@ -166,6 +166,10 @@ voice, and the wait for the transcript.
       did you count this moment?", so the hub did not answer it and the session got it.
       Again 15:34: 2.3 s, surely "quanto ho usato?", came back as English "One dosa,
       what the?" and took 2.7 s. Four short clips out of four in the wrong language today.
+      Built the same day on their word (`whisper_lean`, see `docs/dev/features.md`): an
+      unsure short clip keeps to the language last heard for sure. Fixes Italian after
+      Italian on the test clips; a switch to a short, unsure Italian clip right after
+      English can still go wrong. **Not tried by them yet.**
 - [ ] A spoken line with no `lang` in its tag: guess its language in the hub (Chinese
       characters are easy; Italian against English needs a small detector, or the language
       Whisper heard in the user's last recording). Seen 2026-11-19: a session answered in

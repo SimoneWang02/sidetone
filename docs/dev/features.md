@@ -91,6 +91,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   0.9.6 in the hub's environment, `whisper_language` `en,it,zh`. Heard through the hub.
   The model was copied by hand into the author's Piper folder; `install.sh` does not
   fetch it yet.
+- Short recordings lean to the last language (`whisper_lean`, on; 2026-11-19, the author:
+  "you can fix this issue, just let me know [the] downside [and] upside"). Four of their
+  short Italian recordings in a row had come back as English or Chinese. Measured on 18
+  short clips said by the voices (Paola, af_heart, zh_001), `small` with `en,it,zh`: the
+  wrong guesses were "Sì" and "Va bene, vai" taken for English at 0.65 sure; every English
+  and Chinese clip was 0.97 or more. Writing each clip in its two likeliest languages and
+  keeping the better score alone did not work (scores within 0.02, and English clips lost
+  to Chinese). What is built (`stt.Transcriber`): when a recording is under 4 s, the model
+  is under 0.9 sure, and its guess is not the language last heard for sure, it is also
+  written in that language and kept so unless the guess scores better by more than 0.1
+  (mean log-probability per token). Same clips, last language Italian: 0 of 18 wrong (2
+  before); last English: 3 (2 before; "Quant'è il contesto" kept English, its words almost
+  the same); last Chinese: 2 (as before). The second writing costs about 0.6 s, only for
+  unsure short clips. The log line says "(leaned to it ...)" when it happens.
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
   was active in the last 15 min and no overlay is on screen (the author, 2026-11-17: "i dont
   think it's necessary to say the project folder whenever it speaks"; the bubble and the voice

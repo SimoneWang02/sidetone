@@ -69,6 +69,7 @@ SECTIONS = [
         switch("usage_by_voice", "Usage by voice", "Ask \"what's my usage\" and hear it, without it reaching a session."),
         switch("clear_by_voice", "Clear the chat by voice", "Say \"clear the chat\" and the editor types /clear for a session at its prompt."),
         switch("focus_on_prompt", "Typing takes the focus", "A session you type to is the one your next spoken words go to."),
+        switch("whisper_lean", "Short words in your last language", "When it is unsure which of your languages a few words are in, it keeps to the one you last spoke."),
         number("talk_tail", "Listen on after release", "Keeps the end of your last word from being cut off.", 0, 1, 0.1, "s"),
     ]),
     ("Overlay", [

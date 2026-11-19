@@ -96,6 +96,7 @@ class Named:
 
     def __init__(self, model, languages: list):
         self._model, self._languages, self.heard = model, set(languages), ""
+        self.sure = 1.0  # how likely the model found that language, 0 to 1
 
     def __getattr__(self, name):  # everything else is the model's own
         return getattr(self._model, name)
@@ -105,7 +106,7 @@ class Named:
         if self._languages:
             results = [sorted(one, key=lambda pair: pair[0][2:-2] not in self._languages) for one in results]
         if results and results[0]:
-            self.heard = results[0][0][0][2:-2]
+            self.heard, self.sure = results[0][0][0][2:-2], results[0][0][1]
         return results
 
 
@@ -118,10 +119,24 @@ class Transcriber:
     some other language. English-only models (names ending in ".en") ignore it.
     """
 
+    # Leaning to the last language. A short recording is easily taken for another language:
+    # on 2026-11-19 four of the author's short Italian ones in a row came back as English or
+    # Chinese ("quanto ho usato?" as "One dosa, what the?"). Measured on short clips said by
+    # the voices: the wrong guesses were all unsure (0.65), real English ones 0.97 or more. So
+    # when the model is less sure than UNSURE of a language other than the one you last spoke
+    # clearly in, the recording is also written in that one, and kept that way unless the
+    # first reading is better by more than MARGIN (Whisper's own mean log-probability per token).
+    UNSURE = 0.9
+    MARGIN = 0.1
+    LONG = 4.0  # seconds; a recording this long tells its language well enough by itself
+
     def __init__(self, model: str = "small.en", language: str | list = "en"):
         self.name = model
         self.languages = ["en"] if model.endswith(".en") else codes(language)  # empty: any language
         self.heard = ""  # the language of the last recording
+        self.lean = True  # see UNSURE; `whisper_lean` in the settings
+        self.last = ""  # the language last heard for sure (or in a long recording)
+        self.leaned = False  # the last recording was taken in `last` instead of the model's guess
         self._model = None
         self._named = None  # Named, when the language is found in the same pass as the words
         self._lock = threading.Lock()
@@ -160,12 +175,36 @@ class Transcriber:
         elif len(self.languages) > 1:  # which of the user's languages is this? (a pass of its own)
             likely = dict(self._model.detect_language(audio)[2])
             language = max(self.languages, key=lambda code: likely.get(code, 0.0))
+            sure = likely.get(language, 0.0)
+        text, score, info = self._write(audio, language, options)
+        self.heard = named.heard if named else getattr(info, "language", language or "")
+        if named:
+            sure = named.sure
+        elif len(self.languages) <= 1:
+            sure = 1.0
+        long = len(audio) / RATE >= self.LONG
+        self.leaned = False
+        if (self.lean and text and not long and sure < self.UNSURE and self.last and self.last != self.heard
+                and self.last in self.languages):
+            other, other_score, _ = self._write(audio, self.last, {})
+            if other and score <= other_score + self.MARGIN:
+                text, self.heard, self.leaned = other, self.last, True
+            else:
+                sure = 1.0  # clearly the other language: a change of language
+        if sure >= self.UNSURE or long:
+            self.last = self.heard
+        return text
+
+    def _write(self, audio, language: str | None, options: dict) -> tuple:
+        """The words in a recording, Whisper's mean log-probability per token for them, and its info."""
         # The voice filter drops silence first; without it Whisper invents words for an empty recording.
         segments, info = self._model.transcribe(audio, language=language, beam_size=1, vad_filter=True,
                                                 condition_on_previous_text=False, **options)
-        text = " ".join(s.text.strip() for s in segments).strip()  # the work happens here, as the pieces are read
-        self.heard = named.heard if named else getattr(info, "language", language or "")
-        return text
+        segments = list(segments)  # the work happens here, as the pieces are read
+        sizes = [max(1, len(getattr(s, "tokens", None) or ())) for s in segments]
+        score = (sum(getattr(s, "avg_logprob", 0.0) * n for s, n in zip(segments, sizes)) / sum(sizes)
+                 if segments else float("-inf"))
+        return " ".join(s.text.strip() for s in segments).strip(), score, info
 
 
 def codes(languages: str | list) -> list:
