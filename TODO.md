@@ -1051,7 +1051,7 @@ Smaller ideas:
       not side by side ... Make it that whenever I scroll between the session and
       automatically set that terminal to focus". `terminal.jump` (off by default, on in
       their config; `sidetone terminal jump on|off`, a switch in the settings window).
-      It takes the keyboard, as they asked. **Not tried by them yet.**
+      It takes the keyboard, as they asked. Tried by them: "it seems to be working good."
       The terminal comes up by itself when the focus moves (the author's idea,
       2026-11-18, kept on the list on their word, with "I don't think I'm gonna do
       it" soon): for people whose terminals are tabs, one visible at a time, moving

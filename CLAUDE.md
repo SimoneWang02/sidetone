@@ -823,7 +823,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `SHOWN_ECHO` (1 s) the editor's report of a terminal the hub asked for does not move
   the focus (it would pull it back to a session the wheel went past). Off by default
   (side by side, all terminals are in sight); on in the author's config. Needs the
-  extension 0.3.0 or newer running. **Not tried by them yet.**
+  extension 0.3.0 or newer running. Tried by the author minutes later: "it seems to be
+  working good."
 - Session → terminal, the jump key (2026-11-18, `Talk.show_terminal`, `_showable`, hotkey
   `jump` = `Ctrl+Alt+T`, `sidetone terminal show [PROJECT]`, `vscode/extension.js`
   0.3.0; built while the author was away, **key and letter not agreed with them, not
