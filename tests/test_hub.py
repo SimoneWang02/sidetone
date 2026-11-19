@@ -2441,6 +2441,20 @@ class AcrossARestart(HubCase):
         self.assertEqual([sid for sid, _, _, _ in self.who()], ["a", "c"])
         self.assertNotIn("b", self.hub.sessions.kept)
 
+    def test_an_order_dragged_in_the_overlay_is_kept_across_a_restart(self):
+        hub = self.three()
+        names = {sid: name for sid, name, _, _ in self.who()}
+        hub.on_overlay({"type": "reorder", "names": [names["c"], names["a"], names["b"]]})
+        self.assertEqual([sid for sid, _, _, _ in self.who()], ["c", "a", "b"])
+        hub.on_overlay({"type": "reorder", "names": ["nobody", 3]})  # names it does not know move nothing
+        self.assertEqual([sid for sid, _, _, _ in self.who()], ["c", "a", "b"])
+        self.restart()
+        for sid in "bac":  # they come back in another order
+            self.hub.listen(sid)
+        self.assertEqual([sid for sid, _, _, _ in self.who()], ["c", "a", "b"])
+        self.hub.on_event(ev("SessionStart", sid="d"))
+        self.assertEqual([sid for sid, _, _, _ in self.who()][-1], "d", "a new session goes at the end")
+
     def test_what_is_kept_is_private_and_goes_stale(self):
         self.three()
         path = os.path.join(self.tmp, "sessions.json")

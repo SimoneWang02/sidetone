@@ -1554,6 +1554,10 @@ namespace ClaudeSpeaks
         public readonly WaveStrip Strip = new WaveStrip();
         public readonly Wave Wave;
         public readonly TranslateTransform Slide = new TranslateTransform();
+        // While sessions are being reordered: how far the light is moved along the bar (the one
+        // held follows the mouse, the others make room), and how much bigger the one held is.
+        public readonly TranslateTransform Shift = new TranslateTransform();
+        public readonly ScaleTransform Lift = new ScaleTransform(1, 1, High / 2, High / 2);
         readonly Border glow = new Border { CornerRadius = new CornerRadius(6), Background = Ui.Paint("#FFFFFF"), Opacity = 0 };
         readonly Grid row2 = new Grid();
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
@@ -1576,6 +1580,10 @@ namespace ClaudeSpeaks
             Strip.NewestRight = right;
             Light.Children.Add(Orb);
             Light.Children.Add(Pip);
+            var moves = new TransformGroup();
+            moves.Children.Add(Lift);
+            moves.Children.Add(Shift);
+            Light.RenderTransform = moves;
             Strip.Margin = right ? new Thickness(8, 0, 0, 0) : new Thickness(0, 0, 8, 0);
             words.Margin = new Thickness(12, 5, 12, 6);
             words.RenderTransform = Slide;
@@ -1728,8 +1736,11 @@ namespace ClaudeSpeaks
         int[] wheelKeys = { VK_CONTROL, VK_MENU };  // held together with the wheel to change the focus
         // Held to take hold of the bar with the mouse (drag it, turn the wheel on it). Without
         // them the mouse goes straight through the bar to what is underneath. Empty: any time.
-        int[] dragKeys = { VK_CONTROL, VK_MENU };
-        string dragKeysName = "Ctrl+Alt";
+        int[] dragKeys = new int[0];  // "": a plain drag moves the bar
+        string dragKeysName = "";
+        int[] reorderKeys = { VK_CONTROL, VK_MENU };  // held while a light is dragged: it goes to another place in the bar
+        Row lifted;  // the light being dragged to another place, while `dragging`
+        double liftGrab;  // where along the bar it was taken hold of, in the bar's units
         int wheelTurned;
         double wheelUntil, selectorY, selectorShown, heldSince;
         bool wheeling, keysOpen;
@@ -1850,7 +1861,7 @@ namespace ClaudeSpeaks
             wheelProc = OnMouse;  // kept in a field so it stays alive while Windows holds it
             keyProc = OnKey;
             rail.MouseWheel += delegate(object sender, MouseWheelEventArgs e) { Wheel(e.Delta); };
-            rail.Cursor = Cursors.SizeAll;
+            rail.Cursor = Cursors.Arrow;
 
             requestTitle.TextWrapping = requestKeys.TextWrapping = requestDetail.TextWrapping = TextWrapping.Wrap;
             requestTitle.MaxHeight = 54;
@@ -1894,7 +1905,7 @@ namespace ClaudeSpeaks
             hoverTimer.Interval = TimeSpan.FromMilliseconds(30);
             hoverTimer.Tick += delegate { WatchWheelKeys(); WatchTalkKeys(); WatchCursor(); };
             moveTimer.Tick += delegate { EndMove(); };
-            rail.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { BeginDrag(e.GetPosition(rail)); };
+            rail.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { Press(e.GetPosition(rail)); };
             // Hold-to-talk: a hotkey only reports the press, so watch the key until it comes back up.
             holdTimer.Interval = TimeSpan.FromMilliseconds(30);
             holdTimer.Tick += delegate { if (!Down((int)heldKey)) EndHold(); };
@@ -2016,6 +2027,7 @@ namespace ClaudeSpeaks
                     if (wanted != layout) { layout = wanted; ApplyLayout(); RegisterHotkeys(); }  // other arrow keys now
                     if (msg.ContainsKey("focus_wheel")) wheelKeys = Keys(Str(msg, "focus_wheel"));
                     if (msg.ContainsKey("drag_keys")) { dragKeys = Keys(Str(msg, "drag_keys")); dragKeysName = Str(msg, "drag_keys"); }
+                    if (msg.ContainsKey("reorder_keys")) reorderKeys = Keys(Str(msg, "reorder_keys"));
                     Ui.RowLines = Math.Max(1, Math.Min(3, (int)Num(msg, "row_lines", Ui.RowLines)));
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
@@ -2689,8 +2701,16 @@ namespace ClaudeSpeaks
                     along -= room;
                 }
             }
-            bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys)))) && Ui.Now > passUntil;
-            if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); Edge(); }
+            bool sorting = onBar && CanReorder();
+            bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys) || sorting))) && Ui.Now > passUntil;
+            if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); }
+            Edge();
+            // The cursor says what a drag would do: arrows along the bar = put this light elsewhere,
+            // the move cross = the bar is held only because its keys are. A bar that can always be
+            // dragged keeps the plain arrow (the author did not like a move cursor at every pass).
+            Cursor wanted = sorting && LightAt(cursor) != null ? (Island ? Cursors.SizeWE : Cursors.SizeNS)
+                          : dragKeys.Length > 0 ? Cursors.SizeAll : Cursors.Arrow;
+            if (rail.Cursor != wanted) rail.Cursor = wanted;
             if (under != hot)
             {
                 hot = under;
@@ -2976,6 +2996,7 @@ namespace ClaudeSpeaks
             if (!GetCursorPos(out cursor)) return;
             int button = GetSystemMetrics(SM_SWAPBUTTON) != 0 ? VK_RBUTTON : VK_LBUTTON;
             if ((GetAsyncKeyState(button) & 0x8000) == 0) { EndDrag(); return; }
+            if (lifted != null) { LiftStep(cursor); return; }
             Point to = HwndSource.FromHwnd(hwnd).CompositionTarget.TransformFromDevice.Transform(new Point(cursor.X - grabX, cursor.Y - grabY));
             rail.Left = to.X;
             rail.Top = to.Y;
@@ -2986,20 +3007,136 @@ namespace ClaudeSpeaks
         void EndDrag()
         {
             dragging = false;
+            if (lifted != null) { EndLift(); return; }
             int[] now = rail.Area();
             if (Math.Abs(now[0] - grabbedAt[0]) + Math.Abs(now[1] - grabbedAt[1]) > 3)
             {
                 ReportMoved();
                 if (moving) { moveTimer.Stop(); moveTimer.Interval = TimeSpan.FromSeconds(2); moveTimer.Start(); }
             }
-            else if (!moving)
+            else if (!moving) PassClick();
+            insideTicks = outsideTicks = 0;
+            Edge();
+            Render();
+            Place();
+        }
+
+        // A press that moved nothing was a plain click: it goes to whatever is underneath the bar.
+        void PassClick()
+        {
+            passUntil = Ui.Now + 0.4;
+            catching = false;
+            rail.CatchMouse(false);
+            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, UIntPtr.Zero);
+            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, UIntPtr.Zero);
+        }
+
+        // --- putting sessions in another order --------------------------------------------------
+
+        // With `reorder_keys` (Ctrl+Alt) held, a light dragged along the bar goes to another place
+        // in it, and the others make room as it passes them; anywhere else a drag moves the bar.
+        bool CanReorder()
+        {
+            return reorderKeys.Length > 0 && order.Count > 1 && !moving && Held(reorderKeys);
+        }
+
+        // How far along the bar a point on the screen is, in the bar's own units, from its first light.
+        double AlongBar(CursorPoint at)
+        {
+            int[] bar = rail.Area();
+            return Island ? (at.X - bar[0]) * rail.ActualWidth / Math.Max(1, bar[2]) - 4
+                          : (at.Y - bar[1]) * rail.ActualHeight / Math.Max(1, bar[3]) - 4;
+        }
+
+        double Room(Row row) { return Island ? Row.High : row.Light.Height; }
+
+        Row LightAt(CursorPoint at)
+        {
+            double along = AlongBar(at);
+            foreach (Row row in order)
             {
-                passUntil = Ui.Now + 0.4;
-                catching = false;
-                rail.CatchMouse(false);
-                mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, UIntPtr.Zero);
-                mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, UIntPtr.Zero);
+                if (along >= 0 && along < Room(row)) return row;
+                along -= Room(row);
             }
+            return null;
+        }
+
+        void Press(Point at)
+        {
+            CursorPoint cursor;
+            Row row = CanReorder() && GetCursorPos(out cursor) ? LightAt(cursor) : null;
+            BeginDrag(at);
+            if (row == null || !dragging) return;
+            // `at` is where the press was; the bar has not moved since, so it gives the place along it.
+            lifted = row;
+            liftGrab = (Island ? at.X : at.Y) - 4;
+            Panel.SetZIndex(row.Light, 1);
+            row.Lift.ScaleX = row.Lift.ScaleY = 1.18;
+        }
+
+        // Where the light held would go if let go now: its middle, past how many others' middles.
+        int LiftTarget(double moved)
+        {
+            int from = order.IndexOf(lifted);
+            double start = 0;
+            for (int i = 0; i < from; i++) start += Room(order[i]);
+            double middle = start + Room(lifted) / 2 + moved, at = 0;
+            int target = 0;
+            foreach (Row row in order)
+            {
+                if (row == lifted) continue;
+                if (at + Room(row) / 2 < middle) target++;
+                at += Room(row);
+            }
+            return target;
+        }
+
+        void LiftStep(CursorPoint cursor)
+        {
+            int from = order.IndexOf(lifted);
+            if (from < 0) { lifted = null; dragging = false; Render(); return; }  // that session ended meanwhile
+            double length = 0;
+            foreach (Row row in order) length += Room(row);
+            double start = 0;
+            for (int i = 0; i < from; i++) start += Room(order[i]);
+            double moved = Math.Max(-start, Math.Min(length - start - Room(lifted), AlongBar(cursor) - liftGrab));
+            int target = LiftTarget(moved);
+            double ease = still ? 1 : 0.35;
+            for (int i = 0; i < order.Count; i++)
+            {
+                Row row = order[i];
+                double goal = row == lifted ? moved
+                            : i > from && i <= target ? -Room(lifted)
+                            : i < from && i >= target ? Room(lifted) : 0;
+                double now = Island ? row.Shift.X : row.Shift.Y;
+                double next = row == lifted ? goal : now + (goal - now) * ease;
+                if (Island) row.Shift.X = next; else row.Shift.Y = next;
+            }
+        }
+
+        // Let go: the lights take their new places for good, and the hub is told the new order,
+        // which it keeps. Hardly moved at all, it was a click, which goes to what is underneath.
+        void EndLift()
+        {
+            Row row = lifted;
+            lifted = null;
+            double moved = Island ? row.Shift.X : row.Shift.Y;
+            int from = order.IndexOf(row), target = from < 0 ? -1 : LiftTarget(moved);
+            foreach (Row r in order) { r.Shift.X = r.Shift.Y = 0; }
+            row.Lift.ScaleX = row.Lift.ScaleY = 1;
+            Panel.SetZIndex(row.Light, 0);
+            if (from >= 0 && target != from)
+            {
+                order.RemoveAt(from);
+                order.Insert(target, row);
+                rowsPanel.Children.Clear();
+                lights.Children.Clear();
+                foreach (Row r in order) { rowsPanel.Children.Add(r.Text); lights.Children.Add(r.Light); }
+                var names = new List<object>();
+                foreach (Row r in order) names.Add(r.Name);
+                Send("reorder", "names", names);
+            }
+            else if (Math.Abs(moved) < 3) PassClick();
             insideTicks = outsideTicks = 0;
             Edge();
             Render();
@@ -3009,7 +3146,8 @@ namespace ClaudeSpeaks
         // The bar's edge shows what the mouse can do: brighter when it can be grabbed, amber while held.
         void Edge()
         {
-            rail.Panel.BorderBrush = dragging || moving ? Ui.AmberEdge : catching ? Ui.BrightEdge : Ui.GlassEdge;
+            bool keyed = catching && ((dragKeys.Length > 0 && Held(dragKeys)) || CanReorder());  // grabbable only because keys are held
+            rail.Panel.BorderBrush = dragging || moving ? Ui.AmberEdge : keyed ? Ui.BrightEdge : Ui.GlassEdge;
         }
 
         // "sidetone overlay move": the same dragging, announced, for when the bar is hard to find.

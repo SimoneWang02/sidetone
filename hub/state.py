@@ -252,6 +252,23 @@ class Sessions:
         s.updated = now
         return s
 
+    def reorder(self, names: list) -> bool:
+        """Put the sessions in the order of `names` (dragged there in the overlay); any not named
+        keep their order after those. Each gets a new place, so a session that is only kept from
+        before a restart still goes in after them. Returns whether anything moved."""
+        rank = {name: i for i, name in enumerate(names)}
+        now = sorted(self.by_id.items(), key=lambda item: (rank.get(item[1].name, len(rank)), item[1].order))
+        if [sid for sid, _ in now] == list(self.by_id):
+            return False
+        for place, (_, s) in enumerate(now, 1):
+            s.order = place
+        later = len(now) + 1
+        for kept in sorted(self.kept.values(), key=lambda k: k["order"]):
+            kept["order"], later = later, later + 1
+        self.by_id.clear()
+        self.by_id.update(now)
+        return True
+
     def remove(self, sid: str) -> None:
         self.by_id.pop(sid, None)
         self.kept.pop(sid, None)

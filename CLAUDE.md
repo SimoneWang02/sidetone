@@ -330,6 +330,21 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   while dragging. `BeginDrag` took the grab point from `GetCursorPos` when the press was
   handled, which is after the mouse has moved on; it now takes it from the press
   (`e.GetPosition`). The author dragged it afterwards: "Perfect, it seems to be working."
+- Sessions in an order of your own (2026-11-19, `overlay.reorder_keys`, `Press`, `LiftStep`,
+  `EndLift` in `Overlay.cs`, `Sessions.reorder`). The author, by voice: "if we could move the
+  ... sessions", by dragging; Ctrl+Alt was already the key for dragging the bar ("they're kind
+  of going [to] conflict"). Their own way out, taken as said: "make the whole layout draggable
+  by default ... and maybe with control alt you can ... rearrange the sessions". So
+  `drag_keys` is `""` by default again (a plain drag moves the bar), but with the plain
+  arrow cursor and no brighter edge, which is what they disliked about it before; and with
+  Ctrl+Alt held, a press on a light lifts it (a little bigger, above the others) and it
+  follows the mouse along the bar while the others slide aside; let go, and the overlay
+  sends `reorder` with the names in the new order, which the hub gives each session as its
+  `order` and keeps in `sessions.json`, so a restart keeps it. A new session goes at the
+  end. With the keys held the cursor is a double arrow along the bar over a light, and
+  a drag elsewhere on the bar still moves it. Told them before: the bar takes every press
+  on it again, and a game that reads the mouse its own way may miss a click passed on.
+  Compiles; tested in the hub; **the dragging itself not seen by anyone yet**.
 - What brings the details out (`overlay.hover`, 2026-11-17): `always` (default) = the mouse
   resting on the bar, as ever; `keys` = only holding Ctrl+Alt or the list key, and then a
   mouse passing over the bar changes nothing at all (no light growing under it either).

@@ -300,6 +300,14 @@ class Permissions:
             placed = {k: msg[k] for k in ("monitor", "corner", "offset_x", "offset_y", "island_x", "island_y") if k in msg}
             self.place_overlay(False, **placed)  # the window already knows; this saves it
             return
+        if msg.get("type") == "reorder":  # a light dragged to another place in the bar: kept so
+            names = msg.get("names")
+            with self.lock:
+                moved = isinstance(names, list) and self.sessions.reorder([str(n) for n in names])
+            if moved:
+                log(self.cfg, "hub.log", "sessions put in a new order: " + ", ".join(map(str, names)))
+                self.publish()
+            return
         if msg.get("type") == "mode":  # details kept out, or only the lights: the same after a hub restart
             if msg.get("mode") in ("dots", "list"):
                 self.place_overlay(False, mode=msg["mode"])
