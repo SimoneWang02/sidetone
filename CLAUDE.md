@@ -25,7 +25,21 @@ in the bar.
 The mark's color is theirs too: on seeing the logo in the microphone's pink they typed
 "#006896", taken as the color for it (they said nothing else). The logo runs from a lighter
 step of that blue to it, and the settings window's switches and sliders use it.
-**Not confirmed that the logo is what the color was for.**
+A spoken message that had waited behind that turn said what it was for: "I don't like the
+brand color which is ... currently it's pink ... I'll give you a color. Let me know if it's
+good." Told (measured): white on it reads well (6.1 to 1), so it is right for the logo and
+for filled things; on the dark glass it is 2.7 to 1, too faint for thin lines and words,
+which need a lighter step of it (`#2E9CC9`, 5.4 to 1); and in the overlay it would be taken
+for the blue of "working" (`#4FC3F7`; 34 apart by `state.color_distance`, the lighter step
+15, where 40 is the least kept between two sessions' colors, and the pink is 89). So the
+microphone in the overlay is still pink (`Ui.Mic`). **Open: whether they want the
+microphone's pink changed too, and to what.**
+
+In the same message: "I still see [claude-speaks] as a name on the top left of each session
+... you just have to [restart] the hub." A restart would not have done it: a session's name
+is its folder's as Claude Code gave it when the session began, and the hub keeps it. Done
+once by hand, no code: with the hub stopped, the names in `sessions.json` and the voices in
+`voices.json` were changed from `claude-speaks N` to `sidetone N`.
 
 Eyes-free Claude Code. A local voice reads a 1–2 sentence spoken summary of each turn, never the
 full output, and starts while the reply is still streaming. With several sessions open they

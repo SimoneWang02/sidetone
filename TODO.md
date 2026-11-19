@@ -647,7 +647,11 @@ Bigger pieces:
       window and the README, the GitHub repo (`sidetone`), the project folder
       (`~/personal/sidetone`, with a link left at the old place for the sessions and
       the editor window that were open). The commands followed on their yes: `sidetone` and `st`. The
-      logo is in the blue they typed, `#006896`. **Left, for them to decide:** the
+      logo is in the blue they typed, `#006896`. The sessions that were open are named
+      `sidetone` in the bar too (changed by hand in the hub's records). **Open: the
+      microphone's pink in the overlay**, which they also dislike as "the brand
+      color"; their blue is too near the blue of "working" to take its place there,
+      so another color for it has to be chosen (or the working light's changed). **Left, for them to decide:** the
       folders for settings, logs and models, the
       `CLAUDE_SPEAKS_*` variables, the VS Code extension's name, the words in the
       overlay ("claude-speaks" is nowhere on screen now), and `CLAUDE.md` and this
