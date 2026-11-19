@@ -240,6 +240,12 @@ Roughly easiest first, the larger ones after.
 
 ### Larger extras
 
+- [ ] The full transcript and the full message in the overlay (the author, by voice,
+      2026-11-19: "I want to be able to see the full transcript and the full message in the
+      overlay"). Today the bubble and the rows cut long text (`overlay.row_lines`, 1 to 3
+      lines). To ask: whether "the full message" is the whole spoken line or the session's
+      whole written reply, and "the full transcript" all of their own words as heard; and
+      where (the bubble growing, a click or key that opens it, the history).
 - [ ] Make more of the overlay a setting: sizes, colors (session palette, status colors, glass
       tint), which keys do what, what the panel rows show, animation speed or none, where the
       bubble goes. Much is fixed in `overlay/Overlay.cs` today.
