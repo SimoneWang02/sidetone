@@ -24,9 +24,11 @@ FEEDBACK = {"allowed", "denied", "notice"}
 # female). A line is pronounced in the language of the voice that says it, so a line in
 # Italian is given an Italian voice (Hub._voice_for) and Kokoro is told "it".
 KOKORO_LANG = {"a": "en-us", "b": "en-gb", "e": "es", "f": "fr-fr", "h": "hi", "i": "it", "j": "ja", "p": "pt-br", "z": "cmn"}
-# A voice that beats Kokoro's for its language, used when it is installed (`language_voices` in
-# config.json names another, or picks a Kokoro voice back).
-PREFERRED_VOICE = {"it": "piper:it_IT-paola-medium"}
+# The voices for a language, best first, shared out so that sessions sound different in it too
+# (the first session gets the first). Those not installed are skipped; `language_voices` in
+# config.json gives a list of one's own. Italian: the three the author kept of seven heard
+# (2026-11-19), Piper's Paola, then Kokoro's Sara and Nicola.
+PREFERRED_VOICE = {"it": ["piper:it_IT-paola-medium", "if_sara", "im_nicola"]}
 LANG_LETTER = {"en": "a", "es": "e", "fr": "f", "hi": "h", "it": "i", "ja": "j", "pt": "p", "zh": "z", "cmn": "z"}
 
 

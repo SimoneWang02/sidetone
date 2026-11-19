@@ -445,8 +445,10 @@ class Hub(Permissions, Talk):
             return None
         engine = self.speech.engine
         for wanted in (self.cfg.language_voices.get(lang), PREFERRED_VOICE.get(lang)):
-            if wanted and hasattr(engine, "has") and engine.has(wanted):
-                return wanted  # one chosen for the language, the same for every session
+            pool = [v for v in ([wanted] if isinstance(wanted, str) else wanted or [])
+                    if isinstance(v, str) and hasattr(engine, "has") and engine.has(v)]
+            if pool:
+                return self._share(s, lang, pool)
         letter = LANG_LETTER.get(lang)
         known = getattr(self.speech.engine, "voices", None) or ()
         choices = sorted(v for v in known if letter and re.fullmatch(letter + r"[fm]_\w+", v))
@@ -455,6 +457,19 @@ class Hub(Permissions, Talk):
         kind = s.voice[1:2] if re.fullmatch(r"[a-z][fm]_\w+", s.voice or "") else ""
         same = [v for v in choices if v[1] == kind] or choices
         return same[zlib.crc32(s.name.encode()) % len(same)]
+
+    def _share(self, s, lang: str, pool: list) -> str:
+        """A voice of `pool` for this session's lines in `lang`: the one it had, else the first
+        that no other open session speaks that language with, else one by its name."""
+        chosen = self.__dict__.setdefault("_lang_voices", {})
+        live = {x.name for x in self.sessions.by_id.values()}
+        mine = chosen.get((lang, s.name))
+        if mine in pool:
+            return mine
+        taken = {v for (lg, name), v in chosen.items() if lg == lang and name != s.name and name in live}
+        pick = next((v for v in pool if v not in taken), pool[zlib.crc32(s.name.encode()) % len(pool)])
+        chosen[(lang, s.name)] = pick
+        return pick
 
     def _title_from(self, s, prompt: str = "", reply: str = "", given: str = "") -> None:
         """What a session is called beside its name.

@@ -249,6 +249,9 @@ class ReplyLanguage(HubCase):
         hub.on_display(ev("MessageDisplay", delta='<speak lang="it">Fatto.</speak>'))
         self.spoken()
         self.assertEqual(self.engine.spoken[-1][1], "piper:it_IT-paola-medium")  # Paola, when installed
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/work/beta", delta='<speak lang="it">Anche io.</speak>'))
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][1], "if_sara")  # another session: the next of the three
         hub.cfg.language_voices = {"it": "im_nicola"}
         hub.on_display(ev("MessageDisplay", delta='<speak lang="it">Fatto di nuovo.</speak>'))
         self.spoken()

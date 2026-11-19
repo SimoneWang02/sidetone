@@ -1174,7 +1174,10 @@ Smaller ideas:
       `italian_24l` with a built-in voice, Giovanni; samples made, speed with the model
       loaded not measured. The trial environments are in `~/.cache/sidetone-voice-trials`
       (outside the repo; `/tmp` is a 7.8 GB tmpfs and filled up). All on the comparison
-      page for the author to hear. Added to the comparison page
+      page for the author to hear. Their verdict: not Pocket TTS; they keep Paola, Sara and
+      Nicola, now shared out between sessions for Italian (`PREFERRED_VOICE` is a list).
+      They asked for more ("c'è qualcosa altro?"); with the card, Qwen3-TTS and Cartesia's
+      azzurra-voice are the ones to sample next. Added to the comparison page
       for them to hear. They did not like it either: "Paola è quella migliore", keep her
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when

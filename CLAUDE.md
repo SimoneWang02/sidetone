@@ -273,7 +273,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `~/.local/share/piper/voices`; one `piper` process per part, about 0.3 s, resampled from
   22050 to 24000), and a language can have a voice that beats Kokoro's
   (`tts.PREFERRED_VOICE`, `it` = `piper:it_IT-paola-medium`; `language_voices` in
-  `config.json` names another). That one voice then says every session's Italian lines.
+  `config.json` names another). After hearing Pocket TTS and Chatterbox on the graphics
+  card too, they kept three: Paola, Sara and Nicola. So a language has a list, best first,
+  shared out like the English voices (`Hub._share`): the first session gets Paola, the
+  next one no other open session uses, kept per session name.
   The model was copied by hand into the author's Piper folder; `install.sh` does not
   fetch it yet.
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
