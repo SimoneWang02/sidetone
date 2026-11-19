@@ -90,6 +90,7 @@ class Hub(Permissions, Talk):
         self._clear_wanted: tuple[str, float] = ("", base.NEVER)  # a terminal to be cleared while its editor was between two requests
         self._clearing: dict[str, tuple] = {}  # session -> (its voice, timer) while /clear has been asked for and not yet seen done
         self._clear_after: dict[str, float] = {}  # session -> when "clear the chat" was said while it was busy: cleared once its turn ends
+        self._ended: dict[str, float] = {}  # session -> when Claude Code said it ended: its listener must not bring it back
         self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
         self._restore_sessions()
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
@@ -198,6 +199,11 @@ class Hub(Permissions, Talk):
                     self.history = collections.deque((e for e in self.history if e.get("session") != sid),
                                                      maxlen=self.history.maxlen)
                 self._forget(sid, "session ended")
+                now = time.monotonic()
+                self._ended = {k: v for k, v in self._ended.items() if now - v < 3600}
+                self._ended[sid] = now
+                return
+            if sid in self._ended:  # an event of it that came after its end (hooks report on their own)
                 return
             s = self.sessions.touch(sid, ev.get("cwd", ""))
             s.permission_mode = str(ev.get("permission_mode") or s.permission_mode)

@@ -201,6 +201,12 @@ class Talk:
         if why:
             self._not_cleared(s, why, text)
             return
+        if s.id in self._clearing:
+            # Typed already and not yet seen done: a second /clear would land in the next
+            # conversation and clear that one too (the author said it twice, 2026-11-19).
+            self._talk("sent", s, "Already clearing", seconds=2.5)
+            log(self.cfg, "hub.log", f"clear [{s.id[:8]}] already asked for, not typed again: {text[:80]}")
+            return
         self._type_clear(s, text)
 
     def _talk_held(self) -> bool:
@@ -765,6 +771,13 @@ class Talk:
     def listen(self, sid: str, cwd: str = "") -> Listener:
         """A session's hook starts waiting for follow-ups; it replaces that session's older one."""
         with self.lock:
+            if sid in self._ended:
+                # A listener can outlive its conversation: after /clear, Claude Code keeps the
+                # hook started for the old one running in the same terminal, and its asking
+                # again brought the ended session back as a second one in the bar (2026-11-19).
+                listener = Listener(sid, released=True)
+                listener.wake.set()
+                return listener
             self.sessions.touch(sid, cwd)  # after a hub restart this is how an idle session reappears
             self._release(sid)
             listener = self.listeners[sid] = Listener(sid)

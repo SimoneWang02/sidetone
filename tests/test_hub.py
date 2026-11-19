@@ -1480,6 +1480,28 @@ class PushToTalk(HubCase):
         self.assertTrue(hub.speech.wait_idle(5))
         self.assertEqual(self.spoken()[-1], "Chat cleared.")  # "Clearing." goes with the session if not yet said
 
+    def test_saying_clear_twice_types_it_once_and_the_cleared_session_stays_gone(self):
+        """2026-11-19: the author said "clear" twice before the first was seen done. The second
+        /clear cleared the fresh conversation too, and the one in between came back as a second
+        session in the bar, through its listener or an event that reached the hub after its end."""
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41"}.get(pid)
+        hub.sessions.by_id["a"].tty = "/dev/pts/41"
+        editor = hub.editor_waits([4001], clears=True)
+        self.said(hub, "clear the chat", "a")
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])
+        again = hub.editor_waits([4001], clears=True)
+        self.said(hub, "clear the context", "a")
+        self.assertEqual((again.wake.is_set(), self.talks()[-1]), (False, ("sent", "a", "Already clearing")))
+        hub.editor_done(again)
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="clear"))
+        self.assertNotIn("a", hub.sessions.by_id)
+        late = hub.listen("a", "/w/a")
+        self.assertTrue(late.released and late.wake.is_set())
+        hub.on_event(ev("SessionStart", sid="a", cwd="/w/a"))
+        self.assertNotIn("a", hub.sessions.by_id)
+
     def test_a_cleared_chat_takes_its_lines_out_of_the_history(self):
         """/clear ends the conversation and the next one in that terminal has the same name,
         so its old lines would show under it: they go with the chat. Another end keeps them."""
