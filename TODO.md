@@ -18,43 +18,6 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
-      mute shortcut"). Press it while a session speaks: the line stops, two low notes go
-      down, and the overlay shows "Voice is muted" with a struck-out speaker for 2.5 s. While
-      muted, what sessions say is shown instead. Press again: two low notes go up, "Voice
-      on". The same as `sidetone off` and `on`; rebind it in the settings window, Keys.
-      The author pressed it the same day: "It works." They asked for M ("M for mute"); it
-      was moved there while the NVIDIA overlay was closed, and that overlay came back by
-      itself and took the key again ("It's not working"), so it is Q again.
-      Their rule for default keys, the same day, on learning that M is the NVIDIA overlay's
-      default microphone key: the tool is meant to reach as many people as possible, so a
-      default must not clash with a popular program's own keys ("there's no point in
-      overriding them"), even where they themselves do not use that program. Q stays.
-      For themselves they wanted M anyway, acting in both programs ("it execute both"):
-      built at once as `share_taken_keys` (on), a key another program holds is heard through
-      the keyboard hook and passed on. Minutes later M became the default for everyone ("if
-      there's conflict just do both"), which sets their rule above aside for this key: with
-      the NVIDIA overlay, M also switches its microphone. Pressed by them on 2026-11-19
-      at 14:45 with the NVIDIA overlay holding the key: off, a spoken message while muted
-      got through, on again 25 s later (`hub.log`). Not said: how it looked or sounded.
-      While muted: first a small struck-out speaker past the end of the bar, which they did
-      not like ("I don't like the icon underneath the sessions"; `muted_mark`, now off);
-      now "Voice is muted" in the details (`muted_line`), their idea, and a struck-out speaker
-      in the card's top right corner (`muted_icon`), their next one; whether both should stay
-      is to be asked. The repeat key no longer speaks while muted (they found it did).
-      **Not seen by them yet.**
-      Open: mute is for every session, not only the one in focus.
-      Seen by them at 15:52: two looks one after the other when muting, "Voice on" out of
-      line, and "a reverb, something scratching" after the sounds. The looks made one row
-      the same day (see `docs/dev/features.md`). The scratch is not in what Linux plays:
-      the two notes recorded from the speakers' output fade cleanly to silence. The likely
-      cause is the NVIDIA overlay, which also acts on Ctrl+Alt+M (switching its microphone)
-      and may play its own sound; to be heard with our sounds alone.
-      Heard alone, they still scratched ("Boodum ... hmm"): it is ours, added on the way
-      to Windows as the stream closes. Mended the same hour with silence around each sound
-      (`sounds.LEAD`, `TAIL`) and a 150 ms buffer; heard by them: "the last two were
-      clean", then a brief scratch on the first after a quiet spell, then with the 0.1 s
-      before, twice after 8 s of quiet: "they were clean".
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
       Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
       the talk key and say "clear the chat" to a session that is idle: its terminal should
@@ -438,6 +401,45 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
+      mute shortcut"). Press it while a session speaks: the line stops, two low notes go
+      down, and the overlay shows "Voice is muted" with a struck-out speaker for 2.5 s. While
+      muted, what sessions say is shown instead. Press again: two low notes go up, "Voice
+      on". The same as `sidetone off` and `on`; rebind it in the settings window, Keys.
+      The author pressed it the same day: "It works." They asked for M ("M for mute"); it
+      was moved there while the NVIDIA overlay was closed, and that overlay came back by
+      itself and took the key again ("It's not working"), so it is Q again.
+      Their rule for default keys, the same day, on learning that M is the NVIDIA overlay's
+      default microphone key: the tool is meant to reach as many people as possible, so a
+      default must not clash with a popular program's own keys ("there's no point in
+      overriding them"), even where they themselves do not use that program. Q stays.
+      For themselves they wanted M anyway, acting in both programs ("it execute both"):
+      built at once as `share_taken_keys` (on), a key another program holds is heard through
+      the keyboard hook and passed on. Minutes later M became the default for everyone ("if
+      there's conflict just do both"), which sets their rule above aside for this key: with
+      the NVIDIA overlay, M also switches its microphone. Pressed by them on 2026-11-19
+      at 14:45 with the NVIDIA overlay holding the key: off, a spoken message while muted
+      got through, on again 25 s later (`hub.log`). Not said: how it looked or sounded.
+      While muted: first a small struck-out speaker past the end of the bar, which they did
+      not like ("I don't like the icon underneath the sessions"; `muted_mark`, now off);
+      now "Voice is muted" in the details (`muted_line`), their idea, and a struck-out speaker
+      in the card's top right corner (`muted_icon`), their next one; whether both should stay
+      is to be asked. The repeat key no longer speaks while muted (they found it did).
+      **Not seen by them yet.**
+      Open: mute is for every session, not only the one in focus.
+      Seen by them at 15:52: two looks one after the other when muting, "Voice on" out of
+      line, and "a reverb, something scratching" after the sounds. The looks made one row
+      the same day (see `docs/dev/features.md`). The scratch is not in what Linux plays:
+      the two notes recorded from the speakers' output fade cleanly to silence. The likely
+      cause is the NVIDIA overlay, which also acts on Ctrl+Alt+M (switching its microphone)
+      and may play its own sound; to be heard with our sounds alone.
+      Heard alone, they still scratched ("Boodum ... hmm"): it is ours, added on the way
+      to Windows as the stream closes. Mended the same hour with silence around each sound
+      (`sounds.LEAD`, `TAIL`) and a 150 ms buffer; heard by them: "the last two were
+      clean", then a brief scratch on the first after a quiet spell, then with the 0.1 s
+      before, twice after 8 s of quiet: "they were clean".
+      Then the key itself at 16:02 with the one row and the new sounds: "Oh, that's
+      perfect."
 - [x] Italian openings for side questions and for asking the usage. `aside_words` and the
       words `usage.asks` accepts are English only, so "a proposito, ..." waits for the session
       and "quanto ho usato?" goes to it. Add Italian (and Chinese, now that it is spoken)
