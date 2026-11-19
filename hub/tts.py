@@ -24,6 +24,9 @@ FEEDBACK = {"allowed", "denied", "notice"}
 # female). A line is pronounced in the language of the voice that says it, so a line in
 # Italian is given an Italian voice (Hub._voice_for) and Kokoro is told "it".
 KOKORO_LANG = {"a": "en-us", "b": "en-gb", "e": "es", "f": "fr-fr", "h": "hi", "i": "it", "j": "ja", "p": "pt-br", "z": "cmn"}
+# A voice that beats Kokoro's for its language, used when it is installed (`language_voices` in
+# config.json names another, or picks a Kokoro voice back).
+PREFERRED_VOICE = {"it": "piper:it_IT-paola-medium"}
 LANG_LETTER = {"en": "a", "es": "e", "fr": "f", "hi": "h", "it": "i", "ja": "j", "pt": "p", "zh": "z", "cmn": "z"}
 
 
@@ -82,10 +85,16 @@ class KokoroEngine:
 
     STYLE_SHAPE = (510, 1, 256)  # how Kokoro stores one voice
 
-    def __init__(self, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = ""):
+    def __init__(self, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = "",
+                 piper_dir: str = os.path.expanduser("~/.local/share/piper")):
         self.dir, self.speed, self.fallback_voice = kokoro_dir, speed, fallback_voice
         self.custom_dir = custom_dir  # the user's own voices, one .npy file each
         self.custom: dict = {}
+        # Piper's voices, named "piper:<model>" (piper:it_IT-paola-medium): for languages whose
+        # Kokoro voices are poor. The author found Kokoro's Italian "troppo robotica" and Piper's
+        # Paola the best of those tried (2026-11-19). Model path and sample rate by name.
+        self.piper_dir = piper_dir
+        self.piper: dict[str, tuple[str, int]] = {}
         self.voices: set[str] = set()
         self.kokoro = None
         self._proc: subprocess.Popen | None = None
@@ -97,7 +106,24 @@ class KokoroEngine:
         self.kokoro = Kokoro(f"{self.dir}/kokoro-v1.0.onnx", f"{self.dir}/voices-v1.0.bin")
         self.voices = set(self.kokoro.get_voices())
         self.reload_custom()
+        self.reload_piper()
         self._pcm("Ready.", self.fallback_voice)  # the first synthesis is much slower than the rest
+
+    def reload_piper(self) -> None:
+        import json
+
+        self.piper = {}
+        program, folder = os.path.join(self.piper_dir, "piper", "piper"), os.path.join(self.piper_dir, "voices")
+        if not (os.access(program, os.X_OK) and os.path.isdir(folder)):
+            return
+        for name in sorted(os.listdir(folder)):
+            if name.endswith(".onnx") and os.path.isfile(os.path.join(folder, name + ".json")):
+                try:
+                    with open(os.path.join(folder, name + ".json")) as f:
+                        rate = int(json.load(f)["audio"]["sample_rate"])
+                except (OSError, ValueError, KeyError, TypeError):
+                    continue
+                self.piper["piper:" + name[:-5]] = (os.path.join(folder, name), rate)
 
     def reload_custom(self) -> None:
         import numpy as np
@@ -124,7 +150,7 @@ class KokoroEngine:
         return array
 
     def has(self, voice: str) -> bool:
-        return voice in self.voices or voice in self.custom
+        return voice in self.voices or voice in self.custom or voice in self.piper
 
     def style(self, voice: str):
         return self.custom[voice] if voice in self.custom else self.kokoro.get_voice_style(voice)
@@ -152,8 +178,22 @@ class KokoroEngine:
     def _pcm(self, text: str, voice: str) -> bytes:
         import numpy as np
 
+        if voice in self.piper:
+            return self._piper_pcm(text, *self.piper[voice])
         samples, _ = self.kokoro.create(text, voice=self.custom.get(voice, voice), speed=self.speed, lang=voice_lang(voice))
         return (np.clip(samples, -1, 1) * 32767).astype("<i2").tobytes()
+
+    def _piper_pcm(self, text: str, model: str, rate: int) -> bytes:
+        """A line said by Piper (a process per part, about 0.3 s for a sentence), brought to our rate."""
+        import numpy as np
+
+        done = subprocess.run([os.path.join(self.piper_dir, "piper", "piper"), "--model", model, "--output-raw",
+                               "--length_scale", f"{1 / max(0.5, self.speed):.3f}"],
+                              input=text.replace("\n", " ").encode(), capture_output=True, timeout=30)
+        samples = np.frombuffer(done.stdout, dtype="<i2").astype(np.float32)
+        if rate != self.RATE and len(samples):
+            samples = np.interp(np.arange(0, len(samples), rate / self.RATE), np.arange(len(samples)), samples)
+        return np.clip(samples, -32768, 32767).astype("<i2").tobytes()
 
     def speak(self, parts: list[str], voice: str) -> float | None:
         """Speak the parts in order, synthesizing each while the previous one plays.

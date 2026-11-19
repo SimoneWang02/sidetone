@@ -243,6 +243,17 @@ class ReplyLanguage(HubCase):
         self.spoken()
         self.assertEqual(self.engine.spoken[-1][1], self.session()["voice"])
 
+    def test_a_better_voice_for_the_language_comes_first(self):
+        hub = self.make()
+        self.engine.has = lambda v: v in self.VOICES or v == "piper:it_IT-paola-medium"
+        hub.on_display(ev("MessageDisplay", delta='<speak lang="it">Fatto.</speak>'))
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][1], "piper:it_IT-paola-medium")  # Paola, when installed
+        hub.cfg.language_voices = {"it": "im_nicola"}
+        hub.on_display(ev("MessageDisplay", delta='<speak lang="it">Fatto di nuovo.</speak>'))
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][1], "im_nicola")  # one chosen in config.json wins
+
     def test_the_voice_says_how_to_pronounce(self):
         self.assertEqual([voice_lang(v) for v in ("if_sara", "af_heart", "bm_george", "pm_alex", "mine")],
                          ["it", "en-us", "en-gb", "pt-br", "en-us"])

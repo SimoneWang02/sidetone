@@ -266,6 +266,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   that from `config.json` like `titles`. The hub's own words ("Sent.", "I need your
   input") stay English. Heard on the live hub only through `sidetone say -v if_sara`;
   **no session has answered the author in Italian yet.**
+  Kokoro's Italian was "troppo robotica" to the author; of Kokoro's Sara and Nicola, Piper's
+  Paola and Chatterbox Multilingual (12 to 17 s for 6 s of speech on their CPU) they kept
+  Paola "per il momento". So the Kokoro engine also speaks Piper's voices
+  (`KokoroEngine.piper`, named `piper:<model>` after each `.onnx` with its `.json` in
+  `~/.local/share/piper/voices`; one `piper` process per part, about 0.3 s, resampled from
+  22050 to 24000), and a language can have a voice that beats Kokoro's
+  (`tts.PREFERRED_VOICE`, `it` = `piper:it_IT-paola-medium`; `language_voices` in
+  `config.json` names another). That one voice then says every session's Italian lines.
+  The model was copied by hand into the author's Piper folder; `install.sh` does not
+  fetch it yet.
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
   was active in the last 15 min and no overlay is on screen (the author, 2026-11-17: "i dont
   think it's necessary to say the project folder whenever it speaks"; the bubble and the voice

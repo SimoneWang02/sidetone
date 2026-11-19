@@ -37,7 +37,7 @@ import stt  # noqa: E402
 import terminal as terminal_mod  # noqa: E402
 from state import (COLORS, FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
                    lang_from_message, speech_from_message, split_display, title_from_message)
-from tts import LANG_LETTER, Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
+from tts import LANG_LETTER, PREFERRED_VOICE, Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
 
 import base  # noqa: E402
 import usage  # noqa: E402
@@ -443,6 +443,10 @@ class Hub(Permissions, Talk):
         for a language Kokoro has no voice for, and with `reply_language: english`."""
         if not lang or lang == "en" or self.cfg.reply_language == "english":
             return None
+        engine = self.speech.engine
+        for wanted in (self.cfg.language_voices.get(lang), PREFERRED_VOICE.get(lang)):
+            if wanted and hasattr(engine, "has") and engine.has(wanted):
+                return wanted  # one chosen for the language, the same for every session
         letter = LANG_LETTER.get(lang)
         known = getattr(self.speech.engine, "voices", None) or ()
         choices = sorted(v for v in known if letter and re.fullmatch(letter + r"[fm]_\w+", v))

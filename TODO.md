@@ -1166,7 +1166,11 @@ Smaller ideas:
       downloads the model from Hugging Face, ran on the author's "proceed": loaded in 6.4 s,
       then 16.8 s and 11.9 s for about 6 s of speech on 16 threads, so twice as slow as
       speech itself; too slow to speak while a reply streams. Added to the comparison page
-      for them to hear. Not built: Piper as
+      for them to hear. They did not like it either: "Paola è quella migliore", keep her
+      for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
+      in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when
+      Italian is chosen; every session shares her, so sessions are told apart only by the
+      overlay in Italian. Not built: Piper as
       the engine for Italian lines (the hub already knows Piper as a fallback).
       Seen the same evening: a short Italian answer seems to come out as English. Asked to
       say "procedi" and then "sì", the author's replies were written "See you soon" (twice)
