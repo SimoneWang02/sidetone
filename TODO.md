@@ -1176,8 +1176,15 @@ Smaller ideas:
       (outside the repo; `/tmp` is a 7.8 GB tmpfs and filled up). All on the comparison
       page for the author to hear. Their verdict: not Pocket TTS; they keep Paola, Sara and
       Nicola, now shared out between sessions for Italian (`PREFERRED_VOICE` is a list).
-      They asked for more ("c'è qualcosa altro?"); with the card, Qwen3-TTS and Cartesia's
-      azzurra-voice are the ones to sample next. Added to the comparison page
+      They asked for more ("c'è qualcosa altro?"), and the best English ones on the card
+      too. Sampled on the RTX 5070 (time to make one sentence, model loaded):
+      azzurra-voice (Cartesia, Italian only, CSM 1B, CC BY-NC-SA: not for a published tool)
+      8.7 s for 6.8 s; Qwen3-TTS 1.7B (qwen-tts 0.1.1, no flash-attn) about as long as the
+      speech, Italian from a described voice (VoiceDesign) and English speakers Ryan and
+      Aiden; Chatterbox English 1.9 s for 4.5 s, Italian 2.6 s for 6 s; Kokoro English
+      0.9 s for 5.5 s on the CPU. Loading takes 1.5 to 3 minutes the first time (downloads).
+      All on the comparison page, waiting for the author's ears. Only Chatterbox is quick
+      enough to speak a sentence at a time while replies stream. Added to the comparison page
       for them to hear. They did not like it either: "Paola è quella migliore", keep her
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when
