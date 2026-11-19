@@ -1896,24 +1896,30 @@ namespace ClaudeSpeaks
             if (usage.Length > 0)  // the plan's usage, which is nobody's in particular: at the foot, under a faint line
             {
                 metricsBody.Children.Add(new Border { Height = 1, Background = Ui.Paint("#22FFFFFF"), Margin = new Thickness(0, 9, 0, 7) });
-                var plan = new System.Windows.Controls.Primitives.UniformGrid { Rows = 1, Margin = new Thickness(0, 0, -14, 0) };
+                // Two share one line. With a third (the week of one model) each has a line of its
+                // own, the names in one column and the bars one length, so they can be compared:
+                // three in one line left each bar some 25 px, too short to read anything from.
+                bool stacked = usage.Length > 2;
+                Panel plan = stacked ? (Panel)new Grid() : new System.Windows.Controls.Primitives.UniformGrid { Rows = 1, Margin = new Thickness(0, 0, -14, 0) };
+                if (stacked) Grid.SetIsSharedSizeScope(plan, true);
                 foreach (object o in usage)
                 {
                     var part = o as object[];
                     if (part == null || part.Length < 2) continue;
                     double used = Ui.Clamp(Convert.ToDouble(part[1], CultureInfo.InvariantCulture) / 100);
                     bool warn = part.Length > 2 && Convert.ToString(part[2], CultureInfo.InvariantCulture) == "warn";
-                    var cell = new Grid { Margin = new Thickness(0, 0, 14, 0) };
-                    cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    var cell = new Grid { Margin = stacked ? new Thickness(0, plan.Children.Count > 0 ? 5 : 0, 0, 0) : new Thickness(0, 0, 14, 0) };
+                    cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = stacked ? "planName" : null });
                     cell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                    cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = stacked ? "planFigure" : null });
                     cell.Children.Add(new TextBlock { Text = Convert.ToString(part[0], CultureInfo.InvariantCulture), FontSize = 10.5, Foreground = Ui.Faint, VerticalAlignment = VerticalAlignment.Center });
-                    UIElement bar = Meter(used, warn, Stood("plan" + plan.Children.Count, used), new Thickness(7, 1, 7, 0));
+                    UIElement bar = Meter(used, warn, Stood("plan" + plan.Children.Count, used), new Thickness(stacked ? 9 : 7, 1, stacked ? 9 : 7, 0));
                     Grid.SetColumn(bar, 1);
                     cell.Children.Add(bar);
-                    var figure = new TextBlock { Text = Math.Round(used * 100) + "%", FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Ui.Dim, VerticalAlignment = VerticalAlignment.Center };
+                    var figure = new TextBlock { Text = Math.Round(used * 100) + "%", FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Ui.Dim, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
                     Grid.SetColumn(figure, 2);
                     cell.Children.Add(figure);
+                    if (stacked) { ((Grid)plan).RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); Grid.SetRow(cell, plan.Children.Count); }
                     plan.Children.Add(cell);
                 }
                 metricsBody.Children.Add(plan);

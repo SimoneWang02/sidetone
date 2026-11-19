@@ -785,8 +785,14 @@ Bigger pieces:
       arc around the light "pretty good. It's very intuitive". One fault: the history
       came "a bit later" than the details; it waited two thirds of a second, now a
       tenth (`overlay.history_after`). **The quicker history is not seen by them yet.**
-      They asked for more design ideas for the usage bars ("show me"). The offers
-      above are still open.
+      They asked for more design ideas for the usage bars ("show me"). Built and put
+      on their overlay: the week of one model as a third bar ("Fable 89%", which was
+      the window nearest its end and not on screen), each of the three on a line of its
+      own (`usage_models`). **For them to judge.** Said as further ideas, not built:
+      when each window starts again; a tick on each bar for how much of its time has
+      passed, to see whether you are ahead of an even pace. The offers above are
+      still open. Also said with the command in the middle of that work, so they could
+      watch the bubble and wave of such a line: not answered yet.
 - [x] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for
       each request to ... show me the metrics of how much token you've used? Is it
       important?"). Possible: Claude Code's record of a session has the token counts of

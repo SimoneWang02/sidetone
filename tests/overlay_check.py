@@ -478,6 +478,10 @@ send(type="peek", on=True)
 shot("metrics", 0.6)
 send(type="peek", on=True, over="web-app")
 shot("metrics-other", 0.6)
+# With the week of one model as a third bar at the foot.
+send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE[:1] + [["Week", 47, ""], ["Fable", 89, "warn"]])
+shot("metrics-model", 0.6)
+send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE)
 send(type="peek", on=True, over="claude-speaks")
 shot("metrics-unknown", 0.6)
 # The mouse was on web-app last; then the focus moves to another session: the card follows it.

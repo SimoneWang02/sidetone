@@ -241,11 +241,17 @@ class Talk:
         threading.Thread(target=read, name="usage", daemon=True).start()
 
     def _plan_bars(self) -> list:
-        """The plan's usage for the foot of the overlay's card: [what, percent, "warn" or ""]."""
-        plan = self.plan if self.cfg.usage_shown else None
+        """The plan's usage for the foot of the overlay's card: [what, percent, "warn" or ""].
+        After the five hours and the week, the week of each model that has a figure of its
+        own (`usage_models`: all, near = only from the warning on, none)."""
+        plan = (self.plan if self.cfg.usage_shown else None) or {}
         warn = float(self.cfg.usage_warn or 0)
-        return [[name, round(w["used"]), "warn" if warn and w["used"] >= warn else ""]
-                for name, w in (("5 hours", (plan or {}).get("five_hour")), ("Week", (plan or {}).get("week"))) if w]
+        near = lambda w: bool(warn and w["used"] >= warn)  # noqa: E731
+        bars = [[name, w] for name, w in (("5 hours", plan.get("five_hour")), ("Week", plan.get("week"))) if w]
+        which = str(self.cfg.usage_models).lower()
+        if bars and which in ("all", "near"):
+            bars += [[name, w] for name, w in (plan.get("models") or {}).items() if w and (which == "all" or near(w))]
+        return [[name, round(w["used"]), "warn" if near(w) else ""] for name, w in bars]
 
     def _hand_over(self, s, text: str) -> None:
         """Words for a session go out: as the answer to the question it is asking, to its

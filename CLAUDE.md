@@ -768,14 +768,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | show [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 279 tests in all with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 280 tests in all with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `colors`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `usage_shown`, `usage_every`, `usage_warn`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -1012,6 +1012,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   a passing mouse. Now it is as quick as the details; 0.66 brings the wait back. A new
   default in `hub/overlay.py` needs a hub restart to reach the window, not only an overlay
   restart. **Not seen by the author yet.**
+- The week of one model as a third usage bar (2026-11-18, `usage_models`: `all`, default,
+  `near` = only from `usage_warn` on, `none`; `Talk._plan_bars`). The author, having passed
+  the two bars: "If you have any other design ideas, yeah show me." The reading at that
+  moment was 6 percent of the five hours, 47 of the week and 89 of Fable's week: the one
+  window near its end was the one not on screen. Three in one line left each bar about
+  25 px (seen in a picture), so from three on each has a line of its own, names in one
+  column, bars one length, percents at the right; two still share a line. Live on their
+  overlay; **not judged by them yet**. Said to them as further ideas, not built: when
+  each window starts again, and a tick on each bar for how much of its time has passed.
 - No time on the history's lines (2026-11-18, `history_time`, off). Asked what the history
   could give up to make room, the author was offered the tokens on each line and the
   progress lines; they kept the tokens ("which I find pretty cool. So I don't think it
