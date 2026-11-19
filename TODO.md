@@ -18,23 +18,6 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] Italian openings for side questions and for asking the usage. `aside_words` and the
-      words `usage.asks` accepts are English only, so "a proposito, ..." waits for the session
-      and "quanto ho usato?" goes to it. Add Italian (and Chinese, now that it is spoken)
-      defaults, and the small words passed over before them (`base.ASIDE_LEAD`).
-      Built 2026-11-19 with the author's own words ("comunque", "e comunque che ore
-      sono?", "quanto stai consumando? quant'è il contesto al momento?"), and the session's
-      context can now be asked in English and Italian too; answers in the language asked
-      (see `docs/dev/features.md`). Risk to watch: "comunque, procedi" said to a working
-      session becomes a side question.
-      The side question tried by the author at 15:32 while the session ran the tests:
-      "e comunque, che ore sono?" was written "Comunque ci sono." (heard as Italian), went
-      on the side at once, and Paola answered in 3.8 s: "Ho capito solo 'ci sono', ma se
-      volevi sapere l'ora, adesso sono le tre e trentadue del pomeriggio". The session never
-      got the words. The usage in Italian tried at 15:41: "Quanto sto usando?" (5.2 s) and
-      "Quanto usato?" (2.2 s), both heard as Italian, both answered by the hub in Italian
-      ("Hai usato il 1 percento delle cinque ore, si azzera alle 20:40 ..."). **Still to
-      try: the context asked in Italian.**
 - [ ] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
       mute shortcut"). Press it while a session speaks: the line stops, two low notes go
       down, and the overlay shows "Voice off" with a struck-out speaker for 2.5 s. While
@@ -444,6 +427,25 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] Italian openings for side questions and for asking the usage. `aside_words` and the
+      words `usage.asks` accepts are English only, so "a proposito, ..." waits for the session
+      and "quanto ho usato?" goes to it. Add Italian (and Chinese, now that it is spoken)
+      defaults, and the small words passed over before them (`base.ASIDE_LEAD`).
+      Built 2026-11-19 with the author's own words ("comunque", "e comunque che ore
+      sono?", "quanto stai consumando? quant'è il contesto al momento?"), and the session's
+      context can now be asked in English and Italian too; answers in the language asked
+      (see `docs/dev/features.md`). Risk to watch: "comunque, procedi" said to a working
+      session becomes a side question.
+      The side question tried by the author at 15:32 while the session ran the tests:
+      "e comunque, che ore sono?" was written "Comunque ci sono." (heard as Italian), went
+      on the side at once, and Paola answered in 3.8 s: "Ho capito solo 'ci sono', ma se
+      volevi sapere l'ora, adesso sono le tre e trentadue del pomeriggio". The session never
+      got the words. The usage in Italian tried at 15:41: "Quanto sto usando?" (5.2 s) and
+      "Quanto usato?" (2.2 s), both heard as Italian, both answered by the hub in Italian
+      ("Hai usato il 1 percento delle cinque ore, si azzera alle 20:40 ..."). The context
+      at 15:49: "Allora, quanta del contesto?" (3.8 s, written in 2.4 s since the last
+      language was English and it was checked against it), answered at once by Paola: "Il
+      contesto è al 26 percento." The author: "Perfect."
 - [x] Confirmation before a spoken message is sent, as a setting in the settings window
       ("un'opzione nei settings per la gente che vuole la conferma": see the transcript,
       then send). It exists in the hub already, off by default since the author found it
