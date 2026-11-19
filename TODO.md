@@ -724,7 +724,7 @@ Bigger pieces:
       this tool it'll be great to have some metrics"). Measured so far, to be done again on
       the release and on a second, slower machine before any of it is quoted:
       - Speech to text by choice of languages (`tests/stt_speed.py`, 2026-11-17, Core Ultra 7
-        270K with 24 threads, no graphics card, model `small`, median of 5 runs, sentences
+        270K with 24 threads, on the CPU (the RTX 5070 was not used), model `small`, median of 5 runs, sentences
         spoken by Kokoro):
 
         | You speak | 1 s of speech | 4 s | 12 s |
@@ -1165,7 +1165,9 @@ Smaller ideas:
       needed `setuptools<81` (its watermarker imports `pkg_resources`). Its run, which
       downloads the model from Hugging Face, ran on the author's "proceed": loaded in 6.4 s,
       then 16.8 s and 11.9 s for about 6 s of speech on 16 threads, so twice as slow as
-      speech itself; too slow to speak while a reply streams. Added to the comparison page
+      speech itself; too slow to speak while a reply streams. That was on the CPU: the
+      machine has an RTX 5070 (12 GB) that WSL sees, which was missed; Chatterbox on it,
+      with a CUDA build of torch, is still to be measured. Added to the comparison page
       for them to hear. They did not like it either: "Paola è quella migliore", keep her
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when

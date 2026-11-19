@@ -1603,7 +1603,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - What the choice of languages costs (measured 2026-11-17 with `tests/stt_speed.py`, asked
   for by the author as numbers for when the tool is published: "it'll be great to have some
   metrics"). Kokoro spoke English and Italian sentences of about 1, 4 and 12 s; median of 5
-  runs on the author's CPU (Core Ultra 7 270K, 24 threads, int8, no graphics card), model
+  runs on the author's CPU (Core Ultra 7 270K, 24 threads, int8, on the CPU; the RTX 5070 was not used), model
   already loaded. One language: 0.6 / 0.7 / 0.9 s for English with `small.en`, 0.6 / 0.8 /
   1.0 s for Italian with `small`. Two languages (`en,it`): 1.2 to 1.4 / 1.4 to 1.5 / 1.5 to
   1.7 s. Five languages and `auto`: the same as two. So working out the language costs about
@@ -1671,6 +1671,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   installed). Run end to end in an empty home with real downloads and a stand-in `code`:
   the registered hooks were those of `hooks/settings-snippet.json`, a hub started from the
   registered SessionStart hook, and uninstalling left the settings empty.
+- Machine facts: an NVIDIA GeForce RTX 5070 with 12 GB (driver 617.14), which WSL sees
+  (`/usr/lib/wsl/lib/nvidia-smi`, `/dev/dxg`); nothing in the project uses it yet. Notes
+  here once said "no graphics card", meaning only that none was used; a session repeated it
+  to the author as fact on 2026-11-19 and was corrected ("ho una 5070").
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
