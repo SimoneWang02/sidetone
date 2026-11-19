@@ -695,6 +695,56 @@ namespace ClaudeSpeaks
     // dots while the words are worked out or wait to go, a paper plane once they are sent, a
     // cross when nothing went out. It is drawn inside the session's light (see Orb), or by
     // this element at the right of the session's line (the "talk_sign" setting).
+    // A speaker with a slash across it: the voice is off. Drawn, not taken from a font: the
+    // font's struck-out speaker has a small cross at its side that cannot be made out at the
+    // size of a line (the author: "it's not very clear ... very small"; they wanted a slash
+    // over it). Drawn in a box of `Side`, the slash cut out of the speaker by a gap.
+    class MutedSpeaker : FrameworkElement
+    {
+        public double Side = 16;
+        public Brush Ink = Ui.Dim;
+
+        public MutedSpeaker(double size)
+        {
+            Side = size;
+            Width = Height = size;
+            IsHitTestVisible = false;
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            double k = Side / 16.0;
+            var speaker = new StreamGeometry();
+            using (StreamGeometryContext g = speaker.Open())
+            {
+                g.BeginFigure(new Point(1.5 * k, 5.6 * k), true, true);
+                g.LineTo(new Point(4.6 * k, 5.6 * k), true, false);
+                g.LineTo(new Point(8.6 * k, 2.0 * k), true, false);
+                g.LineTo(new Point(8.6 * k, 14.0 * k), true, false);
+                g.LineTo(new Point(4.6 * k, 10.4 * k), true, false);
+                g.LineTo(new Point(1.5 * k, 10.4 * k), true, false);
+            }
+            var wave = new StreamGeometry();
+            using (StreamGeometryContext g = wave.Open())
+            {
+                g.BeginFigure(new Point(10.9 * k, 5.4 * k), false, false);
+                g.ArcTo(new Point(10.9 * k, 10.6 * k), new Size(3.4 * k, 3.4 * k), 0, false, SweepDirection.Clockwise, true, false);
+                g.BeginFigure(new Point(12.6 * k, 3.2 * k), false, false);
+                g.ArcTo(new Point(12.6 * k, 12.8 * k), new Size(5.6 * k, 5.6 * k), 0, false, SweepDirection.Clockwise, true, false);
+            }
+            var line = new Pen(Ink, 1.3 * k) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+            // Everything but a band along the slash, so the slash stands apart from what it crosses.
+            var band = new LineGeometry(new Point(1.2 * k, 1.2 * k), new Point(14.8 * k, 14.8 * k)).GetWidenedPathGeometry(new Pen(Brushes.Black, 3.6 * k));
+            var keep = new CombinedGeometry(GeometryCombineMode.Exclude, new RectangleGeometry(new Rect(-2 * k, -2 * k, 20 * k, 20 * k)), band);
+            dc.PushClip(keep);
+            dc.DrawGeometry(Ink, null, speaker);
+            dc.DrawGeometry(null, line, wave);
+            dc.Pop();
+            dc.DrawLine(new Pen(Ink, 1.5 * k) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round },
+                        new Point(1.8 * k, 1.8 * k), new Point(14.2 * k, 14.2 * k));
+        }
+    }
+
     class Badge : FrameworkElement
     {
         public string Kind = "";  // "", mic, dots, sent, wait, failed, stop
@@ -1773,11 +1823,10 @@ namespace ClaudeSpeaks
         readonly StackPanel metricsBody = new StackPanel();
         // While the voice is off, a struck-out speaker in the card's top right corner (the
         // author's idea, overlay.muted_icon), laid over the card so nothing in it moves.
-        readonly TextBlock mutedIcon = new TextBlock
+        readonly MutedSpeaker mutedIcon = new MutedSpeaker(17)
         {
-            Text = "\uD83D\uDD07", FontFamily = Ui.Symbols, FontSize = 14, Foreground = Ui.Dim,
             HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, -2, -3, 0), Visibility = Visibility.Collapsed, ToolTip = null,
+            Margin = new Thickness(0, 0, -2, 0), Visibility = Visibility.Collapsed,
         };
         bool mutedIconOn = true;
         string detailsStyle = "tiles";
@@ -1885,11 +1934,7 @@ namespace ClaudeSpeaks
             layers0.Children.Add(selector);
             layers0.Children.Add(lights);
             rail.Panel.Child = layers0;
-            muteChip.Panel.Child = new TextBlock
-            {
-                Text = "\uD83D\uDD07", FontFamily = Ui.Symbols, FontSize = 17, Foreground = Ui.Dim,
-                Width = ChipSize - 2, Height = ChipSize - 2, TextAlignment = TextAlignment.Center, Padding = new Thickness(0, 4, 0, 0),
-            };
+            muteChip.Panel.Child = new Border { Width = ChipSize - 2, Height = ChipSize - 2, Child = new MutedSpeaker(18) };
             wheelProc = OnMouse;  // kept in a field so it stays alive while Windows holds it
             keyProc = OnKey;
             rail.MouseWheel += delegate(object sender, MouseWheelEventArgs e) { Wheel(e.Delta); };
@@ -2278,7 +2323,7 @@ namespace ClaudeSpeaks
             {
                 string key;
                 mutedText.Inlines.Clear();
-                mutedText.Inlines.Add(new Run("\uD83D\uDD07  ") { FontFamily = Ui.Symbols, Foreground = Ui.Dim, FontSize = 15 });
+                mutedText.Inlines.Add(new InlineUIContainer(new MutedSpeaker(15) { Margin = new Thickness(0, 0, 7, -2) }) { BaselineAlignment = BaselineAlignment.Center });
                 mutedText.Inlines.Add(new Run("Voice is muted") { Foreground = Ui.Dim });
                 if (wantedKeys.TryGetValue("mute", out key) && key.Trim().Length > 0)
                     mutedText.Inlines.Add(new Run("   " + key + " turns it on") { Foreground = Ui.Faint, FontSize = 11.5 });
@@ -3607,7 +3652,8 @@ namespace ClaudeSpeaks
                 bannerTitle.Inlines.Clear();
                 // The microphone (moving the bar), or a speaker struck out or sounding (the mute key).
                 string icon = Str(msg, "icon", "");
-                bannerTitle.Inlines.Add(new Run(icon == "muted" ? "\uD83D\uDD07  " : icon == "voice" ? "\uD83D\uDD0A  " : "\uD83C\uDFA4  ")
+                if (icon == "muted") bannerTitle.Inlines.Add(new InlineUIContainer(new MutedSpeaker(16) { Margin = new Thickness(0, 0, 8, -2) }) { BaselineAlignment = BaselineAlignment.Center });
+                else bannerTitle.Inlines.Add(new Run(icon == "voice" ? "\uD83D\uDD0A  " : "\uD83C\uDFA4  ")
                     { Foreground = icon == "muted" ? Ui.Dim : Ui.Alpha(Ui.Tint("working"), 1), FontFamily = Ui.Symbols,
                       FontSize = icon.Length > 0 ? 17 : bannerTitle.FontSize });  // the speaker's stroke is lost at the size of the words
                 bannerTitle.Inlines.Add(new Run(Str(msg, "text")) { FontWeight = FontWeights.SemiBold });

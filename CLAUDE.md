@@ -697,6 +697,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the repeat key spoke while muted. `_replay` (repeat, catch-up) and `say` without a
   session went to the voice without asking; while muted a replayed line is now shown at
   its light, and the hub's own words are left unsaid.
+  The icon is drawn (`MutedSpeaker`), not the font's: at 14 px the font's speaker had a small
+  cross at its side that could not be made out (the author: "not very clear because ... very
+  small", wanting a slash over the speaker). A speaker with two waves and a slash across all
+  of it, cut free of what it crosses by a gap; the same in the card's corner, the line, the
+  "Voice off" notice and the mark past the bar.
   Found on the way: `SpeechQueue.wait_idle` returned before `on_change(None)` and `on_done`
   had run, so a test could read the overlay's state before its last update; it now also
   waits for those (`_settling`). Claimed only while they can act: `allow` Ctrl+Alt+Y,
