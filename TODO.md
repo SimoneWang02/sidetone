@@ -4,7 +4,7 @@ What is left for Sidetone (claude-speaks until 2026-11-18), sorted by kind on 20
 the author's asking ("reorganize them based on ... if there are fix or like what I view"):
 first what the author can try or decide without any code, then quick fixes and small builds,
 easiest first, then the bigger features, and at the end everything that is done, kept for
-its history. `CLAUDE.md` has the details of how things work.
+its history. `CLAUDE.md` has how things fit together, `docs/dev/features.md` the details of each part.
 
 The author's direction for all of this: people who download the tool should be able to
 customize as much of their experience as possible. New looks and behaviours come as settings,
@@ -79,17 +79,7 @@ by the author with the real keys, voice or eyes.
       it (it has one for a short press now). Asked, they said: "I don't know. I wasn't
       paying attention." So it stays open until it happens again; then `hub.log` will
       show a short press if that was it. If it was a real hold that would not end, the
-      place to look is the overlay's keyboard hook losing the release (see `CLAUDE.md`).
-- [ ] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
-      take a light with the mouse and drop it where it should sit in the bar. The hub keeps
-      the order (by project, so it survives restarts) and new sessions join at the end. Fits
-      the dragging the bar already has: with the keys held a drag moves one light, without
-      them the whole bar.
-      Built 2026-11-19 (see `CLAUDE.md`): `drag_keys` is `""` again, so a plain
-      drag moves the bar, and with `Ctrl+Alt` held a press on a light lifts it and it
-      can be dropped elsewhere; the order is kept in `sessions.json`. Tried by the
-      author the same night and mended four times; the last fix (the panel no longer
-      folds away while a light is held) **not tried yet**.
+      place to look is the overlay's keyboard hook losing the release (see `docs/dev/features.md`).
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
       A first one built on the evening of 2026-11-18 and put on their screen:
@@ -391,7 +381,7 @@ Roughly easiest first.
         words (same day) they cost 0.6 s extra: 1.2 to 1.4, 1.4 to 1.5 and 1.5 to 1.7 s.
         Every sentence was written correctly under every choice, so accuracy is not
         measured: that needs real, short, untidy recordings.
-      - Line written to first sound: about 0.3 s with the hub warm (in `CLAUDE.md`).
+      - Line written to first sound: about 0.3 s with the hub warm (in `docs/dev/facts.md`).
       - Still to measure: real voices and a noisy room, the other model sizes, a slower
         CPU, memory, and how often a short recording is taken for the wrong language.
 - [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
@@ -452,6 +442,17 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
+      take a light with the mouse and drop it where it should sit in the bar. The hub keeps
+      the order (by project, so it survives restarts) and new sessions join at the end. Fits
+      the dragging the bar already has: with the keys held a drag moves one light, without
+      them the whole bar.
+      Built 2026-11-19 (see `docs/dev/features.md`): `drag_keys` is `""` again, so a plain
+      drag moves the bar, and with `Ctrl+Alt` held a press on a light lifts it and it
+      can be dropped elsewhere; the order is kept in `sessions.json`. Tried by the
+      author the same night and mended four times; the last fix (the panel no longer
+      folds away while a light is held) tried by the author on 2026-11-19 with two sessions:
+      "it's done and working" (`hub.log`: "sessions put in a new order" at 14:48).
 - [x] Side questions: spoken words that open with "by the way" do not wait for a busy session
       (asked for by the author by voice on 2026-11-17, who compared it to Claude Code's
       `/btw`: "it lets me skip the queue and ask a by the way question"; of a second talk
@@ -1052,7 +1053,7 @@ Kept for the history: what was asked, what was found, and the author's words on 
       more thought ("the most important ... the visualization"), and the line became a
       card of four tiles, each a small name, a large figure and, for context and tasks,
       a thin bar (`overlay.details_style`: `tiles`, or `line`). What was read and why
-      it looks as it does is in `CLAUDE.md`. The author on the card: "it's not bad",
+      it looks as it does is in `docs/dev/features.md`. The author on the card: "it's not bad",
       then, once the room around it was the same on every side: "Oh, it's perfect."
       Ideas
       from that look, not built: the plan's usage ("5h 41%, week 40%") as a thin line
