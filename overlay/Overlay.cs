@@ -1122,7 +1122,7 @@ namespace ClaudeSpeaks
         readonly StackPanel list = new StackPanel { Margin = new Thickness(18, 0, 22, 20) };
         readonly ScrollViewer scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
         readonly Border thumb = new Border { Width = 3, CornerRadius = new CornerRadius(1.5), Background = Ui.Paint("#4DFFFFFF"), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 0, 7, 0), Visibility = Visibility.Collapsed, IsHitTestVisible = false };
-        readonly TextBlock title = new TextBlock { Text = "claude-speaks" };  // the tool's name, as the hub gives it
+        readonly TextBlock title = new TextBlock { Text = "Sidetone" };  // the tool's name, as the hub gives it
         object[] sections = new object[0];
         string current = "", capturing = "";
         bool placed;
@@ -1132,7 +1132,7 @@ namespace ClaudeSpeaks
             this.choose = choose; this.closed = closed; this.typingKey = typingKey;
             Window.SizeToContent = SizeToContent.Manual;
             Window.Width = Broad; Window.Height = High;
-            Window.Title = "claude-speaks settings";
+            Window.Title = "Sidetone settings";
             Window.Icon = Logo.Picture(64);
 
             // Two columns over the whole height: the sections at the left on a darker ground of

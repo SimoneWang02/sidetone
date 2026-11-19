@@ -1,6 +1,9 @@
 <img src="assets/logo.png" width="96" alt="The mark: a round light with voice bars in it and an arc around it">
 
-# claude-speaks
+# Sidetone
+
+*Sidetone was called claude-speaks until November 2026. Its commands (`claude-speaks`, `cs`) and its
+folders still carry that name.*
 
 Eyes-free Claude Code. A local voice tells you, in one or two sentences, what each session just
 did. It starts speaking while the reply is still streaming, so you keep your eyes on your own work.
