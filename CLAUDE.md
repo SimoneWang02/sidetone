@@ -57,7 +57,14 @@ the repo, in the session's scratch folder; drawn as SVG and turned into a pictur
 Edge's `--headless --screenshot`, which is a quick way to look at a drawing from WSL):
 A, a bold S that is also a wave; B, a speech bubble with the uneven bars in it; C, the bar
 of lights itself, three lights in a capsule with the middle one sounding to the side;
-D, bars whose middles ride a wave. **Their choice is open.**
+D, bars whose middles ride a wave. Of these and the round one (E): "I prefer D and E.
+Give me an opinion about D and E, and maybe do more variants about D." The opinion given:
+D is the more its own, a free shape nobody else has, but thin and airy at taskbar size
+and faint in the deep blue on dark glass, the very thing they found small before; E is
+the clearest small but the most ordinary. Six variants of D on a second page (bolder with
+five bars, in white on the disc, equal bars on a pure wave, seven bars, growing louder,
+a lighter blue for dark glass); the one recommended is D on the disc, which joins the two
+they like. **Their choice is open.**
 
 In the same message: "I still see [claude-speaks] as a name on the top left of each session
 ... you just have to [restart] the hub." A restart would not have done it: a session's name
