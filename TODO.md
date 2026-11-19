@@ -1187,7 +1187,16 @@ Smaller ideas:
       enough to speak a sentence at a time while replies stream.
       Their verdict: none of the new Italian ones ("non mi piacciono ... teniamo quelle
       attuali": Paola, Sara, Nicola), and for English Kokoro's Heart is still the best. So
-      nothing on the graphics card for voices, for now. Added to the comparison page
+      nothing on the graphics card for voices, for now.
+      Chinese (asked the same evening, "anche in cinese?"): it already works in principle
+      (`lang="zh"`, Kokoro's 8 Chinese voices through espeak's `cmn`, 0.8 to 0.9 s a
+      sentence), but listening knows only `en,it`. Of Kokoro Xiaoxiao and Yunxi and Qwen3's
+      Chinese speakers Vivian and Serena, they prefer Qwen3's, "però mi sembrano più lenti":
+      6 to 7 s for a sentence of 6 to 7 s on the RTX 5070, and the 0.6B model is no
+      quicker (5.7 to 8 s), so the time goes in the step-by-step loop, not the model's
+      size. qwen-tts 0.1.1 has no real streaming (`non_streaming_mode=False` only simulates
+      streaming input). Using it would mean a second engine in its own GPU environment
+      and about one sentence's length of waiting before the first word. Added to the comparison page
       for them to hear. They did not like it either: "Paola è quella migliore", keep her
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when
