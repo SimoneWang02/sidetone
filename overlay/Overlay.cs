@@ -34,7 +34,23 @@ namespace ClaudeSpeaks
         public static double Now { get { return watch.Elapsed.TotalSeconds; } }
 
         public static readonly FontFamily Symbols = new FontFamily("Segoe UI Symbol");
-        public static readonly Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00), Mic = Color.FromRgb(0xFF, 0x6E, 0x8A);
+        public static readonly Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00);
+        // The microphone's color: the light, bars and wave of the session you are talking to.
+        // The tool's blue since the author asked for "the hex code to be the brand color"
+        // (`mic_color`; it was a pink, "#FF6E8A", chosen to stand apart from the lights' own
+        // colors, of which the blue of "working" is the nearest to this one).
+        public static Color Mic = Color.FromRgb(0x00, 0x68, 0x96);
+        // The same color for what is drawn thin on the dark glass (the wave of your voice, a
+        // sign beside a name): a dark color is lifted toward white there, or it cannot be seen.
+        // The blue itself is 2.7 to 1 against the glass; lifted by two fifths it is about 6 to 1.
+        public static Color MicLine
+        {
+            get
+            {
+                double light = (0.2126 * Mic.R + 0.7152 * Mic.G + 0.0722 * Mic.B) / 255;
+                return light < 0.45 ? Mix(Mic, Colors.White, 0.4) : Mic;
+            }
+        }
         public static readonly Brush Dim = Paint("#C8FFFFFF"), Faint = Paint("#8CFFFFFF"), MicInk = Paint("#FFFF8FA6"), LiveInk = Paint("#FFFF8FA7");
         // How many lines a sentence may take in a session's row of the details. With one, every row
         // is as high as its light and the bar never changes size; with more, a long sentence makes
@@ -721,7 +737,7 @@ namespace ClaudeSpeaks
                 case "mic":
                 {
                     double beat = 0.75 + 0.25 * Math.Sin(t * 5);
-                    Microphone(dc, cx, cy, Ui.Alpha(inLight ? Colors.White : Ui.Mic, beat));
+                    Microphone(dc, cx, cy, Ui.Alpha(inLight ? Colors.White : Ui.MicLine, beat));
                     break;
                 }
                 case "dots":
@@ -762,7 +778,7 @@ namespace ClaudeSpeaks
                 {
                     // A clock with one hand going round: the words are held until the session
                     // has finished what it is doing.
-                    Color ink = inLight ? Colors.White : Ui.Mic;
+                    Color ink = inLight ? Colors.White : Ui.MicLine;
                     double turn = t * 1.8;
                     dc.DrawEllipse(null, Ui.Line(ink, 0.95, 1.6), new Point(cx, cy), 7.2, 7.2);
                     dc.DrawLine(Ui.Line(ink, 1, 1.7), new Point(cx, cy), new Point(cx, cy - 4.8));
@@ -1656,7 +1672,7 @@ namespace ClaudeSpeaks
             meta.Visibility = saying || metaText.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
             row2.Visibility = line2.Text.Length == 0 && meta.Visibility != Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
             Strip.Wave = Orb.Listening ?? Wave;
-            Strip.Tint = Orb.Listening != null ? Ui.Mic : Ui.Tint(State);
+            Strip.Tint = Orb.Listening != null ? Ui.MicLine : Ui.Tint(State);
             Strip.Visibility = Speaking || Orb.Listening != null ? Visibility.Visible : Visibility.Collapsed;
         }
 
@@ -1973,6 +1989,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
+                    if (msg.ContainsKey("mic_color")) Ui.Mic = Ui.ColorOr(Str(msg, "mic_color"), Ui.Mic);
                     if (msg.ContainsKey("details_style")) detailsStyle = Str(msg, "details_style") == "line" ? "line" : "tiles";
                     if (msg.ContainsKey("choice_caps")) choiceCaps = Convert.ToBoolean(msg["choice_caps"]);
                     Ui.ContextWarn = Num(msg, "context_warn", Ui.ContextWarn);
@@ -2316,7 +2333,7 @@ namespace ClaudeSpeaks
                 bubbleLine2.Foreground = !mine ? Brushes.White : live ? Ui.MicLive : ink;
                 bubbleLine2.FontWeight = mine && talkState == "listening" ? FontWeights.SemiBold : FontWeights.Normal;
                 bubbleStrip.Wave = listening ? mic : orphan ? mic : found.Wave;
-                bubbleStrip.Tint = mine ? Ui.Mic : Ui.Tint(found.State);
+                bubbleStrip.Tint = mine ? Ui.MicLine : Ui.Tint(found.State);
                 bubbleStrip.NewestRight = corner.EndsWith("right");
             }
             if (bubble.Goal == 0) bubbleAt = Ui.Now;

@@ -677,10 +677,9 @@ Bigger pieces:
       thirty others were drawn over five pages (waves, a speech bubble, the bar of
       lights, faces, a ghost, headsets and microphones after their own idea) and none
       was liked. What got there: their own direction, to look at the logos of the five
-      most valuable startups and take one idea from each. **Open: the
-      microphone's pink in the overlay**, which they also dislike as "the brand
-      color"; their blue is too near the blue of "working" to take its place there,
-      so another color for it has to be chosen (or the working light's changed). **Left, for them to decide:** the
+      most valuable startups and take one idea from each. The microphone in the overlay is their blue too, on
+      their word, though it is near the blue of "working" (`overlay.mic_color`);
+      **for them to look at while talking**, and to say if the two are mixed up. **Left, for them to decide:** the
       folders for settings, logs and models, the
       `CLAUDE_SPEAKS_*` variables, the VS Code extension's name, the words in the
       overlay ("claude-speaks" is nowhere on screen now), and `CLAUDE.md` and this

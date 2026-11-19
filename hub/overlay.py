@@ -72,6 +72,10 @@ DEFAULTS = {
     "sent_first": False,
     # How "Release to send" moves while the talk key is held: shimmer = a glint of light runs
     # along the words | pulse = they breathe between two pinks | still = no motion
+    # The microphone's color, "#RRGGBB": the light, the bars and the wave of the session you
+    # are talking to while the talk key is held. The tool's own blue ("#FF6E8A" is the pink
+    # it was at first; "#2E9CC9" a lighter step of the blue, easier to see on dark glass).
+    "mic_color": "#006896",
     "talk_text": "shimmer",
     # The color of those words: "" = a soft white with a white glint, the color of no session |
     # "#RRGGBB" = your own ("#FF8FA6" is the microphone's pink they had at first)

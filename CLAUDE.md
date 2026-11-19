@@ -32,8 +32,14 @@ for filled things; on the dark glass it is 2.7 to 1, too faint for thin lines an
 which need a lighter step of it (`#2E9CC9`, 5.4 to 1); and in the overlay it would be taken
 for the blue of "working" (`#4FC3F7`; 34 apart by `state.color_distance`, the lighter step
 15, where 40 is the least kept between two sessions' colors, and the pink is 89). So the
-microphone in the overlay is still pink (`Ui.Mic`). **Open: whether they want the
-microphone's pink changed too, and to what.**
+microphone in the overlay stayed pink (`Ui.Mic`) until they decided, offered pink, violet
+or white: "use the brand color. I want the hex code to be the brand color." So the
+microphone is `#006896` too (`overlay.mic_color`; `"#FF6E8A"` is the pink). The light of
+the session you talk to is filled with it; what is drawn thin on the glass, the wave of
+your voice above all, uses it lifted two fifths toward white (`Ui.MicLine`), since in the
+blue itself the wave could hardly be seen (a picture showed it). The nearness to the blue
+of "working" was their call to take. Seen in a picture (`talk-listening.png`), on their
+overlay since; **not judged by them yet**.
 
 The taskbar's icon is the mark in white on a rounded square of that blue which fills the
 whole icon (`Logo.Draw(dc, s, tile)`, `assets/icon.png`). The plain mark, a small disc in a
