@@ -1833,6 +1833,7 @@ namespace ClaudeSpeaks
         // line comes (the author keeps the details away, so that is where they look).
         readonly MutedSpeaker bubbleMuted = new MutedSpeaker(16) { Margin = new Thickness(8, 1, 0, 0), VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed };
         string detailsStyle = "tiles";
+        bool detailsBars;  // a thin bar under a tile's figure where it is a share of a whole
         bool choiceCaps;  // the number in front of a question's choice drawn as a key cap, not as a plain number
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
         // What the keys do, each key drawn as a small cap: quicker to take in than a line of text.
@@ -2089,6 +2090,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
                     if (msg.ContainsKey("mic_color")) Ui.Mic = Ui.ColorOr(Str(msg, "mic_color"), Ui.Mic);
                     if (msg.ContainsKey("details_style")) detailsStyle = Str(msg, "details_style") == "line" ? "line" : "tiles";
+                    if (msg.ContainsKey("details_bars")) detailsBars = Convert.ToBoolean(msg["details_bars"]);
                     if (msg.ContainsKey("choice_caps")) choiceCaps = Convert.ToBoolean(msg["choice_caps"]);
                     Ui.ContextWarn = Num(msg, "context_warn", Ui.ContextWarn);
                     if (msg.ContainsKey("context_color")) Ui.Context = Ui.ColorOr(Str(msg, "context_color"), Colors.White);
@@ -2633,7 +2635,7 @@ namespace ClaudeSpeaks
                     metricsLine.Inlines.Add(new Run(name + " ") { Foreground = Ui.Faint });
                     metricsLine.Inlines.Add(new Run(figure) { Foreground = Brushes.White });
                 }
-                tiles.Children.Add(Tile(name, figure, share, warn, share >= 0 ? Stood("tile" + tiles.Children.Count, share) : -1));
+                tiles.Children.Add(Tile(name, figure, detailsBars ? share : -2, warn, detailsBars && share >= 0 ? Stood("tile" + tiles.Children.Count, share) : -1));
             }
             if (!any) return false;
             if (order.Count > 1)  // whose figures they are, where there is a choice
@@ -2729,8 +2731,8 @@ namespace ClaudeSpeaks
             }
             else number.Inlines.Add(new Run(figure) { Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Brushes.White });
             tile.Children.Add(number);
-            UIElement bar = share >= 0 ? (UIElement)Meter(share, warn, from, new Thickness(0, 4, 0, 0)) : new Border { Height = 4, Margin = new Thickness(0, 4, 0, 0) };
-            tile.Children.Add(bar);
+            // share -2: bars are off, so no room is kept for one either
+            if (share > -2) tile.Children.Add(share >= 0 ? (UIElement)Meter(share, warn, from, new Thickness(0, 4, 0, 0)) : new Border { Height = 4, Margin = new Thickness(0, 4, 0, 0) });
             return tile;
         }
 

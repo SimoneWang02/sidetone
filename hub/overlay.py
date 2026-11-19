@@ -114,9 +114,12 @@ DEFAULTS = {
     # on it takes the second color; 0 = never. Colors: "#RRGGBB".
     # How a session's figures are set out under the rows (which figures: `detail_metrics`,
     # beside `overlay` in the settings): tiles = a card with a tile for each, its name small,
-    # the figure large, and a thin bar where it is a share of a whole | line = one line of
+    # the figure large (and a bar: `details_bars`) | line = one line of
     # text, "Context 21%   Last reply 64k"
     "details_style": "tiles",
+    # A thin bar under a tile's figure where it is a share of a whole (context, tasks). Off
+    # since the author, 2026-11-19: "redundant since I already have the arc for the context".
+    "details_bars": False,
     # The number in front of each choice of a question: false = a plain number (the author:
     # "only number without ... the rectangles with the number inside") | true = drawn as a
     # key cap, like the keys in the line below the choices
