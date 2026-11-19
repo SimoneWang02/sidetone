@@ -975,10 +975,9 @@ namespace ClaudeSpeaks
     // file for the README (`logo` message) are all the same drawing.
     static class Logo
     {
-        // Each bar's height, as a share of the disc's width. Two rhythms, until the author has
-        // chosen (asked "do you think having a symmetric one is good?", they were shown both at
-        // once): even on both sides of the tallest in the window's menu, uneven like a spoken
-        // word in the taskbar.
+        // Each bar's height, as a share of the disc's width. Two rhythms were shown side by side:
+        // even on both sides of the tallest, and uneven like a spoken word, which the author
+        // preferred (without being won over by either; other designs were asked for).
         static readonly double[] Even = { 0.22, 0.42, 0.62, 0.42, 0.22 }, Uneven = { 0.26, 0.50, 0.36, 0.62, 0.30 };
 
         // In a square of side `s`, from its corner. `tile`: the taskbar's icon, a disc of the
@@ -1009,7 +1008,7 @@ namespace ClaudeSpeaks
             // Five bars, as broad as five can be and still stand apart at the size of a taskbar
             // icon (three were tried at the author's wish for a clearer wave: "might not be enough").
             double disc = s * (tile ? 1 : 0.6), wide = disc * 0.088, apart = disc * 0.148;
-            double[] bars = tile ? Uneven : Even;
+            double[] bars = Uneven;  // the author, of the two: "currently I'm preferring the uneven one"
             for (int i = 0; i < bars.Length; i++)
             {
                 double high = bars[i] * disc, x = c.X + (i - 2) * apart;

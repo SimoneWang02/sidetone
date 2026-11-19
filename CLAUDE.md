@@ -49,8 +49,15 @@ increase." Five now, even on both sides of the tallest, each 0.088 of the disc w
 read as sound at a glance and sit calmly in a circle, but that is the picture nearly
 every voice program has; bars of uneven heights look like a spoken word and are more its
 own. To let them judge by eye both are on screen at once: the taskbar's icon is uneven
-(`Logo.Uneven`), the mark in the window's menu and the README even. **Their choice is
-open; one rhythm is to be used for both once made.**
+(`Logo.Uneven`), the mark in the window's menu and the README even. Their answer:
+"Currently I'm preferring the uneven one but it doesn't make me crazy. I'll prefer [other]
+design, maybe not a round one, just a custom design". So the uneven bars are in both for
+now, and four other ideas were drawn as one page and opened in their browser (kept outside
+the repo, in the session's scratch folder; drawn as SVG and turned into a picture with
+Edge's `--headless --screenshot`, which is a quick way to look at a drawing from WSL):
+A, a bold S that is also a wave; B, a speech bubble with the uneven bars in it; C, the bar
+of lights itself, three lights in a capsule with the middle one sounding to the side;
+D, bars whose middles ride a wave. **Their choice is open.**
 
 In the same message: "I still see [claude-speaks] as a name on the top left of each session
 ... you just have to [restart] the hub." A restart would not have done it: a session's name

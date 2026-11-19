@@ -648,7 +648,10 @@ Bigger pieces:
       (`~/personal/sidetone`, with a link left at the old place for the sessions and
       the editor window that were open). The commands followed on their yes: `sidetone` and `st`. The
       logo is in the blue they typed, `#006896`. The sessions that were open are named
-      `sidetone` in the bar too (changed by hand in the hub's records). **Open: the
+      `sidetone` in the bar too (changed by hand in the hub's records). **Open: the logo.** The round one with uneven bars is
+      in place, liked "currently" but not loved; four other ideas (an S that is a
+      wave, a speech bubble with bars, the bar of lights sounding to the side, bars
+      riding a wave) were shown on a page for them to pick from or reject. **Open: the
       microphone's pink in the overlay**, which they also dislike as "the brand
       color"; their blue is too near the blue of "working" to take its place there,
       so another color for it has to be chosen (or the working light's changed). **Left, for them to decide:** the
