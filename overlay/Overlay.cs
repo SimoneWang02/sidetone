@@ -2439,14 +2439,22 @@ namespace ClaudeSpeaks
         bool MoveSelector(double dt)
         {
             double goal = 0, at = 3;
-            bool found = false;
+            bool found = false, held = false;
             foreach (Row row in order)
             {
                 double room = Island ? Row.High : row.Light.Height;
-                if (row.Focus) { goal = at + (room - selector.Height) / 2; found = true; break; }
+                if (row.Focus)
+                {
+                    // Where the light is drawn, not only its place: while sessions are being
+                    // reordered it is held, or making room, and the frame goes with it.
+                    goal = at + (room - selector.Height) / 2 + (Island ? row.Shift.X : row.Shift.Y);
+                    found = true;
+                    held = row == lifted;
+                    break;
+                }
                 at += room;
             }
-            if (found && selectorShown < 0.02) selectorY = goal;  // it appears in place instead of flying in
+            if (found && (selectorShown < 0.02 || held)) selectorY = goal;  // in place instead of flying in; on the light held, no lag behind it
             bool moving = Ui.Approach(ref selectorShown, found ? 1 : 0, 12, dt);
             if (found && Math.Abs(goal - selectorY) > 0.05) { selectorY += (goal - selectorY) * (1 - Math.Exp(-20 * dt)); moving = true; }
             else if (found) selectorY = goal;
