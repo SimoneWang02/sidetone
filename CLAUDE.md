@@ -54,7 +54,6 @@ the author's asking, and the rest was moved unchanged:
 - Working day to day on the author's machine (WSL2 Linux, Windows 11). The live hooks run
   **from this repo**: `~/.claude/settings.json` points at `~/personal/sidetone/hooks/`
   (`hooks/settings-snippet.json` is that block). Rollback: `~/.claude/settings.json.bak-before-hub`.
-  `~/personal/claude-speaks` is a link left from the rename; remove it once no session uses it.
 - `README.md`, `LICENSE` (MIT), `install.sh` / `uninstall.sh` (merge the hooks into an existing
   `settings.json`, link `sidetone` and `st` into `~/.local/bin`, ask which languages you speak,
   offer the VS Code extension). Not yet a plugin, not yet public, Windows overlay only.
