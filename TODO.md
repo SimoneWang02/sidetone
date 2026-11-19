@@ -1,19 +1,22 @@
 # To do
 
-What is left for Sidetone (claude-speaks until 2026-11-18), sorted by kind on 2026-11-19 at
-the author's asking ("reorganize them based on ... if there are fix or like what I view"):
-first what the author can try or decide without any code, then quick fixes and small builds,
-easiest first, then the bigger features, and at the end everything that is done, kept for
-its history. `CLAUDE.md` has how things fit together, `docs/dev/features.md` the details of each part.
+What is left for Sidetone, in the order to do it (the author, 2026-11-19: "what's the best
+course of actions? ... documentation could be done in the end after all features have been
+implemented"; the order was offered and they said "Yes, do it"). First try what is built, then
+answer the open questions, then make speech work well in the author's languages, then the
+small extras, then choose what the first public version needs, release it, and the
+documentation last. Everything that is done is at the end, kept for its history.
+`CLAUDE.md` has how things fit together, `docs/dev/features.md` the details of each feature.
 
 The author's direction for all of this: people who download the tool should be able to
 customize as much of their experience as possible. New looks and behaviours come as settings,
 not as replacements.
 
-## To try by hand
+## 1. Try what is built
 
 Built, and working in the automated tests or in pictures taken from WSL, but not yet tried
-by the author with the real keys, voice or eyes.
+by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
+these come before anything new.
 
 - [ ] Italian openings for side questions and for asking the usage. `aside_words` and the
       words `usage.asks` accepts are English only, so "a proposito, ..." waits for the session
@@ -112,7 +115,7 @@ by the author with the real keys, voice or eyes.
       On 2026-11-19 the author put it last of the things to try: "the settings are the
       last things to try because there are so many".
 
-## To decide
+## 2. To decide
 
 Questions for the author; nothing to build until they answer.
 
@@ -134,59 +137,17 @@ Questions for the author; nothing to build until they answer.
       keeps its old behaviour until they bring it up again. Keep: merge the
       branch and restart the hub. Drop: the offer was to remove the key and the catch-up
       code altogether, since the present version mostly says "Nothing new".
-- [ ] Another name for the tool (the author, 2026-11-18, on seeing "claude-speaks" in the
-      settings window: "I don't like [it] as a name. Maybe we can think about it ...
-      Maybe there's a better name"). Open. A new name would touch the repo, the commands
-      (`claude-speaks`, `cs`), the folders under `~/.local` and `~/.config`, the VS Code
-      extension and the README; and "Claude" in a product's name is Anthropic's mark,
-      which is a reason of its own to look for one before the repo is public.
-      Asked the same evening with three names that a search had not found on a tool
-      for coding agents (Sidetone, Squelch, Tally; Earshot, Switchboard, Hark and
-      Heard are taken) and "keep it for now", they answered by voice: "Sidetone is
-      cool, but why?" The why was explained; **no name chosen, nothing renamed**. The
-      speech model wrote the word as "Saiton". The window shows `settings.NAME`.
-      Chosen minutes later: Sidetone. Done that evening, as they asked: the name in the
-      window and the README, the GitHub repo (`sidetone`), the project folder
-      (`~/personal/sidetone`, with a link left at the old place for the sessions and
-      the editor window that were open). The commands followed on their yes: `sidetone` and `st`. The
-      logo is in the blue they typed, `#006896`. The sessions that were open are named
-      `sidetone` in the bar too (changed by hand in the hub's records). **The logo:** chosen after six pages: the disc in
-      their blue with uneven voice bars cut on the slant ("S6 is good"). Before it, a
-      disc with plain uneven bars, liked best and found "pretty anonymous". Some
-      thirty others were drawn over five pages (waves, a speech bubble, the bar of
-      lights, faces, a ghost, headsets and microphones after their own idea) and none
-      was liked. What got there: their own direction, to look at the logos of the five
-      most valuable startups and take one idea from each. The microphone in the overlay is their blue too, on
-      their word, though it is near the blue of "working" (`overlay.mic_color`);
-      seen by them while talking ("looks good. Let's see"); to be watched in use for
-      the two being mixed up. **Left, for them to decide:** the
-      folders for settings, logs and models, the
-      `SIDETONE_*` variables, the VS Code extension's name, the words in the
-      overlay ("claude-speaks" is nowhere on screen now), and `CLAUDE.md` and this
-      file, which still say claude-speaks throughout. And to do once no session is
-      left from before: remove the link `~/personal/claude-speaks`, and open the
-      editor on the new folder.
-      Done 2026-11-19 on their word: the link and the old commands removed, the
-      folders and variables renamed, then the VS Code extension and every other
-      mention (see `docs/dev/name-and-logo.md`).
 - [ ] Session names in the terminal's tab. The hub can write "name · title" as the
       terminal's title (`terminal title on`), but a VS Code tab only shows it with
       `"terminal.integrated.tabs.title": "${sequence}"`, and Claude Code overwrites it
       unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`. Both are the author's to
       turn on; offered on 2026-11-17, not answered, not tried.
 
-## Quick fixes and small builds
+## 3. Speech in the author's languages
 
-Roughly easiest first.
+What gets in the way every day: words heard in the wrong language, lines read by the wrong
+voice, and the wait for the transcript.
 
-- [ ] `install.sh` fetching the voices of the languages chosen: Piper's
-      `it_IT-paola-medium` when Italian is chosen (`tts.PREFERRED_VOICE` asks for it), and
-      Kokoro's Chinese model v1.1-zh with `misaki-fork[zh]` when Chinese is. Both were put on
-      the author's machine by hand on 2026-11-19; a new install gets neither.
-- [ ] A spoken line with no `lang` in its tag: guess its language in the hub (Chinese
-      characters are easy; Italian against English needs a small detector, or the language
-      Whisper heard in the user's last recording). Seen 2026-11-19: a session answered in
-      Italian without the mark and the English voice read it. Also under "Mixed languages".
 - [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
       too short to tell the language and English wins. Perhaps lean to the language of the
@@ -198,6 +159,29 @@ Roughly easiest first.
       Again 15:24, the other way: a 2.6 s clip, surely "quant'è il contesto al momento?"
       just after the Italian context question was built, came back as English "How much
       did you count this moment?", so the hub did not answer it and the session got it.
+- [ ] A spoken line with no `lang` in its tag: guess its language in the hub (Chinese
+      characters are easy; Italian against English needs a small detector, or the language
+      Whisper heard in the user's last recording). Seen 2026-11-19: a session answered in
+      Italian without the mark and the English voice read it. Also under "Mixed languages".
+- [ ] Mixed languages: what happens when one speaks Italian, English and Chinese mixed in
+      one recording or one turn ("se tipo iniziasse a parlare in italiano, in inglese, in
+      cinese, mischiati, come funzionerà"). To look at: Whisper picks one language per
+      half minute of recording (`stt.Named`), so a mixed sentence may come out in one
+      language; the reminder asks for "the language of my last message", which is
+      unclear when it mixes; the speak tag carries one `lang`, so a mixed line is said
+      by one voice (the Chinese model already reads Latin words as English; Kokoro's and
+      Piper's Italian voices do not read Chinese). Try it for real first, then decide.
+      Seen the same night: a session answered in Italian without `lang="it"` (the user's
+      message had come through as English), so the English voice read Italian words. A
+      safeguard to consider: when the tag has no `lang`, the hub guesses the language of
+      the line itself (Chinese characters are easy; Italian against English needs a small
+      detector, or the language Whisper heard in the user's last recording).
+- [ ] Running the speech model on the graphics card to make transcription faster
+
+## 4. Small extras
+
+Roughly easiest first, the larger ones after.
+
 - [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
       as a small sign on the tab for a moment (its visual bell setting is off by default).
 - [ ] The terminal tint on a light theme: the color is mixed into `terminal.background`,
@@ -240,23 +224,69 @@ Roughly easiest first.
       also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
       with those keys, and it needs a keyboard hook for as long as the keys are down.
 
-## Bigger features
+### Larger extras
 
-### Languages and voices
+- [ ] Make more of the overlay a setting: sizes, colors (session palette, status colors, glass
+      tint), which keys do what, what the panel rows show, animation speed or none, where the
+      bubble goes. Much is fixed in `overlay/Overlay.cs` today.
+- [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
+      importance, a thin line of light at the screen edge, one small window per session); the
+      code is in commit `8558c4a`.
+- [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
+      2026-11-19: "a feature that let you register my voice and evaluate the correctness
+      of my English ... evaluate our pronunciation of the words"; asked "What do you
+      think?"). The thought: developers already speak to it all day, so the recordings are
+      practice that costs nothing extra. On hearing that: "I think it's a good
+      feature." Kept for later, not started. Notes for whoever builds it:
+      - Opt in, off by default; recordings and results stay on the machine (a folder
+        under `~/.local/state/sidetone/`), with a way to delete them.
+      - Never in the way: no correction while you are talking to a session. A report you
+        ask for (`sidetone english`, or by voice), said in a few sentences and with the
+        details in a page or the settings window.
+      - Two separate things. Grammar and wording: the transcript is enough, and a side
+        copy (as for side questions) or a small local model can suggest a better
+        sentence. Pronunciation: harder, because Whisper is built to guess the intended
+        word, so a mispronounced word often comes out spelled right and nothing shows.
+        Whisper's per-word probability (`word_timestamps=True`) is a cheap first signal
+        of words it found hard. Real scoring needs the sounds: a phoneme recognizer
+        (for example wav2vec2 trained on espeak phonemes) run on the clip, compared with
+        the expected phonemes of the transcribed words (`espeak-ng --ipa`, already a
+        dependency), word by word. Kokoro could then say the word the right way.
+      - Measure before promising: synthetic voices are too clean to test it; it needs real
+        recordings with known mistakes, the author's own among them.
 
-- [ ] Mixed languages: what happens when one speaks Italian, English and Chinese mixed in
-      one recording or one turn ("se tipo iniziasse a parlare in italiano, in inglese, in
-      cinese, mischiati, come funzionerà"). To look at: Whisper picks one language per
-      half minute of recording (`stt.Named`), so a mixed sentence may come out in one
-      language; the reminder asks for "the language of my last message", which is
-      unclear when it mixes; the speak tag carries one `lang`, so a mixed line is said
-      by one voice (the Chinese model already reads Latin words as English; Kokoro's and
-      Piper's Italian voices do not read Chinese). Try it for real first, then decide.
-      Seen the same night: a session answered in Italian without `lang="it"` (the user's
-      message had come through as English), so the English voice read Italian words. A
-      safeguard to consider: when the tag has no `lang`, the hub guesses the language of
-      the line itself (Chinese characters are easy; Italian against English needs a small
-      detector, or the language Whisper heard in the user's last recording).
+## 5. What the first public version needs
+
+To choose before release: which of these the first version has, and which wait.
+
+- [ ] Packaging as a Claude Code plugin, so it installs in one step.
+- [ ] A version that runs on Windows itself, without WSL (the author, 2026-11-17, on learning
+      that Claude Code started from PowerShell or cmd does not start any of this: it reads
+      `C:\Users\<name>\.claude\settings.json`, which has no hooks). This is what a program
+      other people download would need. What is tied to Linux today:
+      - the hooks are bash scripts with `curl` and `jq`
+      - the hub listens on a Unix socket, chosen so that no web page or other machine can
+        reach it; the Windows version needs something as closed (a named pipe, or a Unix
+        socket if Python on Windows supports it by then)
+      - one hub at a time is kept by `flock`
+      - sound goes out through `paplay`, and the microphone and the loudness meter read
+        through `parec`
+      - folders follow the Linux layout (`XDG_RUNTIME_DIR`, `~/.local/state`, `~/.config`)
+      - the hub finds and starts the overlay through `wslpath` and `/mnt/c`
+      Not tied to Linux: the overlay program, Kokoro and `faster-whisper` (both run on
+      Windows), and the hub's logic. A smaller step that was set aside for now: hooks in the
+      Windows settings file that call into WSL and run the existing scripts.
+- [ ] An overlay for Linux and macOS. Today it is Windows only.
+- [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
+      hub already takes plain events from anything that can send them.
+      The author, 2026-11-18, by voice (the recording was cut twice, so only its gist):
+      expand to other models "such as Codex, Gemini", and show which one a session is by
+      its logo, the Claude logo "in center" of the light. Told in reply, nothing built:
+      the middle of the light holds the status sign (check, "!", voice bars), as came up
+      with the waiting number, so a small mark at the lower left of the light or before
+      the name in the row would fit better; other companies' logos are trademarks, so
+      marks of our own drawing or files the user supplies; and it only says something
+      once a second agent can be connected. Their answer is open.
 - [ ] Any language, chosen by the person who installs it (the author, 2026-11-17, said in
       Italian: not only English and Italian, the program should be "customizzabile
       dall'utente che lo scarica", so in the end every language). Listening is nearly there:
@@ -275,7 +305,6 @@ Roughly easiest first.
       A first step that covers most of it: one `language` setting (or one per project) that
       picks the reminder's language, Kokoro's pronunciation and a voice pool for it, and
       falls back to English where Kokoro has no voice.
-- [ ] Running the speech model on the graphics card to make transcription faster
 - [ ] Voice cloning, if that is what "uploadable" meant (see above). The author asked on
       2026-11-17 how to get a voice of their own choosing ("they're all preset"). Researched
       the same day, nothing tried yet; all routes are free and local except the last:
@@ -306,68 +335,13 @@ Roughly easiest first.
         speech), Chatterbox if it does not sound real enough, ElevenLabs as the paid
         yardstick
       - the recording stays on the author's machine, never in the repo
-- [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
-      2026-11-19: "a feature that let you register my voice and evaluate the correctness
-      of my English ... evaluate our pronunciation of the words"; asked "What do you
-      think?"). The thought: developers already speak to it all day, so the recordings are
-      practice that costs nothing extra. On hearing that: "I think it's a good
-      feature." Kept for later, not started. Notes for whoever builds it:
-      - Opt in, off by default; recordings and results stay on the machine (a folder
-        under `~/.local/state/sidetone/`), with a way to delete them.
-      - Never in the way: no correction while you are talking to a session. A report you
-        ask for (`sidetone english`, or by voice), said in a few sentences and with the
-        details in a page or the settings window.
-      - Two separate things. Grammar and wording: the transcript is enough, and a side
-        copy (as for side questions) or a small local model can suggest a better
-        sentence. Pronunciation: harder, because Whisper is built to guess the intended
-        word, so a mispronounced word often comes out spelled right and nothing shows.
-        Whisper's per-word probability (`word_timestamps=True`) is a cheap first signal
-        of words it found hard. Real scoring needs the sounds: a phoneme recognizer
-        (for example wav2vec2 trained on espeak phonemes) run on the clip, compared with
-        the expected phonemes of the transcribed words (`espeak-ng --ipa`, already a
-        dependency), word by word. Kokoro could then say the word the right way.
-      - Measure before promising: synthetic voices are too clean to test it; it needs real
-        recordings with known mistakes, the author's own among them.
+- [ ] `install.sh` fetching the voices of the languages chosen: Piper's
+      `it_IT-paola-medium` when Italian is chosen (`tts.PREFERRED_VOICE` asks for it), and
+      Kokoro's Chinese model v1.1-zh with `misaki-fork[zh]` when Chinese is. Both were put on
+      the author's machine by hand on 2026-11-19; a new install gets neither.
 
-### Overlay and settings
+## 6. Release
 
-- [ ] Make more of the overlay a setting: sizes, colors (session palette, status colors, glass
-      tint), which keys do what, what the panel rows show, animation speed or none, where the
-      bubble goes. Much is fixed in `overlay/Overlay.cs` today.
-- [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
-      importance, a thin line of light at the screen edge, one small window per session); the
-      code is in commit `8558c4a`.
-
-### Reaching more people
-
-- [ ] Packaging as a Claude Code plugin, so it installs in one step.
-- [ ] A version that runs on Windows itself, without WSL (the author, 2026-11-17, on learning
-      that Claude Code started from PowerShell or cmd does not start any of this: it reads
-      `C:\Users\<name>\.claude\settings.json`, which has no hooks). This is what a program
-      other people download would need. What is tied to Linux today:
-      - the hooks are bash scripts with `curl` and `jq`
-      - the hub listens on a Unix socket, chosen so that no web page or other machine can
-        reach it; the Windows version needs something as closed (a named pipe, or a Unix
-        socket if Python on Windows supports it by then)
-      - one hub at a time is kept by `flock`
-      - sound goes out through `paplay`, and the microphone and the loudness meter read
-        through `parec`
-      - folders follow the Linux layout (`XDG_RUNTIME_DIR`, `~/.local/state`, `~/.config`)
-      - the hub finds and starts the overlay through `wslpath` and `/mnt/c`
-      Not tied to Linux: the overlay program, Kokoro and `faster-whisper` (both run on
-      Windows), and the hub's logic. A smaller step that was set aside for now: hooks in the
-      Windows settings file that call into WSL and run the existing scripts.
-- [ ] An overlay for Linux and macOS. Today it is Windows only.
-- [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
-      hub already takes plain events from anything that can send them.
-      The author, 2026-11-18, by voice (the recording was cut twice, so only its gist):
-      expand to other models "such as Codex, Gemini", and show which one a session is by
-      its logo, the Claude logo "in center" of the light. Told in reply, nothing built:
-      the middle of the light holds the status sign (check, "!", voice bars), as came up
-      with the waiting number, so a small mark at the lower left of the light or before
-      the name in the row would fit better; other companies' logos are trademarks, so
-      marks of our own drawing or files the user supplies; and it only says something
-      once a second agent can be connected. Their answer is open.
 - [ ] Numbers to publish with it (the author, 2026-11-17: "in the future when I'll publish
       this tool it'll be great to have some metrics"). Measured so far, to be done again on
       the release and on a second, slower machine before any of it is quoted:
@@ -392,12 +366,27 @@ Roughly easiest first.
       - Line written to first sound: about 0.3 s with the hub warm (in `docs/dev/facts.md`).
       - Still to measure: real voices and a noisy room, the other model sizes, a slower
         CPU, memory, and how often a short recording is taken for the wrong language.
-- [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
-      tools that only speak after the reply has ended.
 - [ ] Making the repo public. Before that: run `install.sh` on a machine that has nothing
       yet (see the ticked item under "Rough edges"; put off to here by the author).
 
-### Away from the PC
+## 7. Last
+
+- [ ] Documentation (the author, by voice, 2026-11-19: "make it like well-documented ...
+      for each feature having a GIF and in the end putting a video registration on me
+      watching a YouTube video while I'm using you, which is the real context of why I'm
+      built in this tool"). So: a page per feature, or a section of the README, each with a
+      short GIF of it on screen; and, to close, a real recording of the author watching a
+      video while sessions speak, get answered by voice and ask for permission, as the
+      story of attention latency told in one picture. The overlay's own pictures
+      (`tests/overlay_check.py`) cover single views, not motion; GIFs need a screen
+      recording from Windows, and the video has the author's sound and voice in it.
+      **Last, on the author's word** (2026-11-19: "I would do the doc at the end of
+      everything so you know there's more features to document and it's like the final
+      completion of the product"). Not to be offered as the next thing before then.
+- [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
+      tools that only speak after the reply has ended.
+
+## Later: away from the PC
 
 The author's idea, 2026-11-17: with sessions open and nobody at the desk, "is it possible to
 use like either phone or AirPods interaction to do stuff", for example an AirPods gesture
@@ -428,21 +417,6 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
       - Claude Code's own remote control from the phone may already cover typing and
         approving; check what it does before building any of this.
 - [ ] A phone notification when a session needs you and you are away
-
-### Last
-
-- [ ] Documentation (the author, by voice, 2026-11-19: "make it like well-documented ...
-      for each feature having a GIF and in the end putting a video registration on me
-      watching a YouTube video while I'm using you, which is the real context of why I'm
-      built in this tool"). So: a page per feature, or a section of the README, each with a
-      short GIF of it on screen; and, to close, a real recording of the author watching a
-      video while sessions speak, get answered by voice and ask for permission, as the
-      story of attention latency told in one picture. The overlay's own pictures
-      (`tests/overlay_check.py`) cover single views, not motion; GIFs need a screen
-      recording from Windows, and the video has the author's sound and voice in it.
-      **Last, on the author's word** (2026-11-19: "I would do the doc at the end of
-      everything so you know there's more features to document and it's like the final
-      completion of the product"). Not to be offered as the next thing before then.
 
 ## Done
 
@@ -732,6 +706,41 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] Another name for the tool (the author, 2026-11-18, on seeing "claude-speaks" in the
+      settings window: "I don't like [it] as a name. Maybe we can think about it ...
+      Maybe there's a better name"). Open. A new name would touch the repo, the commands
+      (`claude-speaks`, `cs`), the folders under `~/.local` and `~/.config`, the VS Code
+      extension and the README; and "Claude" in a product's name is Anthropic's mark,
+      which is a reason of its own to look for one before the repo is public.
+      Asked the same evening with three names that a search had not found on a tool
+      for coding agents (Sidetone, Squelch, Tally; Earshot, Switchboard, Hark and
+      Heard are taken) and "keep it for now", they answered by voice: "Sidetone is
+      cool, but why?" The why was explained; **no name chosen, nothing renamed**. The
+      speech model wrote the word as "Saiton". The window shows `settings.NAME`.
+      Chosen minutes later: Sidetone. Done that evening, as they asked: the name in the
+      window and the README, the GitHub repo (`sidetone`), the project folder
+      (`~/personal/sidetone`, with a link left at the old place for the sessions and
+      the editor window that were open). The commands followed on their yes: `sidetone` and `st`. The
+      logo is in the blue they typed, `#006896`. The sessions that were open are named
+      `sidetone` in the bar too (changed by hand in the hub's records). **The logo:** chosen after six pages: the disc in
+      their blue with uneven voice bars cut on the slant ("S6 is good"). Before it, a
+      disc with plain uneven bars, liked best and found "pretty anonymous". Some
+      thirty others were drawn over five pages (waves, a speech bubble, the bar of
+      lights, faces, a ghost, headsets and microphones after their own idea) and none
+      was liked. What got there: their own direction, to look at the logos of the five
+      most valuable startups and take one idea from each. The microphone in the overlay is their blue too, on
+      their word, though it is near the blue of "working" (`overlay.mic_color`);
+      seen by them while talking ("looks good. Let's see"); to be watched in use for
+      the two being mixed up. **Left, for them to decide:** the
+      folders for settings, logs and models, the
+      `SIDETONE_*` variables, the VS Code extension's name, the words in the
+      overlay ("claude-speaks" is nowhere on screen now), and `CLAUDE.md` and this
+      file, which still say claude-speaks throughout. And to do once no session is
+      left from before: remove the link `~/personal/claude-speaks`, and open the
+      editor on the new folder.
+      Done 2026-11-19 on their word: the link and the old commands removed, the
+      folders and variables renamed, then the VS Code extension and every other
+      mention (see `docs/dev/name-and-logo.md`).
 - [x] Which of the two layouts (`bar`, `island`) is the default for new users. The author,
       asked on 2026-11-17 with bar, island and "decide later" to choose from: bar. It
       already was, so nothing changed.

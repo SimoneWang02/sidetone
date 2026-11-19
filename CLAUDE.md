@@ -13,8 +13,10 @@ you → session) so you can keep your eyes on your own work.
 This file is what every session needs; it was cut down from 150,000 characters on 2026-11-19 at
 the author's asking, and the rest was moved unchanged:
 
-- `TODO.md`: what is left, sorted by kind (to try by hand, to decide, quick fixes, bigger
-  features, done). Update it when something on it is done or a new idea comes up.
+- `TODO.md`: what is left, in the order to do it (try what is built, decide, speech in the
+  author's languages, small extras, what the first public version needs, release, the
+  documentation last), then what is done. Update it when something on it is done or a new
+  idea comes up; a new item goes in the step it belongs to.
 - `docs/dev/features.md`: how each part works and why, feature by feature, with the settings,
   what the author said and what was measured. Search it for a setting's or a function's name
   before changing a feature, and add to it when you change one.
