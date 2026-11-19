@@ -644,6 +644,11 @@ Added by the author on 2026-11-19, at the end of a long session, for the next on
       unclear when it mixes; the speak tag carries one `lang`, so a mixed line is said
       by one voice (the Chinese model already reads Latin words as English; Kokoro's and
       Piper's Italian voices do not read Chinese). Try it for real first, then decide.
+      Seen the same night: a session answered in Italian without `lang="it"` (the user's
+      message had come through as English), so the English voice read Italian words. A
+      safeguard to consider: when the tag has no `lang`, the hub guesses the language of
+      the line itself (Chinese characters are easy; Italian against English needs a small
+      detector, or the language Whisper heard in the user's last recording).
 - [ ] Confirmation before a spoken message is sent, as a setting in the settings window
       ("un'opzione nei settings per la gente che vuole la conferma": see the transcript,
       then send). It exists in the hub already, off by default since the author found it
