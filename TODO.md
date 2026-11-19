@@ -1,13 +1,19 @@
 # To do
 
-What is left for claude-speaks, as of 2026-11-17. Everything asked for so far is built; this
-is what has not been tried by hand, what is undecided, what is rough, and what has not been
-started. `CLAUDE.md` has the details of how things work.
+What is left for Sidetone (claude-speaks until 2026-11-18), sorted by kind on 2026-11-19 at
+the author's asking ("reorganize them based on ... if there are fix or like what I view"):
+first what the author can try or decide without any code, then quick fixes and small builds,
+easiest first, then the bigger features, and at the end everything that is done, kept for
+its history. `CLAUDE.md` has the details of how things work.
+
+The author's direction for all of this: people who download the tool should be able to
+customize as much of their experience as possible. New looks and behaviours come as settings,
+not as replacements.
 
 ## To try by hand
 
-These work in the automated tests or in pictures taken from WSL, but nobody has pressed the
-real keys yet.
+Built, and working in the automated tests or in pictures taken from WSL, but not yet tried
+by the author with the real keys, voice or eyes.
 
 - [ ] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
       mute shortcut"). Press it while a session speaks: the line stops, two low notes go
@@ -58,6 +64,389 @@ real keys yet.
       bubble at once (2026-11-19, the author: "you started speaking without like the
       window popping out"); the "sent" sign stays on the other light. To try: talk to one
       session while another has a line ready. `overlay.sent_first: true` is how it was.
+- [ ] A session's first spoken words before anything was typed to it (mended 2026-11-17:
+      the first session after the hub had gone away had no listener until its first
+      prompt; the author spoke to it twice and asked "why are you not receiving audio
+      inputs?"). Tests only. To try: close every session, wait for the hub to go
+      (`sidetone hub stop` does it at once), open one session and speak to it
+      without typing.
+- [ ] "Release to send" staying on the light (the author, 2026-11-18: "it got stuck in
+      recording wtf"). Found and mended the same hour: a press of the talk key shorter
+      than a third of a second left the sign up until the next hold, though nothing was
+      being recorded. **Not known whether that is what they saw**; the log had no line for
+      it (it has one for a short press now). Asked, they said: "I don't know. I wasn't
+      paying attention." So it stays open until it happens again; then `hub.log` will
+      show a short press if that was it. If it was a real hold that would not end, the
+      place to look is the overlay's keyboard hook losing the release (see `CLAUDE.md`).
+- [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
+      are a JSON file and the command line.
+      A first one built on the evening of 2026-11-18 and put on their screen:
+      `Ctrl+Alt+S` or `sidetone settings`. Sections at the left (Voice, Voices,
+      Talking, Overlay, Figures, Terminal, Keys), 54 settings, each changed with a
+      click and in effect at once; hotkeys are changed by clicking one and pressing the
+      new keys. **For the author to judge, none of it agreed beforehand:** the look,
+      the wording, which settings are in it, and the key that opens it. **To try by
+      hand** (checked from WSL only with pictures and with clicks made inside the
+      program): a choice, a switch, a slider, the list of voices, typing a new hotkey
+      and getting the old one back, moving the window by its head, Esc.
+      Not in it yet: languages, the colors, where the overlay sits and on which
+      monitor, which figures a row and the card show, your own voices, voices of
+      projects that are not open, a way back to what a new install has, a search.
+      Their first look: it must be an ordinary window that can go behind others and be
+      put away, the menu at the left on a ground of its own, and the tool's name not
+      beside the heading. All three done the same hour and seen by them ("that's
+      better"); putting it away and bringing it back from the taskbar: "It works
+      perfectly". Still untried by hand: a slider, the list of voices, typing a new
+      hotkey.
+- [ ] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
+      take a light with the mouse and drop it where it should sit in the bar. The hub keeps
+      the order (by project, so it survives restarts) and new sessions join at the end. Fits
+      the dragging the bar already has: with the keys held a drag moves one light, without
+      them the whole bar.
+      Built 2026-11-19 (see `CLAUDE.md`): `drag_keys` is `""` again, so a plain
+      drag moves the bar, and with `Ctrl+Alt` held a press on a light lifts it and it
+      can be dropped elsewhere; the order is kept in `sessions.json`. Tried by the
+      author the same night and mended four times; the last fix (the panel no longer
+      folds away while a light is held) **not tried yet**.
+
+## To decide
+
+Questions for the author; nothing to build until they answer.
+
+- [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
+      which was right, since nothing had been said since the last message. Not heard yet:
+      a real replay, pressed after a session spoke while the author was away from it.
+      The author found it hard to grasp (2026-11-17: "so it detects when im away? so far
+      ctrl+alt+u says nothing new"). It does not detect anything: "missed" is every line
+      said since the last typed prompt or hotkey, so any key pressed after a line (repeat,
+      the wheel, push-to-talk) empties it, and a line heard at the desk still counts.
+      Ideas offered, none chosen: count a line as missed only when it was said while
+      keyboard and mouse had been still for a minute or more (the overlay can ask Windows
+      for that), plus lines that were cut or dropped unsaid (each line already carries a
+      `heard` mark that catch-up does not use yet).
+      Built the same day and parked on the branch `away-catch-up` (commit `07c9ff9`, 121
+      tests pass, the overlay compiles; not live, never tried with real idle time). The
+      author asked whether it is worth it and, asked again the same day with three choices
+      (keep, drop the key, leave it), said: "I think we can leave it for now." So the key
+      keeps its old behaviour until they bring it up again. Keep: merge the
+      branch and restart the hub. Drop: the offer was to remove the key and the catch-up
+      code altogether, since the present version mostly says "Nothing new".
+- [ ] Another name for the tool (the author, 2026-11-18, on seeing "claude-speaks" in the
+      settings window: "I don't like [it] as a name. Maybe we can think about it ...
+      Maybe there's a better name"). Open. A new name would touch the repo, the commands
+      (`claude-speaks`, `cs`), the folders under `~/.local` and `~/.config`, the VS Code
+      extension and the README; and "Claude" in a product's name is Anthropic's mark,
+      which is a reason of its own to look for one before the repo is public.
+      Asked the same evening with three names that a search had not found on a tool
+      for coding agents (Sidetone, Squelch, Tally; Earshot, Switchboard, Hark and
+      Heard are taken) and "keep it for now", they answered by voice: "Sidetone is
+      cool, but why?" The why was explained; **no name chosen, nothing renamed**. The
+      speech model wrote the word as "Saiton". The window shows `settings.NAME`.
+      Chosen minutes later: Sidetone. Done that evening, as they asked: the name in the
+      window and the README, the GitHub repo (`sidetone`), the project folder
+      (`~/personal/sidetone`, with a link left at the old place for the sessions and
+      the editor window that were open). The commands followed on their yes: `sidetone` and `st`. The
+      logo is in the blue they typed, `#006896`. The sessions that were open are named
+      `sidetone` in the bar too (changed by hand in the hub's records). **The logo:** chosen after six pages: the disc in
+      their blue with uneven voice bars cut on the slant ("S6 is good"). Before it, a
+      disc with plain uneven bars, liked best and found "pretty anonymous". Some
+      thirty others were drawn over five pages (waves, a speech bubble, the bar of
+      lights, faces, a ghost, headsets and microphones after their own idea) and none
+      was liked. What got there: their own direction, to look at the logos of the five
+      most valuable startups and take one idea from each. The microphone in the overlay is their blue too, on
+      their word, though it is near the blue of "working" (`overlay.mic_color`);
+      seen by them while talking ("looks good. Let's see"); to be watched in use for
+      the two being mixed up. **Left, for them to decide:** the
+      folders for settings, logs and models, the
+      `CLAUDE_SPEAKS_*` variables, the VS Code extension's name, the words in the
+      overlay ("claude-speaks" is nowhere on screen now), and `CLAUDE.md` and this
+      file, which still say claude-speaks throughout. And to do once no session is
+      left from before: remove the link `~/personal/claude-speaks`, and open the
+      editor on the new folder.
+- [ ] Session names in the terminal's tab. The hub can write "name · title" as the
+      terminal's title (`terminal title on`), but a VS Code tab only shows it with
+      `"terminal.integrated.tabs.title": "${sequence}"`, and Claude Code overwrites it
+      unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`. Both are the author's to
+      turn on; offered on 2026-11-17, not answered, not tried.
+
+## Quick fixes and small builds
+
+Roughly easiest first.
+
+- [ ] Confirmation before a spoken message is sent, as a setting in the settings window
+      ("un'opzione nei settings per la gente che vuole la conferma": see the transcript,
+      then send). It exists in the hub already, off by default since the author found it
+      "too many clicks": `followup_confirm` (false, true, or "auto" for sessions that act
+      without asking) and `followup_delay` (seconds the transcript is shown and can be
+      cancelled before it goes). Neither is in `settings.SECTIONS`; add both to "Talking",
+      and check how the confirming tap and the delay look on the overlay today.
+- [ ] Italian openings for side questions and for asking the usage. `aside_words` and the
+      words `usage.asks` accepts are English only, so "a proposito, ..." waits for the session
+      and "quanto ho usato?" goes to it. Add Italian (and Chinese, now that it is spoken)
+      defaults, and the small words passed over before them (`base.ASIDE_LEAD`).
+- [ ] `install.sh` fetching the voices of the languages chosen: Piper's
+      `it_IT-paola-medium` when Italian is chosen (`tts.PREFERRED_VOICE` asks for it), and
+      Kokoro's Chinese model v1.1-zh with `misaki-fork[zh]` when Chinese is. Both were put on
+      the author's machine by hand on 2026-11-19; a new install gets neither.
+- [ ] A spoken line with no `lang` in its tag: guess its language in the hub (Chinese
+      characters are easy; Italian against English needs a small detector, or the language
+      Whisper heard in the user's last recording). Seen 2026-11-19: a session answered in
+      Italian without the mark and the English voice read it. Also under "Mixed languages".
+- [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
+      soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
+      too short to tell the language and English wins. Perhaps lean to the language of the
+      session's last line, or of the user's last longer recording.
+- [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
+      as a small sign on the tab for a moment (its visual bell setting is off by default).
+- [ ] The terminal tint on a light theme: the color is mixed into `terminal.background`,
+      which defaults to VS Code's dark theme. Read the editor's theme, or offer a light
+      default.
+- [ ] Left or right ear per session
+- [ ] Short sounds for states (done, needs you) for when a full sentence is too much. Push-to-talk
+      has them since 2026-11-17 (`hub/sounds.py`: sent, waiting, not sent); the author has
+      not said yet whether they sound right. "Allowed." and "Denied." are still spoken.
+- [ ] More for the VS Code extension, now that it exists: color the tab itself in the
+      session's color. (Bringing the terminal of the session in focus to the front is
+      done, see the jump key above; the hub can ask the extension since 0.2.0.)
+- [ ] What following the terminal does not do yet:
+      - VS Code only reports a change of the active terminal. Clicking back into the
+        terminal you were last in (from the editor, or after another session spoke and
+        took the focus) reports nothing, so the focus stays where it was. No extension
+        interface says "this terminal got the keyboard". Claude Code knows when its
+        terminal gains the keyboard, but no hook reports it.
+      - `install.sh` offers the extension since 2026-11-17 (done by another session
+        while the author was away): where a `code` command is found it asks once, of a
+        person at a terminal on a full install; `--vscode` and `--no-vscode` answer
+        ahead; one already installed is brought up to date without asking; from a
+        script VS Code is left alone. `uninstall.sh` removes it (`--keep-vscode`
+        leaves it). Run end to end in an empty home with real downloads and a stand-in
+        for `code`; a fresh install registered exactly the hooks of the snippet,
+        `stop.sh` among them (`tests/test_install.py`, 16 tests). Not tried: the
+        question itself by a person on a machine that does not have the extension,
+        and a "no" is not remembered for the next install.
+      - Only VS Code; another terminal program would need its own way.
+      - Done 2026-11-18, while the author was away and without their word on it: a
+        prompt typed to a session gives it the focus (`focus_on_prompt`, on; false
+        turns it off). It covers the first point above for whoever types: back in the
+        terminal you were in last, the first prompt moves the focus there. Tests
+        only; **for the author to notice in use, and to say if it is unwanted**.
+        Their try on the evening of 2026-11-18 could not show it: going to the second
+        terminal had moved the focus already. Not to be asked for again as a test.
+- [ ] A setting that keeps every key from other programs while `Ctrl+Alt` is held (the
+      author's idea, 2026-11-17, after Space paused a video during push-to-talk). Built so
+      far: only the held talk key is kept back. Off by default if built, because it would
+      also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
+      with those keys, and it needs a keyboard hook for as long as the keys are down.
+
+## Bigger features
+
+### Languages and voices
+
+- [ ] Mixed languages: what happens when one speaks Italian, English and Chinese mixed in
+      one recording or one turn ("se tipo iniziasse a parlare in italiano, in inglese, in
+      cinese, mischiati, come funzionerà"). To look at: Whisper picks one language per
+      half minute of recording (`stt.Named`), so a mixed sentence may come out in one
+      language; the reminder asks for "the language of my last message", which is
+      unclear when it mixes; the speak tag carries one `lang`, so a mixed line is said
+      by one voice (the Chinese model already reads Latin words as English; Kokoro's and
+      Piper's Italian voices do not read Chinese). Try it for real first, then decide.
+      Seen the same night: a session answered in Italian without `lang="it"` (the user's
+      message had come through as English), so the English voice read Italian words. A
+      safeguard to consider: when the tag has no `lang`, the hub guesses the language of
+      the line itself (Chinese characters are easy; Italian against English needs a small
+      detector, or the language Whisper heard in the user's last recording).
+- [ ] Any language, chosen by the person who installs it (the author, 2026-11-17, said in
+      Italian: not only English and Italian, the program should be "customizzabile
+      dall'utente che lo scarica", so in the end every language). Listening is nearly there:
+      `whisper_language` already takes any language codes, or `auto`, with a multilingual
+      model. What is still tied to English:
+      - the start: done 2026-11-17 for listening. `install.sh` asks which languages you
+        speak and `sidetone languages` changes it; the settings window should offer
+        it too.
+      - the spoken summaries: the reminder asks Claude for "plain spoken English", and
+        `hub/tts.py` has Kokoro pronounce every line as American English (`lang="en-us"`)
+      - the voices: the pool is 13 English ones. The installed Kokoro file also has Italian
+        (2), Spanish (3), French (1), Portuguese (3), Hindi (4), Japanese (5) and Chinese
+        (8); any other language needs a second voice engine or the system voice.
+      - the hub's own words ("Sent.", "Allowed.", "I need your input", "Permission needed")
+        and the words in the overlay
+      A first step that covers most of it: one `language` setting (or one per project) that
+      picks the reminder's language, Kokoro's pronunciation and a voice pool for it, and
+      falls back to English where Kokoro has no voice.
+- [ ] Running the speech model on the graphics card to make transcription faster
+- [ ] Voice cloning, if that is what "uploadable" meant (see above). The author asked on
+      2026-11-17 how to get a voice of their own choosing ("they're all preset"). Researched
+      the same day, nothing tried yet; all routes are free and local except the last:
+      - Pocket TTS (Kyutai, MIT, about 100M parameters): clones from a WAV file, runs on the
+        CPU, about 0.2 s to first sound by its own README, speaks English and Italian. The
+        closest fit as a second engine beside Kokoro; first one to measure.
+      - Chatterbox Turbo (Resemble, MIT, 350M, English): more expressive (`[laugh]` tags,
+        an exaggeration setting), wants the graphics card (RTX 5070 here). Its repo now says
+        it is no longer maintained, and the speed claims are the vendor's.
+      - KVoiceWalk (Apache 2.0): searches for a Kokoro voice vector that resembles a
+        recording, so no new engine and the result loads through `voice add`. About 4 hours
+        on a graphics card per voice, results vary, and it copies the tone, not the manner.
+      - ElevenLabs: best quality, about 5 to 6 dollars a month, but the text leaves the
+        machine and every line costs credits.
+      A cloned voice of a real person needs that person's consent under these tools' terms
+      (Pocket TTS and ElevenLabs say so outright), so the feature is "bring your own
+      recording" and no cloned voices ship in the repo.
+      The author wants this (2026-11-17: a realistic copy of one person's voice, with that
+      person's approval; "put this in the to-do list and I'll definitely try something").
+      What it takes:
+      - from the author: one recording of that person, a single voice with no music or
+        noise, about 10 to 30 seconds, as a WAV file, spoken the way the voice should
+        sound (the engines copy the manner of the clip, not only the tone) and in the
+        language it will speak (an Italian clip made to speak English keeps an accent)
+      - to build: a second engine in `hub/tts.py` beside Kokoro, and `voice add` taking a
+        recording; choosing a voice per project already works
+      - order to try: Pocket TTS first (the only one likely to keep the quick start of
+        speech), Chatterbox if it does not sound real enough, ElevenLabs as the paid
+        yardstick
+      - the recording stays on the author's machine, never in the repo
+- [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
+      2026-11-19: "a feature that let you register my voice and evaluate the correctness
+      of my English ... evaluate our pronunciation of the words"; asked "What do you
+      think?"). The thought: developers already speak to it all day, so the recordings are
+      practice that costs nothing extra. On hearing that: "I think it's a good
+      feature." Kept for later, not started. Notes for whoever builds it:
+      - Opt in, off by default; recordings and results stay on the machine (a folder
+        under `~/.local/state/claude-speaks/`), with a way to delete them.
+      - Never in the way: no correction while you are talking to a session. A report you
+        ask for (`sidetone english`, or by voice), said in a few sentences and with the
+        details in a page or the settings window.
+      - Two separate things. Grammar and wording: the transcript is enough, and a side
+        copy (as for side questions) or a small local model can suggest a better
+        sentence. Pronunciation: harder, because Whisper is built to guess the intended
+        word, so a mispronounced word often comes out spelled right and nothing shows.
+        Whisper's per-word probability (`word_timestamps=True`) is a cheap first signal
+        of words it found hard. Real scoring needs the sounds: a phoneme recognizer
+        (for example wav2vec2 trained on espeak phonemes) run on the clip, compared with
+        the expected phonemes of the transcribed words (`espeak-ng --ipa`, already a
+        dependency), word by word. Kokoro could then say the word the right way.
+      - Measure before promising: synthetic voices are too clean to test it; it needs real
+        recordings with known mistakes, the author's own among them.
+
+### Overlay and settings
+
+- [ ] Make more of the overlay a setting: sizes, colors (session palette, status colors, glass
+      tint), which keys do what, what the panel rows show, animation speed or none, where the
+      bubble goes. Much is fixed in `overlay/Overlay.cs` today.
+- [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
+      importance, a thin line of light at the screen edge, one small window per session); the
+      code is in commit `8558c4a`.
+
+### Reaching more people
+
+- [ ] Packaging as a Claude Code plugin, so it installs in one step.
+- [ ] A version that runs on Windows itself, without WSL (the author, 2026-11-17, on learning
+      that Claude Code started from PowerShell or cmd does not start any of this: it reads
+      `C:\Users\<name>\.claude\settings.json`, which has no hooks). This is what a program
+      other people download would need. What is tied to Linux today:
+      - the hooks are bash scripts with `curl` and `jq`
+      - the hub listens on a Unix socket, chosen so that no web page or other machine can
+        reach it; the Windows version needs something as closed (a named pipe, or a Unix
+        socket if Python on Windows supports it by then)
+      - one hub at a time is kept by `flock`
+      - sound goes out through `paplay`, and the microphone and the loudness meter read
+        through `parec`
+      - folders follow the Linux layout (`XDG_RUNTIME_DIR`, `~/.local/state`, `~/.config`)
+      - the hub finds and starts the overlay through `wslpath` and `/mnt/c`
+      Not tied to Linux: the overlay program, Kokoro and `faster-whisper` (both run on
+      Windows), and the hub's logic. A smaller step that was set aside for now: hooks in the
+      Windows settings file that call into WSL and run the existing scripts.
+- [ ] An overlay for Linux and macOS. Today it is Windows only.
+- [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
+      hub already takes plain events from anything that can send them.
+      The author, 2026-11-18, by voice (the recording was cut twice, so only its gist):
+      expand to other models "such as Codex, Gemini", and show which one a session is by
+      its logo, the Claude logo "in center" of the light. Told in reply, nothing built:
+      the middle of the light holds the status sign (check, "!", voice bars), as came up
+      with the waiting number, so a small mark at the lower left of the light or before
+      the name in the row would fit better; other companies' logos are trademarks, so
+      marks of our own drawing or files the user supplies; and it only says something
+      once a second agent can be connected. Their answer is open.
+- [ ] Numbers to publish with it (the author, 2026-11-17: "in the future when I'll publish
+      this tool it'll be great to have some metrics"). Measured so far, to be done again on
+      the release and on a second, slower machine before any of it is quoted:
+      - Speech to text by choice of languages (`tests/stt_speed.py`, 2026-11-17, Core Ultra 7
+        270K with 24 threads, on the CPU (the RTX 5070 was not used), model `small`, median of 5 runs, sentences
+        spoken by Kokoro):
+
+        | You speak | 1 s of speech | 4 s | 12 s |
+        |---|---|---|---|
+        | English only | 0.6 s | 0.7 s | 0.9 s |
+        | Italian only | 0.6 s | 0.8 s | 1.0 s |
+        | English and Italian | 0.7 s | 0.8 s | 1.0 s |
+        | Five languages | 0.7 s | 0.8 s | 1.0 s |
+        | Any language | 0.7 s | 0.8 s | 1.0 s |
+
+        One language costs the same whichever it is, and the English-only model is no
+        quicker than the multilingual one told "English" (0.64 against 0.61 s). Two or more
+        cost about 0.05 s extra. Before the language was found in the same pass as the
+        words (same day) they cost 0.6 s extra: 1.2 to 1.4, 1.4 to 1.5 and 1.5 to 1.7 s.
+        Every sentence was written correctly under every choice, so accuracy is not
+        measured: that needs real, short, untidy recordings.
+      - Line written to first sound: about 0.3 s with the hub warm (in `CLAUDE.md`).
+      - Still to measure: real voices and a noisy room, the other model sizes, a slower
+        CPU, memory, and how often a short recording is taken for the wrong language.
+- [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
+      tools that only speak after the reply has ended.
+- [ ] Making the repo public. Before that: run `install.sh` on a machine that has nothing
+      yet (see the ticked item under "Rough edges"; put off to here by the author).
+
+### Away from the PC
+
+The author's idea, 2026-11-17: with sessions open and nobody at the desk, "is it possible to
+use like either phone or AirPods interaction to do stuff", for example an AirPods gesture
+that starts push-to-talk. Nothing below has been tried; the notes are guesses to check first.
+
+- [ ] Decide the safety line first. The hub listens on a Unix socket on purpose, so that
+      nothing outside this machine can make it speak, approve or inject. Anything from a
+      phone opens that door a little: it should go through a login that already exists
+      (SSH), never a new open port, and approving from afar may deserve its own switch.
+- [ ] AirPods paired with the PC: a press on the stem reaches Windows as a media key
+      (play/pause, next, previous). The overlay could claim one as a talk key: press to start
+      recording, press again to send, since a press cannot be held. To check: whether the
+      overlay can take the key away from the music player, how to keep it out of the way
+      while music plays (only claim it while a session is open?), and how bad the sound gets
+      when Windows switches the AirPods to their microphone mode (playback drops to phone
+      call quality while the microphone is open). Works only within Bluetooth range.
+- [ ] AirPods on the phone, PC out of range: the phone has to be the bridge, because the
+      gestures cannot be given to another program there. Candidates:
+      - a phone Shortcut ("Hey Siri, tell Claude ...", or the Action button) that dictates a
+        sentence and runs `sidetone follow-up` on the PC over SSH. Needs no new server,
+        only a private way to reach the PC (for example Tailscale).
+      - spoken summaries as phone notifications; the phone can read notifications aloud
+        into AirPods. This grows out of the "phone notification" idea below.
+      - allow and deny from the phone: buttons on the notification, or a Shortcut that runs
+        `sidetone allow|deny`.
+      - a small phone app of our own could read AirPods head movement (nod to allow, shake
+        to deny) and stream the voice. By far the most work.
+      - Claude Code's own remote control from the phone may already cover typing and
+        approving; check what it does before building any of this.
+- [ ] A phone notification when a session needs you and you are away
+
+### Last
+
+- [ ] Documentation (the author, by voice, 2026-11-19: "make it like well-documented ...
+      for each feature having a GIF and in the end putting a video registration on me
+      watching a YouTube video while I'm using you, which is the real context of why I'm
+      built in this tool"). So: a page per feature, or a section of the README, each with a
+      short GIF of it on screen; and, to close, a real recording of the author watching a
+      video while sessions speak, get answered by voice and ask for permission, as the
+      story of attention latency told in one picture. The overlay's own pictures
+      (`tests/overlay_check.py`) cover single views, not motion; GIFs need a screen
+      recording from Windows, and the video has the author's sound and voice in it.
+      **Last, on the author's word** (2026-11-19: "I would do the doc at the end of
+      everything so you know there's more features to document and it's like the final
+      completion of the product"). Not to be offered as the next thing before then.
+
+## Done
+
+Kept for the history: what was asked, what was found, and the author's words on it.
+
+### Tried by hand
 
 - [x] Side questions: spoken words that open with "by the way" do not wait for a busy session
       (asked for by the author by voice on 2026-11-17, who compared it to Claude Code's
@@ -207,24 +596,6 @@ real keys yet.
       two tries with the keys held worked, and the late press stays unproven. One case
       is left and is rare: `Ctrl+Alt` never let go for longer than the "sent" sign
       shows, then Backspace to stop the session, is a plain Backspace.
-- [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
-      which was right, since nothing had been said since the last message. Not heard yet:
-      a real replay, pressed after a session spoke while the author was away from it.
-      The author found it hard to grasp (2026-11-17: "so it detects when im away? so far
-      ctrl+alt+u says nothing new"). It does not detect anything: "missed" is every line
-      said since the last typed prompt or hotkey, so any key pressed after a line (repeat,
-      the wheel, push-to-talk) empties it, and a line heard at the desk still counts.
-      Ideas offered, none chosen: count a line as missed only when it was said while
-      keyboard and mouse had been still for a minute or more (the overlay can ask Windows
-      for that), plus lines that were cut or dropped unsaid (each line already carries a
-      `heard` mark that catch-up does not use yet).
-      Built the same day and parked on the branch `away-catch-up` (commit `07c9ff9`, 121
-      tests pass, the overlay compiles; not live, never tried with real idle time). The
-      author asked whether it is worth it and, asked again the same day with three choices
-      (keep, drop the key, leave it), said: "I think we can leave it for now." So the key
-      keeps its old behaviour until they bring it up again. Keep: merge the
-      branch and restart the hub. Drop: the offer was to remove the key and the catch-up
-      code altogether, since the present version mostly says "Nothing new".
 - [x] `Ctrl+Alt+Backspace` while recording (the author, 2026-11-17, right after being asked
       to try it: "Nice it works it works"). Not said: whether the same key also cut a line
       that was being spoken.
@@ -303,20 +674,6 @@ real keys yet.
       move cursor shows on the bar and it can be dragged; without them there is no move
       cursor and clicks and the wheel go to the window underneath. The author, 2026-11-17:
       "Oh yes, it works. Now perfect." The new place was saved to `config.json`.
-- [ ] A session's first spoken words before anything was typed to it (mended 2026-11-17:
-      the first session after the hub had gone away had no listener until its first
-      prompt; the author spoke to it twice and asked "why are you not receiving audio
-      inputs?"). Tests only. To try: close every session, wait for the hub to go
-      (`sidetone hub stop` does it at once), open one session and speak to it
-      without typing.
-- [ ] "Release to send" staying on the light (the author, 2026-11-18: "it got stuck in
-      recording wtf"). Found and mended the same hour: a press of the talk key shorter
-      than a third of a second left the sign up until the next hold, though nothing was
-      being recorded. **Not known whether that is what they saw**; the log had no line for
-      it (it has one for a short press now). Asked, they said: "I don't know. I wasn't
-      paying attention." So it stays open until it happens again; then `hub.log` will
-      show a short press if that was it. If it was a real hold that would not end, the
-      place to look is the overlay's keyboard hook losing the release (see `CLAUDE.md`).
 - [x] Sessions started from the VS Code extension showing up in the bar. The author,
       2026-11-17, opened Claude Code in a new editor tab: "it seems to be added below",
       and the hub listed it as a third session, idle, with a voice of its own. Not tried:
@@ -349,7 +706,7 @@ real keys yet.
       still works too, since that message arrived. Backspace with the keys still down,
       which the overlay now has to recognise itself: "Oh yeah, it works."
 
-## To decide
+### Decided
 
 - [x] Which of the two layouts (`bar`, `island`) is the default for new users. The author,
       asked on 2026-11-17 with bar, island and "decide later" to choose from: bar. It
@@ -376,7 +733,7 @@ real keys yet.
       Settled another way on 2026-11-17: the tap no longer moves the focus at all; the
       arrow keys do, and they stop at the ends.
 
-## Rough edges
+### Rough edges mended
 
 - [x] A hub restart still forgets a few things. Names, colors, voices, titles, the order in
       the bar and the focus are kept since 2026-11-17 (`sessions.json`), and since later
@@ -632,206 +989,8 @@ real keys yet.
       we might as well do it in the end after the app is done." It is now part of
       "Making the repo public" below.
 
-## Not started
+### Built
 
-Added by the author on 2026-11-19, at the end of a long session, for the next one:
-
-- [ ] Mixed languages: what happens when one speaks Italian, English and Chinese mixed in
-      one recording or one turn ("se tipo iniziasse a parlare in italiano, in inglese, in
-      cinese, mischiati, come funzionerà"). To look at: Whisper picks one language per
-      half minute of recording (`stt.Named`), so a mixed sentence may come out in one
-      language; the reminder asks for "the language of my last message", which is
-      unclear when it mixes; the speak tag carries one `lang`, so a mixed line is said
-      by one voice (the Chinese model already reads Latin words as English; Kokoro's and
-      Piper's Italian voices do not read Chinese). Try it for real first, then decide.
-      Seen the same night: a session answered in Italian without `lang="it"` (the user's
-      message had come through as English), so the English voice read Italian words. A
-      safeguard to consider: when the tag has no `lang`, the hub guesses the language of
-      the line itself (Chinese characters are easy; Italian against English needs a small
-      detector, or the language Whisper heard in the user's last recording).
-- [ ] Confirmation before a spoken message is sent, as a setting in the settings window
-      ("un'opzione nei settings per la gente che vuole la conferma": see the transcript,
-      then send). It exists in the hub already, off by default since the author found it
-      "too many clicks": `followup_confirm` (false, true, or "auto" for sessions that act
-      without asking) and `followup_delay` (seconds the transcript is shown and can be
-      cancelled before it goes). Neither is in `settings.SECTIONS`; add both to "Talking",
-      and check how the confirming tap and the delay look on the overlay today.
-
-The author's direction for all of this: people who download the tool should be able to customize
-as much of their experience as possible. New looks and behaviours come as settings, not as
-replacements.
-
-Bigger pieces:
-
-- [ ] Make more of the overlay a setting: sizes, colors (session palette, status colors, glass
-      tint), which keys do what, what the panel rows show, animation speed or none, where the
-      bubble goes. Much is fixed in `overlay/Overlay.cs` today.
-- [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
-      importance, a thin line of light at the screen edge, one small window per session); the
-      code is in commit `8558c4a`.
-
-- [ ] Any language, chosen by the person who installs it (the author, 2026-11-17, said in
-      Italian: not only English and Italian, the program should be "customizzabile
-      dall'utente che lo scarica", so in the end every language). Listening is nearly there:
-      `whisper_language` already takes any language codes, or `auto`, with a multilingual
-      model. What is still tied to English:
-      - the start: done 2026-11-17 for listening. `install.sh` asks which languages you
-        speak and `sidetone languages` changes it; the settings window should offer
-        it too.
-      - the spoken summaries: the reminder asks Claude for "plain spoken English", and
-        `hub/tts.py` has Kokoro pronounce every line as American English (`lang="en-us"`)
-      - the voices: the pool is 13 English ones. The installed Kokoro file also has Italian
-        (2), Spanish (3), French (1), Portuguese (3), Hindi (4), Japanese (5) and Chinese
-        (8); any other language needs a second voice engine or the system voice.
-      - the hub's own words ("Sent.", "Allowed.", "I need your input", "Permission needed")
-        and the words in the overlay
-      A first step that covers most of it: one `language` setting (or one per project) that
-      picks the reminder's language, Kokoro's pronunciation and a voice pool for it, and
-      falls back to English where Kokoro has no voice.
-- [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
-      are a JSON file and the command line.
-      A first one built on the evening of 2026-11-18 and put on their screen:
-      `Ctrl+Alt+S` or `sidetone settings`. Sections at the left (Voice, Voices,
-      Talking, Overlay, Figures, Terminal, Keys), 54 settings, each changed with a
-      click and in effect at once; hotkeys are changed by clicking one and pressing the
-      new keys. **For the author to judge, none of it agreed beforehand:** the look,
-      the wording, which settings are in it, and the key that opens it. **To try by
-      hand** (checked from WSL only with pictures and with clicks made inside the
-      program): a choice, a switch, a slider, the list of voices, typing a new hotkey
-      and getting the old one back, moving the window by its head, Esc.
-      Not in it yet: languages, the colors, where the overlay sits and on which
-      monitor, which figures a row and the card show, your own voices, voices of
-      projects that are not open, a way back to what a new install has, a search.
-      Their first look: it must be an ordinary window that can go behind others and be
-      put away, the menu at the left on a ground of its own, and the tool's name not
-      beside the heading. All three done the same hour and seen by them ("that's
-      better"); putting it away and bringing it back from the taskbar: "It works
-      perfectly". Still untried by hand: a slider, the list of voices, typing a new
-      hotkey.
-- [ ] Another name for the tool (the author, 2026-11-18, on seeing "claude-speaks" in the
-      settings window: "I don't like [it] as a name. Maybe we can think about it ...
-      Maybe there's a better name"). Open. A new name would touch the repo, the commands
-      (`claude-speaks`, `cs`), the folders under `~/.local` and `~/.config`, the VS Code
-      extension and the README; and "Claude" in a product's name is Anthropic's mark,
-      which is a reason of its own to look for one before the repo is public.
-      Asked the same evening with three names that a search had not found on a tool
-      for coding agents (Sidetone, Squelch, Tally; Earshot, Switchboard, Hark and
-      Heard are taken) and "keep it for now", they answered by voice: "Sidetone is
-      cool, but why?" The why was explained; **no name chosen, nothing renamed**. The
-      speech model wrote the word as "Saiton". The window shows `settings.NAME`.
-      Chosen minutes later: Sidetone. Done that evening, as they asked: the name in the
-      window and the README, the GitHub repo (`sidetone`), the project folder
-      (`~/personal/sidetone`, with a link left at the old place for the sessions and
-      the editor window that were open). The commands followed on their yes: `sidetone` and `st`. The
-      logo is in the blue they typed, `#006896`. The sessions that were open are named
-      `sidetone` in the bar too (changed by hand in the hub's records). **The logo:** chosen after six pages: the disc in
-      their blue with uneven voice bars cut on the slant ("S6 is good"). Before it, a
-      disc with plain uneven bars, liked best and found "pretty anonymous". Some
-      thirty others were drawn over five pages (waves, a speech bubble, the bar of
-      lights, faces, a ghost, headsets and microphones after their own idea) and none
-      was liked. What got there: their own direction, to look at the logos of the five
-      most valuable startups and take one idea from each. The microphone in the overlay is their blue too, on
-      their word, though it is near the blue of "working" (`overlay.mic_color`);
-      seen by them while talking ("looks good. Let's see"); to be watched in use for
-      the two being mixed up. **Left, for them to decide:** the
-      folders for settings, logs and models, the
-      `CLAUDE_SPEAKS_*` variables, the VS Code extension's name, the words in the
-      overlay ("claude-speaks" is nowhere on screen now), and `CLAUDE.md` and this
-      file, which still say claude-speaks throughout. And to do once no session is
-      left from before: remove the link `~/personal/claude-speaks`, and open the
-      editor on the new folder.
-- [ ] Packaging as a Claude Code plugin, so it installs in one step.
-- [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
-      tools that only speak after the reply has ended.
-- [ ] Numbers to publish with it (the author, 2026-11-17: "in the future when I'll publish
-      this tool it'll be great to have some metrics"). Measured so far, to be done again on
-      the release and on a second, slower machine before any of it is quoted:
-      - Speech to text by choice of languages (`tests/stt_speed.py`, 2026-11-17, Core Ultra 7
-        270K with 24 threads, on the CPU (the RTX 5070 was not used), model `small`, median of 5 runs, sentences
-        spoken by Kokoro):
-
-        | You speak | 1 s of speech | 4 s | 12 s |
-        |---|---|---|---|
-        | English only | 0.6 s | 0.7 s | 0.9 s |
-        | Italian only | 0.6 s | 0.8 s | 1.0 s |
-        | English and Italian | 0.7 s | 0.8 s | 1.0 s |
-        | Five languages | 0.7 s | 0.8 s | 1.0 s |
-        | Any language | 0.7 s | 0.8 s | 1.0 s |
-
-        One language costs the same whichever it is, and the English-only model is no
-        quicker than the multilingual one told "English" (0.64 against 0.61 s). Two or more
-        cost about 0.05 s extra. Before the language was found in the same pass as the
-        words (same day) they cost 0.6 s extra: 1.2 to 1.4, 1.4 to 1.5 and 1.5 to 1.7 s.
-        Every sentence was written correctly under every choice, so accuracy is not
-        measured: that needs real, short, untidy recordings.
-      - Line written to first sound: about 0.3 s with the hub warm (in `CLAUDE.md`).
-      - Still to measure: real voices and a noisy room, the other model sizes, a slower
-        CPU, memory, and how often a short recording is taken for the wrong language.
-- [ ] Making the repo public. Before that: run `install.sh` on a machine that has nothing
-      yet (see the ticked item under "Rough edges"; put off to here by the author).
-- [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
-      hub already takes plain events from anything that can send them.
-      The author, 2026-11-18, by voice (the recording was cut twice, so only its gist):
-      expand to other models "such as Codex, Gemini", and show which one a session is by
-      its logo, the Claude logo "in center" of the light. Told in reply, nothing built:
-      the middle of the light holds the status sign (check, "!", voice bars), as came up
-      with the waiting number, so a small mark at the lower left of the light or before
-      the name in the row would fit better; other companies' logos are trademarks, so
-      marks of our own drawing or files the user supplies; and it only says something
-      once a second agent can be connected. Their answer is open.
-- [ ] An overlay for Linux and macOS. Today it is Windows only.
-- [ ] A version that runs on Windows itself, without WSL (the author, 2026-11-17, on learning
-      that Claude Code started from PowerShell or cmd does not start any of this: it reads
-      `C:\Users\<name>\.claude\settings.json`, which has no hooks). This is what a program
-      other people download would need. What is tied to Linux today:
-      - the hooks are bash scripts with `curl` and `jq`
-      - the hub listens on a Unix socket, chosen so that no web page or other machine can
-        reach it; the Windows version needs something as closed (a named pipe, or a Unix
-        socket if Python on Windows supports it by then)
-      - one hub at a time is kept by `flock`
-      - sound goes out through `paplay`, and the microphone and the loudness meter read
-        through `parec`
-      - folders follow the Linux layout (`XDG_RUNTIME_DIR`, `~/.local/state`, `~/.config`)
-      - the hub finds and starts the overlay through `wslpath` and `/mnt/c`
-      Not tied to Linux: the overlay program, Kokoro and `faster-whisper` (both run on
-      Windows), and the hub's logic. A smaller step that was set aside for now: hooks in the
-      Windows settings file that call into WSL and run the existing scripts.
-- [ ] Voice cloning, if that is what "uploadable" meant (see above). The author asked on
-      2026-11-17 how to get a voice of their own choosing ("they're all preset"). Researched
-      the same day, nothing tried yet; all routes are free and local except the last:
-      - Pocket TTS (Kyutai, MIT, about 100M parameters): clones from a WAV file, runs on the
-        CPU, about 0.2 s to first sound by its own README, speaks English and Italian. The
-        closest fit as a second engine beside Kokoro; first one to measure.
-      - Chatterbox Turbo (Resemble, MIT, 350M, English): more expressive (`[laugh]` tags,
-        an exaggeration setting), wants the graphics card (RTX 5070 here). Its repo now says
-        it is no longer maintained, and the speed claims are the vendor's.
-      - KVoiceWalk (Apache 2.0): searches for a Kokoro voice vector that resembles a
-        recording, so no new engine and the result loads through `voice add`. About 4 hours
-        on a graphics card per voice, results vary, and it copies the tone, not the manner.
-      - ElevenLabs: best quality, about 5 to 6 dollars a month, but the text leaves the
-        machine and every line costs credits.
-      A cloned voice of a real person needs that person's consent under these tools' terms
-      (Pocket TTS and ElevenLabs say so outright), so the feature is "bring your own
-      recording" and no cloned voices ship in the repo.
-      The author wants this (2026-11-17: a realistic copy of one person's voice, with that
-      person's approval; "put this in the to-do list and I'll definitely try something").
-      What it takes:
-      - from the author: one recording of that person, a single voice with no music or
-        noise, about 10 to 30 seconds, as a WAV file, spoken the way the voice should
-        sound (the engines copy the manner of the clip, not only the tone) and in the
-        language it will speak (an Italian clip made to speak English keeps an accent)
-      - to build: a second engine in `hub/tts.py` beside Kokoro, and `voice add` taking a
-        recording; choosing a voice per project already works
-      - order to try: Pocket TTS first (the only one likely to keep the quick start of
-        speech), Chatterbox if it does not sound real enough, ElevenLabs as the paid
-        yardstick
-      - the recording stays on the author's machine, never in the repo
-
-- [ ] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
-      take a light with the mouse and drop it where it should sit in the bar. The hub keeps
-      the order (by project, so it survives restarts) and new sessions join at the end. Fits
-      the dragging the bar already has: with the keys held a drag moves one light, without
-      them the whole bar.
 - [x] Usage in the overlay (the author's idea, 2026-11-17: "customizable bar that shows the
       usage, the five-hour window and the weekly usage"): a part of the overlay that shows how
       much of the plan is used up, in the five-hour window and in the week, and when each
@@ -840,7 +999,7 @@ Bigger pieces:
       figures, read again every five minutes (`usage_shown`, `usage_every`,
       `usage_warn`). Not shown: when each window starts again, and the week of one
       model. **For the author to judge on screen.**
-- [ ] Context window per session (same day: "for each session maybe something that indicates
+- [x] Context window per session (same day: "for each session maybe something that indicates
       the context window"): a sign of how full each session's context is, for example a thin
       arc around its light and a figure in its row, with a warning color when it is nearly
       full.
@@ -963,40 +1122,7 @@ Bigger pieces:
       2026-11-18, was "Alright, so what's the usage?" and went to the session: no
       sentence opening with "alright" counted. Such openings ("alright", "yeah",
       "sure", "also") are passed over now; **not asked again by their voice yet**. Not built: a key for it, the warning by itself near the limit, Italian.
-
-Away from the PC (the author's idea, 2026-11-17: with sessions open and nobody at the desk,
-"is it possible to use like either phone or AirPods interaction to do stuff", for example an
-AirPods gesture that starts push-to-talk). Nothing below has been tried; the notes are
-guesses to check first.
-
-- [ ] AirPods paired with the PC: a press on the stem reaches Windows as a media key
-      (play/pause, next, previous). The overlay could claim one as a talk key: press to start
-      recording, press again to send, since a press cannot be held. To check: whether the
-      overlay can take the key away from the music player, how to keep it out of the way
-      while music plays (only claim it while a session is open?), and how bad the sound gets
-      when Windows switches the AirPods to their microphone mode (playback drops to phone
-      call quality while the microphone is open). Works only within Bluetooth range.
-- [ ] AirPods on the phone, PC out of range: the phone has to be the bridge, because the
-      gestures cannot be given to another program there. Candidates:
-      - a phone Shortcut ("Hey Siri, tell Claude ...", or the Action button) that dictates a
-        sentence and runs `sidetone follow-up` on the PC over SSH. Needs no new server,
-        only a private way to reach the PC (for example Tailscale).
-      - spoken summaries as phone notifications; the phone can read notifications aloud
-        into AirPods. This grows out of the "phone notification" idea below.
-      - allow and deny from the phone: buttons on the notification, or a Shortcut that runs
-        `sidetone allow|deny`.
-      - a small phone app of our own could read AirPods head movement (nod to allow, shake
-        to deny) and stream the voice. By far the most work.
-      - Claude Code's own remote control from the phone may already cover typing and
-        approving; check what it does before building any of this.
-- [ ] Decide the safety line first. The hub listens on a Unix socket on purpose, so that
-      nothing outside this machine can make it speak, approve or inject. Anything from a
-      phone opens that door a little: it should go through a login that already exists
-      (SSH), never a new open port, and approving from afar may deserve its own switch.
-
-Smaller ideas:
-
-- [ ] A key that stops the session in focus (the author's idea, 2026-11-17: the cancel key
+- [x] A key that stops the session in focus (the author's idea, 2026-11-17: the cancel key
       "could be more universal and stop the process ... of that session", not only take
       words back in the four seconds after sending). It would also make taking back real
       for a session that already has the words: today it is only told to ignore them.
@@ -1050,7 +1176,7 @@ Smaller ideas:
         terminal". They have not said whether it felt instant.
       - the key is now claimed from every program whenever the session in focus works
       - a session waiting at a permission prompt is not stopped by the key in focus
-- [ ] Easier ways to take back what you said (the author, 2026-11-17: "it would be really
+- [x] Easier ways to take back what you said (the author, 2026-11-17: "it would be really
       cool to somehow cancel with a shortcut"; today it is `Ctrl+Alt+Backspace` while the talk
       key is still held, a four-key grip). Built the same day: the same key within four
       seconds after sending takes the words back (see "To try by hand"). The spoken ending
@@ -1065,15 +1191,6 @@ Smaller ideas:
       - tap the talk key twice right after sending to unsend; if the session already has
         the words, send "ignore my last message" after them
       - the same single key cuts the line being spoken when nothing is being recorded
-- [ ] A setting that keeps every key from other programs while `Ctrl+Alt` is held (the
-      author's idea, 2026-11-17, after Space paused a video during push-to-talk). Built so
-      far: only the held talk key is kept back. Off by default if built, because it would
-      also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
-      with those keys, and it needs a keyboard hook for as long as the keys are down.
-- [ ] Short sounds for states (done, needs you) for when a full sentence is too much. Push-to-talk
-      has them since 2026-11-17 (`hub/sounds.py`: sent, waiting, not sent); the author has
-      not said yet whether they sound right. "Allowed." and "Denied." are still spoken.
-- [ ] Left or right ear per session
 - [x] Stay quiet for the session whose terminal is in front. Offered on 2026-11-19 and turned
       down: "I don't think I need it ... I would rather have a mute shortcut." Built
       instead: the mute key (see "To try by hand").
@@ -1124,14 +1241,6 @@ Smaller ideas:
       "less tint maybe"; at 0.08 of the color for the tint and 0.15 for the flash (from
       0.14 and 0.42) they said "looks good". Not asked: whether every terminal should
       wear its color all the time (`terminal tint all`).
-- [ ] Session names in the terminal's tab. The hub can write "name · title" as the
-      terminal's title (`terminal title on`), but a VS Code tab only shows it with
-      `"terminal.integrated.tabs.title": "${sequence}"`, and Claude Code overwrites it
-      unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`. Both are the author's to
-      turn on; offered on 2026-11-17, not answered, not tried.
-- [ ] The terminal tint on a light theme: the color is mixed into `terminal.background`,
-      which defaults to VS Code's dark theme. Read the editor's theme, or offer a light
-      default.
 - [x] The focus follows the terminal you go to (the author's idea, 2026-11-17: "if I focus
       on a terminal it would be great to automatically select that" session). Built the
       same day as a small VS Code extension (`vscode/`, `sidetone vscode install`):
@@ -1142,36 +1251,6 @@ Smaller ideas:
       with a stand-in for the editor. In use since: by the evening of the same day
       `hub.log` had 79 lines "focus on ...: its terminal came to the front" from the
       author going from terminal to terminal. They have not said in words that it is right.
-- [ ] What following the terminal does not do yet:
-      - VS Code only reports a change of the active terminal. Clicking back into the
-        terminal you were last in (from the editor, or after another session spoke and
-        took the focus) reports nothing, so the focus stays where it was. No extension
-        interface says "this terminal got the keyboard". Claude Code knows when its
-        terminal gains the keyboard, but no hook reports it.
-      - `install.sh` offers the extension since 2026-11-17 (done by another session
-        while the author was away): where a `code` command is found it asks once, of a
-        person at a terminal on a full install; `--vscode` and `--no-vscode` answer
-        ahead; one already installed is brought up to date without asking; from a
-        script VS Code is left alone. `uninstall.sh` removes it (`--keep-vscode`
-        leaves it). Run end to end in an empty home with real downloads and a stand-in
-        for `code`; a fresh install registered exactly the hooks of the snippet,
-        `stop.sh` among them (`tests/test_install.py`, 16 tests). Not tried: the
-        question itself by a person on a machine that does not have the extension,
-        and a "no" is not remembered for the next install.
-      - Only VS Code; another terminal program would need its own way.
-      - Done 2026-11-18, while the author was away and without their word on it: a
-        prompt typed to a session gives it the focus (`focus_on_prompt`, on; false
-        turns it off). It covers the first point above for whoever types: back in the
-        terminal you were in last, the first prompt moves the focus there. Tests
-        only; **for the author to notice in use, and to say if it is unwanted**.
-        Their try on the evening of 2026-11-18 could not show it: going to the second
-        terminal had moved the focus already. Not to be asked for again as a test.
-- [ ] More for the VS Code extension, now that it exists: color the tab itself in the
-      session's color. (Bringing the terminal of the session in focus to the front is
-      done, see the jump key above; the hub can ask the extension since 0.2.0.)
-- [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
-      as a small sign on the tab for a moment (its visual bell setting is off by default).
-- [ ] A phone notification when a session needs you and you are away
 - [x] Spoken summaries in the language you spoke. Built 2026-11-19 on the author's "yes
       proceed" (`reply_language`, `spoken` by default): the session writes its line in the
       language of your last message with `lang="it"` in the tag, and the hub gives it a voice
@@ -1252,38 +1331,3 @@ Smaller ideas:
       and "See you." With `whisper_language: "en,it"` a word or two is too short to tell
       the language, and English wins. Not looked into; perhaps lean to the language of
       the session's last line, or of the user's last longer recording.
-- [ ] Running the speech model on the graphics card to make transcription faster
-- [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
-      2026-11-19: "a feature that let you register my voice and evaluate the correctness
-      of my English ... evaluate our pronunciation of the words"; asked "What do you
-      think?"). The thought: developers already speak to it all day, so the recordings are
-      practice that costs nothing extra. On hearing that: "I think it's a good
-      feature." Kept for later, not started. Notes for whoever builds it:
-      - Opt in, off by default; recordings and results stay on the machine (a folder
-        under `~/.local/state/claude-speaks/`), with a way to delete them.
-      - Never in the way: no correction while you are talking to a session. A report you
-        ask for (`sidetone english`, or by voice), said in a few sentences and with the
-        details in a page or the settings window.
-      - Two separate things. Grammar and wording: the transcript is enough, and a side
-        copy (as for side questions) or a small local model can suggest a better
-        sentence. Pronunciation: harder, because Whisper is built to guess the intended
-        word, so a mispronounced word often comes out spelled right and nothing shows.
-        Whisper's per-word probability (`word_timestamps=True`) is a cheap first signal
-        of words it found hard. Real scoring needs the sounds: a phoneme recognizer
-        (for example wav2vec2 trained on espeak phonemes) run on the clip, compared with
-        the expected phonemes of the transcribed words (`espeak-ng --ipa`, already a
-        dependency), word by word. Kokoro could then say the word the right way.
-      - Measure before promising: synthetic voices are too clean to test it; it needs real
-        recordings with known mistakes, the author's own among them.
-- [ ] Documentation (the author, by voice, 2026-11-19: "make it like well-documented ...
-      for each feature having a GIF and in the end putting a video registration on me
-      watching a YouTube video while I'm using you, which is the real context of why I'm
-      built in this tool"). So: a page per feature, or a section of the README, each with a
-      short GIF of it on screen; and, to close, a real recording of the author watching a
-      video while sessions speak, get answered by voice and ask for permission, as the
-      story of attention latency told in one picture. The overlay's own pictures
-      (`tests/overlay_check.py`) cover single views, not motion; GIFs need a screen
-      recording from Windows, and the video has the author's sound and voice in it.
-      **Last, on the author's word** (2026-11-19: "I would do the doc at the end of
-      everything so you know there's more features to document and it's like the final
-      completion of the product"). Not to be offered as the next thing before then.
