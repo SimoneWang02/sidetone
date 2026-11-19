@@ -1155,6 +1155,17 @@ Smaller ideas:
       of that language. **To try:** speak or write to a session in Italian and listen.
       Open: the hub's own words are still English; languages without a Kokoro voice
       (German, Russian, ...) are read by the English voice; Japanese and Chinese not heard.
+      The author heard Kokoro's Italian (2026-11-19): "non mi piace molto ... non è
+      realistica ... sembra troppo robotica". Compared on one sentence (made on the CPU):
+      Kokoro Sara 1.0 s and Nicola 1.1 s for about 7 s of speech, Piper `it_IT-paola-medium`
+      (from rhasspy/piper-voices, 63 MB) 0.5 s. Their verdict: "Paola di Piper la migliore,
+      però non mi fa impazzire". Next, agreed in principle and waiting on their permission:
+      Chatterbox Multilingual (`chatterbox-tts` 0.1.7, MIT, `ChatterboxMultilingualTTS`,
+      `language_id="it"`), installed in a throwaway venv in a session's scratch folder; it
+      needed `setuptools<81` (its watermarker imports `pkg_resources`). Its run, which
+      downloads the model from Hugging Face, was refused by the permission check; nothing
+      measured yet. The worry is speed on a CPU with no graphics card. Not built: Piper as
+      the engine for Italian lines (the hub already knows Piper as a fallback).
 - [ ] Running the speech model on the graphics card to make transcription faster
 - [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
       2026-11-19: "a feature that let you register my voice and evaluate the correctness
