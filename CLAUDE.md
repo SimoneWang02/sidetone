@@ -45,7 +45,12 @@ solution?" So the icon is a disc that fills the side, with nothing on it but thr
 white bars (no arc; five thin bars were under two pixels wide at taskbar size), and the
 plain mark has the same bars in its disc. On the three: "might not be enough. Maybe
 increase." Five now, even on both sides of the tallest, each 0.088 of the disc wide
-(2.8 px at 32). **The five on the round icon not seen by them yet.**
+(2.8 px at 32). Then: "Do you think having a symmetric one is good?" Answered: even bars
+read as sound at a glance and sit calmly in a circle, but that is the picture nearly
+every voice program has; bars of uneven heights look like a spoken word and are more its
+own. To let them judge by eye both are on screen at once: the taskbar's icon is uneven
+(`Logo.Uneven`), the mark in the window's menu and the README even. **Their choice is
+open; one rhythm is to be used for both once made.**
 
 In the same message: "I still see [claude-speaks] as a name on the top left of each session
 ... you just have to [restart] the hub." A restart would not have done it: a session's name

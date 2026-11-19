@@ -975,7 +975,11 @@ namespace ClaudeSpeaks
     // file for the README (`logo` message) are all the same drawing.
     static class Logo
     {
-        static readonly double[] Bars = { 0.22, 0.42, 0.62, 0.42, 0.22 };  // each bar's height, as a share of the disc's width
+        // Each bar's height, as a share of the disc's width. Two rhythms, until the author has
+        // chosen (asked "do you think having a symmetric one is good?", they were shown both at
+        // once): even on both sides of the tallest in the window's menu, uneven like a spoken
+        // word in the taskbar.
+        static readonly double[] Even = { 0.22, 0.42, 0.62, 0.42, 0.22 }, Uneven = { 0.26, 0.50, 0.36, 0.62, 0.30 };
 
         // In a square of side `s`, from its corner. `tile`: the taskbar's icon, a disc of the
         // mark's color that fills the whole side, with only the voice bars on it, in white and
@@ -1005,9 +1009,10 @@ namespace ClaudeSpeaks
             // Five bars, as broad as five can be and still stand apart at the size of a taskbar
             // icon (three were tried at the author's wish for a clearer wave: "might not be enough").
             double disc = s * (tile ? 1 : 0.6), wide = disc * 0.088, apart = disc * 0.148;
-            for (int i = 0; i < Bars.Length; i++)
+            double[] bars = tile ? Uneven : Even;
+            for (int i = 0; i < bars.Length; i++)
             {
-                double high = Bars[i] * disc, x = c.X + (i - 2) * apart;
+                double high = bars[i] * disc, x = c.X + (i - 2) * apart;
                 dc.DrawRoundedRectangle(Brushes.White, null, new Rect(x - wide / 2, c.Y - high / 2, wide, high), wide / 2, wide / 2);
             }
         }
