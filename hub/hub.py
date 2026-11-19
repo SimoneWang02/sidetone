@@ -88,6 +88,7 @@ class Hub(Permissions, Talk):
         self._clears_by: dict[str, float] = {}  # terminal -> when a request of an editor that can type /clear into it last ended
         self._clear_wanted: tuple[str, float] = ("", base.NEVER)  # a terminal to be cleared while its editor was between two requests
         self._clearing: dict[str, tuple] = {}  # session -> (its voice, timer) while /clear has been asked for and not yet seen done
+        self._clear_after: dict[str, float] = {}  # session -> when "clear the chat" was said while it was busy: cleared once its turn ends
         self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
         self._restore_sessions()
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
@@ -213,6 +214,7 @@ class Hub(Permissions, Talk):
                     # reply stays in the queue and is spoken in full.
                     self.speech.drop_session(sid)
                     self._unstop(sid, "a new prompt was typed")  # that is a new turn: it must run
+                    self._unclear(sid, "a new prompt was typed")  # clearing after it would throw it away
                     # You are at that session: what you say next is for it. Not in the middle
                     # of push-to-talk, where the words already have their session.
                     if self.cfg.focus_on_prompt and self._target() is not s and not (self._talking or self._transcribing or self._pending):
@@ -266,6 +268,7 @@ class Hub(Permissions, Talk):
         self.followups.pop(sid, None)
         self._waiting.discard(sid)
         self._unstop(sid)
+        self._clear_after.pop(sid, None)
         self._drop_aside(self._asides.get(sid))
         self._keep_followups()
         if self.talk_target == sid:
@@ -407,6 +410,8 @@ class Hub(Permissions, Talk):
                 if waiting and s and listener and not listener.wake.is_set() and s.state not in BUSY:
                     listener.wake.set()
                     log(self.cfg, "hub.log", f"follow-up [{sid[:8]}] sent, now that the session has stopped")
+            if self._clear_after:
+                changed = self._clear_when_done() or changed
         if changed:
             self.publish()
 

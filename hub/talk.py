@@ -20,6 +20,7 @@ from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, Editor, Listener, OWN_SE
                   SAFE_ID, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
                   session_model, spoken_answer)
 
+CLEAR_BUSY = "it is still working"  # why a clear cannot be typed yet, and waits
 SHOWN_ECHO = 1.0  # seconds in which the editor's report of a terminal the hub asked to the front is only that
 
 
@@ -191,11 +192,48 @@ class Talk:
         editor types /clear into its terminal (see `Config.clear_by_voice`). Call with the
         lock held."""
         why = self._cannot_clear(s)
-        if why:
-            self._talk("failed", s, f"Not cleared: {why}", seconds=4)
-            self._signal("failed")
-            log(self.cfg, "hub.log", f"clear [{s.id[:8]}] not done, {why}: {text[:80]}")
+        if why == CLEAR_BUSY:  # it is in a turn: cleared as soon as that ends (`_clear_when_done`)
+            self._clear_after[s.id] = time.monotonic()
+            self._talk("queued", s, text, seconds=3.5)
+            self._signal("queued", s, "Clears when it is done.")
+            log(self.cfg, "hub.log", f"clear [{s.id[:8]}] waits for the end of its turn: {text[:80]}")
             return
+        if why:
+            self._not_cleared(s, why, text)
+            return
+        self._type_clear(s, text)
+
+    def _not_cleared(self, s, why: str, text: str) -> None:
+        self._talk("failed", s, f"Not cleared: {why}", seconds=4)
+        self._signal("failed")
+        log(self.cfg, "hub.log", f"clear [{s.id[:8]}] not done, {why}: {text[:80]}")
+
+    def _clear_when_done(self) -> bool:
+        """A clear said during a turn: typed once the session is back at its prompt; given up
+        when no editor can type it any more or the turn runs past `CLEAR_WAIT`. Called by
+        `reconcile` each second with the lock held; true when something changed."""
+        changed = False
+        for sid, since in list(self._clear_after.items()):
+            s = self.sessions.by_id.get(sid)
+            why = self._cannot_clear(s) if s else "the session is gone"
+            if why == CLEAR_BUSY and time.monotonic() - since < base.CLEAR_WAIT:
+                continue
+            del self._clear_after[sid]
+            changed = True
+            if not s:
+                continue
+            if not why:
+                self._type_clear(s, "(said during its turn, which has ended)")
+            else:
+                self._not_cleared(s, "its turn ran too long" if why == CLEAR_BUSY else why, "(said during its turn)")
+        return changed
+
+    def _unclear(self, sid: str, why: str) -> None:
+        """Forget a clear that waited for the end of a turn. Call with the lock held."""
+        if self._clear_after.pop(sid, None) is not None:
+            log(self.cfg, "hub.log", f"clear [{sid[:8]}] that waited for the end of its turn dropped: {why}")
+
+    def _type_clear(self, s, text: str) -> None:
         for editor in self.editors:
             if editor.clears and s.tty in editor.ttys and not editor.wake.is_set():
                 editor.keys.append({"pid": editor.ttys[s.tty], "key": "clear"})
@@ -253,10 +291,10 @@ class Talk:
                              or time.monotonic() - self._clears_by.get(s.tty, base.NEVER) < base.EDITOR_GAP):
             return "no editor to type it"
         if s.state in BUSY or s.id in self._stopping or any(r.session == s.id for r in self.requests):
-            return "it is still working"
+            return CLEAR_BUSY
         info = claude_sessions.read(self.cfg.sessions_dir).get(s.id)
         if info and info.get("status") != "idle":
-            return "it is still working"
+            return CLEAR_BUSY
         return ""
 
     # --- the plan's usage --------------------------------------------------------------------
@@ -337,6 +375,7 @@ class Talk:
         """Words for a session go out: as the answer to the question it is asking, to its
         listener, or into the hub to wait for the end of its reply. Call with the lock held."""
         shown = max(2.5, self.cfg.unsend_seconds)  # what went out, for as long as it can be taken back
+        self._unclear(s.id, "words came after it")  # they are for this conversation; a clear first would lose them
         self._talk("sent", s, text, seconds=shown)
         asking = next((r for r in self.requests if r.session == s.id and r.question), None)
         if asking:  # it is waiting on a question, so these words are the answer to it

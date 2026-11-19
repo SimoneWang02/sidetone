@@ -875,8 +875,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Ctrl-C again to exit", and the `/clear` after it works in both cases. Tested with the
   real extension code, a stand-in editor and a real hub; `sidetone follow-up -s NAME
   "clear the chat"` goes the same way as the voice. **Not tried in the author's VS Code:
-  0.4.0 is installed, and it runs 0.3.0 until "Restart Extension Host".** Not built: an
-  order to a busy session being kept until its turn ends. The code went in under other
+  0.4.0 is installed, and it runs 0.3.0 until "Restart Extension Host".** Said to a
+  busy session (working, needs you, a request open, being stopped, or busy in Claude
+  Code's own file), the order waits since the same night (the author: "queuing a command
+  that asks to clear the chat, which is good"): the clock sign and the waiting notes, and
+  `reconcile` types it within a second of the session being back at its prompt
+  (`Talk._clear_when_done`, `_clear_after`). It is dropped without a sound by a prompt
+  typed meanwhile or words said to that session after it, since clearing would throw
+  those away; given up with "Not cleared: its turn ran too long" after `base.CLEAR_WAIT`
+  (30 min). Not kept across a hub restart. The code went in under other
   sessions' commit messages (`b6c7626`, `a61c7ad`), which took it along.
   The author tried it the same night after restarting the extension host ("it looks like
   it cleared the chat") and asked for a sign that it got through, "either sound effect or

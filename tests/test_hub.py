@@ -1387,7 +1387,8 @@ class PushToTalk(HubCase):
         self.assertEqual(self.spoken()[-1], "Chat cleared.")  # "Clearing." goes with the session if not yet said
 
     def test_clear_the_chat_is_only_typed_for_a_session_at_its_prompt(self):
-        """It is typed with an Enter, which would answer a dialog that is open in the terminal."""
+        """It is typed with an Enter, which would answer a dialog that is open in the terminal:
+        said during a turn, it waits for the session to be back at its prompt."""
         hub = self.make()
         self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
         hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41"}.get(pid)
@@ -1395,20 +1396,48 @@ class PushToTalk(HubCase):
         editor = hub.editor_waits([4001], clears=True)
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
         self.said(hub, "clear the chat", "a")
-        self.assertEqual(self.talks()[-1], ("failed", "a", "Not cleared: it is still working"))
+        self.assertEqual(self.talks()[-1], ("queued", "a", "clear the chat"))
+        hub.reconcile()
         self.assertEqual((editor.wake.is_set(), hub.followups), (False, {}))
         hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Done.")))
         self.assertTrue(hub.speech.wait_idle(5))
         # The hooks have it at its prompt, Claude Code's own file does not (a dialog no hook told of).
         os.makedirs(hub.cfg.sessions_dir, exist_ok=True)
-        with open(os.path.join(hub.cfg.sessions_dir, f"{os.getpid()}.json"), "w") as f:
-            json.dump({"pid": os.getpid(), "sessionId": "a", "status": "busy", "statusUpdatedAt": time.time() * 1000}, f)
-        self.said(hub, "clear the chat", "a")
-        self.assertEqual(self.talks()[-1], ("failed", "a", "Not cleared: it is still working"))
-        with open(os.path.join(hub.cfg.sessions_dir, f"{os.getpid()}.json"), "w") as f:
-            json.dump({"pid": os.getpid(), "sessionId": "a", "status": "idle", "statusUpdatedAt": time.time() * 1000}, f)
-        self.said(hub, "clear the chat", "a")
+        status = os.path.join(hub.cfg.sessions_dir, f"{os.getpid()}.json")
+        def file_says(what):
+            with open(status, "w") as f:
+                json.dump({"pid": os.getpid(), "sessionId": "a", "status": what, "statusUpdatedAt": time.time() * 1000}, f)
+        file_says("busy")
+        hub.reconcile()
+        self.assertFalse(editor.wake.is_set())
+        file_says("idle")
+        hub.reconcile()
         self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])
+        self.assertEqual(hub._clear_after, {})
+        # A prompt typed meanwhile, or words said after it, are for that conversation: no clear.
+        for then in ("typed", "said"):
+            editor = hub.editor_waits([4001], clears=True)
+            hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+            self.said(hub, "clear the chat", "a")
+            if then == "typed":
+                hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="and this too"))
+            else:
+                self.said(hub, "and also the readme", "a")
+            self.assertEqual(hub._clear_after, {}, then)
+            hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Done.")))
+            hub.reconcile()
+            self.assertFalse(editor.wake.is_set(), then)
+            hub.editor_done(editor)
+        # A turn that runs past the wait: given up, and said so.
+        self.addCleanup(setattr, hub_module.base, "CLEAR_WAIT", hub_module.base.CLEAR_WAIT)
+        hub_module.base.CLEAR_WAIT = 0
+        hub.followups.clear()
+        editor = hub.editor_waits([4001], clears=True)
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        self.said(hub, "clear the chat", "a")
+        hub.reconcile()
+        self.assertEqual(self.talks()[-1], ("failed", "a", "Not cleared: its turn ran too long"))
+        self.assertFalse(editor.wake.is_set())
 
     def test_which_words_clear_a_conversation(self):
         words = hub_module.Config(run="r", state="s").clear_words

@@ -21,7 +21,9 @@ real keys yet.
       Open:
       - does the speech model write the order cleanly enough (it has to be the whole of
         what was said); other phrases go in `clear_words`, Italian ones too
-      - an order to a busy session is refused, not kept for the end of its turn
+      - an order to a busy session waits for the end of its turn (built the same night,
+        tests only); words said to it afterwards, or a typed prompt, drop the clear
+        without a sound, which may be surprising
       - one Ctrl+C is typed first, to empty a half-typed line; if you pressed Ctrl+C
         yourself in that terminal a second before, the two together close the session
       - VS Code only
