@@ -1167,7 +1167,14 @@ Smaller ideas:
       then 16.8 s and 11.9 s for about 6 s of speech on 16 threads, so twice as slow as
       speech itself; too slow to speak while a reply streams. That was on the CPU: the
       machine has an RTX 5070 (12 GB) that WSL sees, which was missed; Chatterbox on it,
-      with a CUDA build of torch, is still to be measured. Added to the comparison page
+      with a CUDA build of torch: measured the same evening, 2.6 to 2.7 s for about 6 s of
+      speech once warm (the first run 23 s), against 12 to 17 s on the CPU. The 5070 needs
+      torch 2.7 or newer built for CUDA 12.8; chatterbox-tts 0.1.7 asks for 2.6 and was
+      overridden. Pocket TTS (pocket-tts 4.0.1, Kyutai) has Italian models `italian` and
+      `italian_24l` with a built-in voice, Giovanni; samples made, speed with the model
+      loaded not measured. The trial environments are in `~/.cache/sidetone-voice-trials`
+      (outside the repo; `/tmp` is a 7.8 GB tmpfs and filled up). All on the comparison
+      page for the author to hear. Added to the comparison page
       for them to hear. They did not like it either: "Paola è quella migliore", keep her
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when
