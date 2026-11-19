@@ -195,8 +195,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   to row every 60 ms in list mode: a full redraw takes 4 to 8 ms, but every new history has
   another height, and the panel went there with the spring it opens with (about half a
   second), at about 10 ms a frame for resizing the glass window; it never caught up and what
-  was below its height stayed cut off. Now a panel already fully open reaches a new height
-  without the bounce in about 60 ms (`Glass.settled`); opening keeps the soft spring.
+  was below its height stayed cut off. A quick spring of about 60 ms was "better, but ...
+  I want it to be more responsive", so a panel already fully open now takes a new height at
+  once (`Glass.settled`); opening keeps the soft spring.
 - Sessions in an order of your own (2026-11-19, `overlay.reorder_keys`, `Press`, `LiftStep`,
   `EndLift` in `Overlay.cs`, `Sessions.reorder`). The author, by voice: "if we could move the
   ... sessions", by dragging; Ctrl+Alt was already the key for dragging the bar ("they're kind

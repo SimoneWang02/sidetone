@@ -24,8 +24,9 @@ these come before anything new.
       overlay goes, the panel along with the bar; a click still reaches what is behind.
       Compiled, not tried with the mouse.
 - [ ] The history following the mouse from row to row without lag (2026-11-19, the
-      author: "if I move it real fast, there's a latency"): the open panel now changes
-      height in about 60 ms instead of half a second (measured). Not tried by them.
+      author: "if I move it real fast, there's a latency"): the open panel changed height
+      in about 60 ms instead of half a second: "That's better ... more responsive". Now it
+      takes the new height at once. Not tried by them.
 - [ ] Your own words' sign hidden by another session's line (2026-11-19, the author: "I
       just send an audio to session three and I immediately switch to session one, try
       sending an audio, and I don't see the icon for sending the audio. I don't see the
