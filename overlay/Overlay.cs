@@ -1558,6 +1558,7 @@ namespace ClaudeSpeaks
         // held follows the mouse, the others make room). The one held keeps its size (the
         // author did not like it growing).
         public readonly TranslateTransform Shift = new TranslateTransform();
+        public readonly TranslateTransform TextShift = new TranslateTransform();  // its row, level with it in the bar layout
         readonly Border glow = new Border { CornerRadius = new CornerRadius(6), Background = Ui.Paint("#FFFFFF"), Opacity = 0 };
         readonly Grid row2 = new Grid();
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
@@ -1581,6 +1582,7 @@ namespace ClaudeSpeaks
             Light.Children.Add(Orb);
             Light.Children.Add(Pip);
             Light.RenderTransform = Shift;
+            Text.RenderTransform = TextShift;
             Strip.Margin = right ? new Thickness(8, 0, 0, 0) : new Thickness(0, 0, 8, 0);
             words.Margin = new Thickness(12, 5, 12, 6);
             words.RenderTransform = Slide;
@@ -2202,7 +2204,7 @@ namespace ClaudeSpeaks
 
         // The panel (names, titles, what each session is doing) is out in list mode, under the
         // mouse, while Ctrl+Alt is held, and while there is something to ask or show. Otherwise there are only the lights.
-        bool IsOpen() { return !dragging && (mode == "list" || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
+        bool IsOpen() { return !BarHeld && (mode == "list" || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
 
         // Brings everything in line with what there is to show. What moves is then moved by Frame.
         void Render()
@@ -2216,7 +2218,7 @@ namespace ClaudeSpeaks
             historyLines.Children.Clear();
             // The figures show whenever the details were asked for (not when the panel is only
             // out for a request or to be moved); the history, as before, in list mode at rest.
-            bool asked = !dragging && !moving && (isList || hover || keysOpen || Ui.Now < wheelUntil);
+            bool asked = !BarHeld && !moving && (isList || hover || keysOpen || Ui.Now < wheelUntil);
             // One session's lines go into its card, under its figures. All sessions' lines mixed
             // (history "all"), or lines with no card to go into, stand below it as before.
             bool inCard = showHistory && detailsStyle != "line" && !historyAll;
@@ -2309,7 +2311,7 @@ namespace ClaudeSpeaks
         void UpdateBubble(bool barShown)
         {
             Row found = null;
-            bool talking = talkState.Length > 0, away = !IsOpen() && barShown && !dragging;
+            bool talking = talkState.Length > 0, away = !IsOpen() && barShown && !BarHeld;
             // Words that waited and are now handed over show as a sign on their session's light.
             // They do not take the bubble from a line that is being said: it jumped to the other
             // session and back in the middle of a sentence.
@@ -2991,12 +2993,21 @@ namespace ClaudeSpeaks
             grabX = (int)Math.Round(held.X);
             grabY = (int)Math.Round(held.Y);
             dragging = true;
-            hover = peek = false;
             Edge();
+        }
+
+        // The bar itself goes with the mouse: the panel and the bubble fold away while it travels.
+        // Not while a light is being put elsewhere: with the details kept out, the panel folding
+        // and coming back at every drop made the whole overlay look as if it had moved.
+        void FoldForDrag()
+        {
+            hover = peek = false;
             Render();
             panel.Step(0, true);
             bubble.Step(0, true);
         }
+
+        bool BarHeld { get { return dragging && !undecided && lifted == null; } }
 
         void DragStep()
         {
@@ -3109,6 +3120,7 @@ namespace ClaudeSpeaks
                 lifted = row;
                 liftGrab = pressAlong;
                 Panel.SetZIndex(row.Light, 1);
+                Panel.SetZIndex(row.Text, 1);
                 hot = null;  // nor does it keep the size a light has under the mouse
                 return;
             }
@@ -3116,6 +3128,7 @@ namespace ClaudeSpeaks
             double dx = cursor.X - (bar[0] + grabX), dy = cursor.Y - (bar[1] + grabY);
             if (dx * dx + dy * dy < 36) return;  // 6 px
             undecided = false;
+            FoldForDrag();
             Send("note", "message", "bar moved by the mouse: ctrl " + (Down(VK_CONTROL) ? "down" : "up") + ", alt "
                  + (Down(VK_MENU) ? "down" : "up") + ", " + order.Count + " sessions");
         }
@@ -3142,7 +3155,7 @@ namespace ClaudeSpeaks
             int from = order.IndexOf(lifted);
             if (from < 0)  // that session ended meanwhile
             {
-                foreach (Row r in order) { r.Shift.X = r.Shift.Y = 0; }
+                foreach (Row r in order) { r.Shift.X = r.Shift.Y = r.TextShift.Y = 0; }
                 lifted = null;
                 dragging = false;
                 Render();
@@ -3163,7 +3176,7 @@ namespace ClaudeSpeaks
                             : i < from && i >= target ? Room(lifted) : 0;
                 double now = Island ? row.Shift.X : row.Shift.Y;
                 double next = row == lifted ? goal : now + (goal - now) * ease;
-                if (Island) row.Shift.X = next; else row.Shift.Y = next;
+                if (Island) row.Shift.X = next; else row.Shift.Y = row.TextShift.Y = next;
             }
         }
 
@@ -3175,8 +3188,9 @@ namespace ClaudeSpeaks
             double moved = Island ? row.Shift.X : row.Shift.Y;
             int from = order.IndexOf(row), target = from < 0 ? -1 : LiftTarget(moved);  // needs `lifted`
             lifted = null;
-            foreach (Row r in order) { r.Shift.X = r.Shift.Y = 0; }
+            foreach (Row r in order) { r.Shift.X = r.Shift.Y = r.TextShift.Y = 0; }
             Panel.SetZIndex(row.Light, 0);
+            Panel.SetZIndex(row.Text, 0);
             if (from >= 0 && target != from)
             {
                 order.RemoveAt(from);

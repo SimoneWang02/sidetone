@@ -356,7 +356,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   now (`undecided`): the first frames after it look for the keys, and the bar only goes
   with the mouse once it has moved 6 px with none of them held or seen in the last
   0.4 s. A press that moves the bar still writes the keys to `hub.log` ("bar moved by
-  the mouse: ..."). **Not tried yet.**
+  the mouse: ...").
+  "It's still happening", and the log had no such line: the bar had not moved. What moved
+  was most likely the panel: their details are kept out (`mode: list`), and every drag,
+  of a light too, folded the panel away and brought it back. Now only a drag of the bar
+  folds it (`FoldForDrag`, `BarHeld`); while a light is held the panel stays, and in the
+  bar layout its row slides with it (`Row.TextShift`). **Not tried yet.**
 - What brings the details out (`overlay.hover`, 2026-11-17): `always` (default) = the mouse
   resting on the bar, as ever; `keys` = only holding Ctrl+Alt or the list key, and then a
   mouse passing over the bar changes nothing at all (no light growing under it either).
