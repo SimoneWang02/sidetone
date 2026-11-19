@@ -88,6 +88,11 @@ class Talk:
                 if ids:
                     self.talk_target = ids[(ids.index(self._target().id) + 1) % len(ids)]
                     self._talk("focus", self.sessions.by_id[self.talk_target], seconds=1.6)
+                else:
+                    # Nothing follows a tap, so nothing else would take "Release to send" away:
+                    # it stayed on the light as if the key were still held.
+                    self._talk(None)
+            log(self.cfg, "hub.log", f"talk: a press of {held:.2f}s, too short to be a recording")
         else:
             threading.Thread(target=self._transcribe, args=(pcm, said_to.id if said_to else None, heard),
                              daemon=True).start()

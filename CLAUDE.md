@@ -508,6 +508,21 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   it is Ctrl+Alt+Left/Right instead (`focus_left`, `focus_right`; the author: "more intuitive
   if you use the horizontal arrow keys"). Only the pair of the layout in use is claimed, so
   VS Code keeps the other (it moves an editor between groups with Left and Right).
+- A short press left the listening sign up (2026-11-18; the author, typed: "it got stuck in
+  recording wtf"). Since the tap does nothing, nothing followed a press shorter than
+  `base.TAP` (0.35 s) that would take "Release to send" off the light: the hub had stopped
+  recording, the sign stayed until the next hold. `talk_end` now takes it away
+  (`_talk(None)`) and `hub.log` says "talk: a press of 0.17s, too short to be a recording";
+  a tap left no line before, which is why the log could not say what had happened. Tried
+  through the live hub with `talk start` and `talk stop`. **Not confirmed that this is what
+  the author saw**: a short press is the only way found to that picture, and by the time it
+  was looked at the hub was not recording and no recorder was running. Read on the way,
+  not mended: a hold whose press the keyboard hook took (`taken`) ends only by the release
+  reaching that hook, or by the repeats stopping, and that second way is off before the
+  first repeat and after another key was pressed; and the cancel key ends the hub's
+  recording without telling the overlay's `holding`. If Windows ever drops the hook in the
+  middle of a hold, the overlay would go on thinking the key is down and ignore the talk
+  key until it is restarted.
 - Focus (asked for by the author on 2026-11-17: "combine ctrl+alt and the mouse wheel to decide
   which session to focus on. also whichever spoke last gets focused"): the focus is the hub's
   `talk_target`, the session a spoken follow-up goes to. It moves to whoever speaks, and
@@ -753,7 +768,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | show [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 278 tests in all with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 279 tests in all with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),

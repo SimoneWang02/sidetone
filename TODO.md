@@ -259,6 +259,13 @@ real keys yet.
       inputs?"). Tests only. To try: close every session, wait for the hub to go
       (`claude-speaks hub stop` does it at once), open one session and speak to it
       without typing.
+- [ ] "Release to send" staying on the light (the author, 2026-11-18: "it got stuck in
+      recording wtf"). Found and mended the same hour: a press of the talk key shorter
+      than a third of a second left the sign up until the next hold, though nothing was
+      being recorded. **Not known whether that is what they saw**; the log had no line for
+      it (it has one for a short press now). To ask: was it a quick press, did the wave
+      still move, and how did it end. If it was a real hold that would not end, the
+      place to look is the overlay's keyboard hook losing the release (see `CLAUDE.md`).
 - [x] Sessions started from the VS Code extension showing up in the bar. The author,
       2026-11-17, opened Claude Code in a new editor tab: "it seems to be added below",
       and the hub listed it as a third session, idle, with a voice of its own. Not tried:

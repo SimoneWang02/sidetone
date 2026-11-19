@@ -1421,6 +1421,16 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.talk_target, "a")
         self.assertFalse(wait_for(lambda: hub.followups, 0.2))
 
+    def test_a_quick_tap_does_not_leave_the_listening_sign_up(self):
+        hub = self.make()
+        base.TAP = 30
+        hub.talk_target = "a"
+        hub.talk_start()
+        self.assertEqual(self.talks()[-1][0], "listening")
+        hub.talk_end()
+        self.assertIsNone(self.talks()[-1][0])  # taken away: it stayed as if the key were still held
+        self.assertIsNone(hub._talk_shown)  # and a move of the focus does not bring it back
+
     def test_the_arrow_keys_move_the_focus_and_are_only_claimed_with_several_sessions(self):
         hub = self.make()  # two sessions, a and b
         hub.publish()
