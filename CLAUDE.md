@@ -656,7 +656,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   same day (the author: "it doesn't feel centered"): its three corners are equally far from
   the middle and it is the same on both sides of its line of flight (`Badge.Aim`).
 - Hotkeys (rebind or blank them under `overlay.hotkeys`; `jump` has no key by default, see further down): always claimed are `toggle` Ctrl+Alt+L,
-  `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R, `missed` Ctrl+Alt+U, `settings` Ctrl+Alt+S and `mute` Ctrl+Alt+Q
+  `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R, `missed` Ctrl+Alt+U, `settings` Ctrl+Alt+S and `mute` Ctrl+Alt+M
   (2026-11-19, `Permissions.toggle_mute`: the voice-off file for every session, cuts the line being
   said, the sounds `voice_off`/`voice_on` and a banner "Voice off" or "Voice on"). The author asked
   for "M for mute", but on their machine the NVIDIA overlay (`NVIDIA Overlay.exe`) holds
@@ -677,7 +677,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   shared. Not for the talk key, whose hold is taken from other programs. Each time the keys
   are registered again (a request opens, a setting changes) the real hotkey is tried first.
   Tried from WSL with a pressed Ctrl+Alt+M (`keybd_event`) while the NVIDIA overlay held it:
-  muted and unmuted. The author's own config has `mute` on Ctrl+Alt+M; the default stays Q. Claimed only while they can act: `allow` Ctrl+Alt+Y,
+  muted and unmuted. Then M became the default for everyone, on the author's word: "can you
+  not make it Ctrl+Alt+M by default for everyone? And if there's conflict just do both." So
+  with the NVIDIA overlay, the key also switches its microphone. Claimed only while they can act: `allow` Ctrl+Alt+Y,
   `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace, and
   with two or more sessions `focus_prev` Ctrl+Alt+Up and `focus_next` Ctrl+Alt+Down.
 - The arrow keys move the focus (2026-11-17). Before, besides the wheel, a quick tap of the

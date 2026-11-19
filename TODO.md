@@ -9,7 +9,7 @@ started. `CLAUDE.md` has the details of how things work.
 These work in the automated tests or in pictures taken from WSL, but nobody has pressed the
 real keys yet.
 
-- [ ] The mute key, `Ctrl+Alt+Q` (asked for and built 2026-11-19: "I would rather have ... a
+- [ ] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
       mute shortcut"). Press it while a session speaks: the line stops, two low notes go
       down, and the overlay shows "Voice off" with a struck-out speaker for 2.5 s. While
       muted, what sessions say is shown instead. Press again: two low notes go up, "Voice
@@ -23,7 +23,9 @@ real keys yet.
       overriding them"), even where they themselves do not use that program. Q stays.
       For themselves they wanted M anyway, acting in both programs ("it execute both"):
       built at once as `share_taken_keys` (on), a key another program holds is heard through
-      the keyboard hook and passed on. Their config has mute on M. **Not pressed by them yet.**
+      the keyboard hook and passed on. Minutes later M became the default for everyone ("if
+      there's conflict just do both"), which sets their rule above aside for this key: with
+      the NVIDIA overlay, M also switches its microphone. **Not pressed by them yet.**
       Open: mute is for every session, not only the one in focus; and once the notice
       is gone nothing on screen says the voice is off.
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,

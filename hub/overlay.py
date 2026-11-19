@@ -127,9 +127,10 @@ DEFAULTS = {
                 # Open and close the settings window.
                 "settings": "Ctrl+Alt+S",
                 # The voice off for every session, or on again (the author, 2026-11-19: "I would
-                # rather have ... a mute shortcut"; they asked for "M for mute"). Q for quiet: the NVIDIA
-                # overlay holds Ctrl+Alt+M on their machine, and comes back by itself when closed.
-                "mute": "Ctrl+Alt+Q",
+                # rather have ... a mute shortcut"; "M for mute"). The NVIDIA overlay has Ctrl+Alt+M for
+                # its microphone by default; where it does, both act on the key (share_taken_keys), which
+                # the author chose over another letter: "if there's conflict just do both".
+                "mute": "Ctrl+Alt+M",
                 # Move the focus to the session before or after; claimed only while there are two or more.
                 # The first pair is for the bar, where the lights run down; the second for the island,
                 # where they run across. Only the pair of the layout in use is claimed.
