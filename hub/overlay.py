@@ -49,6 +49,11 @@ DEFAULTS = {
     # While you talk, hide the talk hotkey's Ctrl and Alt from other programs, so that a click
     # is a plain click and not a Ctrl+Alt+click (which a video player, for one, ignores).
     "talk_frees_keys": True,
+    # A key another program has already reserved (Windows gives each to one program only): true =
+    # the overlay listens for it through a keyboard hook and passes it on, so both programs act on
+    # it (the author, 2026-11-19, with the NVIDIA overlay holding Ctrl+Alt+M: "it execute both");
+    # false = that key does nothing for us, as before. Not for the talk key, whose hold is ours alone.
+    "share_taken_keys": True,
     # What brings the details out: always = the mouse resting on the bar, or holding Ctrl+Alt |
     # keys = only holding Ctrl+Alt (or the key that keeps them out), so a mouse passing over
     # the bar, in a game for one, changes nothing

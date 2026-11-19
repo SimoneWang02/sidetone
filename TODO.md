@@ -21,6 +21,9 @@ real keys yet.
       default microphone key: the tool is meant to reach as many people as possible, so a
       default must not clash with a popular program's own keys ("there's no point in
       overriding them"), even where they themselves do not use that program. Q stays.
+      For themselves they wanted M anyway, acting in both programs ("it execute both"):
+      built at once as `share_taken_keys` (on), a key another program holds is heard through
+      the keyboard hook and passed on. Their config has mute on M. **Not pressed by them yet.**
       Open: mute is for every session, not only the one in focus; and once the notice
       is gone nothing on screen says the voice is off.
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,

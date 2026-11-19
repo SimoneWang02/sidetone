@@ -110,6 +110,8 @@ SECTIONS = [
         switch("terminal.title", "Name in the terminal's title", "Write the session's name and title as the terminal's title."),
     ]),
     ("Keys", [
+        switch("overlay.share_taken_keys", "Share keys other programs have",
+               "When another program already has one of these keys, it still works here too, and both act on it."),
         hotkey("talk", "Talk", "Hold it and speak."),
         hotkey("cancel", "Cancel or stop", "Drop a recording, take words back, cut a line, or stop a turn."),
         hotkey("toggle", "Keep the details out"),

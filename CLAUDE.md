@@ -667,7 +667,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   it. The same place has `PMOCOverlayVisibilityHKey` = Ctrl+Alt+R (its performance overlay),
   which is our repeat key; the hub has always got R first, which could flip if NVIDIA's overlay
   starts before it. That is also why `missed` is U and not M. The overlay reports a taken key only
-  once per run (`complained`), so a second try at it fails without a line in `hub.log`. Claimed only while they can act: `allow` Ctrl+Alt+Y,
+  once per run (`complained`), so a second try at it fails without a line in `hub.log`.
+  Keys shared with another program (2026-11-19, `overlay.share_taken_keys`, true; `shared`,
+  `sharedDown` in `Overlay.cs`). The author did not want NVIDIA's key freed, and asked that
+  Ctrl+Alt+M "execute both". Windows gives a hotkey to one program only, but a low-level
+  keyboard hook sees every key before hotkeys are matched. So a key that `RegisterHotKey`
+  refuses is watched by the hook instead, acted on once per press (not on repeats), and passed
+  on, so the other program still gets it. The hook is then in for as long as any key is
+  shared. Not for the talk key, whose hold is taken from other programs. Each time the keys
+  are registered again (a request opens, a setting changes) the real hotkey is tried first.
+  Tried from WSL with a pressed Ctrl+Alt+M (`keybd_event`) while the NVIDIA overlay held it:
+  muted and unmuted. The author's own config has `mute` on Ctrl+Alt+M; the default stays Q. Claimed only while they can act: `allow` Ctrl+Alt+Y,
   `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace, and
   with two or more sessions `focus_prev` Ctrl+Alt+Up and `focus_next` Ctrl+Alt+Down.
 - The arrow keys move the focus (2026-11-17). Before, besides the wheel, a quick tap of the

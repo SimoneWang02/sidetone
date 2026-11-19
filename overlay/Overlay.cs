@@ -1699,7 +1699,7 @@ namespace ClaudeSpeaks
         const uint MOD_ALT = 1, MOD_CONTROL = 2, MOD_SHIFT = 4, MOD_WIN = 8, MOD_NOREPEAT = 0x4000;
         const uint MOUSEEVENTF_LEFTDOWN = 2, MOUSEEVENTF_LEFTUP = 4;
         const int VK_LBUTTON = 1, VK_RBUTTON = 2, SM_SWAPBUTTON = 23;
-        const int WH_KEYBOARD_LL = 13, WM_KEYDOWN = 0x0100, WM_SYSKEYDOWN = 0x0104;
+        const int WH_KEYBOARD_LL = 13, WM_KEYDOWN = 0x0100, WM_SYSKEYDOWN = 0x0104, WM_KEYUP = 0x0101, WM_SYSKEYUP = 0x0105;
         const int WH_MOUSE_LL = 14, WM_MOUSEWHEEL = 0x020A, VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B, VK_RWIN = 0x5C, VK_RMENU = 0xA5;
         const int VK_LSHIFT = 0xA0, VK_RSHIFT = 0xA1, VK_LCONTROL = 0xA2, VK_RCONTROL = 0xA3, VK_LMENU = 0xA4;
         const double PanelWidth = 340, BubbleWidth = 340, Gap = 6, Wide = PanelWidth - 32;
@@ -1799,6 +1799,11 @@ namespace ClaudeSpeaks
         double lastRepeat;
         // While you talk, the Ctrl and Alt of the talk hotkey are hidden from other programs (see MaskKeys).
         bool freeKeys = true;  // overlay.talk_frees_keys
+        bool shareTaken = true;  // overlay.share_taken_keys
+        // Hotkeys another program had reserved first: name -> key and MOD_ flags. The keyboard hook
+        // watches for them and lets them through, so the other program acts on them as well.
+        readonly Dictionary<string, uint[]> shared = new Dictionary<string, uint[]>();
+        readonly HashSet<uint> sharedDown = new HashSet<uint>();  // so a held key acts once, not on every repeat
         readonly HashSet<int> masked = new HashSet<int>();  // those keys: still held as far as we know, though Windows was told they are up
         double maskedUntil;  // once talking is over, how long we go on believing that without a sign of it
         const double MaskGrace = 3;
@@ -2038,6 +2043,7 @@ namespace ClaudeSpeaks
                     historyTicks = (int)Math.Max(1, Math.Round(Num(msg, "history_after", historyTicks * 0.03) / 0.03));
                     if (msg.ContainsKey("hover")) hoverOpens = Str(msg, "hover") != "keys";
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
+                    if (msg.ContainsKey("share_taken_keys")) shareTaken = Convert.ToBoolean(msg["share_taken_keys"]);
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
                     if (msg.ContainsKey("hotkeys"))
@@ -2804,7 +2810,9 @@ namespace ClaudeSpeaks
                 && Ui.Now < talkUntil && Ui.Now < maskedUntil + 12;
             if (!holding && masked.Count > 0 && Ui.Now > maskedUntil && !unsent) masked.Clear();
             bool ahead = talkKey != 0 && (keepTalk == "always" || (keepTalk == "held" && talkMods != 0 && Mods(talkMods, false)));
-            KeepKey(keepTalk != "off" && (holding || ahead || masked.Count > 0));
+            // Shared keys keep the hook in for as long as there are any: a press that came before
+            // the hook would go to the other program alone.
+            KeepKey((keepTalk != "off" && (holding || ahead || masked.Count > 0)) || shared.Count > 0);
             // Should the release ever get past us, the repeats stopping says the key is up.
             if (holding && taken && repeated && Ui.Now - lastRepeat > 1.0) EndHold();
         }
@@ -2923,6 +2931,20 @@ namespace ClaudeSpeaks
                 if (!taken) return CallNextHookEx(keyHook, code, wParam, lParam);  // Windows saw this press, so it gets the release
                 rail.Dispatcher.BeginInvoke(new Action(EndHold));
                 return new IntPtr(1);
+            }
+            if (shared.Count > 0)  // a key another program reserved first: act on it, and pass it on to that program
+            {
+                bool up = message == WM_KEYUP || message == WM_SYSKEYUP;
+                if (up) sharedDown.Remove(key);
+                else if (down && !sharedDown.Contains(key))
+                    foreach (KeyValuePair<string, uint[]> claim in shared)
+                        if (claim.Value[0] == key && Mods(claim.Value[1], true))
+                        {
+                            string name = claim.Key;
+                            sharedDown.Add(key);
+                            rail.Dispatcher.BeginInvoke(new Action(delegate { Hotkey(name); }));
+                            break;
+                        }
             }
             if (!holding && down && talkKey != 0 && key == talkKey && keepTalk != "off" && Mods(talkMods, true))
             {
@@ -3640,6 +3662,7 @@ namespace ClaudeSpeaks
             hotkeys.Clear();
             hotkeyKeys.Clear();
             claims.Clear();
+            shared.Clear();
             talkKey = talkMods = 0;
             if (typingKey) return;  // the keys pressed now are a new hotkey being chosen, not ours to act on
             int next = 1;
@@ -3678,6 +3701,11 @@ namespace ClaudeSpeaks
                     hotkeys[next] = entry.Key; hotkeyKeys[next] = vk; next++;
                     claims[entry.Key] = new uint[] { vk, modifiers & ~MOD_NOREPEAT };
                     if (entry.Key == "talk") { talkKey = vk; talkMods = modifiers & ~MOD_NOREPEAT; }
+                }
+                else if (shareTaken && entry.Key != "talk")
+                {
+                    shared[entry.Key] = new uint[] { vk, modifiers & ~MOD_NOREPEAT };
+                    if (complained.Add(combo)) Error("hotkey " + combo + " is already taken by another program; listening for it as well, so both act on it");
                 }
                 else if (complained.Add(combo)) Error("hotkey " + combo + " is already taken by another program");
             }
