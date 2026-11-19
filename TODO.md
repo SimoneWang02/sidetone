@@ -1209,7 +1209,8 @@ Smaller ideas:
       the engine (`zh:` voices) and installed on the author's machine on their typed "si"
       (model files, `misaki-fork[zh]` in the hub's environment, `zh` among the listening
       languages); first line 0.4 s with the model loaded at start. Open: `install.sh` does
-      none of this yet, nor fetches Paola for Italian; nobody has spoken Chinese to it. Added to the comparison page
+      none of this yet, nor fetches Paola for Italian. Tried by the author the same evening:
+      spoke Chinese, transcribed right, answered in Chinese aloud: "不错，听得到". Added to the comparison page
       for them to hear. They did not like it either: "Paola è quella migliore", keep her
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when
