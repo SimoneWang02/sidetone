@@ -68,7 +68,13 @@ they like. They left it to the session ("[what] should we choose out of all of t
 so that one is the logo now, one drawing for the taskbar, the window's menu and the README
 (`assets/logo.png`, `assets/icon.png`): a disc in their blue with five white bars riding a
 wave. The arc and the even and uneven bars are gone from `Logo`. **Chosen by the session
-on their asking; they have not said yet that they like it.**
+on their asking.** Their answer on seeing it: it "seems like stocks going up and down.
+That's the issue". Right: bars pushed up and down are how prices are drawn, and bars on
+one middle line are how sound is. A third page, all on the disc and on the middle line or
+a line of their own: F1 uneven bars, F2 the same leaning forward, F3 one wave (an S lying
+down), F4 a wave that swells and fades, F5 bars that end in a round light, F6 seven
+bars. Recommended: F5, the voice and the lights of the tool in one mark; F3 second.
+**Their choice is open; the riding bars are still what is drawn.**
 While it was on screen the picture check could not take the settings window: the live
 window stood at the same place in the middle of the screen, and the check refuses when two
 windows have one rectangle. Close the live one first (`sidetone settings close`).
