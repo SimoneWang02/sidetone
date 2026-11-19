@@ -220,7 +220,7 @@ case ${1:-} in
         dir=$(mktemp -d) || exit 1
         python3 "$CS_ROOT/vscode/pack.py" "$dir/claude-speaks.vsix" >/dev/null && code --install-extension "$dir/claude-speaks.vsix" --force
         status=$?; rm -rf "$dir"
-        [ $status -eq 0 ] && echo "Go to another terminal in VS Code: the session running there gets the focus. The cancel key now stops a session at once, and Ctrl+Alt+T goes to the terminal of the session in focus. If this was an update, restart VS Code's extensions once (Ctrl+Shift+P, Restart Extension Host)." || exit $status ;;
+        [ $status -eq 0 ] && echo "Go to another terminal in VS Code: the session running there gets the focus. The cancel key now stops a session at once. If this was an update, restart VS Code's extensions once (Ctrl+Shift+P, Restart Extension Host)." || exit $status ;;
       uninstall) code --uninstall-extension claude-speaks.claude-speaks ;;
       *) usage; exit 2 ;;
     esac

@@ -966,6 +966,19 @@ Smaller ideas:
       works" was about something else (most likely the usage bars on a line each,
       shown a minute before) and what the key is for had not come across. Explained
       again; **still not pressed**.
+      Their decision the same evening: "I think we can just delete this one ... I
+      don't think I'll use it." Their terminals are side by side, and the tint
+      already shows which one to look at. The key is gone from the defaults (`jump`
+      is blank; `claude-speaks terminal show` and the extension's part stay, for the
+      idea below).
+- [ ] The terminal comes up by itself when the focus moves (the author's idea,
+      2026-11-18, kept on the list on their word, with "I don't think I'm gonna do
+      it" soon): for people whose terminals are tabs, one visible at a time, moving
+      the focus in the overlay (arrows, wheel) would show that session's terminal in
+      VS Code, with no key. A setting, off by default. To build on: the hub can
+      already ask the extension to show a terminal. To work out: it must not take the
+      keyboard from where you are typing (the extension's `show` can be told to leave
+      it), and it should do nothing when the focus moved because a session spoke.
       Open: it works inside VS Code's window only, so with a browser or a game in front
       nothing is seen (the overlay could bring the window forward; not built); whether
       `Ctrl+Alt+T` is free on their machine shows in `hub.log` once the key is claimed.

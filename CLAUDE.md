@@ -492,7 +492,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   session to show it on, the sign is still in the bubble. The paper plane was redrawn the
   same day (the author: "it doesn't feel centered"): its three corners are equally far from
   the middle and it is the same on both sides of its line of flight (`Badge.Aim`).
-- Hotkeys (rebind or blank them under `overlay.hotkeys`; `jump` Ctrl+Alt+T is described further down): always claimed are `toggle` Ctrl+Alt+L,
+- Hotkeys (rebind or blank them under `overlay.hotkeys`; `jump` has no key by default, see further down): always claimed are `toggle` Ctrl+Alt+L,
   `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R and `missed` Ctrl+Alt+U (Ctrl+Alt+M is taken by
   another program on the author's machine). Claimed only while they can act: `allow` Ctrl+Alt+Y,
   `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace, and
@@ -669,6 +669,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Installed on the author's machine; **nobody has switched terminals with it yet**. Limit:
   VS Code reports a change of the active terminal, not keyboard focus, so clicking back
   into the terminal you were last in reports nothing.
+- The jump key has no key any more (2026-11-18, evening). Asked to try it, the author did
+  not see its purpose and, told it was the session's own idea, said: "I think we can just
+  delete this one ... I don't think I'll use it", because their terminals are "side by
+  side", and "the highlights already give me ... the point to look at". `jump` is `""` in
+  the default hotkeys, so no key is claimed; what is behind it (`terminal show`, the
+  extension's `show`) is left in, since their own idea needs it, which they wanted kept on
+  the list without meaning to do it soon: with terminals as tabs, one shown at a time,
+  moving the focus in the overlay could bring that session's terminal up by itself
+  (`TODO.md`). What follows is how it was built.
 - Session → terminal, the jump key (2026-11-18, `Talk.show_terminal`, `_showable`, hotkey
   `jump` = `Ctrl+Alt+T`, `claude-speaks terminal show [PROJECT]`, `vscode/extension.js`
   0.3.0; built while the author was away, **key and letter not agreed with them, not
