@@ -271,6 +271,7 @@ class OverlayFeed(HubCase):
 
     def test_the_history_says_how_a_line_ended_and_whether_it_was_missed(self):
         hub = self.make()
+        hub.cfg.history_missed = True
         hub.on_event(ev("UserPromptSubmit"))
         hub.on_event(ev("Stop", last_assistant_message=tag("All done.")))
         self.spoken()
@@ -283,6 +284,11 @@ class OverlayFeed(HubCase):
         hub.publish()
         self.assertEqual((line()["text"], line()["kind"], line()["missed"]), ("Half way.", "progress", True))
         hub.history[-1]["shown"] = True  # the voice was off and it was shown instead
+        hub.on_event(ev("UserPromptSubmit"))
+        self.assertFalse(line()["missed"])
+        # Off by default: no dot, even on a line that was not heard.
+        hub.history[-1]["shown"] = False
+        hub.cfg.history_missed = False
         hub.on_event(ev("UserPromptSubmit"))
         self.assertFalse(line()["missed"])
 

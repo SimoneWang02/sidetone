@@ -1336,7 +1336,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   marks a line never heard to its end: the hub sends `missed` for an entry that is not
   `heard`, was not shown with the voice off (`shown`), and is neither being said nor
   waiting to be (`SpeechQueue.waiting`), so one that was cut, too old, or replaced by a
-  newer one. Lines also carry `kind`. With `history: all` (every session's lines mixed),
+  newer one. Lines also carry `kind`. That dot is off since 2026-11-19 (the author: "I
+  don't like the tick with the white ball on top right ... don't use the white ball");
+  `history_missed: true` brings it back. A `/clear` also takes that session's lines out of
+  the history now, since the next chat in that terminal has the same name. With `history: all` (every session's lines mixed),
   or with `details_style: line`, the lines stay below the card and keep their names.
   It still only shows with the details kept out and the mouse at rest on them. The author
   on seeing it: "it's not bad having two columns", and asked what could be better. The

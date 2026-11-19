@@ -266,6 +266,10 @@ class Config:
     # cool") and doubted the time ("I don't know how useful it is"); the lines are in order,
     # newest first, which says most of it.
     history_time: bool = False
+    # A white dot on the mark of a history line that was never heard to its end (cut off,
+    # too old, replaced). Off since the author, 2026-11-19: "I don't like the tick with the
+    # white ball on top right ... don't use the white ball."
+    history_missed: bool = False
     # Where a session's figures go (the author, 2026-11-18, with tasks, time, context, tokens
     # and waiting messages all wanting the right end of a row: "revamp a bit the design ...
     # to have space for them", and chose a line of their own under the rows). `row_metrics`:
@@ -362,7 +366,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "separator", "waiting_words", "row_metrics", "detail_metrics",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):

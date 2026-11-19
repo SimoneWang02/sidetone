@@ -648,7 +648,7 @@ class Hub(Permissions, Talk):
                                     # mark in front of the line; and whether it was never heard to its end:
                                     # cut off, too old when its turn came, or replaced by a newer one.
                                     "kind": e.get("kind", ""),
-                                    "missed": not (e.get("heard") or e.get("shown") or id(e) in to_say)})
+                                    "missed": self.cfg.history_missed and not (e.get("heard") or e.get("shown") or id(e) in to_say)})
             new_keys, self._keys = keys != self._keys, keys
             bars = self._plan_bars()
             new_rows, self._shown = (rows, history, bars) != self._shown, (rows, history, bars)

@@ -92,6 +92,7 @@ SECTIONS = [
                ("new", "New"), ("output", "Written"), ("all", "All"), ("off", "Off")),
         switch("turn_tokens_history", "Tokens in the history", "Each line of the history ends in what its turn used."),
         switch("history_time", "Time in the history", "How long ago each line was said."),
+        switch("history_missed", "Mark lines not heard", "A white dot on lines that were cut off or never said."),
         choice("overlay.details_style", "Figures drawn as", "Tiles with bars, or one line of text.",
                ("tiles", "Tiles"), ("line", "A line")),
         switch("usage_shown", "Plan usage", "The five-hour window and the week, at the foot of the figures."),
