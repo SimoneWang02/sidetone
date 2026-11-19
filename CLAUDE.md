@@ -104,7 +104,13 @@ voice bars, S2 a burst of uneven rays, S3 five bars turned into a knot, S4 bars 
 slanted ends in five blues and no disc, S5 a leaning S that is a wave, and S6, the round
 one they like with its bars cut on the slant. Said to them plainly: S2, S3 and S4 came
 out too near the marks they were taken from (Claude's spark, OpenAI's blossom, ByteDance's
-bars) to be used; S1 reads as a smile; S6 and S5 are the two that are ours. **Open.**
+bars) to be used; S1 reads as a smile; S6 and S5 are the two that are ours. Their answer:
+"S6 is good. What's the original logo?" So S6 is the logo, in the taskbar, the window and
+the README: the disc with five uneven white bars, each cut on the slant at both ends
+(`Logo.Draw`). The slant is the idea taken from ByteDance's mark, which is a few bars
+with slanted ends in blues and teal and no disc; ours has five white bars inside a blue
+disc, and they were told so. **In place; they have said it is good on the page, not yet
+on the taskbar.**
 While it was on screen the picture check could not take the settings window: the live
 window stood at the same place in the middle of the screen, and the check refuses when two
 windows have one rectangle. Close the live one first (`sidetone settings close`).

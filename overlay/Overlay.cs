@@ -969,7 +969,7 @@ namespace ClaudeSpeaks
     }
 
     // The tool's mark: a disc in the author's blue (#006896) with five white voice bars of
-    // uneven heights on its middle line. Drawn here and nowhere kept as a picture, so the
+    // uneven heights on its middle line, their ends cut on the slant. Drawn here and nowhere kept as a picture, so the
     // window, its place in the taskbar and the files for the README (`logo` message) are all
     // the same drawing. It is the one the author likes best of some thirty that were drawn
     // ("I would probably prefer E ... but it's not very creative, it's pretty anonymous"),
@@ -987,12 +987,22 @@ namespace ClaudeSpeaks
             var ink = new LinearGradientBrush(Color.FromRgb(0x2E, 0x9C, 0xC9), Color.FromRgb(0x00, 0x68, 0x96), new Point(0.15, 0), new Point(0.85, 1));
             ink.Freeze();
             dc.DrawEllipse(ink, null, new Point(s / 2, s / 2), s / 2, s / 2);
-            double wide = s * 0.088, apart = s * 0.148;
-            for (int i = 0; i < Bars.Length; i++)
-            {
-                double high = Bars[i] * s, x = s / 2 + (i - 2) * apart;
-                dc.DrawRoundedRectangle(Brushes.White, null, new Rect(x - wide / 2, s / 2 - high / 2, wide, high), wide / 2, wide / 2);
-            }
+            // Each bar is cut on the slant at both ends, higher at its right: what makes the mark
+            // less anonymous than plain round-ended bars (the author, of this one among six
+            // drawn after the ideas behind well-known logos: "S6 is good").
+            double wide = s * 0.094, apart = s * 0.148, cut = s * 0.04;
+            var all = new StreamGeometry();
+            using (StreamGeometryContext g = all.Open())
+                for (int i = 0; i < Bars.Length; i++)
+                {
+                    double high = Bars[i] * s, x = s / 2 + (i - 2) * apart, top = s / 2 - high / 2, foot = s / 2 + high / 2;
+                    g.BeginFigure(new Point(x - wide / 2, top + cut), true, true);
+                    g.LineTo(new Point(x + wide / 2, top - cut), true, false);
+                    g.LineTo(new Point(x + wide / 2, foot - cut), true, false);
+                    g.LineTo(new Point(x - wide / 2, foot + cut), true, false);
+                }
+            all.Freeze();
+            dc.DrawGeometry(Brushes.White, null, all);
         }
 
         public static BitmapSource Picture(int side, bool tile)
