@@ -820,6 +820,43 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   request. Inside VS Code's window only: nothing brings the window itself in front of
   other programs. `Ctrl+Alt+Enter` was passed over as the key because VS Code uses it
   (replace all). The overlay treats `jump` like the keys that answer: claimed while live.
+- "Clear the chat" by voice (2026-11-19, `Talk._clear_chat`, `_cannot_clear`,
+  `base.asks_to_clear`, `clear_by_voice`, `clear_words`, `vscode/extension.js` 0.4.0). The
+  author, by voice: "is it possible to say like, hey, Cloud, clear the chat and you use the
+  command slash clear", and on hearing how: "Oh yes, build it." No session can run `/clear`
+  on itself; it has to be typed, and only the editor can type. Spoken words that are one of
+  `clear_words` and nothing more (a greeting before, a "please" after and small words such
+  as "the" or "your" count for nothing; "Claude" is also taken as "cloud", which is what the
+  speech model writes) are not handed to the session: the hub gives the editor that holds
+  its terminal the key `clear`, and the extension types Ctrl+C, and 150 ms later `/clear`
+  with Enter. It knows these two by name, `escape` and `clear`, so the hub still cannot
+  have anything else typed. Only for a session at its prompt, since that Enter would answer
+  a dialog that is open: not while it is working, needs you, is being stopped or has a
+  request open, and not while Claude Code's own session file says busy. Then, and with no
+  editor that says it can (`"clear"` in `can`), the light shows the struck-out microphone
+  with "Not cleared: it is still working" or "Not cleared: no editor to type it", and the
+  words go nowhere. An order that falls between two requests of the editor waits for the
+  next one (`_clear_wanted`), as for the jump key. Measured with a throwaway session in
+  tmux, Claude Code 2.1.328: `/clear` and Enter written in one go clear the conversation;
+  one Ctrl+C before it empties a half-typed line, at an empty prompt it only shows "Press
+  Ctrl-C again to exit", and the `/clear` after it works in both cases. Tested with the
+  real extension code, a stand-in editor and a real hub; `sidetone follow-up -s NAME
+  "clear the chat"` goes the same way as the voice. **Not tried in the author's VS Code:
+  0.4.0 is installed, and it runs 0.3.0 until "Restart Extension Host".** Not built: an
+  order to a busy session being kept until its turn ends. The code went in under other
+  sessions' commit messages (`b6c7626`, `a61c7ad`), which took it along.
+- Words handed over do not take the bubble from a speaker (2026-11-19, `quiet` on the
+  `talk` message, `hushed` in `UpdateBubble`). The author: while this session was speaking,
+  "session one was done. His message popped out briefly and then your message continued.
+  It was just visual stuff." What the log shows for that second: words of theirs had waited
+  for session one, its turn ended while another session's line was being said, and the
+  "sent" sign for the words handed over is a push-to-talk step, which always had the
+  bubble before a sentence being said; so the bubble went to session one for 2.5 s and
+  back. Now the hub marks that one step as `quiet` (it is the hub's news, not something
+  you are doing), and the overlay then leaves the bubble with whoever is speaking and
+  shows only the paper plane on the other light. Seen in a picture
+  (`talk-handed-over-while-another-speaks.png`). **That this is what they saw is read from
+  the log, not confirmed by them.**
 - `hub/stale.py`: the hub takes a fingerprint of each of its own files as it starts (of
   what they hold, not their time of change, so a file that was only touched does not count),
   and the overlay does the same for its source when a window is started. `/state` carries
@@ -982,14 +1019,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | show [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `settings [close | list | KEY VALUE]`, `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 297 tests in all with a silent engine and fake microphone, including the real hook
+- `tests/test_hub.py`: 301 tests in all with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
   `voice_pool`, `colors`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
 - `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).

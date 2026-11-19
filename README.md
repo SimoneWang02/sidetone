@@ -71,6 +71,12 @@ its own spoken line as the first line of its reply.
   too) or `off`; `aside_words` are the openings. `aside_model` is `session` (default: the
   session's own model, which reuses the conversation the session has saved, so an answer
   takes a few seconds even in a long session) or a model's name such as `haiku`.
+- **Clear the chat by voice.** Say "clear the chat" (or "clear the context", "slash clear")
+  to a session that is at its prompt and the VS Code extension types `/clear` into its
+  terminal; the session never gets the words. A session cannot run `/clear` itself, and
+  only the editor can type into its terminals, so this needs the extension. A session that
+  is working or asking you something is left alone and its light says so. `clear_by_voice:
+  false` turns it off; `clear_words` are the phrases.
 - **Which terminal is which.** With several sessions open, the terminal of the session in focus
   takes a faint tint of that session's color, the color its name has in the overlay, and lights
   up brighter for a moment when you move the focus to it. No extension is needed: the hub

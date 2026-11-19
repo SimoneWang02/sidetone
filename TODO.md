@@ -9,6 +9,22 @@ started. `CLAUDE.md` has the details of how things work.
 These work in the automated tests or in pictures taken from WSL, but nobody has pressed the
 real keys yet.
 
+- [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
+      Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
+      the talk key and say "clear the chat" to a session that is idle: its terminal should
+      show `/clear` and an empty conversation. Said to a session that is working, its light
+      should show the struck-out microphone and "Not cleared: it is still working".
+      Open:
+      - does the speech model write the order cleanly enough (it has to be the whole of
+        what was said); other phrases go in `clear_words`, Italian ones too
+      - an order to a busy session is refused, not kept for the end of its turn
+      - one Ctrl+C is typed first, to empty a half-typed line; if you pressed Ctrl+C
+        yourself in that terminal a second before, the two together close the session
+      - VS Code only
+- [ ] The bubble no longer jumps to another session when words that waited are handed to
+      it while someone is speaking (2026-11-19): only a paper plane on that light. Seen in
+      a picture; whether that was the jump the author saw is read from the log.
+
 - [x] Side questions: spoken words that open with "by the way" do not wait for a busy session
       (asked for by the author by voice on 2026-11-17, who compared it to Claude Code's
       `/btw`: "it lets me skip the queue and ask a by the way question"; of a second talk
