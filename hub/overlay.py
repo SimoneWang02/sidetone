@@ -65,6 +65,11 @@ DEFAULTS = {
     # Where push-to-talk's sign (dots, paper plane, not sent) goes: light = inside the session's
     # status light | line = at the right of its name in the details
     "talk_sign": "light",
+    # Who has the bubble when a session starts to speak while the sign for words that went
+    # out ("sent", "waiting", "stopped", "in focus") is still up: False = the speaker, at
+    # once, and the sign shows on its own light only | True = the sign's words, for as long
+    # as it is up, and the sentence only after that (as it was until 2026-11-19).
+    "sent_first": False,
     # How "Release to send" moves while the talk key is held: shimmer = a glint of light runs
     # along the words | pulse = they breathe between two pinks | still = no motion
     "talk_text": "shimmer",

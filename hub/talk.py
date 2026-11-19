@@ -809,6 +809,10 @@ class Talk:
         It is shown on the session it is about; it stays until replaced unless `seconds` is given.
         `quiet`: it is news of the hub's own and not something the user is doing just now, so
         the overlay shows it on the light and leaves the bubble to a session that is speaking."""
+        # A step that only reports (your words went out, it stopped) gives way to a sentence
+        # that is being said; what you are doing right now (talking, a question on the side)
+        # and what went wrong keep the bubble.
+        quiet = quiet or (state in ("sent", "queued", "stopped", "focus") and not self.cfg.overlay.get("sent_first"))
         self._talk_shown = (state, text, hint) if state in ("listening", "ready") else None
         self._aside_shown = None  # whatever is shown now, it is not a side question being answered
         self._usage_shown = False

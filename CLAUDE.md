@@ -857,6 +857,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   shows only the paper plane on the other light. Seen in a picture
   (`talk-handed-over-while-another-speaks.png`). **That this is what they saw is read from
   the log, not confirmed by them.**
+  Minutes later the other half of it, from the author: "I want [it] to be more responsive,
+  the pop-out of the detailed message whenever you are speaking": a session had its line
+  ready while they talked to another one, "I sent the message and you started speaking
+  without like the window popping out". The "sent" sign of their own words stays up for
+  the 4 s they can be taken back, and for those seconds it had the bubble, so the speaker
+  got it only after half its sentence. Now every step that only reports (`sent`, `queued`,
+  `stopped`, `focus`) is sent `quiet` (`Talk._talk`) and gives way to a speaker at once;
+  its sign stays on its own light, and the cancel key takes the words back as before. What
+  you are doing (`listening`, `transcribing`, `ready`, `aside`) and what went wrong
+  (`failed`) keep the bubble. `overlay.sent_first: true` is how it was. **Not seen by the
+  author yet.**
 - `hub/stale.py`: the hub takes a fingerprint of each of its own files as it starts (of
   what they hold, not their time of change, so a file that was only touched does not count),
   and the overlay does the same for its source when a window is started. `/state` carries

@@ -24,6 +24,10 @@ real keys yet.
 - [ ] The bubble no longer jumps to another session when words that waited are handed to
       it while someone is speaking (2026-11-19): only a paper plane on that light. Seen in
       a picture; whether that was the jump the author saw is read from the log.
+- [ ] A session that starts to speak right after you sent words to another one gets the
+      bubble at once (2026-11-19, the author: "you started speaking without like the
+      window popping out"); the "sent" sign stays on the other light. To try: talk to one
+      session while another has a line ready. `overlay.sent_first: true` is how it was.
 
 - [x] Side questions: spoken words that open with "by the way" do not wait for a busy session
       (asked for by the author by voice on 2026-11-17, who compared it to Claude Code's

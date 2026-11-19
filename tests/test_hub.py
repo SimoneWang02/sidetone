@@ -1128,6 +1128,12 @@ class PushToTalk(HubCase):
         hub.listen("a")  # idle and listening
         hub.follow_up("run the tests", "a", delay=0)
         self.assertTrue(wait_for(lambda: ("sent", "a", "run the tests") in self.talks()))
+        # The sign for words that went out leaves the bubble to a session that is speaking.
+        self.assertEqual([m.get("quiet", False) for m in self.overlay.of("talk") if m.get("state") in ("ready", "sent")], [False, True])
+        hub.cfg.overlay["sent_first"] = True  # as it was: the sign's words first
+        hub.follow_up("and again", "a", delay=0)
+        self.assertTrue(wait_for(lambda: ("sent", "a", "and again") in self.talks()))
+        self.assertNotIn("quiet", self.overlay.of("talk")[-1])
         self.assertEqual([r["waiting"] for m in self.overlay.of("state") for r in m["sessions"] if "waiting" in r and r["waiting"]], [])
 
     def test_cancel_right_after_sending_takes_waiting_words_back(self):
