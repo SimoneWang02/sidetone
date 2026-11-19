@@ -3154,6 +3154,7 @@ namespace ClaudeSpeaks
             grabY = (int)Math.Round(held.Y);
             dragging = true;
             Edge();
+            Run(true);  // the drag is followed frame by frame; with nothing else moving the frames had stopped
         }
 
         // The bar itself goes with the mouse: the panel and the bubble fold away while it travels.
@@ -3183,6 +3184,10 @@ namespace ClaudeSpeaks
             grabY = box[1] + (int)Math.Round(held.Y) - grabbedAt[1];
             dragging = panelHeld = undecided = true;
             Edge();
+            // Without this a press on a still overlay was never followed: the drag was left
+            // half begun, and every press after it was ignored (the author, 2026-11-19: "I
+            // cannot move the layout right now").
+            Run(true);
         }
 
         // Up while the voice is off and the bar is on screen; away while the bar travels, and

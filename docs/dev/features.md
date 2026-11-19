@@ -190,6 +190,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   panel catches the mouse while the cursor is on it in list mode; a drag moves the bar and
   the panel goes along (`PlaceSides` each step, no folding), a click without a move is passed
   through as for the bar (`PassClick`). It never puts a light elsewhere.
+  The same evening: "I cannot move the layout right now". A press starts the drag, and the
+  frames follow it (`DragStep`), but nothing started the frames: with the overlay still they
+  had stopped, the drag was left begun, and every press after it was ignored (`Press` returns
+  while dragging). The bar's presses were saved by the frames that the mouse over a light
+  starts; the panel's were not. Both now start them (`Run(true)`).
 - The history following the mouse without lag (2026-11-19, the author: "if I move it real
   fast, there's a latency, there's a lag"). Measured with the mouse's stand-in going from row
   to row every 60 ms in list mode: a full redraw takes 4 to 8 ms, but every new history has
