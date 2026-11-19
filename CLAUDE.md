@@ -707,6 +707,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   details away and see lines in the bubble beside the light. So the same icon is in the
   bubble's top right while muted (`bubbleMuted`, with `muted_icon`), not while push-to-talk
   has the bubble. Seen in a picture (`mute-bubble.png`).
+  With that in place, the card's icon was taken out again ("remove it from the metrics
+  box"): `muted_card_icon`, off; `muted_icon` is the bubble's now.
   Found on the way: `SpeechQueue.wait_idle` returned before `on_change(None)` and `on_done`
   had run, so a test could read the overlay's state before its last update; it now also
   waits for those (`_settling`). Claimed only while they can act: `allow` Ctrl+Alt+Y,

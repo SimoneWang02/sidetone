@@ -1828,7 +1828,7 @@ namespace ClaudeSpeaks
             HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
             Margin = new Thickness(0, 0, -2, 0), Visibility = Visibility.Collapsed,
         };
-        bool mutedIconOn = true;
+        bool mutedIconOn = true, mutedCardIcon;  // the bubble's; the card's (taken out again on the author's word)
         // ... and in the top right of the bubble that pops out beside a light when a session's
         // line comes (the author keeps the details away, so that is where they look).
         readonly MutedSpeaker bubbleMuted = new MutedSpeaker(16) { Margin = new Thickness(8, 1, 0, 0), VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed };
@@ -2127,6 +2127,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("muted_mark")) mutedMark = Convert.ToBoolean(msg["muted_mark"]);
                     if (msg.ContainsKey("muted_line")) mutedLine = Convert.ToBoolean(msg["muted_line"]);
                     if (msg.ContainsKey("muted_icon")) mutedIconOn = Convert.ToBoolean(msg["muted_icon"]);
+                    if (msg.ContainsKey("muted_card_icon")) mutedCardIcon = Convert.ToBoolean(msg["muted_card_icon"]);
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
                     if (msg.ContainsKey("hotkeys"))
@@ -2324,7 +2325,7 @@ namespace ClaudeSpeaks
             bool linesFollow = historyLines.Children.Count > 0;
             metricsCard.Margin = Low ? new Thickness(-3, -1, -3, linesFollow ? 6 : 1) : new Thickness(-3, 2, -3, linesFollow ? 6 : -3);
             historyBox.Visibility = showMetrics || historyLines.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-            mutedIcon.Visibility = muted && mutedIconOn ? Visibility.Visible : Visibility.Collapsed;
+            mutedIcon.Visibility = muted && mutedCardIcon ? Visibility.Visible : Visibility.Collapsed;
             if (muted && mutedLine && asked && !hasBanner)  // with the details, and not twice while "Voice off" is up
             {
                 string key;

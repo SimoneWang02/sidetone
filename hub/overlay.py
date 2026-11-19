@@ -57,8 +57,10 @@ DEFAULTS = {
     # While the voice is off: "Voice is muted" in the details (the author's choice), and/or a small
     # struck-out speaker just past the end of the bar (tried first; they did not like it there).
     "muted_line": True,
-    # ... and a struck-out speaker in the top right corner of the card of figures (their idea too).
+    # ... a slashed speaker in the top right of the bubble a line pops out in (their idea too), and
+    # in the top right of the card of figures (tried, then taken out: "remove it from the metrics box").
     "muted_icon": True,
+    "muted_card_icon": False,
     "muted_mark": False,
     # What brings the details out: always = the mouse resting on the bar, or holding Ctrl+Alt |
     # keys = only holding Ctrl+Alt (or the key that keeps them out), so a mouse passing over
