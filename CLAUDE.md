@@ -90,8 +90,13 @@ side, H4 a microphone whose grille is the bars, H5 the ghost wearing the headset
 round one made the head of a microphone. Told them: sidetone is itself a headset word
 (your own voice in your headset), so the headset is the name drawn; H1 recommended.
 (In SVG a gradient does not fill the stroke of a straight line, which has no box: the
-stand of H6 was missing in the first picture.)
-**Their choice is open; the riding bars are still what is drawn.**
+stand of H6 was missing in the first picture.) Their answer: "I don't like any of them."
+So after five pages and some thirty drawings: the round one with uneven bars on the middle
+line (E) is the logo again, as the one they like best, and the guessing has stopped. Asked
+of them instead, as worked for the face of ten waiting messages: a logo or picture whose
+look they like, in their Downloads folder, or a word on what is wrong with these (the
+idea, or how they are drawn: flat, simple shapes are what a session can draw by hand in
+SVG). **Open.**
 While it was on screen the picture check could not take the settings window: the live
 window stood at the same place in the middle of the screen, and the check refuses when two
 windows have one rectangle. Close the live one first (`sidetone settings close`).

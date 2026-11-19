@@ -648,9 +648,12 @@ Bigger pieces:
       (`~/personal/sidetone`, with a link left at the old place for the sessions and
       the editor window that were open). The commands followed on their yes: `sidetone` and `st`. The
       logo is in the blue they typed, `#006896`. The sessions that were open are named
-      `sidetone` in the bar too (changed by hand in the hub's records). **The logo:** of five ideas they liked two, bars
-      riding a wave and the plain disc, and left the choice to the session: the bars in
-      white on the disc, in place everywhere. **For them to say whether it stays.** **Open: the
+      `sidetone` in the bar too (changed by hand in the hub's records). **The logo is open.** In place: a disc in their blue
+      with uneven voice bars, the one they like best and find "pretty anonymous". Some
+      thirty others were drawn over five pages (waves, a speech bubble, the bar of
+      lights, faces, a ghost, headsets and microphones after their own idea) and none
+      was liked. Next: a picture from them of a look they like, or what it is about
+      these that is wrong; do not draw a sixth page of guesses before that. **Open: the
       microphone's pink in the overlay**, which they also dislike as "the brand
       color"; their blue is too near the blue of "working" to take its place there,
       so another color for it has to be chosen (or the working light's changed). **Left, for them to decide:** the

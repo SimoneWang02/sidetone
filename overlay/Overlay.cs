@@ -968,16 +968,17 @@ namespace ClaudeSpeaks
         }
     }
 
-    // The tool's mark: a disc in the author's blue with five white bars whose middles ride one
-    // wave, up at the left and down at the right. Drawn here and nowhere kept as a picture, so
-    // the window, its place in the taskbar and the files for the README (`logo` message) are
-    // all the same drawing. How it came to this: first the overlay's own light (a disc with
-    // voice bars and the context arc around it), in the microphone's pink; then the blue the
-    // author gave (#006896); then, since the thin arc made it look small in the taskbar and
-    // even bars are what every voice program has, a page of other ideas, of which they liked
-    // the bars riding a wave and the plain disc. This is the two together.
+    // The tool's mark: a disc in the author's blue (#006896) with five white voice bars of
+    // uneven heights on its middle line. Drawn here and nowhere kept as a picture, so the
+    // window, its place in the taskbar and the files for the README (`logo` message) are all
+    // the same drawing. It is the one the author likes best of some thirty that were drawn
+    // ("I would probably prefer E ... but it's not very creative, it's pretty anonymous"),
+    // and it stands until a better one is found; CLAUDE.md has what was tried and what they
+    // said of each (bars riding a wave "seems like stocks going up and down").
     static class Logo
     {
+        static readonly double[] Bars = { 0.26, 0.50, 0.36, 0.62, 0.30 };  // each bar's height, as a share of the side
+
         // In a square of side `s`, from its corner. (`tile` is from when the taskbar had a
         // drawing of its own; there is one drawing now.)
         public static void Draw(DrawingContext dc, double s, bool tile)
@@ -986,15 +987,11 @@ namespace ClaudeSpeaks
             var ink = new LinearGradientBrush(Color.FromRgb(0x2E, 0x9C, 0xC9), Color.FromRgb(0x00, 0x68, 0x96), new Point(0.15, 0), new Point(0.85, 1));
             ink.Freeze();
             dc.DrawEllipse(ink, null, new Point(s / 2, s / 2), s / 2, s / 2);
-            const int count = 5;
-            double wide = s * 0.095, span = s * 0.52;
-            for (int i = 0; i < count; i++)
+            double wide = s * 0.088, apart = s * 0.148;
+            for (int i = 0; i < Bars.Length; i++)
             {
-                double along = i / (count - 1.0), turn = along * 2 * Math.PI;
-                double x = s / 2 - span / 2 + along * span;
-                double y = s / 2 - s * 0.12 * Math.Sin(turn);       // the wave the middles ride
-                double high = s * (0.30 + 0.05 * Math.Cos(turn));   // a little taller at the ends
-                dc.DrawRoundedRectangle(Brushes.White, null, new Rect(x - wide / 2, y - high / 2, wide, high), wide / 2, wide / 2);
+                double high = Bars[i] * s, x = s / 2 + (i - 2) * apart;
+                dc.DrawRoundedRectangle(Brushes.White, null, new Rect(x - wide / 2, s / 2 - high / 2, wide, high), wide / 2, wide / 2);
             }
         }
 
