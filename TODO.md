@@ -629,6 +629,15 @@ Bigger pieces:
       Not in it yet: languages, the colors, where the overlay sits and on which
       monitor, which figures a row and the card show, your own voices, voices of
       projects that are not open, a way back to what a new install has, a search.
+      Their first look: it must be an ordinary window that can go behind others and be
+      put away, the menu at the left on a ground of its own, and the tool's name not
+      beside the heading. All three done the same hour; **for them to look at again**.
+- [ ] Another name for the tool (the author, 2026-11-18, on seeing "claude-speaks" in the
+      settings window: "I don't like [it] as a name. Maybe we can think about it ...
+      Maybe there's a better name"). Open. A new name would touch the repo, the commands
+      (`claude-speaks`, `cs`), the folders under `~/.local` and `~/.config`, the VS Code
+      extension and the README; and "Claude" in a product's name is Anthropic's mark,
+      which is a reason of its own to look for one before the repo is public.
 - [ ] Packaging as a Claude Code plugin, so it installs in one step.
 - [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
       tools that only speak after the reply has ended.

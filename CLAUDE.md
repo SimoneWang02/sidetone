@@ -820,6 +820,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   --only=settings` takes only those pictures, in 15 s. While it ran the first time the
   window jumped between two pictures; it did not the second time, so most likely the
   author moved it, since the check's own window opens in the middle of their screen.
+  The author's first look (same evening), three things, all done at once: (1) "make it
+  not stand out in front of any other program. It should be hideable like any other
+  programs because it's settings": it was always on top and had no place in the taskbar.
+  Now an ordinary window (`Topmost` off, in the taskbar and Alt+Tab, a button to put it
+  away beside the cross); the key shuts it only when it is in front of you and otherwise
+  brings it there, which the window decides (`toggle` in the message, `InFront`), since
+  the hub cannot know what lies over it. (2) "the menu ... a different background color
+  to compare to the right": the sections stand on a darker ground over the whole height,
+  with a hairline at its right. (3) "the label settings with claude-speaks to the right.
+  I don't like [it] as a name ... just don't place it there ... maybe place it down left.
+  Maybe there's a better name": "Settings" alone heads the menu and the name is small and
+  faint at the bottom left. Whether the tool should have another name they left open
+  ("maybe we can think about it"); names were offered, nothing renamed. Seen in pictures;
+  **the putting away and coming forward are untried**.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
