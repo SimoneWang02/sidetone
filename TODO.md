@@ -1157,3 +1157,6 @@ Smaller ideas:
       story of attention latency told in one picture. The overlay's own pictures
       (`tests/overlay_check.py`) cover single views, not motion; GIFs need a screen
       recording from Windows, and the video has the author's sound and voice in it.
+      **Last, on the author's word** (2026-11-19: "I would do the doc at the end of
+      everything so you know there's more features to document and it's like the final
+      completion of the product"). Not to be offered as the next thing before then.
