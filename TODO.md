@@ -177,6 +177,9 @@ Roughly easiest first.
       without asking) and `followup_delay` (seconds the transcript is shown and can be
       cancelled before it goes). Neither is in `settings.SECTIONS`; add both to "Talking",
       and check how the confirming tap and the delay look on the overlay today.
+      Built 2026-11-19 on their "proceed": both under Talking, seen in the window's
+      picture and clicked there by `tests/overlay_check.py`. **Not tried by them**, and
+      how the confirming tap and the delay look on the overlay is not yet looked at.
 - [ ] Italian openings for side questions and for asking the usage. `aside_words` and the
       words `usage.asks` accepts are English only, so "a proposito, ..." waits for the session
       and "quanto ho usato?" goes to it. Add Italian (and Chinese, now that it is spoken)

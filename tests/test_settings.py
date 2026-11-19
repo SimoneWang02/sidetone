@@ -104,6 +104,16 @@ class Offered(SettingsCase):
 
 
 class Chosen(SettingsCase):
+    def test_confirming_before_sending_takes_on_off_or_auto(self):
+        hub = self.make()
+        for value, kept in ((True, True), ("auto", "auto"), ("False", False), (False, False)):
+            self.assertIsNone(hub.set_setting("followup_confirm", value), value)
+            self.assertIs(type(hub.cfg.followup_confirm), type(kept))
+            self.assertEqual(hub.cfg.followup_confirm, kept)
+        self.assertIsNotNone(hub.set_setting("followup_confirm", "sometimes"))
+        self.assertIsNone(hub.set_setting("followup_delay", 1.3))
+        self.assertEqual(hub.cfg.followup_delay, 1.5)
+
     def test_a_choice_takes_effect_and_is_kept(self):
         hub = self.make()
         self.assertIsNone(hub.set_setting("label", "always"))

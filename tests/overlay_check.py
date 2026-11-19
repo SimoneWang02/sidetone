@@ -562,8 +562,9 @@ def click(section, x, y, expect):
 
 
 clicks = [click("Overlay", 716, 117, ("overlay.layout", "island")),
-          click("Voice", 727, 287, ("progress", False)),
-          click("Figures", 690, 117, ("context_shown", "both"))]
+          click("Voice", 735, 351, ("progress", False)),
+          click("Figures", 690, 117, ("context_shown", "both")),
+          click("Talking", 648, 125, ("followup_confirm", "auto"))]
 send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voice", click=[46, 278])  # "Keys" at the left
 shot("settings-clicked-keys", 0.5)
 send(type="settings", open=True, quiet=True, sections=SETTINGS, click=[690, 230])  # the hotkey of "Keep the details out"

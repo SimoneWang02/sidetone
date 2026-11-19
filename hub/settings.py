@@ -56,6 +56,9 @@ SECTIONS = [
     ]),
     ("Voices", []),  # filled in by `describe`: one line for each project, with the voices this machine has
     ("Talking", [
+        choice("followup_confirm", "Confirm before sending", "Your words wait on the light until you tap the talk key again. \"Acting alone\": only sessions that do things without asking first.",
+               (False, "Never"), ("auto", "Acting alone"), (True, "Always")),
+        number("followup_delay", "Time to cancel before sending", "Your words show on the light this long before they go, and the cancel key stops them. 0 sends at once.", 0, 5, 0.5, "s"),
         number("unsend_seconds", "Time to take words back", "How long after sending the cancel key still takes them back. 0 turns it off.", 0, 10, 0.5, "s"),
         choice("cancel_stops", "The cancel key stops a session", "With nothing else to cancel, it ends the turn of the session in focus.",
                ("always", "Always"), ("sent", "After sending"), ("never", "Never")),
