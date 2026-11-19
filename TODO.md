@@ -18,11 +18,6 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] Moving the overlay by its details (2026-11-19, the author: "if it's fully displayed
-      with Ctrl+Alt+L, I should be able to move the entire overlay"). Built the same day
-      (`overlay.panel_drag`, on): with the details kept out, drag them and the whole
-      overlay goes, the panel along with the bar; a click still reaches what is behind.
-      Compiled, not tried with the mouse.
 - [ ] The history following the mouse from row to row without lag (2026-11-19, the
       author: "if I move it real fast, there's a latency"): the open panel changed height
       in about 60 ms instead of half a second: "That's better ... more responsive". Now it
@@ -425,6 +420,12 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] Moving the overlay by its details (2026-11-19, the author: "if it's fully displayed
+      with Ctrl+Alt+L, I should be able to move the entire overlay"). Built the same day
+      (`overlay.panel_drag`, on): with the details kept out, drag them and the whole
+      overlay goes, the panel along with the bar; a click still reaches what is behind.
+      A press could leave the drag begun and every press after it ignored ("I cannot
+      move the layout right now"); mended the same hour. Then: "That works, perfect."
 - [x] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
       mute shortcut"). Press it while a session speaks: the line stops, two low notes go
       down, and the overlay shows "Voice is muted" with a struck-out speaker for 2.5 s. While
