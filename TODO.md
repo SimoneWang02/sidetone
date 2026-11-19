@@ -25,8 +25,13 @@ these come before anything new.
       Built 2026-11-19 with the author's own words ("comunque", "e comunque che ore
       sono?", "quanto stai consumando? quant'è il contesto al momento?"), and the session's
       context can now be asked in English and Italian too; answers in the language asked
-      (see `docs/dev/features.md`). **Not tried by voice yet.** Risk to watch: "comunque,
-      procedi" said to a working session becomes a side question.
+      (see `docs/dev/features.md`). Risk to watch: "comunque, procedi" said to a working
+      session becomes a side question.
+      The side question tried by the author at 15:32 while the session ran the tests:
+      "e comunque, che ore sono?" was written "Comunque ci sono." (heard as Italian), went
+      on the side at once, and Paola answered in 3.8 s: "Ho capito solo 'ci sono', ma se
+      volevi sapere l'ora, adesso sono le tre e trentadue del pomeriggio". The session never
+      got the words. **Still to try: the usage and the context asked in Italian.**
 - [ ] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
       mute shortcut"). Press it while a session speaks: the line stops, two low notes go
       down, and the overlay shows "Voice off" with a struck-out speaker for 2.5 s. While
