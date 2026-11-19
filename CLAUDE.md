@@ -64,7 +64,14 @@ and faint in the deep blue on dark glass, the very thing they found small before
 the clearest small but the most ordinary. Six variants of D on a second page (bolder with
 five bars, in white on the disc, equal bars on a pure wave, seven bars, growing louder,
 a lighter blue for dark glass); the one recommended is D on the disc, which joins the two
-they like. **Their choice is open.**
+they like. They left it to the session ("[what] should we choose out of all of this?"),
+so that one is the logo now, one drawing for the taskbar, the window's menu and the README
+(`assets/logo.png`, `assets/icon.png`): a disc in their blue with five white bars riding a
+wave. The arc and the even and uneven bars are gone from `Logo`. **Chosen by the session
+on their asking; they have not said yet that they like it.**
+While it was on screen the picture check could not take the settings window: the live
+window stood at the same place in the middle of the screen, and the check refuses when two
+windows have one rectangle. Close the live one first (`sidetone settings close`).
 
 In the same message: "I still see [claude-speaks] as a name on the top left of each session
 ... you just have to [restart] the hub." A restart would not have done it: a session's name
