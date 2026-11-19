@@ -81,7 +81,16 @@ something with a face, all on the disc: G1 a closed eye whose lashes are the bar
 a hem, G4 a face singing through a mouth of bars, G5 a crescent that speaks, G6 a grin with
 teeth of sound, G7 a cockatoo with a crest of bars. Recommended: the ghost (it keeps its
 face at taskbar size and says "a voice beside you that you do not look at"), the closed
-eye second (the tool's own story, but it can read as tears).
+eye second (the tool's own story, but it can read as tears). They came back with an idea
+of their own: "a microphone ... because we speak ... Otherwise, the headphones, such as
+TeamSpeak, will be cool because it has both microphones [and] listening." A fifth page,
+drawn from scratch and not after that program's logo: H1 a headset with the voice bars
+between its cups, H2 a plain headset whose microphone ends in a light, H3 one ear from the
+side, H4 a microphone whose grille is the bars, H5 the ghost wearing the headset, H6 the
+round one made the head of a microphone. Told them: sidetone is itself a headset word
+(your own voice in your headset), so the headset is the name drawn; H1 recommended.
+(In SVG a gradient does not fill the stroke of a straight line, which has no box: the
+stand of H6 was missing in the first picture.)
 **Their choice is open; the riding bars are still what is drawn.**
 While it was on screen the picture check could not take the settings window: the live
 window stood at the same place in the middle of the screen, and the check refuses when two
