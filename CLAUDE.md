@@ -691,7 +691,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   them. So `muted_mark` is off, and `overlay.muted_line` (on) writes "Voice is muted" and the
   key that turns it on in a section of the panel next to the rows (`mutedBox`), whenever the
   details are out, except while the "Voice off" notice is up. Seen in a picture
-  (`mute-line.png`), not by them.
+  (`mute-line.png`), not by them. Their next idea, the same minute: the struck-out speaker
+  in the top right corner of the card of figures (`overlay.muted_icon`, on; `mutedIcon`,
+  laid over the card so nothing in it moves; `mute-icon.png`). And a fault they found:
+  the repeat key spoke while muted. `_replay` (repeat, catch-up) and `say` without a
+  session went to the voice without asking; while muted a replayed line is now shown at
+  its light, and the hub's own words are left unsaid.
   Found on the way: `SpeechQueue.wait_idle` returned before `on_change(None)` and `on_done`
   had run, so a test could read the overlay's state before its last update; it now also
   waits for those (`_settling`). Claimed only while they can act: `allow` Ctrl+Alt+Y,

@@ -470,7 +470,7 @@ class Hub(Permissions, Talk):
             s = self.sessions.by_id.get(session) if session else None
             if s:
                 self._say(s, text, "progress", "cli", voice)
-        if not s:
+        if not s and not self._muted():  # muted: nothing to show it on, so it is only left unsaid
             self.speech.put(Utterance(text=text, voice=voice or self.cfg.default_voice, kind=kind, src="cli"))
 
     def snapshot(self) -> dict:
@@ -500,7 +500,15 @@ class Hub(Permissions, Talk):
         """Say a line from the history again. It belongs to its session like the first time, so
         the overlay shows it at that session's light; `named` says the session's name first."""
         with self.lock:
-            live = entry.get("session", "") in self.sessions.by_id
+            s = self.sessions.by_id.get(entry.get("session", ""))
+            live = s is not None
+            if live and self._muted():
+                # The voice is off: shown at its light instead (the author pressed repeat while
+                # muted, 2026-11-19, and heard the line).
+                self._flash(s, entry["text"], FLASH_LOOK.get(entry.get("kind", ""), entry.get("kind") or None))
+        if self._muted():
+            self.publish()
+            return
         self.speech.put(Utterance(text=entry["text"], voice=entry["voice"], session=entry["session"] if live else "",
                                   kind="notice", src=src, entry=entry,
                                   label=entry["spoken_name"] if named or not live else None))

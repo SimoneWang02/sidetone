@@ -1771,6 +1771,15 @@ namespace ClaudeSpeaks
         // learns where each one is.
         readonly Border metricsCard = new Border { CornerRadius = new CornerRadius(8), Background = Ui.Paint("#12FFFFFF"), Padding = new Thickness(11, 7, 11, 12), Margin = new Thickness(-3, 2, -3, -3) };
         readonly StackPanel metricsBody = new StackPanel();
+        // While the voice is off, a struck-out speaker in the card's top right corner (the
+        // author's idea, overlay.muted_icon), laid over the card so nothing in it moves.
+        readonly TextBlock mutedIcon = new TextBlock
+        {
+            Text = "\uD83D\uDD07", FontFamily = Ui.Symbols, FontSize = 14, Foreground = Ui.Dim,
+            HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(0, -2, -3, 0), Visibility = Visibility.Collapsed, ToolTip = null,
+        };
+        bool mutedIconOn = true;
         string detailsStyle = "tiles";
         bool choiceCaps;  // the number in front of a question's choice drawn as a key cap, not as a plain number
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
@@ -1899,7 +1908,10 @@ namespace ClaudeSpeaks
             bannerHint.Margin = new Thickness(0, 2, 0, 0);
             Section(bannerBox, bannerTitle, bannerHint);
             Section(mutedBox, mutedText);
-            metricsCard.Child = metricsBody;
+            var cardLayers = new Grid();
+            cardLayers.Children.Add(metricsBody);
+            cardLayers.Children.Add(mutedIcon);
+            metricsCard.Child = cardLayers;
             Section(historyBox, metricsLine, metricsCard, historyLines);
             panel.Body = sections;
             Stack();
@@ -2063,6 +2075,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("share_taken_keys")) shareTaken = Convert.ToBoolean(msg["share_taken_keys"]);
                     if (msg.ContainsKey("muted_mark")) mutedMark = Convert.ToBoolean(msg["muted_mark"]);
                     if (msg.ContainsKey("muted_line")) mutedLine = Convert.ToBoolean(msg["muted_line"]);
+                    if (msg.ContainsKey("muted_icon")) mutedIconOn = Convert.ToBoolean(msg["muted_icon"]);
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
                     if (msg.ContainsKey("hotkeys"))
@@ -2260,6 +2273,7 @@ namespace ClaudeSpeaks
             bool linesFollow = historyLines.Children.Count > 0;
             metricsCard.Margin = Low ? new Thickness(-3, -1, -3, linesFollow ? 6 : 1) : new Thickness(-3, 2, -3, linesFollow ? 6 : -3);
             historyBox.Visibility = showMetrics || historyLines.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            mutedIcon.Visibility = muted && mutedIconOn ? Visibility.Visible : Visibility.Collapsed;
             if (muted && mutedLine && asked && !hasBanner)  // with the details, and not twice while "Voice off" is up
             {
                 string key;

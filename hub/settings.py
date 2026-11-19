@@ -74,6 +74,7 @@ SECTIONS = [
         choice("overlay.hover", "What opens the details", "The mouse resting on the lights, or only holding the keys.",
                ("always", "Mouse"), ("keys", "Keys only")),
         switch("overlay.muted_line", "Say when muted", "\"Voice is muted\" in the details while the voice is off."),
+        switch("overlay.muted_icon", "Icon when muted", "A struck-out speaker in the corner of the figures while the voice is off."),
         switch("overlay.muted_mark", "Mark when muted", "A small struck-out speaker past the end of the lights while the voice is off."),
         number("overlay.opacity", "Opacity at rest", "How solid the lights are while nothing happens.", 0.3, 1.0, 0.05),
         choice("overlay.glass", "Glass", "Blur what is behind it, or plain dark glass.",

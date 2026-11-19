@@ -842,6 +842,14 @@ class CatchingUp(HubCase):
         self.spoken()
         self.assertEqual(self.engine.spoken[-1], ("All done.", self.session()["voice"]))
 
+    def test_repeat_and_catch_up_stay_quiet_while_muted(self):
+        hub = self.two_sessions_spoke()
+        open(self.cfg.mute_file, "a").close()
+        self.assertTrue(hub.repeat())
+        self.assertEqual(hub.catch_up(), 0)
+        self.assertEqual(self.spoken(), [])  # not "Page built." again, nor "Nothing new."
+        self.assertEqual(self.overlay.of("flash")[-1]["text"], "Page built.")  # shown at its light instead
+
     def two_sessions_spoke(self, **cfg):
         hub = self.make(label="never", **cfg)
         hub.overlay = self.overlay = FakeOverlay()
