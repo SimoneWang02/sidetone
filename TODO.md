@@ -961,6 +961,11 @@ Smaller ideas:
       (Ctrl+Shift+P, "Restart Extension Host"); until then the key is not claimed at
       all. **For the author to try** after that: move the focus to another session with
       the arrows, press `Ctrl+Alt+T`, and its terminal should come up ready to type in.
+      Asked to try it on the evening of 2026-11-18, the author said "Oh, it works. So
+      what is this control... Alt and T?": the log has no press of the key, so "it
+      works" was about something else (most likely the usage bars on a line each,
+      shown a minute before) and what the key is for had not come across. Explained
+      again; **still not pressed**.
       Open: it works inside VS Code's window only, so with a browser or a game in front
       nothing is seen (the overlay could bring the window forward; not built); whether
       `Ctrl+Alt+T` is free on their machine shows in `hub.log` once the key is claimed.
