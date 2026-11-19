@@ -105,6 +105,7 @@ SECTIONS = [
         number("terminal.strength", "Tint strength", "How much of the color goes into the background.", 0.0, 0.3, 0.01),
         switch("terminal.pulse", "Flash when the focus moves", "The terminal lights up for a moment when you move the focus to it."),
         switch("terminal.follow", "Focus follows the terminal", "Going to a terminal in the editor selects its session."),
+        switch("terminal.jump", "Terminal follows the focus", "Moving the focus with the arrows or the wheel brings that session's terminal to the front in the editor."),
         switch("terminal.title", "Name in the terminal's title", "Write the session's name and title as the terminal's title."),
     ]),
     ("Keys", [

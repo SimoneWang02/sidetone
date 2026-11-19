@@ -31,6 +31,10 @@ DEFAULTS = {
     # Not about marking: when the editor says which terminal you went to (the VS Code extension in
     # vscode/ does), the session running there gets the focus.
     "follow": True,
+    # The other way: moving the focus by hand (arrows, wheel) has the editor bring that session's
+    # terminal to the front, with the keyboard in it, for terminals kept as tabs, one in sight at a
+    # time. Off by default: terminals side by side are all in sight already.
+    "jump": False,
 }
 TINTS = ("focus", "all", "off")
 PULSE_SECONDS = 0.7

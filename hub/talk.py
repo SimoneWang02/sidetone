@@ -20,6 +20,8 @@ from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, Editor, Listener, OWN_SE
                   SAFE_ID, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
                   session_model, spoken_answer)
 
+SHOWN_ECHO = 1.0  # seconds in which the editor's report of a terminal the hub asked to the front is only that
+
 
 class Talk:
     usage_ask = staticmethod(usage.ask)  # the call to Claude Code; the tests put their own in its place
@@ -574,19 +576,30 @@ class Talk:
         with self.lock:
             s = (next((x for x in self.sessions.by_id.values() if x.name == name), None) if name
                  else self._target())
-            if not self._showable(s):
+            if not self._ask_show(s):
                 return None
-            for editor in self.editors:
-                if editor.shows and s.tty in editor.ttys and not editor.wake.is_set():
-                    editor.show.append(editor.ttys[s.tty])
-                    editor.wake.set()
-                    break
-            else:  # its editor is between two requests: the next one is handed it
-                self._show_wanted = (s.tty, time.monotonic())
             found = (s.name, s.tty, s.color)
         log(self.cfg, "hub.log", f"terminal of {found[0]} ({found[1]}) asked to the front")
         self.terminals.pulse(found[1], found[2])
         return found[0]
+
+    def _ask_show(self, s) -> bool:
+        """Have the editor that holds this session's terminal bring it to the front. Only the
+        newest ask counts: one still on its way to the editor is replaced, so turning the
+        wheel over three sessions does not show all three in turn. Call with the lock held."""
+        if not self._showable(s):
+            return False
+        self._shown_at[s.tty] = time.monotonic()
+        for editor in self.editors:
+            if editor.shows and s.tty in editor.ttys:
+                if editor.wake.is_set():  # it has been woken and not answered yet
+                    editor.show[:] = [editor.ttys[s.tty]]
+                else:
+                    editor.show.append(editor.ttys[s.tty])
+                    editor.wake.set()
+                return True
+        self._show_wanted = (s.tty, time.monotonic())  # its editor is between two requests: the next one is handed it
+        return True
 
     def _stop_words(self, sid: str) -> str:
         stopping = self._stopping.get(sid)
@@ -746,6 +759,8 @@ class Talk:
             s = self.sessions.by_id[ids[max(0, min(len(ids) - 1, ids.index(self._target().id) + step))]]
             self._focus_on(s)
             name, tty, color = s.name, s.tty, s.color
+            if self.cfg.terminal.get("jump") and self._ask_show(s):  # its terminal comes up in the editor
+                log(self.cfg, "hub.log", f"terminal of {name} ({tty}) asked to the front: the focus moved to it")
         self.publish()
         if tty:  # chosen by hand: its terminal lights up for a moment, so it can be found
             self.terminals.pulse(tty, color)
@@ -777,6 +792,8 @@ class Talk:
             s = next((x for x in self.sessions.by_id.values() if tty and x.tty == tty), None)
             if not s or (same and not switched) or self._target() is s:
                 return None
+            if time.monotonic() - self._shown_at.get(tty, base.NEVER) < SHOWN_ECHO:
+                return None  # the editor only did as asked, for a focus that has moved on since
             self.last_seen = time.time()  # you are there
             self._focus_on(s)
             name = s.name

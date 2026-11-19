@@ -813,6 +813,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the list without meaning to do it soon: with terminals as tabs, one shown at a time,
   moving the focus in the overlay could bring that session's terminal up by itself
   (`TODO.md`). What follows is how it was built.
+- The terminal follows the focus (2026-11-19, `terminal.jump`, `Talk._ask_show`). The
+  author, by voice, with two sessions in VS Code terminals that are not side by side:
+  "whenever I scroll between the session ... automatically set that terminal to focus".
+  When `Hub.focus` moves the focus by hand (arrows, wheel), the editor is asked to show
+  that session's terminal, keyboard in it, as the jump key did; a session that speaks and
+  takes the focus brings nothing up. An ask not yet answered by the editor is replaced
+  by the newer one, so a fast turn of the wheel shows only where it stopped, and for
+  `SHOWN_ECHO` (1 s) the editor's report of a terminal the hub asked for does not move
+  the focus (it would pull it back to a session the wheel went past). Off by default
+  (side by side, all terminals are in sight); on in the author's config. Needs the
+  extension 0.3.0 or newer running. **Not tried by them yet.**
 - Session → terminal, the jump key (2026-11-18, `Talk.show_terminal`, `_showable`, hotkey
   `jump` = `Ctrl+Alt+T`, `sidetone terminal show [PROJECT]`, `vscode/extension.js`
   0.3.0; built while the author was away, **key and letter not agreed with them, not

@@ -1044,7 +1044,12 @@ Smaller ideas:
       already shows which one to look at. The key is gone from the defaults (`jump`
       is blank; `sidetone terminal show` and the extension's part stay, for the
       idea below).
-- [ ] The terminal comes up by itself when the focus moves (the author's idea,
+- [x] Built 2026-11-19 on the author's word, by voice: "I have two terminals ... they're
+      not side by side ... Make it that whenever I scroll between the session and
+      automatically set that terminal to focus". `terminal.jump` (off by default, on in
+      their config; `sidetone terminal jump on|off`, a switch in the settings window).
+      It takes the keyboard, as they asked. **Not tried by them yet.**
+      The terminal comes up by itself when the focus moves (the author's idea,
       2026-11-18, kept on the list on their word, with "I don't think I'm gonna do
       it" soon): for people whose terminals are tabs, one visible at a time, moving
       the focus in the overlay (arrows, wheel) would show that session's terminal in

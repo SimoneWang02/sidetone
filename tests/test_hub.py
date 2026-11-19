@@ -1269,6 +1269,30 @@ class PushToTalk(HubCase):
         hub._shown_by.clear()
         self.assertIsNone(hub.show_terminal())
 
+    def test_the_terminal_can_follow_the_focus_moved_by_hand(self):
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41", 4002: "/dev/pts/42"}.get(pid)
+        hub.sessions.by_id["a"].tty, hub.sessions.by_id["b"].tty = "/dev/pts/41", "/dev/pts/42"
+        hub.talk_target = "a"
+        editor = hub.editor_waits([4001, 4002], shows=True)
+        hub.focus(1)
+        self.assertFalse(editor.wake.is_set(), "off by default: terminals side by side are all in sight")
+        hub.focus(-1)
+        hub.set_terminal(jump=True)
+        hub.focus(1)
+        self.assertTrue(editor.wake.is_set())
+        self.assertEqual(editor.show, [4002])
+        hub.focus(-1)  # before the editor has answered: only the newest one is shown
+        self.assertEqual(editor.show, [4001])
+        hub.editor_done(editor)
+        self.assertEqual(hub.sessions.by_id[hub.talk_target].name, "a")
+        # The editor reports what it was asked to show; a report from a show the focus has
+        # since moved past does not pull the focus back.
+        hub._shown_at["/dev/pts/42"] = time.monotonic()
+        self.assertIsNone(hub.terminal_in_front(4002))
+        self.assertEqual(hub.sessions.by_id[hub.talk_target].name, "a")
+
     def test_escape_is_asked_for_once_and_only_of_a_session_in_a_turn(self):
         hub = self.got_the_words()  # "a" has the words and has begun on them
         self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
