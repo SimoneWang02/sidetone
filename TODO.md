@@ -634,6 +634,24 @@ real keys yet.
 
 ## Not started
 
+Added by the author on 2026-11-19, at the end of a long session, for the next one:
+
+- [ ] Mixed languages: what happens when one speaks Italian, English and Chinese mixed in
+      one recording or one turn ("se tipo iniziasse a parlare in italiano, in inglese, in
+      cinese, mischiati, come funzionerà"). To look at: Whisper picks one language per
+      half minute of recording (`stt.Named`), so a mixed sentence may come out in one
+      language; the reminder asks for "the language of my last message", which is
+      unclear when it mixes; the speak tag carries one `lang`, so a mixed line is said
+      by one voice (the Chinese model already reads Latin words as English; Kokoro's and
+      Piper's Italian voices do not read Chinese). Try it for real first, then decide.
+- [ ] Confirmation before a spoken message is sent, as a setting in the settings window
+      ("un'opzione nei settings per la gente che vuole la conferma": see the transcript,
+      then send). It exists in the hub already, off by default since the author found it
+      "too many clicks": `followup_confirm` (false, true, or "auto" for sessions that act
+      without asking) and `followup_delay` (seconds the transcript is shown and can be
+      cancelled before it goes). Neither is in `settings.SECTIONS`; add both to "Talking",
+      and check how the confirming tap and the delay look on the overlay today.
+
 The author's direction for all of this: people who download the tool should be able to customize
 as much of their experience as possible. New looks and behaviours come as settings, not as
 replacements.
