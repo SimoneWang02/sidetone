@@ -31,7 +31,10 @@ these come before anything new.
       "e comunque, che ore sono?" was written "Comunque ci sono." (heard as Italian), went
       on the side at once, and Paola answered in 3.8 s: "Ho capito solo 'ci sono', ma se
       volevi sapere l'ora, adesso sono le tre e trentadue del pomeriggio". The session never
-      got the words. **Still to try: the usage and the context asked in Italian.**
+      got the words. The usage in Italian tried at 15:41: "Quanto sto usando?" (5.2 s) and
+      "Quanto usato?" (2.2 s), both heard as Italian, both answered by the hub in Italian
+      ("Hai usato il 1 percento delle cinque ore, si azzera alle 20:40 ..."). **Still to
+      try: the context asked in Italian.**
 - [ ] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
       mute shortcut"). Press it while a session speaks: the line stops, two low notes go
       down, and the overlay shows "Voice off" with a struck-out speaker for 2.5 s. While
