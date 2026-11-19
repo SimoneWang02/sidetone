@@ -821,7 +821,7 @@ namespace ClaudeSpeaks
     // grows, which is the only way a see-through window resizes without a flicker.
     class Glass : Window
     {
-        const int GWL_EXSTYLE = -20;
+        const int GWL_EXSTYLE = -20, GWL_STYLE = -16, WS_MINIMIZEBOX = 0x20000, WS_SYSMENU = 0x80000;
         const int WS_EX_TRANSPARENT = 0x20, WS_EX_TOOLWINDOW = 0x80, WS_EX_NOACTIVATE = 0x08000000;
         const uint SWP_NOSIZE = 1, SWP_NOMOVE = 2, SWP_NOACTIVATE = 0x10;
         const int WCA_ACCENT_POLICY = 19, DWMWA_WINDOW_CORNER_PREFERENCE = 33;
@@ -861,7 +861,10 @@ namespace ClaudeSpeaks
             ShowActivated = takesInput;
             Focusable = takesInput;
             IsHitTestVisible = takesInput;
-            ResizeMode = ResizeMode.NoResize;
+            // CanMinimize is what lets a click on its place in the taskbar put it away: Windows
+            // only does that for a window that says it can be minimized. (The author: "if I click
+            // the icon in the start bar it appears and if I click it again it doesn't disappear".)
+            ResizeMode = takesInput ? ResizeMode.CanMinimize : ResizeMode.NoResize;
             if (Unfolds) { Width = unfoldingWidth; Height = 1; MinHeight = 0; Panel.ClipToBounds = true; }
             else SizeToContent = SizeToContent.WidthAndHeight;
             WindowStartupLocation = WindowStartupLocation.Manual;
@@ -877,6 +880,7 @@ namespace ClaudeSpeaks
             // Click-through, no taskbar or Alt+Tab entry, never takes focus from the app in front.
             // One that takes input is none of those.
             if (!takesInput) SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+            else SetWindowLong(Handle, GWL_STYLE, GetWindowLong(Handle, GWL_STYLE) | WS_MINIMIZEBOX | WS_SYSMENU);  // WPF leaves the second out of a window without a frame
         }
 
         public FrameworkElement Body

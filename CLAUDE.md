@@ -844,6 +844,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   nowhere as a picture: the window, its taskbar icon and `assets/logo.png` for the README
   (the `logo` message writes it) are the same drawing. The window's switches and sliders
   took that pink (they were the blue of "working"). **Not seen by the author yet.**
+  The author then found that a click on its place in the taskbar brought the window up
+  but a second click did not put it away: Windows only does that for a window that says
+  it can be minimized, and a WPF window with `ResizeMode.NoResize` does not. It is
+  `CanMinimize` now, with `WS_MINIMIZEBOX` and `WS_SYSMENU` set on the window (the size is
+  unchanged, seen in a picture). **The click itself not tried again by them yet.**
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.
