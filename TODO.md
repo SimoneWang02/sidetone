@@ -31,7 +31,9 @@ by the author with the real keys, voice or eyes.
       built at once as `share_taken_keys` (on), a key another program holds is heard through
       the keyboard hook and passed on. Minutes later M became the default for everyone ("if
       there's conflict just do both"), which sets their rule above aside for this key: with
-      the NVIDIA overlay, M also switches its microphone. **Not pressed by them yet.**
+      the NVIDIA overlay, M also switches its microphone. Pressed by them on 2026-11-19
+      at 14:45 with the NVIDIA overlay holding the key: off, a spoken message while muted
+      got through, on again 25 s later (`hub.log`). Not said: how it looked or sounded.
       While muted: first a small struck-out speaker past the end of the bar, which they did
       not like ("I don't like the icon underneath the sessions"; `muted_mark`, now off);
       now "Voice is muted" in the details (`muted_line`), their idea, and a struck-out speaker
