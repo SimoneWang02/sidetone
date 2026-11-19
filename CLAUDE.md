@@ -702,6 +702,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   small", wanting a slash over the speaker). A speaker with two waves and a slash across all
   of it, cut free of what it crosses by a gap; the same in the card's corner, the line, the
   "Voice off" notice and the mark past the bar.
+  Then the place they had meant all along: "not in the ... box, I meant in the top right of
+  the session's details whenever there's the response coming out", since they keep the
+  details away and see lines in the bubble beside the light. So the same icon is in the
+  bubble's top right while muted (`bubbleMuted`, with `muted_icon`), not while push-to-talk
+  has the bubble. Seen in a picture (`mute-bubble.png`).
   Found on the way: `SpeechQueue.wait_idle` returned before `on_change(None)` and `on_done`
   had run, so a test could read the overlay's state before its last update; it now also
   waits for those (`_settling`). Claimed only while they can act: `allow` Ctrl+Alt+Y,

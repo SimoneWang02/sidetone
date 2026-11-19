@@ -1829,6 +1829,9 @@ namespace ClaudeSpeaks
             Margin = new Thickness(0, 0, -2, 0), Visibility = Visibility.Collapsed,
         };
         bool mutedIconOn = true;
+        // ... and in the top right of the bubble that pops out beside a light when a session's
+        // line comes (the author keeps the details away, so that is where they look).
+        readonly MutedSpeaker bubbleMuted = new MutedSpeaker(16) { Margin = new Thickness(8, 1, 0, 0), VerticalAlignment = VerticalAlignment.Top, Visibility = Visibility.Collapsed };
         string detailsStyle = "tiles";
         bool choiceCaps;  // the number in front of a question's choice drawn as a key cap, not as a plain number
         readonly TextBlock requestTitle = new TextBlock(), requestDetail = new TextBlock(), requestKeys = new TextBlock();
@@ -1970,9 +1973,12 @@ namespace ClaudeSpeaks
             var bubbleRow1 = new Grid();
             bubbleRow1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             bubbleRow1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            bubbleRow1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             Grid.SetColumn(bubbleBadge, 1);
+            Grid.SetColumn(bubbleMuted, 2);
             bubbleRow1.Children.Add(bubbleLine1);
             bubbleRow1.Children.Add(bubbleBadge);
+            bubbleRow1.Children.Add(bubbleMuted);
             bubbleWords.Children.Add(bubbleRow1);
             bubbleWords.Children.Add(bubbleLine2);
             var layers = new Grid();
@@ -2431,6 +2437,7 @@ namespace ClaudeSpeaks
             bool mine = orphan || (found.TalkKind != null && !hushed), listening = mine && talkState == "listening";
             string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : found.FlashText;
             string kind = mine ? TalkKind() : "";
+            bubbleMuted.Visibility = muted && mutedIconOn && !mine ? Visibility.Visible : Visibility.Collapsed;  // a line shown, not said
             string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind + Ui.SignInLight + Ui.TalkText;
             if (shows != bubbleShows)
             {
