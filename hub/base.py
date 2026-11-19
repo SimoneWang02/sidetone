@@ -222,7 +222,8 @@ class Config:
     clear_by_voice: bool = True
     clear_words: list = field(default_factory=lambda: [
         "clear the chat", "clear the context", "clear the conversation", "clear the session", "clear the history",
-        "slash clear", "run slash clear", "do a slash clear", "use slash clear"])
+        "slash clear", "run slash clear", "do a slash clear", "use slash clear",
+        "clear the shot"])  # how the speech model wrote "chat" once (2026-11-19)
     # The plan's usage at the foot of the card of figures in the overlay: the five-hour window
     # and the week, each a thin bar and its percent (the author's idea, 2026-11-17: "bar that
     # shows the usage, the five-hour window and the weekly usage"). Read with the same call

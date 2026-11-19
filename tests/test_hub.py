@@ -1442,7 +1442,7 @@ class PushToTalk(HubCase):
     def test_which_words_clear_a_conversation(self):
         words = hub_module.Config(run="r", state="s").clear_words
         for said in ("Hey, Cloud, clear the chat.", "Clear chat", "Okay Claude, can you clear the context?", "/clear",
-                     "Slash clear.", "Run /clear", "clear this conversation now", "Clear your context for me", "I'll clear the chat."):
+                     "Slash clear.", "Run /clear", "clear this conversation now", "Clear your context for me", "I'll clear the chat.", "clear the shot"):
             self.assertTrue(hub_module.base.asks_to_clear(said, words), said)
         for said in ("Clear the chat history file from the repo", "clear", "Don't clear the chat", "clear the cache",
                      "is it possible to say clear the chat", "", "the"):
