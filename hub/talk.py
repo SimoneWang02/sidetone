@@ -203,8 +203,15 @@ class Talk:
             return
         self._type_clear(s, text)
 
-    def _not_cleared(self, s, why: str, text: str) -> None:
-        self._talk("failed", s, f"Not cleared: {why}", seconds=4)
+    def _talk_held(self) -> bool:
+        """Push-to-talk is under way (key held, words being worked out or waiting for a
+        go-ahead): news that comes later must not take its sign off the overlay, which shows
+        one step at a time. Call with the lock held."""
+        return bool(self._talking or self._transcribing or self._pending)
+
+    def _not_cleared(self, s, why: str, text: str, late: bool = False) -> None:
+        if not (late and self._talk_held()):
+            self._talk("failed", s, f"Not cleared: {why}", seconds=4)
         self._signal("failed")
         log(self.cfg, "hub.log", f"clear [{s.id[:8]}] not done, {why}: {text[:80]}")
 
@@ -223,9 +230,9 @@ class Talk:
             if not s:
                 continue
             if not why:
-                self._type_clear(s, "(said during its turn, which has ended)")
+                self._type_clear(s, "(said during its turn, which has ended)", late=True)
             else:
-                self._not_cleared(s, "its turn ran too long" if why == CLEAR_BUSY else why, "(said during its turn)")
+                self._not_cleared(s, "its turn ran too long" if why == CLEAR_BUSY else why, "(said during its turn)", late=True)
         return changed
 
     def _unclear(self, sid: str, why: str) -> None:
@@ -233,7 +240,9 @@ class Talk:
         if self._clear_after.pop(sid, None) is not None:
             log(self.cfg, "hub.log", f"clear [{sid[:8]}] that waited for the end of its turn dropped: {why}")
 
-    def _type_clear(self, s, text: str) -> None:
+    def _type_clear(self, s, text: str, late: bool = False) -> None:
+        """`late`: typed when a turn it waited for ended, so maybe while you talk to another
+        session; then its light is left as it is."""
         for editor in self.editors:
             if editor.clears and s.tty in editor.ttys and not editor.wake.is_set():
                 editor.keys.append({"pid": editor.ttys[s.tty], "key": "clear"})
@@ -241,7 +250,8 @@ class Talk:
                 break
         else:  # its editor is between two requests: the next one is handed it
             self._clear_wanted = (s.tty, time.monotonic())
-        self._talk("sent", s, text, seconds=2.5)  # no sound yet: the one sound comes when it is seen done, or not
+        if not (late and self._talk_held()):
+            self._talk("sent", s, text, seconds=2.5)  # no sound yet: the one sound comes when it is seen done, or not
         log(self.cfg, "hub.log", f"clear [{s.id[:8]}] /clear asked of the editor for its terminal ({s.tty}): {text[:80]}")
         old = self._clearing.pop(s.id, None)
         if old:
@@ -277,7 +287,7 @@ class Talk:
                 return
             s = self.sessions.by_id.get(sid)
             log(self.cfg, "hub.log", f"clear [{sid[:8]}] not seen done in {base.CLEAR_CONFIRM:.0f}s")
-            if s:
+            if s and not self._talk_held():
                 self._talk("failed", s, "Not cleared: the chat is still there", seconds=4)
             self._signal("failed")
         self.publish()

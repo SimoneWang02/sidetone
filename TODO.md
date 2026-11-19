@@ -1126,3 +1126,34 @@ Smaller ideas:
 - [ ] Spoken summaries in the language you spoke (they are always English today; part of
       "Any language" above)
 - [ ] Running the speech model on the graphics card to make transcription faster
+- [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
+      2026-11-19: "a feature that let you register my voice and evaluate the correctness
+      of my English ... evaluate our pronunciation of the words"; asked "What do you
+      think?"). The thought: developers already speak to it all day, so the recordings are
+      practice that costs nothing extra. On hearing that: "I think it's a good
+      feature." Kept for later, not started. Notes for whoever builds it:
+      - Opt in, off by default; recordings and results stay on the machine (a folder
+        under `~/.local/state/claude-speaks/`), with a way to delete them.
+      - Never in the way: no correction while you are talking to a session. A report you
+        ask for (`sidetone english`, or by voice), said in a few sentences and with the
+        details in a page or the settings window.
+      - Two separate things. Grammar and wording: the transcript is enough, and a side
+        copy (as for side questions) or a small local model can suggest a better
+        sentence. Pronunciation: harder, because Whisper is built to guess the intended
+        word, so a mispronounced word often comes out spelled right and nothing shows.
+        Whisper's per-word probability (`word_timestamps=True`) is a cheap first signal
+        of words it found hard. Real scoring needs the sounds: a phoneme recognizer
+        (for example wav2vec2 trained on espeak phonemes) run on the clip, compared with
+        the expected phonemes of the transcribed words (`espeak-ng --ipa`, already a
+        dependency), word by word. Kokoro could then say the word the right way.
+      - Measure before promising: synthetic voices are too clean to test it; it needs real
+        recordings with known mistakes, the author's own among them.
+- [ ] Documentation (the author, by voice, 2026-11-19: "make it like well-documented ...
+      for each feature having a GIF and in the end putting a video registration on me
+      watching a YouTube video while I'm using you, which is the real context of why I'm
+      built in this tool"). So: a page per feature, or a section of the README, each with a
+      short GIF of it on screen; and, to close, a real recording of the author watching a
+      video while sessions speak, get answered by voice and ask for permission, as the
+      story of attention latency told in one picture. The overlay's own pictures
+      (`tests/overlay_check.py`) cover single views, not motion; GIFs need a screen
+      recording from Windows, and the video has the author's sound and voice in it.

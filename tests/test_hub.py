@@ -1457,6 +1457,27 @@ class PushToTalk(HubCase):
         self.assertEqual(self.talks()[-1], ("failed", "a", "Not cleared: its turn ran too long"))
         self.assertFalse(editor.wake.is_set())
 
+    def test_a_clear_typed_after_its_turn_leaves_a_recording_on_screen(self):
+        """The turn a clear waited for can end while you hold the talk key for another session;
+        the overlay shows one push-to-talk step, so "sent" would take the listening sign away
+        (the author, 2026-11-19: "I don't see the registering icon anymore")."""
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41"}.get(pid)
+        hub.sessions.by_id["a"].tty = "/dev/pts/41"
+        editor = hub.editor_waits([4001], clears=True)
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        self.said(hub, "clear the chat", "a")
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Done.")))
+        self.assertTrue(hub.speech.wait_idle(5))
+        with hub.lock:
+            hub._talking = time.monotonic()  # the key is held, for session b
+            hub._talk("listening", hub.sessions.by_id["b"])
+        hub.reconcile()
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}], "it is still typed")
+        self.assertEqual(self.talks()[-1][:2], ("listening", "b"))
+        hub._talking = None
+
     def test_which_words_clear_a_conversation(self):
         words = hub_module.Config(run="r", state="s").clear_words
         for said in ("Hey, Cloud, clear the chat.", "Clear chat", "Okay Claude, can you clear the context?", "/clear",
