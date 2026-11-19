@@ -1902,6 +1902,12 @@ namespace ClaudeSpeaks
         // Ctrl+Alt brings them out. The author asked for that as the default, tried to picture
         // it and took it back ("I like hovering ... opening up its details"), so it is a choice.
         bool hoverOpens = true;
+        // With the details kept out (the list key), a drag on them moves the whole overlay, and
+        // the panel goes along instead of folding away; a click on them still goes to what is
+        // behind. The author, 2026-11-19: "if it's fully displayed with Ctrl+Alt+L, I should be
+        // able to move the entire overlay" (only the narrow bar of lights could be grabbed).
+        bool panelDrag = true;
+        bool panelHeld, panelCatching;
         object[] usage = new object[0];  // the plan's usage, from the hub: [what, percent, "warn" or ""] each
         string focusWas = "";  // the session in focus as of the last state, to notice when it moves
         string historyOf = "";  // the session whose lines the history shows: the one the mouse was on last
@@ -2001,6 +2007,7 @@ namespace ClaudeSpeaks
             hoverTimer.Tick += delegate { WatchWheelKeys(); WatchTalkKeys(); WatchCursor(); };
             moveTimer.Tick += delegate { EndMove(); };
             rail.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { Press(e.GetPosition(rail)); };
+            panel.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { PressPanel(e.GetPosition(panel)); };
             // Hold-to-talk: a hotkey only reports the press, so watch the key until it comes back up.
             holdTimer.Interval = TimeSpan.FromMilliseconds(30);
             holdTimer.Tick += delegate { if (!Down((int)heldKey)) EndHold(); };
@@ -2131,6 +2138,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("usage_layout")) usageRows = Str(msg, "usage_layout") != "line";
                     historyTicks = (int)Math.Max(1, Math.Round(Num(msg, "history_after", historyTicks * 0.03) / 0.03));
                     if (msg.ContainsKey("hover")) hoverOpens = Str(msg, "hover") != "keys";
+                    if (msg.ContainsKey("panel_drag")) panelDrag = Convert.ToBoolean(msg["panel_drag"]);
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
                     if (msg.ContainsKey("share_taken_keys")) shareTaken = Convert.ToBoolean(msg["share_taken_keys"]);
                     if (msg.ContainsKey("muted_mark")) mutedMark = Convert.ToBoolean(msg["muted_mark"]);
@@ -2265,6 +2273,7 @@ namespace ClaudeSpeaks
             selectorShown = 0;
             hover = peek = false;
             if (catching) { catching = false; rail.CatchMouse(false); }
+            if (panelCatching) { panelCatching = false; panel.CatchMouse(false); }
             if (rail.IsVisible) rail.Hide();
             Edge();
         }
@@ -2305,7 +2314,7 @@ namespace ClaudeSpeaks
 
         // The panel (names, titles, what each session is doing) is out in list mode, under the
         // mouse, while Ctrl+Alt is held, and while there is something to ask or show. Otherwise there are only the lights.
-        bool IsOpen() { return !BarHeld && (mode == "list" || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
+        bool IsOpen() { return (!BarHeld || panelHeld) && (mode == "list" || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
 
         // Brings everything in line with what there is to show. What moves is then moved by Frame.
         void Render()
@@ -2826,6 +2835,8 @@ namespace ClaudeSpeaks
             bool sorting = onBar && CanReorder();
             bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys) || sorting))) && Ui.Now > passUntil;
             if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); }
+            bool panelWant = panelDrag && mode == "list" && panel.IsVisible && panel.Goal > 0 && Within(cursor, panel.Area(), 0) && Ui.Now > passUntil;
+            if (panelWant != panelCatching) { panelCatching = panelWant; panel.CatchMouse(panelWant); }
             Edge();
             // The cursor says what a drag would do: arrows along the bar = put this light elsewhere,
             // the move cross = the bar is held only because its keys are. A bar that can always be
@@ -3137,6 +3148,22 @@ namespace ClaudeSpeaks
 
         bool BarHeld { get { return dragging && !undecided && lifted == null; } }
 
+        // A press on the kept-out details: the same as one on the bar, held where the bar is
+        // from the cursor, except that it never puts a light elsewhere and the panel stays out.
+        // Where it was pressed comes from the press, as for the bar (see BeginDrag).
+        void PressPanel(Point at)
+        {
+            var source = PresentationSource.FromVisual(panel) as HwndSource;
+            if (dragging || source == null) return;
+            Point held = source.CompositionTarget.TransformToDevice.Transform(at);
+            int[] box = panel.Area();
+            grabbedAt = rail.Area();
+            grabX = box[0] + (int)Math.Round(held.X) - grabbedAt[0];
+            grabY = box[1] + (int)Math.Round(held.Y) - grabbedAt[1];
+            dragging = panelHeld = undecided = true;
+            Edge();
+        }
+
         // Up while the voice is off and the bar is on screen; away while the bar travels, and
         // back in its place when it is dropped.
         void ShowMuteChip()
@@ -3158,6 +3185,7 @@ namespace ClaudeSpeaks
             Point to = HwndSource.FromHwnd(hwnd).CompositionTarget.TransformFromDevice.Transform(new Point(cursor.X - grabX, cursor.Y - grabY));
             rail.Left = to.X;
             rail.Top = to.Y;
+            if (panelHeld) PlaceSides();
         }
 
         // Dropped. If it did not really move, the press was a plain click, and that goes to
@@ -3165,6 +3193,7 @@ namespace ClaudeSpeaks
         void EndDrag()
         {
             dragging = false;
+            panelHeld = false;
             undecided = false;  // let go before it moved: the bar is where it was, so it was a click
             if (lifted != null) { EndLift(); return; }
             int[] now = rail.Area();
@@ -3184,8 +3213,9 @@ namespace ClaudeSpeaks
         void PassClick()
         {
             passUntil = Ui.Now + 0.4;
-            catching = false;
+            catching = panelCatching = false;
             rail.CatchMouse(false);
+            panel.CatchMouse(false);
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, UIntPtr.Zero);
             mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, UIntPtr.Zero);
         }
@@ -3244,7 +3274,7 @@ namespace ClaudeSpeaks
         // two lights); none: the bar goes with the mouse from where it was taken hold of.
         void Decide(CursorPoint cursor)
         {
-            if (ReorderKeyed())
+            if (!panelHeld && ReorderKeyed())
             {
                 undecided = false;
                 double start = 0;
@@ -3265,9 +3295,9 @@ namespace ClaudeSpeaks
             double dx = cursor.X - (bar[0] + grabX), dy = cursor.Y - (bar[1] + grabY);
             if (dx * dx + dy * dy < 36) return;  // 6 px
             undecided = false;
-            FoldForDrag();
+            if (!panelHeld) FoldForDrag();
             Edge();
-            Send("note", "message", "bar moved by the mouse: ctrl " + (Down(VK_CONTROL) ? "down" : "up") + ", alt "
+            Send("note", "message", (panelHeld ? "overlay moved by its details" : "bar moved by the mouse") + ": ctrl " + (Down(VK_CONTROL) ? "down" : "up") + ", alt "
                  + (Down(VK_MENU) ? "down" : "up") + ", " + order.Count + " sessions");
         }
 

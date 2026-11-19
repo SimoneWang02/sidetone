@@ -77,6 +77,7 @@ SECTIONS = [
                ("bar", "Bar"), ("island", "Island")),
         choice("overlay.mode", "Details", "Names, titles and figures beside the lights.",
                ("dots", "Under the mouse"), ("list", "Always out")),
+        switch("overlay.panel_drag", "Move it by the details", "With the details kept out, dragging them moves the whole overlay. A click still goes to what is behind."),
         choice("overlay.hover", "What opens the details", "The mouse resting on the lights, or only holding the keys.",
                ("always", "Mouse"), ("keys", "Keys only")),
         switch("overlay.muted_line", "Say when muted", "\"Voice is muted\" in the details while the voice is off."),

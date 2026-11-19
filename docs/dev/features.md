@@ -184,6 +184,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   while dragging. `BeginDrag` took the grab point from `GetCursorPos` when the press was
   handled, which is after the mouse has moved on; it now takes it from the press
   (`e.GetPosition`). The author dragged it afterwards: "Perfect, it seems to be working."
+  By the details too (2026-11-19, `overlay.panel_drag`, on; `PressPanel`): with the details
+  kept out (the list key), "I should be able to move the entire overlay"; only the narrow bar
+  could be grabbed, and the panel let every click through to what was behind it. Now the
+  panel catches the mouse while the cursor is on it in list mode; a drag moves the bar and
+  the panel goes along (`PlaceSides` each step, no folding), a click without a move is passed
+  through as for the bar (`PassClick`). It never puts a light elsewhere.
 - Sessions in an order of your own (2026-11-19, `overlay.reorder_keys`, `Press`, `LiftStep`,
   `EndLift` in `Overlay.cs`, `Sessions.reorder`). The author, by voice: "if we could move the
   ... sessions", by dragging; Ctrl+Alt was already the key for dragging the bar ("they're kind

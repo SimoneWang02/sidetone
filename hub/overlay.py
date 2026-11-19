@@ -66,6 +66,9 @@ DEFAULTS = {
     # keys = only holding Ctrl+Alt (or the key that keeps them out), so a mouse passing over
     # the bar, in a game for one, changes nothing
     "hover": "always",
+    # With the details kept out (the list key), a drag on them moves the whole overlay; a click
+    # on them still goes to what is behind. False: only the bar of lights can be grabbed.
+    "panel_drag": True,
     # What the history under the kept-out details shows: session = the lines of the session the
     # mouse is on (before it touched one: the session in focus) | all = every session's lines
     "history": "session",

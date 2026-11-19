@@ -18,6 +18,20 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
+- [ ] Moving the overlay by its details (2026-11-19, the author: "if it's fully displayed
+      with Ctrl+Alt+L, I should be able to move the entire overlay"). Built the same day
+      (`overlay.panel_drag`, on): with the details kept out, drag them and the whole
+      overlay goes, the panel along with the bar; a click still reaches what is behind.
+      Compiled, not tried with the mouse.
+- [ ] Your own words' sign hidden by another session's line (2026-11-19, the author: "I
+      just send an audio to session three and I immediately switch to session one, try
+      sending an audio, and I don't see the icon for sending the audio. I don't see the
+      status update"). In pictures of the same steps: with the details kept out the rows
+      show it ("Release to send", then the words and the paper plane); with only the bar,
+      session three's reply takes the bubble and session one's paper plane is only on its
+      light. That is the choice made earlier the same day (`overlay.sent_first`, off, after
+      "you started speaking without like the window popping out"). To ask which they were
+      in and which they want.
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
       Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
       the talk key and say "clear the chat" to a session that is idle: its terminal should
