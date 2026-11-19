@@ -3064,6 +3064,7 @@ namespace ClaudeSpeaks
         void Press(Point at)
         {
             CursorPoint cursor;
+            if (dragging) return;
             Row row = CanReorder() && GetCursorPos(out cursor) ? LightAt(cursor) : null;
             BeginDrag(at);
             if (row == null || !dragging) return;
@@ -3094,7 +3095,14 @@ namespace ClaudeSpeaks
         void LiftStep(CursorPoint cursor)
         {
             int from = order.IndexOf(lifted);
-            if (from < 0) { lifted = null; dragging = false; Render(); return; }  // that session ended meanwhile
+            if (from < 0)  // that session ended meanwhile
+            {
+                foreach (Row r in order) { r.Shift.X = r.Shift.Y = 0; }
+                lifted = null;
+                dragging = false;
+                Render();
+                return;
+            }
             double length = 0;
             foreach (Row row in order) length += Room(row);
             double start = 0;
@@ -3119,9 +3127,9 @@ namespace ClaudeSpeaks
         void EndLift()
         {
             Row row = lifted;
-            lifted = null;
             double moved = Island ? row.Shift.X : row.Shift.Y;
-            int from = order.IndexOf(row), target = from < 0 ? -1 : LiftTarget(moved);
+            int from = order.IndexOf(row), target = from < 0 ? -1 : LiftTarget(moved);  // needs `lifted`
+            lifted = null;
             foreach (Row r in order) { r.Shift.X = r.Shift.Y = 0; }
             row.Lift.ScaleX = row.Lift.ScaleY = 1;
             Panel.SetZIndex(row.Light, 0);
