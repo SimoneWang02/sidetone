@@ -1166,6 +1166,11 @@ Smaller ideas:
       downloads the model from Hugging Face, was refused by the permission check; nothing
       measured yet. The worry is speed on a CPU with no graphics card. Not built: Piper as
       the engine for Italian lines (the hub already knows Piper as a fallback).
+      Seen the same evening: a short Italian answer seems to come out as English. Asked to
+      say "procedi" and then "sì", the author's replies were written "See you soon" (twice)
+      and "See you." With `whisper_language: "en,it"` a word or two is too short to tell
+      the language, and English wins. Not looked into; perhaps lean to the language of
+      the session's last line, or of the user's last longer recording.
 - [ ] Running the speech model on the graphics card to make transcription faster
 - [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
       2026-11-19: "a feature that let you register my voice and evaluate the correctness
