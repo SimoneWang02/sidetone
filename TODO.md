@@ -1196,7 +1196,15 @@ Smaller ideas:
       quicker (5.7 to 8 s), so the time goes in the step-by-step loop, not the model's
       size. qwen-tts 0.1.1 has no real streaming (`non_streaming_mode=False` only simulates
       streaming input). Using it would mean a second engine in its own GPU environment
-      and about one sentence's length of waiting before the first word. Added to the comparison page
+      and about one sentence's length of waiting before the first word.
+      They chose quality ("preferisco la qualità") and asked for something faster. Qwen3's
+      announced streaming (97 ms) is not in the package nor in vLLM yet ("only offline
+      inference is supported"). Found and sampled: Kokoro's Chinese model v1.1-zh
+      (kokoro-onnx release `model-files-v1.1`: `kokoro-v1.1-zh.onnx`, `voices-v1.1-zh.bin`,
+      and `config.json` from hexgrad/Kokoro-82M-v1.1-zh; phonemes from `misaki-fork[zh]`,
+      passed with `is_phonemes=True`): 103 voices, 0.5 to 0.7 s for 5 s of speech on the
+      CPU. On the Chinese page beside Vivian and Serena for them to compare. Not tried:
+      CosyVoice 2 (streaming, about 150 ms by its own account, GPU), MeloTTS. Added to the comparison page
       for them to hear. They did not like it either: "Paola è quella migliore", keep her
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when
