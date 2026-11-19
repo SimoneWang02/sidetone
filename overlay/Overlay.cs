@@ -1803,6 +1803,7 @@ namespace ClaudeSpeaks
         // the words, and your own voice as the microphone hears it.
         readonly Wave mic = new Wave();
         string talkState = "", talkName = "", talkText = "", talkHint = "";
+        bool talkQuiet;  // the step is news from the hub, not something you are doing: it leaves the bubble to a session that is speaking
         double talkUntil;
 
         Overlay(TextWriter output)
@@ -2265,10 +2266,17 @@ namespace ClaudeSpeaks
         {
             Row found = null;
             bool talking = talkState.Length > 0, away = !IsOpen() && barShown && !dragging;
+            // Words that waited and are now handed over show as a sign on their session's light.
+            // They do not take the bubble from a line that is being said: it jumped to the other
+            // session and back in the middle of a sentence.
+            bool hushed = false;
+            if (talking && talkQuiet)
+                foreach (Row row in order) if (row.Speaking) hushed = true;
+            if (hushed) talking = false;
             if (away)
                 foreach (Row row in order)
                 {
-                    if (row.TalkKind != null) { found = row; break; }  // what you are saying comes first
+                    if (row.TalkKind != null && !hushed) { found = row; break; }  // what you are saying comes first
                     if (row.Saying && (found == null || row.Speaking || (!found.Speaking && row.FlashUntil > found.FlashUntil))) found = row;
                 }
             bool orphan = away && talking && (found == null || found.TalkKind == null);  // push-to-talk with no session to show it on
@@ -2276,7 +2284,7 @@ namespace ClaudeSpeaks
             talker = orphan ? null : found;
             // The first line is always the session's name and title; push-to-talk shows as a sign
             // at its right and as words underneath.
-            bool mine = orphan || found.TalkKind != null, listening = mine && talkState == "listening";
+            bool mine = orphan || (found.TalkKind != null && !hushed), listening = mine && talkState == "listening";
             string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : found.FlashText;
             string kind = mine ? TalkKind() : "";
             string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind + Ui.SignInLight + Ui.TalkText;
@@ -3094,6 +3102,7 @@ namespace ClaudeSpeaks
             talkName = Str(msg, "name");
             talkText = Str(msg, "text");
             talkHint = Str(msg, "hint");
+            talkQuiet = msg.ContainsKey("quiet") && Convert.ToBoolean(msg["quiet"]);
             double seconds = Num(msg, "seconds", 0);
             talkUntil = seconds > 0 ? Ui.Now + seconds : double.MaxValue;
             Render();

@@ -43,6 +43,7 @@ class Editor:
     wake: threading.Event = field(default_factory=threading.Event)
     shows: bool = False  # it can also bring a terminal to the front (the extension from 0.3.0 on says so)
     show: list = field(default_factory=list)  # the terminals it is asked to bring to the front, by process id
+    clears: bool = False  # it can also type the command that clears a session's conversation (0.4.0 on)
 
 
 EDITOR_WAIT = 25.0  # seconds an editor's request is held before it is sent back empty and asked again
@@ -208,6 +209,18 @@ class Config:
     # I used"): the hub answers aloud, the five-hour window first, and the words do not go to
     # a session. False: such words are a session's like any others.
     usage_by_voice: bool = True
+    # "Clear the chat" by voice (the author, 2026-11-19: "is it possible to say like, hey,
+    # Claude, clear the chat and you use the command slash clear"). No session can run
+    # /clear itself, it has to be typed, and only the editor can type into its terminals
+    # (see vscode/extension.js). Spoken words that are one of `clear_words` and nothing else,
+    # but for a greeting before and a "please" after, are not handed to the session: its
+    # editor types /clear into its terminal. Only for a session that is at its prompt, since
+    # the Enter that goes with it would answer a dialog that is open. False: such words are
+    # a session's like any others.
+    clear_by_voice: bool = True
+    clear_words: list = field(default_factory=lambda: [
+        "clear the chat", "clear the context", "clear the conversation", "clear the session", "clear the history",
+        "slash clear", "run slash clear", "do a slash clear", "use slash clear"])
     # The plan's usage at the foot of the card of figures in the overlay: the five-hour window
     # and the week, each a thin bar and its percent (the author's idea, 2026-11-17: "bar that
     # shows the usage, the five-hour window and the weekly usage"). Read with the same call
@@ -346,7 +359,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "separator", "waiting_words", "row_metrics", "detail_metrics",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):
@@ -395,6 +408,30 @@ def aside_question(text: str, words: list) -> str:
         if m:
             return m.group(1).strip()
     return ""
+
+
+# What may stand before and after the words that clear a conversation. The speech model
+# writes "Claude" as "cloud" as often as not.
+CLEAR_LEAD = re.compile(r"((hey|hi|hello|ok|okay|alright|all right|right|yeah|yes|sure|oh|so|um|uh|well|and|also|then|now|"
+                        r"claude|cloud|please|just|quickly|can you|could you|would you|will you|lets|i want to|i want you to) )+")
+CLEAR_TAIL = re.compile(r"( (please|now|for me|thanks|thank you|claude|cloud|again))+$")
+CLEAR_SMALL = re.compile(r"\b(the|this|that|your|my|our|a|whole|entire|current)\b")
+
+
+def asks_to_clear(text: str, words: list) -> bool:
+    """Whether these spoken words are the order to clear the conversation: one of `words`,
+    with nothing before it but a greeting and nothing after it but a "please". Small words
+    count for nothing ("clear chat", "clear this chat", "clear your context"). Anything
+    more is a sentence for the session ("clear the chat history file from the repo")."""
+    def plain(said: str) -> str:
+        said = re.sub(r"['\u2019]", "", str(said or "").lower())
+        said = " ".join(re.sub(r"[^\w]+", " ", said.replace("/", " slash ")).split())
+        return " ".join(CLEAR_SMALL.sub(" ", said).split())
+    said = plain(text)
+    m = CLEAR_LEAD.match(said)
+    said = said[m.end():] if m else said
+    said = CLEAR_TAIL.sub("", said)
+    return bool(said) and said in {plain(w) for w in words if isinstance(w, str)} - {""}
 
 
 def session_model(projects_dir: str, sid: str) -> tuple[str, str]:

@@ -11,6 +11,7 @@ import threading
 import time
 
 import base
+import claude_sessions
 import usage
 import stt
 import terminal as terminal_mod
@@ -171,13 +172,53 @@ class Talk:
                 self._talk(None)
                 return
             question = self._aside_question(s, pending.text)
-            if self.cfg.usage_by_voice and usage.asks(pending.text):
+            if self.cfg.clear_by_voice and base.asks_to_clear(pending.text, self.cfg.clear_words):
+                self._clear_chat(s, pending.text)
+            elif self.cfg.usage_by_voice and usage.asks(pending.text):
                 self._ask_usage(s, pending.text)
             elif question:
                 self._ask_aside(s, pending.text, question)
             else:
                 self._hand_over(s, pending.text)
         self.publish()
+
+    # --- clearing a conversation -------------------------------------------------------------
+
+    def _clear_chat(self, s, text: str) -> None:
+        """Words that order the conversation cleared: the session does not get them, its
+        editor types /clear into its terminal (see `Config.clear_by_voice`). Call with the
+        lock held."""
+        why = self._cannot_clear(s)
+        if why:
+            self._talk("failed", s, f"Not cleared: {why}", seconds=4)
+            self._signal("failed")
+            log(self.cfg, "hub.log", f"clear [{s.id[:8]}] not done, {why}: {text[:80]}")
+            return
+        for editor in self.editors:
+            if editor.clears and s.tty in editor.ttys and not editor.wake.is_set():
+                editor.keys.append({"pid": editor.ttys[s.tty], "key": "clear"})
+                editor.wake.set()
+                break
+        else:  # its editor is between two requests: the next one is handed it
+            self._clear_wanted = (s.tty, time.monotonic())
+        self._talk("sent", s, text, seconds=2.5)
+        self._signal("sent", s, "Clearing.")
+        log(self.cfg, "hub.log", f"clear [{s.id[:8]}] /clear asked of the editor for its terminal ({s.tty}): {text[:80]}")
+
+    def _cannot_clear(self, s) -> str:
+        """Why /clear cannot be typed into this session's terminal now, or "". It goes with
+        an Enter, which would answer whatever dialog is open there, and the hub cannot see a
+        terminal: so only for a session that the hooks and Claude Code's own file both have
+        at its prompt. Call with the lock held."""
+        if not s.tty or not (any(e.clears and s.tty in e.ttys for e in self.editors)
+                             or time.monotonic() - self._clears_by.get(s.tty, base.NEVER) < base.EDITOR_GAP):
+            return "no editor to type it"
+        if s.state in BUSY or s.id in self._stopping or any(r.session == s.id for r in self.requests):
+            return "it is still working"
+        info = claude_sessions.read(self.cfg.sessions_dir).get(s.id)
+        if info and info.get("status") != "idle":
+            return "it is still working"
+        return ""
 
     # --- the plan's usage --------------------------------------------------------------------
 
@@ -482,14 +523,20 @@ class Talk:
                 return True
         return False
 
-    def editor_waits(self, pids: list, shows: bool = False) -> Editor:
+    def editor_waits(self, pids: list, shows: bool = False, clears: bool = False) -> Editor:
         """An editor's window asks to be told when a key is wanted in one of its terminals,
         which it names by the process each one runs (its shell). `shows`: it can also bring
-        one of them to the front."""
+        one of them to the front. `clears`: it can also type /clear into one."""
         ttys = {tty: pid for pid in pids for tty in [terminal_mod.tty_of(pid)] if tty}
-        editor = Editor(ttys, shows=shows)
+        editor = Editor(ttys, shows=shows, clears=clears)
         with self.lock:
             self.editors.append(editor)
+            if clears:
+                tty, since = self._clear_wanted
+                if tty in ttys and time.monotonic() - since < base.EDITOR_GAP:  # asked for between two requests
+                    editor.keys.append({"pid": ttys[tty], "key": "clear"})
+                    editor.wake.set()
+                    self._clear_wanted = ("", base.NEVER)
             if shows:
                 tty, since = self._show_wanted
                 if tty in ttys and time.monotonic() - since < base.EDITOR_GAP:  # asked for between two requests
@@ -507,6 +554,8 @@ class Talk:
                 self.editors.remove(editor)
             if editor.shows:
                 self._shown_by.update(dict.fromkeys(editor.ttys, time.monotonic()))
+            if editor.clears:
+                self._clears_by.update(dict.fromkeys(editor.ttys, time.monotonic()))
             return editor.keys
 
     def _showable(self, s) -> bool:
@@ -643,7 +692,7 @@ class Talk:
             last = self._unsendable()  # words that can still be taken back keep their own sign
             if (text and waited and s and TAKE_BACK not in text and (not last or last.session == s.id)
                     and not (self._talking or self._transcribing or self._pending)):
-                self._talk("sent", s, text, seconds=2.5)
+                self._talk("sent", s, text, seconds=2.5, quiet=True)
         if text and waited:
             self.publish()  # the mark for waiting words leaves the light
         return text
@@ -754,16 +803,18 @@ class Talk:
         wanted = self.cfg.followup_confirm
         return s.permission_mode not in PROMPTING_MODES if wanted == "auto" else bool(wanted)
 
-    def _talk(self, state: str | None, s=None, text: str = "", hint: str = "", seconds: float = 0) -> None:
+    def _talk(self, state: str | None, s=None, text: str = "", hint: str = "", seconds: float = 0, quiet: bool = False) -> None:
         """Tell the overlay where push-to-talk stands: listening, transcribing, ready (waiting for a
         go-ahead), sent, failed (the text says why), focus (a tap moved it), or None for nothing.
-        It is shown on the session it is about; it stays until replaced unless `seconds` is given."""
+        It is shown on the session it is about; it stays until replaced unless `seconds` is given.
+        `quiet`: it is news of the hub's own and not something the user is doing just now, so
+        the overlay shows it on the light and leaves the bubble to a session that is speaking."""
         self._talk_shown = (state, text, hint) if state in ("listening", "ready") else None
         self._aside_shown = None  # whatever is shown now, it is not a side question being answered
         self._usage_shown = False
         if self.overlay:
             self.overlay.send({"type": "talk", "state": state, "name": s.name if s else "", "text": text,
-                               "hint": hint, "seconds": seconds} if state else {"type": "talk"})
+                               "hint": hint, "seconds": seconds, **({"quiet": True} if quiet else {})} if state else {"type": "talk"})
 
     def _mic_heard(self, chunk: bytes) -> None:
         """A moment of the microphone while the talk key is held: the overlay shows it as a wave."""

@@ -211,7 +211,8 @@ class Handler(BaseHTTPRequestHandler):
         except (TypeError, ValueError):
             return self._reply({"error": "terminals is a list of process ids"}, 400)
         can = body.get("can")
-        editor = hub.editor_waits(pids, shows=isinstance(can, list) and "show" in can)
+        can = can if isinstance(can, list) else []
+        editor = hub.editor_waits(pids, shows="show" in can, clears="clear" in can)
         end = time.monotonic() + EDITOR_WAIT
         while not editor.wake.wait(0.5) and time.monotonic() < end and not self._client_gone():
             pass

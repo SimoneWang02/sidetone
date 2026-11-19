@@ -1,5 +1,6 @@
 // claude-speaks for VS Code: tells the hub which terminal you are in, types Escape into a
-// terminal when the hub asks for a session to be stopped, and brings a terminal to the front
+// terminal when the hub asks for a session to be stopped, types /clear into one when you
+// told a session by voice to clear its conversation, and brings a terminal to the front
 // when the hub asks for that.
 //
 // The hub can mark a session's terminal from outside, but only the editor knows which of its
@@ -10,9 +11,10 @@
 // And only the editor can type into its terminals. The cancel key stops a session; by itself
 // the hub can only do that at the session's next step, through a hook. So this also keeps one
 // request open with the hub, naming its terminals by their processes, and when the answer
-// names one of them and a key, it types that key there. The only key it knows is Escape,
-// which interrupts a Claude Code session that is working: the hub cannot have anything else
-// typed, whatever it sends. The same answer can name terminals to bring to the front (the key
+// names one of them and a key, it types that key there. It knows two, by name: "escape",
+// which interrupts a Claude Code session that is working, and "clear", which is Ctrl+C (it
+// empties a line that was half typed) and then /clear with Enter, for a session at its
+// prompt. The hub cannot have anything else typed, whatever it sends. The same answer can name terminals to bring to the front (the key
 // that goes to the terminal of the session in focus): that only shows a terminal that is
 // already there and puts the keyboard in it.
 //
@@ -52,20 +54,26 @@ async function report(why) {
   if (pid) tell({ front: pid, why });
 }
 
-const KEYS = { escape: "\x1b" };  // all that can be asked for
+// All that can be asked for, each as what is typed one piece after the other.
+const KEYS = { escape: ["\x1b"], clear: ["\x03", "/clear\r"] };
+const BETWEEN = 150;  // ms from one piece to the next: typed in one go, Claude Code may take them as one
 const RETRY = 5000;  // no hub, or one from before this: ask again after this long
 
 let open = null;  // the request the hub is holding
 let later = null;  // the timer for the next one
 let closed = false;
 
-// Type what was asked for into the terminals it was asked for. Not followed by Enter.
+// Type what was asked for into the terminals it was asked for. Nothing is added to it.
 async function press(keys) {
   for (const wanted of Array.isArray(keys) ? keys : []) {
-    const text = KEYS[wanted && wanted.key];
-    if (!text) continue;
+    const pieces = Object.prototype.hasOwnProperty.call(KEYS, wanted && wanted.key) ? KEYS[wanted.key] : null;
+    if (!pieces) continue;
     for (const terminal of vscode.window.terminals) {
-      if (await terminal.processId === wanted.pid) terminal.sendText(text, false);
+      if (await terminal.processId !== wanted.pid) continue;
+      for (const [n, text] of pieces.entries()) {
+        if (n) await new Promise((done) => setTimeout(done, BETWEEN));
+        terminal.sendText(text, false);
+      }
     }
   }
 }
@@ -85,7 +93,7 @@ async function listen() {
   if (closed) return;
   const pids = (await Promise.all(vscode.window.terminals.map((terminal) => terminal.processId))).filter(Boolean);
   if (closed || open) return;
-  const data = JSON.stringify({ terminals: pids, can: ["escape", "show"] });  // what the hub may ask of us
+  const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear"] });  // what the hub may ask of us
   const request = http.request({
     socketPath: socket(), path: "/editor", method: "POST", timeout: 60000,
     headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) },

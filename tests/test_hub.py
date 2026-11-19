@@ -1286,6 +1286,79 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.editor_done(off), [], "switched off: only the hook")
         self.assertEqual(self.talks()[-1], ("stopped", "a", "Stopping at its next step"))
 
+    def said(self, hub, words, sid):
+        """Words heard for a session, and what the hub does with them done."""
+        hub.follow_up(words, sid, delay=0)
+        self.assertTrue(wait_for(lambda: hub._pending is None, 3))
+        with hub.lock:  # and it is through with them
+            pass
+
+    def test_clear_the_chat_is_typed_by_the_editor_and_not_handed_to_the_session(self):
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41", 4002: "/dev/pts/42"}.get(pid)
+        hub.sessions.by_id["a"].tty, hub.sessions.by_id["b"].tty = "/dev/pts/41", "/dev/pts/42"
+        listener = hub.listen("a")
+        # No editor that can type it: said so on the light, and the session is not bothered with it.
+        old = hub.editor_waits([4001, 4002], shows=True)  # an extension from before this
+        self.said(hub, "Hey Cloud, clear the chat.", "a")
+        self.assertEqual(self.talks()[-1], ("failed", "a", "Not cleared: no editor to type it"))
+        self.assertEqual((old.wake.is_set(), listener.wake.is_set(), hub.followups), (False, False, {}))
+        hub.editor_done(old)
+        editor = hub.editor_waits([4002, 4001, 9], shows=True, clears=True)
+        self.said(hub, "Hey Cloud, clear the chat.", "a")
+        self.assertTrue(editor.wake.is_set())
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])
+        self.assertEqual(self.talks()[-1], ("sent", "a", "Hey Cloud, clear the chat."))
+        self.assertEqual((listener.wake.is_set(), hub.followups), (False, {}), "the session never gets the words")
+        # Between two requests of the editor: the next request is handed it.
+        self.said(hub, "clear the context please", "b")
+        again = hub.editor_waits([4002, 4001], clears=True)
+        self.assertEqual(hub.editor_done(again), [{"pid": 4002, "key": "clear"}])
+        # Words that only hold the order are the session's.
+        hub.editor_done(hub.editor_waits([4001], clears=True))
+        self.said(hub, "clear the chat history file from the repo", "a")
+        self.assertTrue(listener.wake.is_set())
+        # Switched off, the order itself is too.
+        hub.cfg.clear_by_voice = False
+        waiting = hub.editor_waits([4001, 4002], clears=True)
+        self.said(hub, "clear the chat", "b")
+        self.assertEqual((waiting.wake.is_set(), hub.followups.get("b")), (False, ["clear the chat"]))
+
+    def test_clear_the_chat_is_only_typed_for_a_session_at_its_prompt(self):
+        """It is typed with an Enter, which would answer a dialog that is open in the terminal."""
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41"}.get(pid)
+        hub.sessions.by_id["a"].tty = "/dev/pts/41"
+        editor = hub.editor_waits([4001], clears=True)
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
+        self.said(hub, "clear the chat", "a")
+        self.assertEqual(self.talks()[-1], ("failed", "a", "Not cleared: it is still working"))
+        self.assertEqual((editor.wake.is_set(), hub.followups), (False, {}))
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Done.")))
+        self.assertTrue(hub.speech.wait_idle(5))
+        # The hooks have it at its prompt, Claude Code's own file does not (a dialog no hook told of).
+        os.makedirs(hub.cfg.sessions_dir, exist_ok=True)
+        with open(os.path.join(hub.cfg.sessions_dir, f"{os.getpid()}.json"), "w") as f:
+            json.dump({"pid": os.getpid(), "sessionId": "a", "status": "busy", "statusUpdatedAt": time.time() * 1000}, f)
+        self.said(hub, "clear the chat", "a")
+        self.assertEqual(self.talks()[-1], ("failed", "a", "Not cleared: it is still working"))
+        with open(os.path.join(hub.cfg.sessions_dir, f"{os.getpid()}.json"), "w") as f:
+            json.dump({"pid": os.getpid(), "sessionId": "a", "status": "idle", "statusUpdatedAt": time.time() * 1000}, f)
+        self.said(hub, "clear the chat", "a")
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])
+
+    def test_which_words_clear_a_conversation(self):
+        words = hub_module.Config(run="r", state="s").clear_words
+        for said in ("Hey, Cloud, clear the chat.", "Clear chat", "Okay Claude, can you clear the context?", "/clear",
+                     "Slash clear.", "Run /clear", "clear this conversation now", "Clear your context for me"):
+            self.assertTrue(hub_module.base.asks_to_clear(said, words), said)
+        for said in ("Clear the chat history file from the repo", "clear", "Don't clear the chat", "clear the cache",
+                     "is it possible to say clear the chat", "", "the"):
+            self.assertFalse(hub_module.base.asks_to_clear(said, words), said)
+        self.assertTrue(hub_module.base.asks_to_clear("Pulisci la chat", ["pulisci la chat"]))
+
     USAGE = ("Current session: 26% used \u00b7 resets Nov 18, 2:39am (America/New_York)\n"
              "Current week (all models): 38% used \u00b7 resets Nov 23, 7:59am (America/New_York)\n")
 
@@ -2846,6 +2919,57 @@ class HubProcess(unittest.TestCase):
         time.sleep(1.5)  # long enough for a second Escape, which must not come
         with open(typed) as f:
             self.assertEqual(json.load(f), [[shell.pid, "\x1b", False]])
+
+    @unittest.skipUnless(__import__("shutil").which("node"), "needs node to run the editor extension")
+    def test_the_editor_extension_types_clear_into_the_terminal_of_a_session_told_to_clear(self):
+        """The real extension code, with a stand-in for the editor, against a real hub: "clear
+        the chat" said to a session at its prompt ends in Ctrl+C and then /clear with Enter
+        in its terminal, and in nothing else."""
+        import pty
+        import shutil
+        sessions = os.path.join(self.tmp, ".claude", "sessions")
+        os.makedirs(sessions)
+        ours, theirs = pty.openpty()  # the terminal the session runs in
+        shell = subprocess.Popen(["sleep", "30"], stdin=theirs)
+        os.close(theirs)
+        self.addCleanup(os.close, ours)
+        self.addCleanup(shell.wait)
+        self.addCleanup(shell.kill)
+        with open(os.path.join(sessions, f"{shell.pid}.json"), "w") as f:
+            json.dump({"pid": shell.pid, "sessionId": "a", "status": "idle", "statusUpdatedAt": time.time() * 1000}, f)
+        self.start_hub()
+        self.call("/event", ev("SessionStart", sid="a", cwd="/work/alpha"))
+        ext = os.path.join(self.tmp, "ext")
+        os.makedirs(os.path.join(ext, "node_modules", "vscode"))
+        shutil.copy(os.path.join(ROOT, "vscode", "extension.js"), ext)
+        typed = os.path.join(self.tmp, "typed.json")
+        with open(os.path.join(ext, "node_modules", "vscode", "index.js"), "w") as f:
+            f.write("""
+                const fs = require("fs");
+                const typed = [];
+                const terminal = (pid) => ({
+                  processId: Promise.resolve(pid),
+                  sendText: (text, enter) => { typed.push([pid, text, enter]); fs.writeFileSync(process.env.TYPED, JSON.stringify(typed)); },
+                });
+                exports.window = {
+                  state: { focused: true },
+                  terminals: [terminal(1), terminal(Number(process.env.SHELL_PID))],
+                  activeTerminal: undefined,
+                  onDidChangeActiveTerminal: (f) => ({ dispose() {} }),
+                  onDidChangeWindowState: (f) => ({ dispose() {} }),
+                  onDidOpenTerminal: (f) => ({ dispose() {} }),
+                  onDidCloseTerminal: (f) => ({ dispose() {} }),
+                };""")
+        editor = subprocess.Popen(["node", "-e", "require('./extension.js').activate({ subscriptions: [] });"], cwd=ext,
+                                  env={**self.env, "SHELL_PID": str(shell.pid), "TYPED": typed})
+        self.addCleanup(editor.wait)
+        self.addCleanup(editor.kill)
+        time.sleep(1.5)  # the hub has found the session's terminal, and the editor's request is with it
+        self.call("/follow-up", {"text": "Hey Claude, clear the chat.", "session": "alpha", "delay": 0})
+        self.assertTrue(wait_for(lambda: os.path.exists(typed), 8), "nothing was typed into the terminal")
+        time.sleep(1.0)
+        with open(typed) as f:
+            self.assertEqual(json.load(f), [[shell.pid, "\x03", False], [shell.pid, "/clear\r", False]])
 
     @unittest.skipUnless(__import__("shutil").which("node"), "needs node to run the editor extension")
     def test_the_editor_extension_brings_a_sessions_terminal_to_the_front(self):

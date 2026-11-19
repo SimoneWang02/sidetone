@@ -62,6 +62,7 @@ SECTIONS = [
         choice("voice_at_prompt", "Speaking at a permission prompt", "Turn the request down and hand your words over, or keep them until it is answered.",
                ("details", "Deny and explain"), ("wait", "Wait")),
         switch("usage_by_voice", "Usage by voice", "Ask \"what's my usage\" and hear it, without it reaching a session."),
+        switch("clear_by_voice", "Clear the chat by voice", "Say \"clear the chat\" and the editor types /clear for a session at its prompt."),
         switch("focus_on_prompt", "Typing takes the focus", "A session you type to is the one your next spoken words go to."),
         number("talk_tail", "Listen on after release", "Keeps the end of your last word from being cut off.", 0, 1, 0.1, "s"),
     ]),

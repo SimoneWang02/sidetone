@@ -1,8 +1,8 @@
 {
   "name": "claude-speaks",
   "displayName": "claude-speaks",
-  "description": "Tells the sidetone hub which terminal you are in, so the Claude Code session running there gets the focus, types Escape into a session's terminal when you stop it with the cancel key, and brings the terminal of the session in focus to the front when you ask for it.",
-  "version": "0.3.0",
+  "description": "Tells the sidetone hub which terminal you are in, so the Claude Code session running there gets the focus, types Escape into a session's terminal when you stop it with the cancel key, types /clear there when you tell a session by voice to clear the chat, and brings the terminal of the session in focus to the front when you ask for it.",
+  "version": "0.4.0",
   "publisher": "claude-speaks",
   "license": "MIT",
   "engines": { "vscode": "^1.75.0" },

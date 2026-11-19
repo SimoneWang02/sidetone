@@ -96,7 +96,15 @@ line (E) is the logo again, as the one they like best, and the guessing has stop
 of them instead, as worked for the face of ten waiting messages: a logo or picture whose
 look they like, in their Downloads folder, or a word on what is wrong with these (the
 idea, or how they are drawn: flat, simple shapes are what a session can draw by hand in
-SVG). **Open.**
+SVG). Their direction instead: "look at the top 5 startups right now ... and look at their
+logo. Take inspiration from each one of them." By Crunchbase's list of June 2026 (the
+newest a search found): SpaceX, Anthropic, OpenAI, ByteDance, Stripe. A sixth page, one
+mark after the idea each logo is built on, not after the logo: S1 a sweep leaving the
+voice bars, S2 a burst of uneven rays, S3 five bars turned into a knot, S4 bars with
+slanted ends in five blues and no disc, S5 a leaning S that is a wave, and S6, the round
+one they like with its bars cut on the slant. Said to them plainly: S2, S3 and S4 came
+out too near the marks they were taken from (Claude's spark, OpenAI's blossom, ByteDance's
+bars) to be used; S1 reads as a smile; S6 and S5 are the two that are ours. **Open.**
 While it was on screen the picture check could not take the settings window: the live
 window stood at the same place in the middle of the screen, and the check refuses when two
 windows have one rectangle. Close the live one first (`sidetone settings close`).
