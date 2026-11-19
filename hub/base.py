@@ -415,7 +415,8 @@ def aside_question(text: str, words: list) -> str:
 # What may stand before and after the words that clear a conversation. The speech model
 # writes "Claude" as "cloud" as often as not.
 CLEAR_LEAD = re.compile(r"((hey|hi|hello|ok|okay|alright|all right|right|yeah|yes|sure|oh|so|um|uh|well|and|also|then|now|"
-                        r"claude|cloud|please|just|quickly|can you|could you|would you|will you|lets|i want to|i want you to) )+")
+                        r"claude|cloud|please|just|quickly|can you|could you|would you|will you|lets|i want to|i want you to|"
+                        r"ill|i will|id like to|i would like to) )+")  # "I'll": how "alright" came through once
 CLEAR_TAIL = re.compile(r"( (please|now|for me|thanks|thank you|claude|cloud|again))+$")
 CLEAR_SMALL = re.compile(r"\b(the|this|that|your|my|our|a|whole|entire|current)\b")
 
