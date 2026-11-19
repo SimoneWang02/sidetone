@@ -1723,6 +1723,12 @@ namespace ClaudeSpeaks
         readonly TextWriter output;
         // The bar of lights, the panel that unfolds beside it, and the speech bubble.
         readonly Glass rail = new Glass(0), panel = new Glass(PanelWidth), bubble = new Glass(BubbleWidth);
+        // While the voice is off, a small piece of glass with a struck-out speaker just past the far
+        // end of the bar (overlay.muted_mark), so a mute is not forgotten once its notice is gone.
+        // A window of its own, so the lights and the rows level with them stay where they are.
+        readonly Glass muteChip = new Glass(0);
+        const double ChipSize = 32, ChipGap = 4;
+        bool muted, mutedMark = true;
         readonly StackPanel lights = new StackPanel { Margin = new Thickness(3) };
         // A soft frame that slides to the light of the session in focus.
         readonly Border selector = new Border {
@@ -1865,6 +1871,11 @@ namespace ClaudeSpeaks
             layers0.Children.Add(selector);
             layers0.Children.Add(lights);
             rail.Panel.Child = layers0;
+            muteChip.Panel.Child = new TextBlock
+            {
+                Text = "\uD83D\uDD07", FontFamily = Ui.Symbols, FontSize = 17, Foreground = Ui.Dim,
+                Width = ChipSize - 2, Height = ChipSize - 2, TextAlignment = TextAlignment.Center, Padding = new Thickness(0, 4, 0, 0),
+            };
             wheelProc = OnMouse;  // kept in a field so it stays alive while Windows holds it
             keyProc = OnKey;
             rail.MouseWheel += delegate(object sender, MouseWheelEventArgs e) { Wheel(e.Delta); };
@@ -1918,7 +1929,7 @@ namespace ClaudeSpeaks
             holdTimer.Tick += delegate { if (!Down((int)heldKey)) EndHold(); };
             // Other always-on-top windows (and some games) push us down; climb back regularly.
             topTimer.Interval = TimeSpan.FromSeconds(2);
-            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); };
+            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); muteChip.Raise(); };
 
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
             SetGlass();
@@ -2044,6 +2055,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("hover")) hoverOpens = Str(msg, "hover") != "keys";
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
                     if (msg.ContainsKey("share_taken_keys")) shareTaken = Convert.ToBoolean(msg["share_taken_keys"]);
+                    if (msg.ContainsKey("muted_mark")) mutedMark = Convert.ToBoolean(msg["muted_mark"]);
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
                     if (msg.ContainsKey("hotkeys"))
@@ -2061,6 +2073,7 @@ namespace ClaudeSpeaks
                     sessions = msg.ContainsKey("sessions") ? (object[])msg["sessions"] : new object[0];
                     history = msg.ContainsKey("history") ? (object[])msg["history"] : new object[0];
                     usage = msg.ContainsKey("usage") && msg["usage"] is object[] ? (object[])msg["usage"] : new object[0];
+                    muted = msg.ContainsKey("muted") && Convert.ToBoolean(msg["muted"]);
                     // The focus moved to another session (arrows, wheel, another terminal, or it
                     // spoke): the card and the history are about that one now, not about the one
                     // the mouse was on last. A mouse that is on a row right now still has its say.
@@ -2156,6 +2169,7 @@ namespace ClaudeSpeaks
             rail.Look(kind);
             panel.Look(kind);
             bubble.Look(kind);
+            muteChip.Look(kind);
             if (settings != null) settings.Look(kind);
         }
 
@@ -2246,6 +2260,7 @@ namespace ClaudeSpeaks
             bool show = isList || hasRequest || hasBanner || moving || talking || sessions.Length > 0;
             if (show && !rail.IsVisible) rail.Show();
             else if (!show && rail.IsVisible) rail.Hide();
+            ShowMuteChip();
 
             double goal = open && show ? panel.Natural() : 0;
             if (goal > 0 && panel.Goal == 0) openedAt = Ui.Now;  // the rows come in one after another from now
@@ -3031,6 +3046,15 @@ namespace ClaudeSpeaks
 
         bool BarHeld { get { return dragging && !undecided && lifted == null; } }
 
+        // Up while the voice is off and the bar is on screen; away while the bar travels, and
+        // back in its place when it is dropped.
+        void ShowMuteChip()
+        {
+            bool want = muted && mutedMark && rail.IsVisible && !BarHeld && !moving;
+            if (want && !muteChip.IsVisible) { muteChip.Show(); PlaceSides(); }
+            else if (!want && muteChip.IsVisible) muteChip.Hide();
+        }
+
         void DragStep()
         {
             CursorPoint cursor;
@@ -3618,6 +3642,14 @@ namespace ClaudeSpeaks
             Rect work = WorkArea();
             bool right = corner.EndsWith("right"), bottom = Low;
             double width = rail.ActualWidth > 0 ? rail.ActualWidth : Row.High + 8, height = rail.ActualHeight;
+            // The mute mark: past the end of the bar that is away from the screen's edge (under a
+            // bar at the top, over one at the bottom), or at the right end of the island.
+            if (Island) { muteChip.Left = rail.Left + width + ChipGap; muteChip.Top = rail.Top + (height - ChipSize) / 2; }
+            else
+            {
+                muteChip.Left = rail.Left + (width - ChipSize) / 2;
+                muteChip.Top = bottom ? rail.Top - ChipGap - ChipSize : rail.Top + height + ChipGap;
+            }
             if (Island)
             {
                 double middle = rail.Left + width / 2;
@@ -3747,6 +3779,7 @@ namespace ClaudeSpeaks
             {
                 if (panel.IsVisible) pieces.Add(panel.Area());
                 if (bubble.IsVisible) pieces.Add(bubble.Area());
+                if (muteChip.IsVisible) pieces.Add(muteChip.Area());
                 if (settings != null && settings.IsOpen) pieces.Add(settings.Window.Area());
                 int[] area = rail.Area();
                 reply["x"] = area[0]; reply["y"] = area[1]; reply["w"] = area[2]; reply["h"] = area[3];

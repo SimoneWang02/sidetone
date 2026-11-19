@@ -73,6 +73,7 @@ SECTIONS = [
                ("dots", "Under the mouse"), ("list", "Always out")),
         choice("overlay.hover", "What opens the details", "The mouse resting on the lights, or only holding the keys.",
                ("always", "Mouse"), ("keys", "Keys only")),
+        switch("overlay.muted_mark", "Show when muted", "A small struck-out speaker beside the lights while the voice is off."),
         number("overlay.opacity", "Opacity at rest", "How solid the lights are while nothing happens.", 0.3, 1.0, 0.05),
         choice("overlay.glass", "Glass", "Blur what is behind it, or plain dark glass.",
                ("blur", "Blur"), ("none", "Plain")),

@@ -258,6 +258,13 @@ class Muted(SettingsCase):
         self.assertFalse(os.path.exists(self.cfg.mute_file))
         self.assertEqual((self.window.of("banner")[-1]["text"], played), ("Voice on", ["voice_off", "voice_on"]))
 
+    def test_the_overlay_is_told_the_voice_is_off(self):
+        hub = self.make()
+        hub.toggle_mute()
+        self.assertTrue(self.window.of("state")[-1]["muted"])
+        hub.toggle_mute()
+        self.assertFalse(self.window.of("state")[-1]["muted"])
+
     def test_no_sound_when_feedback_is_off(self):
         hub = self.make(talk_feedback="none")
         played = []

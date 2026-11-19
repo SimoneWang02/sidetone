@@ -679,7 +679,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Tried from WSL with a pressed Ctrl+Alt+M (`keybd_event`) while the NVIDIA overlay held it:
   muted and unmuted. Then M became the default for everyone, on the author's word: "can you
   not make it Ctrl+Alt+M by default for everyone? And if there's conflict just do both." So
-  with the NVIDIA overlay, the key also switches its microphone. Claimed only while they can act: `allow` Ctrl+Alt+Y,
+  with the NVIDIA overlay, the key also switches its microphone.
+  The mark while muted (2026-11-19, `overlay.muted_mark`, true; `muteChip`, `ShowMuteChip` in
+  `Overlay.cs`): the "Voice off" notice goes after 2.5 s, so while the voice is off a small
+  glass square with a struck-out speaker stands just past the far end of the bar (under a bar
+  at the top, over one at the bottom, at the right of the island). It is a window of its own,
+  so the lights and the rows level with them do not move; it goes away while the bar is
+  dragged. `state` carries `muted`. The author said "sure" to it when offered. Seen in a
+  picture (`mute-mark.png`), not by them.
+  Found on the way: `SpeechQueue.wait_idle` returned before `on_change(None)` and `on_done`
+  had run, so a test could read the overlay's state before its last update; it now also
+  waits for those (`_settling`). Claimed only while they can act: `allow` Ctrl+Alt+Y,
   `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace, and
   with two or more sessions `focus_prev` Ctrl+Alt+Up and `focus_next` Ctrl+Alt+Down.
 - The arrow keys move the focus (2026-11-17). Before, besides the wheel, a quick tap of the

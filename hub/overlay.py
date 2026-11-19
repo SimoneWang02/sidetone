@@ -54,6 +54,8 @@ DEFAULTS = {
     # it (the author, 2026-11-19, with the NVIDIA overlay holding Ctrl+Alt+M: "it execute both");
     # false = that key does nothing for us, as before. Not for the talk key, whose hold is ours alone.
     "share_taken_keys": True,
+    # While the voice is off, a small struck-out speaker just past the end of the bar.
+    "muted_mark": True,
     # What brings the details out: always = the mouse resting on the bar, or holding Ctrl+Alt |
     # keys = only holding Ctrl+Alt (or the key that keeps them out), so a mouse passing over
     # the bar, in a game for one, changes nothing

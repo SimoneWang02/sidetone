@@ -405,10 +405,18 @@ class SpeechQueue:
             self._stop()
             self._cond.notify_all()
 
-    def wait_idle(self, timeout: float = 5.0) -> bool:
-        """Block until nothing is queued or being spoken. For tests and clean shutdown."""
+    _settling = False
+
+    def _settled(self) -> None:
         with self._cond:
-            return self._cond.wait_for(lambda: not self.queued and self.current is None, timeout)
+            self._settling = False
+            self._cond.notify_all()
+
+    def wait_idle(self, timeout: float = 5.0) -> bool:
+        """Block until nothing is queued or being spoken, and what follows the last line (the
+        overlay told it ended, the line logged) has run. For tests and clean shutdown."""
+        with self._cond:
+            return self._cond.wait_for(lambda: not self.queued and self.current is None and not self._settling, timeout)
 
     def snapshot(self) -> dict:
         with self._cond:
@@ -426,6 +434,7 @@ class SpeechQueue:
                     return
                 u = min(self.queued, key=lambda q: (PRIORITY.get(q.kind, 2), q.created))
                 self.queued.remove(u)
+                self._settling = True  # until what follows a line (on_change, on_done) has run
                 waited = time.monotonic() - u.created
                 stale = waited > self.max_age  # old news by now; saying it late would only confuse
                 if stale:
@@ -435,6 +444,7 @@ class SpeechQueue:
                     self.engine.arm()  # under the lock, so a stop arriving from now on is kept
             if stale:
                 self.on_done(u, "", waited, None, "dropped-stale")
+                self._settled()
                 continue
             label = self.label_for(u) if u.label is None else u.label
             self.on_change(u)
@@ -453,3 +463,4 @@ class SpeechQueue:
                 self._cond.notify_all()
             self.on_change(None)
             self.on_done(u, label, waited, first, outcome)
+            self._settled()

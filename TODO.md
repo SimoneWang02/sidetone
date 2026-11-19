@@ -26,8 +26,9 @@ real keys yet.
       the keyboard hook and passed on. Minutes later M became the default for everyone ("if
       there's conflict just do both"), which sets their rule above aside for this key: with
       the NVIDIA overlay, M also switches its microphone. **Not pressed by them yet.**
-      Open: mute is for every session, not only the one in focus; and once the notice
-      is gone nothing on screen says the voice is off.
+      While muted, a small struck-out speaker stands past the end of the bar
+      (`overlay.muted_mark`), built on their "sure"; **not seen by them yet**.
+      Open: mute is for every session, not only the one in focus.
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
       Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
       the talk key and say "clear the chat" to a session that is idle: its terminal should

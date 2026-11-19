@@ -651,11 +651,12 @@ class Hub(Permissions, Talk):
                                     "missed": self.cfg.history_missed and not (e.get("heard") or e.get("shown") or id(e) in to_say)})
             new_keys, self._keys = keys != self._keys, keys
             bars = self._plan_bars()
-            new_rows, self._shown = (rows, history, bars) != self._shown, (rows, history, bars)
+            muted = self._muted()
+            new_rows, self._shown = (rows, history, bars, muted) != self._shown, (rows, history, bars, muted)
         if new_keys:  # claim allow/deny/cancel only while they can do something
             self.overlay.send({"type": "keys", "live": keys})
         if new_rows:
-            self.overlay.send({"type": "state", "sessions": rows, "history": history, "usage": bars})
+            self.overlay.send({"type": "state", "sessions": rows, "history": history, "usage": bars, "muted": muted})
 
     def _figures(self, s) -> dict:
         """What can be said in figures about a session right now. For each (see
