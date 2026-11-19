@@ -1,3 +1,5 @@
+<img src="assets/logo.png" width="96" alt="The mark: a round light with voice bars in it and an arc around it">
+
 # claude-speaks
 
 Eyes-free Claude Code. A local voice tells you, in one or two sentences, what each session just

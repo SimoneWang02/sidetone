@@ -23,6 +23,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace ClaudeSpeaks
@@ -963,6 +964,63 @@ namespace ClaudeSpeaks
         }
     }
 
+    // The tool's mark: a session's light while it speaks, as the overlay draws it. A round
+    // light with five voice bars in it, and around it the arc that says how full a context is.
+    // Drawn here and nowhere kept as a picture, so the window, its place in the taskbar and the
+    // file for the README (`logo` message) are all the same drawing.
+    static class Logo
+    {
+        static readonly double[] Bars = { 0.15, 0.29, 0.40, 0.23, 0.13 };  // each bar's height, as a share of the side
+
+        // In a square of side `s`, from its corner.
+        public static void Draw(DrawingContext dc, double s)
+        {
+            var ink = new LinearGradientBrush(Color.FromRgb(0xFF, 0xA0, 0xAC), Color.FromRgb(0xEE, 0x52, 0x88), new Point(0.15, 0), new Point(0.85, 1));
+            ink.Freeze();
+            var c = new Point(s / 2, s / 2);
+            double r = s * 0.435;
+            var rim = new Pen(ink, s * 0.07) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+            var arc = new StreamGeometry();
+            using (StreamGeometryContext g = arc.Open())
+            {
+                g.BeginFigure(new Point(c.X, c.Y - r), false, false);  // from the top, three quarters round
+                g.ArcTo(new Point(c.X - r, c.Y), new Size(r, r), 0, true, SweepDirection.Clockwise, true, false);
+            }
+            arc.Freeze();
+            dc.DrawGeometry(null, rim, arc);
+            dc.DrawEllipse(ink, null, c, s * 0.30, s * 0.30);
+            double wide = s * 0.058, apart = s * 0.098;
+            for (int i = 0; i < Bars.Length; i++)
+            {
+                double high = Bars[i] * s, x = c.X + (i - 2) * apart;
+                dc.DrawRoundedRectangle(Brushes.White, null, new Rect(x - wide / 2, c.Y - high / 2, wide, high), wide / 2, wide / 2);
+            }
+        }
+
+        public static BitmapSource Picture(int side)
+        {
+            var visual = new DrawingVisual();
+            using (DrawingContext dc = visual.RenderOpen()) Draw(dc, side);
+            var picture = new RenderTargetBitmap(side, side, 96, 96, PixelFormats.Pbgra32);
+            picture.Render(visual);
+            picture.Freeze();
+            return picture;
+        }
+
+        public static void Save(string path, int side)
+        {
+            var png = new PngBitmapEncoder();
+            png.Frames.Add(BitmapFrame.Create(Picture(side)));
+            using (FileStream file = File.Create(path)) png.Save(file);
+        }
+    }
+
+    class LogoMark : FrameworkElement
+    {
+        public LogoMark(double side) { Width = Height = side; }
+        protected override void OnRender(DrawingContext dc) { Logo.Draw(dc, Width); }
+    }
+
     // A switch: on or off.
     class Toggle : FrameworkElement
     {
@@ -1050,7 +1108,7 @@ namespace ClaudeSpeaks
     // "this key, this value", and the hub answers with how things stand, which is drawn.
     class SettingsWindow
     {
-        public static readonly Color Accent = Color.FromRgb(0x4F, 0xC3, 0xF7);
+        public static readonly Color Accent = Color.FromRgb(0xF2, 0x6B, 0x92);  // the pink of the tool's mark
         const double High = 560, Broad = 790, NavWidth = 176;
         public readonly Glass Window = new Glass(0, true);
         readonly Action<string, object> choose;  // a setting was chosen
@@ -1060,6 +1118,7 @@ namespace ClaudeSpeaks
         readonly StackPanel list = new StackPanel { Margin = new Thickness(18, 0, 22, 20) };
         readonly ScrollViewer scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
         readonly Border thumb = new Border { Width = 3, CornerRadius = new CornerRadius(1.5), Background = Ui.Paint("#4DFFFFFF"), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 0, 7, 0), Visibility = Visibility.Collapsed, IsHitTestVisible = false };
+        readonly TextBlock title = new TextBlock { Text = "claude-speaks" };  // the tool's name, as the hub gives it
         object[] sections = new object[0];
         string current = "", capturing = "";
         bool placed;
@@ -1070,6 +1129,7 @@ namespace ClaudeSpeaks
             Window.SizeToContent = SizeToContent.Manual;
             Window.Width = Broad; Window.Height = High;
             Window.Title = "claude-speaks settings";
+            Window.Icon = Logo.Picture(64);
 
             // Two columns over the whole height: the sections at the left on a darker ground of
             // their own (the author: "the menu ... a different background color to compare to
@@ -1084,15 +1144,16 @@ namespace ClaudeSpeaks
             side.RowDefinitions.Add(new RowDefinition { Height = new GridLength(54) });
             side.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             side.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            var name = new Border { Background = Brushes.Transparent, Child = new TextBlock { Text = "Settings", FontSize = 15, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(22, 6, 0, 0) } };
+            // The tool's mark and name head the menu (the author: not "Settings" there, the name).
+            var brand = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(20, 8, 0, 0) };
+            brand.Children.Add(new LogoMark(24) { VerticalAlignment = VerticalAlignment.Center });
+            title.FontSize = 15; title.FontWeight = FontWeights.SemiBold; title.VerticalAlignment = VerticalAlignment.Center; title.Margin = new Thickness(9, 0, 0, 1);
+            brand.Children.Add(title);
+            var name = new Border { Background = Brushes.Transparent, Child = brand };
             name.MouseLeftButtonDown += move;
             side.Children.Add(name);
             Grid.SetRow(nav, 1);
             side.Children.Add(nav);
-            // Whose settings these are, small, out of the way (the author did not want it beside the heading).
-            var maker = new TextBlock { Text = "claude-speaks", FontSize = 11, Foreground = Ui.Paint("#59FFFFFF"), Margin = new Thickness(22, 0, 0, 16) };
-            Grid.SetRow(maker, 2);
-            side.Children.Add(maker);
             root.Children.Add(new Border { Background = Ui.Paint("#47000000"), BorderBrush = Ui.Paint("#14FFFFFF"), BorderThickness = new Thickness(0, 0, 1, 0), Child = side });
 
             var main = new Grid();
@@ -1144,9 +1205,10 @@ namespace ClaudeSpeaks
 
         // `area`: the part of the screen it may open in the middle of.
         // `quiet`: shown without taking the keyboard (for pictures of it).
-        public void Show(object[] sections, string section, Rect area, bool quiet)
+        public void Show(object[] sections, string section, Rect area, bool quiet, string name)
         {
             this.sections = sections;
+            if (name.Length > 0) { title.Text = name; Window.Title = name + " settings"; }
             var names = new List<string>();
             foreach (object o in sections) names.Add(Overlay.Str((Dictionary<string, object>)o, "name"));
             if (section.Length > 0 && names.Contains(section)) { if (section != current) scroll.ScrollToVerticalOffset(0); current = section; }
@@ -2013,7 +2075,7 @@ namespace ClaudeSpeaks
                                 delegate(bool typing) { typingKey = typing; RegisterHotkeys(); });
                             settings.Look(opaque ? "solid" : glass);
                         }
-                        settings.Show(msg.ContainsKey("sections") && msg["sections"] is object[] ? (object[])msg["sections"] : new object[0], Str(msg, "section"), WorkArea(), msg.ContainsKey("quiet") && Convert.ToBoolean(msg["quiet"]));
+                        settings.Show(msg.ContainsKey("sections") && msg["sections"] is object[] ? (object[])msg["sections"] : new object[0], Str(msg, "section"), WorkArea(), msg.ContainsKey("quiet") && Convert.ToBoolean(msg["quiet"]), Str(msg, "title"));
                     }
                     else if (settings != null) settings.Hide();
                     if (settings != null && msg.ContainsKey("click") && msg["click"] is object[])
@@ -2021,6 +2083,10 @@ namespace ClaudeSpeaks
                         var at = (object[])msg["click"];
                         settings.Click(Convert.ToDouble(at[0], CultureInfo.InvariantCulture), Convert.ToDouble(at[1], CultureInfo.InvariantCulture));
                     }
+                    break;
+                case "logo":  // the tool's mark, written to a file as a picture
+                    try { Logo.Save(Str(msg, "path"), (int)Num(msg, "size", 256)); Send("logo", "saved", Str(msg, "path")); }
+                    catch (Exception e) { Error("logo not saved: " + e.Message); }
                     break;
                 case "bounds":
                     ReportBounds();

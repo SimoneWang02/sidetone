@@ -533,6 +533,10 @@ class FakeHub:
 
 
 SETTINGS = settings_mod.describe(FakeHub())
+# The tool's mark, large, as the overlay draws it (the same drawing as in the window and the taskbar).
+if not ONLY or "settings".startswith(ONLY) or "logo".startswith(ONLY):
+    send(type="logo", path=f"{win(out)}\\logo.png", size=512)
+    print("  logo.png:", "saved" if wait("logo", 5) else "NOT saved")
 for section in SETTINGS:
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section=section["name"])
     shot("settings-" + section["name"].lower(), 0.7)

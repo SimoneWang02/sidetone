@@ -270,7 +270,7 @@ class Permissions:
         may be open behind another program); it says so if it shut."""
         self._settings_open = True if open is None else bool(open)
         if self.overlay:
-            self.overlay.send({"type": "settings", "open": True, "sections": settings_mod.describe(self), **({"toggle": True} if open is None else {})}
+            self.overlay.send({"type": "settings", "open": True, "title": settings_mod.NAME, "sections": settings_mod.describe(self), **({"toggle": True} if open is None else {})}
                               if self._settings_open else {"type": "settings", "open": False})
         return self._settings_open
 
@@ -282,7 +282,7 @@ class Permissions:
         if error:
             log(self.cfg, "hub.log", f"setting not changed: {error}")
         if self._settings_open and self.overlay:
-            self.overlay.send({"type": "settings", "open": True, "sections": settings_mod.describe(self)})
+            self.overlay.send({"type": "settings", "open": True, "title": settings_mod.NAME, "sections": settings_mod.describe(self)})
         return error
 
     def on_overlay(self, msg: dict) -> None:

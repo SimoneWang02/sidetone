@@ -128,6 +128,7 @@ SECTIONS = [
     ]),
 ]
 KEY_PARTS = {"ctrl", "alt", "shift", "win"}
+NAME = "claude-speaks"  # what the window calls the tool, beside its mark
 
 
 def _voices(hub) -> list:

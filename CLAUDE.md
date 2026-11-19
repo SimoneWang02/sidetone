@@ -834,6 +834,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   faint at the bottom left. Whether the tool should have another name they left open
   ("maybe we can think about it"); names were offered, nothing renamed. Seen in pictures;
   **the putting away and coming forward are untried**.
+  Second look: "that's better", then "instead of settings call it like [claude-speaks]
+  or just, yeah, I just want a different name. And also, can you make a logo". So the
+  tool's mark and name head the menu (`settings.NAME`, sent as `title`; one place to
+  change when a name is chosen) and nothing is at the bottom left. The mark (`Logo` in
+  `Overlay.cs`): a session's light while it speaks, a pink disc with five white voice
+  bars, and around it the context arc, three quarters round, in the microphone's pink,
+  which the author once called "the brand color". It is drawn by the overlay and kept
+  nowhere as a picture: the window, its taskbar icon and `assets/logo.png` for the README
+  (the `logo` message writes it) are the same drawing. The window's switches and sliders
+  took that pink (they were the blue of "working"). **Not seen by the author yet.**
+  Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
+  (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
+  Tally were, as radio and studio words for what it does.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
