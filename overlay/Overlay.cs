@@ -3129,6 +3129,7 @@ namespace ClaudeSpeaks
             if (dx * dx + dy * dy < 36) return;  // 6 px
             undecided = false;
             FoldForDrag();
+            Edge();
             Send("note", "message", "bar moved by the mouse: ctrl " + (Down(VK_CONTROL) ? "down" : "up") + ", alt "
                  + (Down(VK_MENU) ? "down" : "up") + ", " + order.Count + " sessions");
         }
@@ -3213,7 +3214,7 @@ namespace ClaudeSpeaks
         void Edge()
         {
             bool keyed = catching && ((dragKeys.Length > 0 && Held(dragKeys)) || CanReorder());  // grabbable only because keys are held
-            rail.Panel.BorderBrush = dragging || moving ? Ui.AmberEdge : keyed ? Ui.BrightEdge : Ui.GlassEdge;
+            rail.Panel.BorderBrush = BarHeld || moving ? Ui.AmberEdge : keyed ? Ui.BrightEdge : Ui.GlassEdge;
         }
 
         // "sidetone overlay move": the same dragging, announced, for when the bar is hard to find.
