@@ -1163,8 +1163,10 @@ Smaller ideas:
       Chatterbox Multilingual (`chatterbox-tts` 0.1.7, MIT, `ChatterboxMultilingualTTS`,
       `language_id="it"`), installed in a throwaway venv in a session's scratch folder; it
       needed `setuptools<81` (its watermarker imports `pkg_resources`). Its run, which
-      downloads the model from Hugging Face, was refused by the permission check; nothing
-      measured yet. The worry is speed on a CPU with no graphics card. Not built: Piper as
+      downloads the model from Hugging Face, ran on the author's "proceed": loaded in 6.4 s,
+      then 16.8 s and 11.9 s for about 6 s of speech on 16 threads, so twice as slow as
+      speech itself; too slow to speak while a reply streams. Added to the comparison page
+      for them to hear. Not built: Piper as
       the engine for Italian lines (the hub already knows Piper as a fallback).
       Seen the same evening: a short Italian answer seems to come out as English. Asked to
       say "procedi" and then "sì", the author's replies were written "See you soon" (twice)
