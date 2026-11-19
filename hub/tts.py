@@ -106,6 +106,7 @@ class KokoroEngine:
         # misaki's Chinese phonemes (`misaki-fork[zh]`). Loaded on its first line.
         self.zh = None
         self._zh_g2p = None
+        self._zh_lock = threading.Lock()
         self._zh_names: set[str] | None = None
         self.voices: set[str] = set()
         self.kokoro = None
@@ -120,6 +121,12 @@ class KokoroEngine:
         self.reload_custom()
         self.reload_piper()
         self._pcm("Ready.", self.fallback_voice)  # the first synthesis is much slower than the rest
+        # Loading the Chinese model and its word list took the first Chinese line 5.3 s; done
+        # beside the rest instead, when it is installed (about 0.4 GB more).
+        zh_voices = self.zh_voices()
+        if zh_voices:
+            first = sorted(zh_voices)[0]
+            threading.Thread(target=lambda: self._zh_pcm("\u4f60\u597d\u3002", first), daemon=True).start()
 
     def reload_piper(self) -> None:
         import json
@@ -184,6 +191,13 @@ class KokoroEngine:
         return self._zh_names
 
     def _zh_pcm(self, text: str, voice: str):
+        with self._zh_lock:  # loaded once, by the warm-up at start or by the first line
+            self._zh_load()
+        phonemes, _ = self._zh_g2p(text)
+        samples, _ = self.zh.create(phonemes, voice=voice, speed=self.speed, is_phonemes=True)
+        return samples
+
+    def _zh_load(self) -> None:
         if self.zh is None:
             from kokoro_onnx import Kokoro
             from kokoro_onnx.tokenizer import Tokenizer
@@ -195,9 +209,6 @@ class KokoroEngine:
             self._zh_g2p = zh.ZHG2P(version="1.1", en_callable=lambda words: english.phonemize(words, "en-us"))
             self.zh = Kokoro(*(os.path.join(self.dir, f) for f in self.ZH_FILES[:2]),
                              vocab_config=os.path.join(self.dir, self.ZH_FILES[2]))
-        phonemes, _ = self._zh_g2p(text)
-        samples, _ = self.zh.create(phonemes, voice=voice, speed=self.speed, is_phonemes=True)
-        return samples
 
     def style(self, voice: str):
         return self.custom[voice] if voice in self.custom else self.kokoro.get_voice_style(voice)

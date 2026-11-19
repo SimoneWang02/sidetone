@@ -1206,10 +1206,10 @@ Smaller ideas:
       CPU. On the Chinese page beside Vivian and Serena for them to compare. Not tried:
       CosyVoice 2 (streaming, about 150 ms by its own account, GPU), MeloTTS.
       Their choice: the four Kokoro v1.1-zh voices ("preferisco questi quattro"). Built in
-      the engine (`zh:` voices); **waiting on the install**: the three model files into
-      `~/.local/share/kokoro`, `misaki-fork[zh]` into the hub's environment (refused to a
-      session by the permission check), `zh` added to the listening languages, a hub
-      restart. `install.sh` does none of this yet, nor fetches Paola for Italian. Added to the comparison page
+      the engine (`zh:` voices) and installed on the author's machine on their typed "si"
+      (model files, `misaki-fork[zh]` in the hub's environment, `zh` among the listening
+      languages); first line 0.4 s with the model loaded at start. Open: `install.sh` does
+      none of this yet, nor fetches Paola for Italian; nobody has spoken Chinese to it. Added to the comparison page
       for them to hear. They did not like it either: "Paola è quella migliore", keep her
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when
