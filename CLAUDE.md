@@ -240,7 +240,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the furthest free one (`Sessions.keep`), which is how sessions already open are set
   right. `colors` in `config.json` is a list of your own (`#RRGGBB`, at least two). For
   the author's four it changed one: claude-speaks 2 from orange to violet, nearest two
-  then 59 apart. **Not seen by the author yet.** Minutes later: "Can't you just use a prefix
+  then 59 apart. (Seen with two sessions open on 2026-11-18, pink and violet: "they look
+  good. I like the colors". The palette with four or more open they have not judged.)
+  Minutes later: "Can't you just use a prefix
   palette of color? Like 10, 20, 30. I don't know the maximum" number of sessions. So the
   list is twenty now: the eight soft ones first (`state.SOFT`), handed out while one of them
   is still at least 40 from every color in use (about five sessions), then twelve stronger
@@ -652,7 +654,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   prompt is not markup gives that session the focus (`_focus_on`), except while the talk
   key is held or words are on their way. It fills the gap of the editor not reporting a
   click back into the terminal you were in last. A session started by a script with the
-  hooks on takes the focus too.
+  hooks on takes the focus too. Asked to try it that evening, the author opened a second
+  session and typed to it; the focus had already gone there when they went to its
+  terminal, so the try showed nothing of this rule, and the asking confused them ("so what
+  do I do?"). It can only be seen when a session has spoken and taken the focus and you
+  then type into the terminal you were in all along: left to turn up in use.
 - The other way round, terminal → session (2026-11-17; the author, by voice: "if I focus on
   a terminal it would be great to automatically select that" session): `vscode/` is a VS
   Code extension of two files (`extension.js`, `package.json`; no build step, no

@@ -1034,6 +1034,8 @@ Smaller ideas:
         turns it off). It covers the first point above for whoever types: back in the
         terminal you were in last, the first prompt moves the focus there. Tests
         only; **for the author to notice in use, and to say if it is unwanted**.
+        Their try on the evening of 2026-11-18 could not show it: going to the second
+        terminal had moved the focus already. Not to be asked for again as a test.
 - [ ] More for the VS Code extension, now that it exists: color the tab itself in the
       session's color. (Bringing the terminal of the session in focus to the front is
       done, see the jump key above; the hub can ask the extension since 0.2.0.)
