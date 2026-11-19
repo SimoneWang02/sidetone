@@ -195,6 +195,9 @@ Roughly easiest first.
       ("it's a lot"), and took 2.9 s to write where 0.8 s is usual; what was said is not known.
       Again 15:04: a 1.9 s clip (peak 1.00) came back as "对了" ("right") in 1.7 s, after a
       question that wanted a yes; perhaps "do it" or "did it", not known.
+      Again 15:24, the other way: a 2.6 s clip, surely "quant'è il contesto al momento?"
+      just after the Italian context question was built, came back as English "How much
+      did you count this moment?", so the hub did not answer it and the session got it.
 - [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
       as a small sign on the tab for a moment (its visual bell setting is off by default).
 - [ ] The terminal tint on a light theme: the color is mixed into `terminal.background`,
