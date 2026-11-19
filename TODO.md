@@ -1184,7 +1184,10 @@ Smaller ideas:
       Aiden; Chatterbox English 1.9 s for 4.5 s, Italian 2.6 s for 6 s; Kokoro English
       0.9 s for 5.5 s on the CPU. Loading takes 1.5 to 3 minutes the first time (downloads).
       All on the comparison page, waiting for the author's ears. Only Chatterbox is quick
-      enough to speak a sentence at a time while replies stream. Added to the comparison page
+      enough to speak a sentence at a time while replies stream.
+      Their verdict: none of the new Italian ones ("non mi piacciono ... teniamo quelle
+      attuali": Paola, Sara, Nicola), and for English Kokoro's Heart is still the best. So
+      nothing on the graphics card for voices, for now. Added to the comparison page
       for them to hear. They did not like it either: "Paola è quella migliore", keep her
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when
