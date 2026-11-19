@@ -284,7 +284,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   files `kokoro-v1.1-zh.onnx`, `voices-v1.1-zh.bin`, `config-v1.1-zh.json` beside Kokoro's
   own, phonemes from `misaki-fork[zh]`, `is_phonemes=True`); without them `zh_voices()` is
   empty and Kokoro 1.0's Chinese voices are used. 0.5 to 0.7 s for 5 s of speech on the
-  CPU. `tts.sentences` also cuts after 。！？. Installing `misaki-fork[zh]` into the hub's
+  CPU. `tts.sentences` also cuts after 。！？. English words in a Chinese line ("Control Alt M") came out
+  as "❓" and were left out, which the author heard; misaki's `en_callable` now gets
+  espeak's English phonemes from kokoro-onnx's `Tokenizer`. Installing `misaki-fork[zh]` into the hub's
   environment was refused by the permission check and left to the author.
   The model was copied by hand into the author's Piper folder; `install.sh` does not
   fetch it yet.

@@ -186,9 +186,13 @@ class KokoroEngine:
     def _zh_pcm(self, text: str, voice: str):
         if self.zh is None:
             from kokoro_onnx import Kokoro
+            from kokoro_onnx.tokenizer import Tokenizer
             from misaki import zh
 
-            self._zh_g2p = zh.ZHG2P(version="1.1")
+            # Words in Latin letters ("Control Alt M") are English to it; without a way to say
+            # them it writes "❓" and they are left out (the author heard them missing).
+            english = Tokenizer()
+            self._zh_g2p = zh.ZHG2P(version="1.1", en_callable=lambda words: english.phonemize(words, "en-us"))
             self.zh = Kokoro(*(os.path.join(self.dir, f) for f in self.ZH_FILES[:2]),
                              vocab_config=os.path.join(self.dir, self.ZH_FILES[2]))
         phonemes, _ = self._zh_g2p(text)
