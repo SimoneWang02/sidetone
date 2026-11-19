@@ -277,6 +277,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   card too, they kept three: Paola, Sara and Nicola. So a language has a list, best first,
   shared out like the English voices (`Hub._share`): the first session gets Paola, the
   next one no other open session uses, kept per session name.
+  Chinese (same evening): Kokoro 1.0's Chinese goes through espeak; the author preferred
+  Qwen3's speakers but not their wait, then took four voices of Kokoro's Chinese model
+  v1.1-zh ("preferisco questi quattro"): `zh:zf_001`, `zh:zm_009`, `zh:zf_002`,
+  `zh:zm_010`. The engine loads that model on its first Chinese line (`KokoroEngine.zh`,
+  files `kokoro-v1.1-zh.onnx`, `voices-v1.1-zh.bin`, `config-v1.1-zh.json` beside Kokoro's
+  own, phonemes from `misaki-fork[zh]`, `is_phonemes=True`); without them `zh_voices()` is
+  empty and Kokoro 1.0's Chinese voices are used. 0.5 to 0.7 s for 5 s of speech on the
+  CPU. `tts.sentences` also cuts after 。！？. Installing `misaki-fork[zh]` into the hub's
+  environment was refused by the permission check and left to the author.
   The model was copied by hand into the author's Piper folder; `install.sh` does not
   fetch it yet.
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session

@@ -257,6 +257,24 @@ class ReplyLanguage(HubCase):
         self.spoken()
         self.assertEqual(self.engine.spoken[-1][1], "im_nicola")  # one chosen in config.json wins
 
+    def test_chinese_takes_the_chinese_model_and_falls_back_to_kokoros_own(self):
+        hub = self.make()
+        self.engine.voices |= {"zf_xiaoxiao", "zm_yunxi"}
+        self.engine.has = lambda v: v in self.engine.voices or v in ("zh:zf_001", "zh:zm_009")
+        hub.on_display(ev("MessageDisplay", delta='<speak lang="zh">好了。</speak>'))
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][1], "zh:zf_001")
+        self.engine.has = lambda v: v in self.engine.voices  # the Chinese model is not installed
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/work/beta", delta='<speak lang="zh">好了。</speak>'))
+        self.spoken()
+        self.assertTrue(self.engine.spoken[-1][1].startswith("z") and ":" not in self.engine.spoken[-1][1])
+
+    def test_without_its_files_the_chinese_model_has_no_voices(self):
+        from tts import KokoroEngine
+        engine = KokoroEngine(self.make().cfg.state, 1.0, "af_heart")
+        self.assertEqual(engine.zh_voices(), set())
+        self.assertFalse(engine.has("zh:zf_001"))
+
     def test_the_voice_says_how_to_pronounce(self):
         self.assertEqual([voice_lang(v) for v in ("if_sara", "af_heart", "bm_george", "pm_alex", "mine")],
                          ["it", "en-us", "en-gb", "pt-br", "en-us"])

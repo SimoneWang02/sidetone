@@ -28,7 +28,10 @@ KOKORO_LANG = {"a": "en-us", "b": "en-gb", "e": "es", "f": "fr-fr", "h": "hi", "
 # (the first session gets the first). Those not installed are skipped; `language_voices` in
 # config.json gives a list of one's own. Italian: the three the author kept of seven heard
 # (2026-11-19), Piper's Paola, then Kokoro's Sara and Nicola.
-PREFERRED_VOICE = {"it": ["piper:it_IT-paola-medium", "if_sara", "im_nicola"]}
+PREFERRED_VOICE = {"it": ["piper:it_IT-paola-medium", "if_sara", "im_nicola"],
+                   # Kokoro's Chinese model (v1.1-zh), the four the author picked of its 103
+                   # voices over Kokoro 1.0's and Qwen3's (2026-11-19), women and men in turn.
+                   "zh": ["zh:zf_001", "zh:zm_009", "zh:zf_002", "zh:zm_010"]}
 LANG_LETTER = {"en": "a", "es": "e", "fr": "f", "hi": "h", "it": "i", "ja": "j", "pt": "p", "zh": "z", "cmn": "z"}
 
 
@@ -51,7 +54,9 @@ class Utterance:
 
 
 def sentences(text: str) -> list[str]:
-    return [s for s in re.split(r"(?<=[.!?])\s+", text.strip()) if s]
+    """The text cut after each sentence, so the first can play while the next is made. Chinese
+    and Japanese full stops (。！？) end a sentence with no space after them."""
+    return [s for s in re.split(r"(?<=[.!?])\s+|(?<=[\u3002\uff01\uff1f])\s*", text.strip()) if s]
 
 
 class NullEngine:
@@ -97,6 +102,11 @@ class KokoroEngine:
         # Paola the best of those tried (2026-11-19). Model path and sample rate by name.
         self.piper_dir = piper_dir
         self.piper: dict[str, tuple[str, int]] = {}
+        # Kokoro's Chinese model, "zh:<voice>" (zh:zf_001): its own files beside the main ones and
+        # misaki's Chinese phonemes (`misaki-fork[zh]`). Loaded on its first line.
+        self.zh = None
+        self._zh_g2p = None
+        self._zh_names: set[str] | None = None
         self.voices: set[str] = set()
         self.kokoro = None
         self._proc: subprocess.Popen | None = None
@@ -152,7 +162,38 @@ class KokoroEngine:
         return array
 
     def has(self, voice: str) -> bool:
+        if voice.startswith("zh:"):
+            return voice[3:] in self.zh_voices()
         return voice in self.voices or voice in self.custom or voice in self.piper
+
+    ZH_FILES = ("kokoro-v1.1-zh.onnx", "voices-v1.1-zh.bin", "config-v1.1-zh.json")
+
+    def zh_voices(self) -> set[str]:
+        """The voices of Kokoro's Chinese model, read from its voice file without loading the
+        model; none if its files or the Chinese phonemes are missing."""
+        if self._zh_names is None:
+            self._zh_names = set()
+            if all(os.path.isfile(os.path.join(self.dir, f)) for f in self.ZH_FILES) and importlib.util.find_spec("misaki"):
+                try:
+                    import numpy as np
+
+                    with np.load(os.path.join(self.dir, self.ZH_FILES[1])) as names:
+                        self._zh_names = set(names.files)
+                except (OSError, ValueError):
+                    pass
+        return self._zh_names
+
+    def _zh_pcm(self, text: str, voice: str):
+        if self.zh is None:
+            from kokoro_onnx import Kokoro
+            from misaki import zh
+
+            self._zh_g2p = zh.ZHG2P(version="1.1")
+            self.zh = Kokoro(*(os.path.join(self.dir, f) for f in self.ZH_FILES[:2]),
+                             vocab_config=os.path.join(self.dir, self.ZH_FILES[2]))
+        phonemes, _ = self._zh_g2p(text)
+        samples, _ = self.zh.create(phonemes, voice=voice, speed=self.speed, is_phonemes=True)
+        return samples
 
     def style(self, voice: str):
         return self.custom[voice] if voice in self.custom else self.kokoro.get_voice_style(voice)
@@ -182,6 +223,8 @@ class KokoroEngine:
 
         if voice in self.piper:
             return self._piper_pcm(text, *self.piper[voice])
+        if voice.startswith("zh:"):
+            return (np.clip(self._zh_pcm(text, voice[3:]), -1, 1) * 32767).astype("<i2").tobytes()
         samples, _ = self.kokoro.create(text, voice=self.custom.get(voice, voice), speed=self.speed, lang=voice_lang(voice))
         return (np.clip(samples, -1, 1) * 32767).astype("<i2").tobytes()
 
