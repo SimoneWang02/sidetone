@@ -203,8 +203,7 @@ class Talk:
                 break
         else:  # its editor is between two requests: the next one is handed it
             self._clear_wanted = (s.tty, time.monotonic())
-        self._talk("sent", s, text, seconds=2.5)
-        self._signal("sent", s, "Clearing.")
+        self._talk("sent", s, text, seconds=2.5)  # no sound yet: the one sound comes when it is seen done, or not
         log(self.cfg, "hub.log", f"clear [{s.id[:8]}] /clear asked of the editor for its terminal ({s.tty}): {text[:80]}")
         old = self._clearing.pop(s.id, None)
         if old:
@@ -217,7 +216,7 @@ class Talk:
     def _cleared(self, sid: str, by_clear: bool) -> None:
         """The conversation of `sid` ended. If /clear had been typed for it, that is the proof
         it worked (Claude Code ends it with the reason "clear" and starts a new one in the same
-        terminal): a sound, or "Chat cleared." in its voice. Call with the lock held."""
+        terminal): the sound of "sent", or "Chat cleared." in its voice. Call with the lock held."""
         asked = self._clearing.pop(sid, None)
         if not asked:
             return
@@ -229,7 +228,7 @@ class Talk:
         mode = self.cfg.talk_feedback
         if mode == "sound" and self.sounds:
             if not self._muted():
-                self.sounds.play("cleared")
+                self.sounds.play("sent")
         elif mode != "none" and not self._muted():
             self.speech.put(Utterance(text="Chat cleared.", voice=asked[0], kind="allowed", src="follow-up"))
 

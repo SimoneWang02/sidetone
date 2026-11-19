@@ -868,10 +868,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   just spoken". The two notes of "sent" only said the order went to the editor. Now the
   proof is Claude Code's own `SessionEnd` with `reason: "clear"` for that session
   (`Talk._cleared`; `/clear` ends the conversation and starts one with a new id in the
-  same terminal): a quick run of four notes up (`cleared` in `sounds.TONES`), or "Chat
-  cleared." with `talk_feedback: voice`. No such end within `base.CLEAR_CONFIRM` (10 s):
-  the struck-out microphone, "Not cleared: the chat is still there", and the low notes.
-  **Not heard by the author yet.**
+  same terminal): the two notes of "sent", or "Chat cleared." with `talk_feedback:
+  voice`. No such end within `base.CLEAR_CONFIRM` (10 s): the struck-out microphone,
+  "Not cleared: the chat is still there", and the low notes. Nothing sounds when the
+  order goes out. A run of four notes for "cleared" was played to them first; their
+  word: "keep a positive tune and a negative one", the positive being the one for sent.
 - Words handed over do not take the bubble from a speaker (2026-11-19, `quiet` on the
   `talk` message, `hushed` in `UpdateBubble`). The author: while this session was speaking,
   "session one was done. His message popped out briefly and then your message continued.

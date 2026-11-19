@@ -15,8 +15,9 @@ real keys yet.
       show `/clear` and an empty conversation. Said to a session that is working, its light
       should show the struck-out microphone and "Not cleared: it is still working".
       The author cleared one the same night. Asked for then and built: once the chat is
-      really cleared, a quick run of four notes up (or "Chat cleared." with spoken
-      feedback); nothing within 10 s gives "Not cleared". **Not heard yet.**
+      really cleared, the "sent" notes (or "Chat cleared." with spoken feedback), and
+      nothing before; nothing within 10 s gives "Not cleared" and the low notes.
+      **Not heard in use yet.**
       Open:
       - does the speech model write the order cleanly enough (it has to be the whole of
         what was said); other phrases go in `clear_words`, Italian ones too
