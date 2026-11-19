@@ -1138,7 +1138,8 @@ class PushToTalk(HubCase):
         self.assertEqual(len(set(made.values())), len(sounds.TONES))
         for name, pcm in made.items():
             samples = array.array("h", pcm)
-            self.assertLess(len(samples) / sounds.RATE, 0.3, name)
+            self.assertLess(len(samples) / sounds.RATE - sounds.LEAD - sounds.TAIL, 0.3, name)  # the sound, without its silences
+            self.assertFalse(any(samples[-int(sounds.RATE * sounds.TAIL):]) or any(samples[:int(sounds.RATE * sounds.LEAD)]), name)
             self.assertLess(max(abs(v) for v in samples), 32767 * 0.31, name)
             self.assertGreater(max(abs(v) for v in samples), 32767 * 0.1, name)
             self.assertEqual((abs(samples[0]) < 200, abs(samples[-1]) < 200), (True, True), name)  # no click

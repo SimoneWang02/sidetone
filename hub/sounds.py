@@ -12,6 +12,17 @@ import subprocess
 import threading
 
 RATE = 24000
+# Silence after each sound, so its stream does not close while the last notes are still on the
+# way to Windows. Without it the author heard "something scratching" after every sound
+# (2026-11-19), though what Linux played, recorded from the speakers' output, faded cleanly to
+# silence: the stutter is in WSL's link to Windows' speakers as the stream closes. With 0.3 s
+# of silence on both sides and a 150 ms buffer it was clean ("the last two were clean").
+# Without the silence before, the first sound after a quiet spell still had "a very very brief
+# scratch at the end" (the link to Windows sleeps after a few seconds and wakes with it); 0.1 s
+# before was clean twice, 8 s apart, and is too short to make the sound feel late.
+LEAD = 0.1
+TAIL = 0.3
+LATENCY_MS = 150
 # What each sound is: notes as (pitch in Hz, seconds); pitch 0 is a pause. They are told apart
 # by their shape: going up = sent, the same note twice = waiting, going down = not sent.
 TONES = {
@@ -28,7 +39,7 @@ def tone(notes: list, volume: float) -> bytes:
     """The notes as 16-bit mono sound. Each one starts softly within 4 ms and dies away, so
     there is no click at either end."""
     volume = max(0.0, min(1.0, float(volume)))
-    out = array.array("h")
+    out = array.array("h", [0] * int(RATE * LEAD))
     for pitch, seconds in notes:
         count = int(RATE * seconds)
         for i in range(count):
@@ -37,6 +48,7 @@ def tone(notes: list, volume: float) -> bytes:
             fall = math.exp(-3.0 * i / count) * min(1.0, (count - i) / (RATE * 0.008))
             wave = math.sin(2 * math.pi * pitch * t) + 0.25 * math.sin(4 * math.pi * pitch * t)
             out.append(int(32767 * 0.8 * volume * rise * fall * wave) if pitch else 0)
+    out.extend([0] * int(RATE * TAIL))
     return out.tobytes()
 
 
@@ -61,7 +73,7 @@ class Sounds:
     def _out(self, pcm: bytes) -> None:
         try:
             subprocess.run(["paplay", "--raw", f"--rate={RATE}", "--format=s16le", "--channels=1",
-                            "--latency-msec=30"], input=pcm, timeout=5,
+                            f"--latency-msec={LATENCY_MS}"], input=pcm, timeout=5,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except (OSError, subprocess.SubprocessError):
             pass  # no sound is not worth failing over

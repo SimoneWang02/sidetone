@@ -50,6 +50,11 @@ these come before anything new.
       the two notes recorded from the speakers' output fade cleanly to silence. The likely
       cause is the NVIDIA overlay, which also acts on Ctrl+Alt+M (switching its microphone)
       and may play its own sound; to be heard with our sounds alone.
+      Heard alone, they still scratched ("Boodum ... hmm"): it is ours, added on the way
+      to Windows as the stream closes. Mended the same hour with silence around each sound
+      (`sounds.LEAD`, `TAIL`) and a 150 ms buffer; heard by them: "the last two were
+      clean", then a brief scratch on the first after a quiet spell, then with the 0.1 s
+      before, twice after 8 s of quiet: "they were clean".
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
       Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
       the talk key and say "clear the chat" to a session that is idle: its terminal should
