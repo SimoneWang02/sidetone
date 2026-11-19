@@ -1327,14 +1327,14 @@ class PushToTalk(HubCase):
         hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Done.")))
         self.assertEqual(self.overlay.of("state")[-1]["usage"], [])
 
-    def test_the_week_of_one_model_is_a_bar_of_its_own(self):
+    def test_the_week_of_one_model_can_be_a_bar_of_its_own(self):
         hub = self.make(usage_shown=True)
         fable = self.USAGE + "Current week (Fable): 89% used \u00b7 resets Nov 23, 7:59am (America/New_York)\n"
         hub.usage_ask = lambda program, timeout: (fable, "")
         hub.usage(quiet=True)
+        self.assertEqual(hub._plan_bars(), [["5 hours", 26, ""], ["Week", 38, ""]])  # not unless asked for
+        hub.cfg.usage_models = "all"
         self.assertEqual(hub._plan_bars(), [["5 hours", 26, ""], ["Week", 38, ""], ["Fable", 89, "warn"]])
-        hub.cfg.usage_models = "none"
-        self.assertEqual(hub._plan_bars(), [["5 hours", 26, ""], ["Week", 38, ""]])
         hub.cfg.usage_models, hub.cfg.usage_warn = "near", 95  # only once it is near its end
         self.assertEqual(hub._plan_bars(), [["5 hours", 26, ""], ["Week", 38, ""]])
         hub.cfg.usage_warn = 80

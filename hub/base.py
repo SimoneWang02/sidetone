@@ -218,8 +218,9 @@ class Config:
     usage_every: float = 300.0
     usage_warn: float = 80.0
     # The week of one model, where the plan counts it apart ("Fable 89%"), as a bar after those
-    # two: all | near = only from `usage_warn` on | none. It can be the one that runs out first.
-    usage_models: str = "all"
+    # two: none | all | near = only from `usage_warn` on. Off unless asked for: the author did
+    # not want it, since such a limit comes and goes with the plans.
+    usage_models: str = "none"
     # How full each session's context is, counted from its transcript, and where it shows:
     # arc = a thin arc around the session's light, filling clockwise from the top (the author,
     # 2026-11-18, found the words too long beside the running time and chose the arc of three

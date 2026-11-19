@@ -1012,14 +1012,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   a passing mouse. Now it is as quick as the details; 0.66 brings the wait back. A new
   default in `hub/overlay.py` needs a hub restart to reach the window, not only an overlay
   restart. **Not seen by the author yet.**
-- The week of one model as a third usage bar (2026-11-18, `usage_models`: `all`, default,
-  `near` = only from `usage_warn` on, `none`; `Talk._plan_bars`). The author, having passed
+- The week of one model as a third usage bar (2026-11-18, `usage_models`: `none`, default,
+  `all`, `near` = only from `usage_warn` on; `Talk._plan_bars`). The author, having passed
   the two bars: "If you have any other design ideas, yeah show me." The reading at that
   moment was 6 percent of the five hours, 47 of the week and 89 of Fable's week: the one
   window near its end was the one not on screen. Three in one line left each bar about
   25 px (seen in a picture), so from three on each has a line of its own, names in one
-  column, bars one length, percents at the right; two still share a line. Live on their
-  overlay; **not judged by them yet**. Said to them as further ideas, not built: when
+  column, bars one length, percents at the right; two still share a line. The author on
+  seeing it: "it looks good", but not wanted: "I don't think I need like fable ... it
+  changes in the time", such a limit may not stay, and the bar "might become unused". So
+  it is off by default and there for whoever sets it. Said to them as further ideas, not built: when
   each window starts again, and a tick on each bar for how much of its time has passed.
 - No time on the history's lines (2026-11-18, `history_time`, off). Asked what the history
   could give up to make room, the author was offered the tokens on each line and the

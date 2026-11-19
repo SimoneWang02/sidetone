@@ -788,7 +788,9 @@ Bigger pieces:
       They asked for more design ideas for the usage bars ("show me"). Built and put
       on their overlay: the week of one model as a third bar ("Fable 89%", which was
       the window nearest its end and not on screen), each of the three on a line of its
-      own (`usage_models`). **For them to judge.** Said as further ideas, not built:
+      own (`usage_models`). Their answer: "it looks good", but they do not need
+      it, since a limit for one model may not stay; it is off by default now. The
+      quicker history they did not speak of. Said as further ideas, not built:
       when each window starts again; a tick on each bar for how much of its time has
       passed, to see whether you are ahead of an even pace. The offers above are
       still open. Also said with the command in the middle of that work, so they could
