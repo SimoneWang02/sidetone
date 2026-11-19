@@ -638,6 +638,11 @@ Bigger pieces:
       (`claude-speaks`, `cs`), the folders under `~/.local` and `~/.config`, the VS Code
       extension and the README; and "Claude" in a product's name is Anthropic's mark,
       which is a reason of its own to look for one before the repo is public.
+      Asked the same evening with three names that a search had not found on a tool
+      for coding agents (Sidetone, Squelch, Tally; Earshot, Switchboard, Hark and
+      Heard are taken) and "keep it for now", they answered by voice: "Sidetone is
+      cool, but why?" The why was explained; **no name chosen, nothing renamed**. The
+      speech model wrote the word as "Saiton". The window shows `settings.NAME`.
 - [ ] Packaging as a Claude Code plugin, so it installs in one step.
 - [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
       tools that only speak after the reply has ended.
