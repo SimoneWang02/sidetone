@@ -1031,7 +1031,7 @@ class PushToTalk(HubCase):
 
     def test_the_sounds_are_short_and_differ(self):
         made = {name: sounds.tone(notes, 0.3) for name, notes in sounds.TONES.items()}
-        self.assertEqual(len(set(made.values())), 3)
+        self.assertEqual(len(set(made.values())), len(sounds.TONES))
         for name, pcm in made.items():
             samples = array.array("h", pcm)
             self.assertLess(len(samples) / sounds.RATE, 0.3, name)
@@ -1354,6 +1354,37 @@ class PushToTalk(HubCase):
         waiting = hub.editor_waits([4001, 4002], clears=True)
         self.said(hub, "clear the chat", "b")
         self.assertEqual((waiting.wake.is_set(), hub.followups.get("b")), (False, ["clear the chat"]))
+
+    def test_a_cleared_chat_is_confirmed_when_claude_code_ends_it(self):
+        """The "sent" sound only says the order went to the editor; the end of the
+        conversation with the reason "clear" says it worked."""
+        hub = self.make()
+        hub.sounds = FakeSounds()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41", 4002: "/dev/pts/42"}.get(pid)
+        hub.sessions.by_id["a"].tty, hub.sessions.by_id["b"].tty = "/dev/pts/41", "/dev/pts/42"
+        editor = hub.editor_waits([4001, 4002], clears=True)
+        self.said(hub, "clear the chat", "a")
+        hub.editor_done(editor)
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="clear"))
+        self.assertEqual(hub.sounds.played, ["sent", "cleared"])
+        self.assertNotIn("a", hub._clearing)
+        # Not seen done in time: said so, with the sound for "not done".
+        self.addCleanup(setattr, hub_module.base, "CLEAR_CONFIRM", hub_module.base.CLEAR_CONFIRM)
+        hub_module.base.CLEAR_CONFIRM = 0.2
+        editor = hub.editor_waits([4002], clears=True)
+        self.said(hub, "clear the chat", "b")
+        self.assertTrue(wait_for(lambda: hub.sounds.played == ["sent", "cleared", "sent", "failed"], 3))
+        self.assertEqual(self.talks()[-1], ("failed", "b", "Not cleared: the chat is still there"))
+        # In words, for those who chose spoken feedback.
+        hub.cfg.talk_feedback = "voice"
+        hub.on_event(ev("SessionStart", sid="c", cwd="/w/c"))
+        hub.sessions.by_id["c"].tty = "/dev/pts/41"
+        hub.editor_done(editor)
+        self.said(hub, "clear the chat", "c")
+        hub.on_event(ev("SessionEnd", sid="c", cwd="/w/c", reason="clear"))
+        self.assertTrue(hub.speech.wait_idle(5))
+        self.assertEqual(self.spoken()[-1], "Chat cleared.")  # "Clearing." goes with the session if not yet said
 
     def test_clear_the_chat_is_only_typed_for_a_session_at_its_prompt(self):
         """It is typed with an Enter, which would answer a dialog that is open in the terminal."""

@@ -862,6 +862,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   0.4.0 is installed, and it runs 0.3.0 until "Restart Extension Host".** Not built: an
   order to a busy session being kept until its turn ends. The code went in under other
   sessions' commit messages (`b6c7626`, `a61c7ad`), which took it along.
+  The author tried it the same night after restarting the extension host ("it looks like
+  it cleared the chat") and asked for a sign that it got through, "either sound effect or
+  just spoken". The two notes of "sent" only said the order went to the editor. Now the
+  proof is Claude Code's own `SessionEnd` with `reason: "clear"` for that session
+  (`Talk._cleared`; `/clear` ends the conversation and starts one with a new id in the
+  same terminal): a quick run of four notes up (`cleared` in `sounds.TONES`), or "Chat
+  cleared." with `talk_feedback: voice`. No such end within `base.CLEAR_CONFIRM` (10 s):
+  the struck-out microphone, "Not cleared: the chat is still there", and the low notes.
+  **Not heard by the author yet.**
 - Words handed over do not take the bubble from a speaker (2026-11-19, `quiet` on the
   `talk` message, `hushed` in `UpdateBubble`). The author: while this session was speaking,
   "session one was done. His message popped out briefly and then your message continued.

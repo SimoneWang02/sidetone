@@ -206,6 +206,44 @@ class Talk:
         self._talk("sent", s, text, seconds=2.5)
         self._signal("sent", s, "Clearing.")
         log(self.cfg, "hub.log", f"clear [{s.id[:8]}] /clear asked of the editor for its terminal ({s.tty}): {text[:80]}")
+        old = self._clearing.pop(s.id, None)
+        if old:
+            old[1].cancel()
+        timer = threading.Timer(base.CLEAR_CONFIRM, self._clear_late, args=(s.id,))
+        timer.daemon = True
+        self._clearing[s.id] = (s.voice, timer)
+        timer.start()
+
+    def _cleared(self, sid: str, by_clear: bool) -> None:
+        """The conversation of `sid` ended. If /clear had been typed for it, that is the proof
+        it worked (Claude Code ends it with the reason "clear" and starts a new one in the same
+        terminal): a sound, or "Chat cleared." in its voice. Call with the lock held."""
+        asked = self._clearing.pop(sid, None)
+        if not asked:
+            return
+        asked[1].cancel()
+        if not by_clear:
+            log(self.cfg, "hub.log", f"clear [{sid[:8]}] its session ended otherwise, not cleared")
+            return
+        log(self.cfg, "hub.log", f"clear [{sid[:8]}] done: Claude Code cleared the conversation")
+        mode = self.cfg.talk_feedback
+        if mode == "sound" and self.sounds:
+            if not self._muted():
+                self.sounds.play("cleared")
+        elif mode != "none" and not self._muted():
+            self.speech.put(Utterance(text="Chat cleared.", voice=asked[0], kind="allowed", src="follow-up"))
+
+    def _clear_late(self, sid: str) -> None:
+        """No sign of /clear having worked in `CLEAR_CONFIRM` seconds: said so on the light."""
+        with self.lock:
+            if not self._clearing.pop(sid, None):
+                return
+            s = self.sessions.by_id.get(sid)
+            log(self.cfg, "hub.log", f"clear [{sid[:8]}] not seen done in {base.CLEAR_CONFIRM:.0f}s")
+            if s:
+                self._talk("failed", s, "Not cleared: the chat is still there", seconds=4)
+            self._signal("failed")
+        self.publish()
 
     def _cannot_clear(self, s) -> str:
         """Why /clear cannot be typed into this session's terminal now, or "". It goes with

@@ -47,6 +47,7 @@ class Editor:
 
 
 EDITOR_WAIT = 25.0  # seconds an editor's request is held before it is sent back empty and asked again
+CLEAR_CONFIRM = 10.0  # seconds after /clear was typed by which Claude Code must have ended that conversation, or it counts as not cleared
 EDITOR_GAP = 3.0  # seconds an editor counts as still there after a request of its ended: the next one is on its way
 NEVER = float("-inf")  # "has not happened", for times on the clock that counts from the boot
 RECOUNT = 1.5  # seconds after a turn ended until what it used is added up once more (its last reply may be written late)

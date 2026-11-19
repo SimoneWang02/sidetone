@@ -87,6 +87,7 @@ class Hub(Permissions, Talk):
         self._shown_at: dict[str, float] = {}  # terminal -> when it was last asked to the front
         self._clears_by: dict[str, float] = {}  # terminal -> when a request of an editor that can type /clear into it last ended
         self._clear_wanted: tuple[str, float] = ("", base.NEVER)  # a terminal to be cleared while its editor was between two requests
+        self._clearing: dict[str, tuple] = {}  # session -> (its voice, timer) while /clear has been asked for and not yet seen done
         self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
         self._restore_sessions()
         self._talk_shown: tuple | None = None  # what the overlay shows for push-to-talk while it can still change session
@@ -188,6 +189,7 @@ class Hub(Permissions, Talk):
         with self.lock:
             self.last_event = time.monotonic()
             if event == "SessionEnd":
+                self._cleared(sid, ev.get("reason") == "clear")
                 self._forget(sid, "session ended")
                 return
             s = self.sessions.touch(sid, ev.get("cwd", ""))
