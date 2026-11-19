@@ -285,7 +285,7 @@ class Overlay:
                 self.log("overlay ready")
             elif kind == "mode":
                 self.config["mode"] = msg.get("mode", "dots")  # survives an overlay restart
-            elif kind == "error":
+            elif kind in ("error", "note"):
                 self.log(f"overlay: {msg.get('message')}")
             self.on_message(msg)
         with self._lock:

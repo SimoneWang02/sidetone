@@ -1738,6 +1738,7 @@ namespace ClaudeSpeaks
         int[] reorderKeys = { VK_CONTROL, VK_MENU };  // held while a light is dragged: it goes to another place in the bar
         Row lifted;  // the light being dragged to another place, while `dragging`
         double liftGrab;  // where along the bar it was taken hold of, in the bar's units
+        double reorderHeldAt = -1;  // when the reorder keys were last seen held, over the bar
         int wheelTurned;
         double wheelUntil, selectorY, selectorShown, heldSince;
         bool wheeling, keysOpen;
@@ -3042,7 +3043,9 @@ namespace ClaudeSpeaks
         // in it, and the others make room as it passes them; anywhere else a drag moves the bar.
         bool CanReorder()
         {
-            return reorderKeys.Length > 0 && order.Count > 1 && !moving && Held(reorderKeys);
+            bool can = reorderKeys.Length > 0 && order.Count > 1 && !moving && Held(reorderKeys);
+            if (can) reorderHeldAt = Ui.Now;
+            return can;
         }
 
         // How far along the bar a point on the screen is, in the bar's own units, from its first light.
@@ -3069,7 +3072,18 @@ namespace ClaudeSpeaks
         void Press(Point at)
         {
             if (dragging) return;
-            if (!CanReorder()) { BeginDrag(at); return; }
+            // Any one of the keys, or all of them a moment ago, is enough: a press that came with
+            // Ctrl down and Alt not quite, or just after letting go, moved the whole overlay.
+            bool keyed = false;
+            foreach (int key in reorderKeys) if (Pressed(key)) keyed = true;
+            keyed = reorderKeys.Length > 0 && order.Count > 1 && !moving && (keyed || Ui.Now - reorderHeldAt < 0.4);
+            if (!keyed)
+            {
+                Send("note", "message", "bar taken by the mouse: ctrl " + (Down(VK_CONTROL) ? "down" : "up") + ", alt "
+                     + (Down(VK_MENU) ? "down" : "up") + ", right alt " + (Down(VK_RMENU) ? "down" : "up") + ", " + order.Count + " sessions");
+                BeginDrag(at);
+                return;
+            }
             // With the keys held a press never moves the bar: it takes the light nearest to it,
             // also on the bar's rim or between two lights (a press that missed the light by a
             // pixel moved the whole overlay). `at` is where the press was, as the press itself
