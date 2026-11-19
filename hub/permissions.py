@@ -288,9 +288,10 @@ class Permissions:
         log(self.cfg, "hub.log", "voice " + ("off" if muted else "on") + " (mute key)")
         if self.overlay:
             key = self.cfg.overlay.get("hotkeys", {}).get("mute", "")
+            # The same row as the details show while muted (Overlay.VoiceRow), the key beside the words.
             self.overlay.send({"type": "banner", "icon": "muted" if muted else "voice",
-                               "text": "Voice off" if muted else "Voice on",
-                               "hint": f"{key} turns it on again" if muted and key else "",
+                               "text": "Voice is muted" if muted else "Voice is on",
+                               "hint": f"{key} turns it on" if muted and key else "",
                                "seconds": 2.5 if muted else 1.5})
         if self._settings_open and self.overlay:
             self.overlay.send({"type": "settings", "open": True, "title": settings_mod.NAME, "sections": settings_mod.describe(self)})

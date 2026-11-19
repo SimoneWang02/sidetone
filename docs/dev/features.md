@@ -576,6 +576,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   small", wanting a slash over the speaker). A speaker with two waves and a slash across all
   of it, cut free of what it crosses by a gap; the same in the card's corner, the line, the
   "Voice off" notice and the mark past the bar.
+  One row for both (2026-11-19, the author: "when I mute ... I see a layout, then after a
+  few seconds I see another layout. One layout does enough. I think the side-by-side is
+  good"; and of "Voice on": "the label and the icon, I don't think they're vertically
+  aligned ... make it coherent"). The mute key's notice was a title with the key on a line
+  under it, then gave way to the details' line with the key beside it; and "Voice on" had
+  an emoji speaker (11 px tall, 10 px gap, 1 px high) where the others had the drawn one
+  (14 and 12 px, gaps 8 and 7). Now both notices and the line are `Overlay.VoiceRow`: the
+  drawn speaker at 15 px, struck out or sounding in the blue of "working"
+  (`MutedSpeaker.Struck`), a 7 px gap, the words, the key beside them. The hub says "Voice
+  is muted" with "Ctrl+Alt+M turns it on" and "Voice is on". Measured in the pictures:
+  icon and letters within 0.5 px of the same middle in all three.
   Then the place they had meant all along: "not in the ... box, I meant in the top right of
   the session's details whenever there's the response coming out", since they keep the
   details away and see lines in the bubble beside the light. So the same icon is in the

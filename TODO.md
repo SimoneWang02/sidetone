@@ -20,7 +20,7 @@ these come before anything new.
 
 - [ ] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
       mute shortcut"). Press it while a session speaks: the line stops, two low notes go
-      down, and the overlay shows "Voice off" with a struck-out speaker for 2.5 s. While
+      down, and the overlay shows "Voice is muted" with a struck-out speaker for 2.5 s. While
       muted, what sessions say is shown instead. Press again: two low notes go up, "Voice
       on". The same as `sidetone off` and `on`; rebind it in the settings window, Keys.
       The author pressed it the same day: "It works." They asked for M ("M for mute"); it
@@ -44,6 +44,12 @@ these come before anything new.
       is to be asked. The repeat key no longer speaks while muted (they found it did).
       **Not seen by them yet.**
       Open: mute is for every session, not only the one in focus.
+      Seen by them at 15:52: two looks one after the other when muting, "Voice on" out of
+      line, and "a reverb, something scratching" after the sounds. The looks made one row
+      the same day (see `docs/dev/features.md`). The scratch is not in what Linux plays:
+      the two notes recorded from the speakers' output fade cleanly to silence. The likely
+      cause is the NVIDIA overlay, which also acts on Ctrl+Alt+M (switching its microphone)
+      and may play its own sound; to be heard with our sounds alone.
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
       Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
       the talk key and say "clear the chat" to a session that is idle: its terminal should

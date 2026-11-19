@@ -263,10 +263,10 @@ class Muted(SettingsCase):
         self.assertTrue(os.path.exists(self.cfg.mute_file))
         hub.speech.stop_all.assert_called_once()  # the line being said is cut
         banner = self.window.of("banner")[-1]
-        self.assertEqual((banner["icon"], banner["text"], banner["hint"]), ("muted", "Voice off", "Ctrl+Alt+M turns it on again"))
+        self.assertEqual((banner["icon"], banner["text"], banner["hint"]), ("muted", "Voice is muted", "Ctrl+Alt+M turns it on"))
         hub.on_overlay({"type": "hotkey", "name": "mute"})
         self.assertFalse(os.path.exists(self.cfg.mute_file))
-        self.assertEqual((self.window.of("banner")[-1]["text"], played), ("Voice on", ["voice_off", "voice_on"]))
+        self.assertEqual((self.window.of("banner")[-1]["text"], played), ("Voice is on", ["voice_off", "voice_on"]))
 
     def test_the_overlay_is_told_the_voice_is_off(self):
         hub = self.make()

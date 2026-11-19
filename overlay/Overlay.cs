@@ -703,6 +703,7 @@ namespace ClaudeSpeaks
     {
         public double Side = 16;
         public Brush Ink = Ui.Dim;
+        public bool Struck = true;  // false: the same speaker sounding, for "Voice is on"
 
         public MutedSpeaker(double size)
         {
@@ -733,6 +734,12 @@ namespace ClaudeSpeaks
                 g.ArcTo(new Point(12.6 * k, 12.8 * k), new Size(5.6 * k, 5.6 * k), 0, false, SweepDirection.Clockwise, true, false);
             }
             var line = new Pen(Ink, 1.3 * k) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+            if (!Struck)
+            {
+                dc.DrawGeometry(Ink, null, speaker);
+                dc.DrawGeometry(null, line, wave);
+                return;
+            }
             // Everything but a band along the slash, so the slash stands apart from what it crosses.
             var band = new LineGeometry(new Point(1.2 * k, 1.2 * k), new Point(14.8 * k, 14.8 * k)).GetWidenedPathGeometry(new Pen(Brushes.Black, 3.6 * k));
             var keep = new CombinedGeometry(GeometryCombineMode.Exclude, new RectangleGeometry(new Rect(-2 * k, -2 * k, 20 * k, 20 * k)), band);
@@ -2331,11 +2338,8 @@ namespace ClaudeSpeaks
             if (muted && mutedLine && asked && !hasBanner)  // with the details, and not twice while "Voice off" is up
             {
                 string key;
-                mutedText.Inlines.Clear();
-                mutedText.Inlines.Add(new InlineUIContainer(new MutedSpeaker(15) { Margin = new Thickness(0, 0, 7, -2) }) { BaselineAlignment = BaselineAlignment.Center });
-                mutedText.Inlines.Add(new Run("Voice is muted") { Foreground = Ui.Dim });
-                if (wantedKeys.TryGetValue("mute", out key) && key.Trim().Length > 0)
-                    mutedText.Inlines.Add(new Run("   " + key + " turns it on") { Foreground = Ui.Faint, FontSize = 11.5 });
+                VoiceRow(mutedText, true, "Voice is muted",
+                         wantedKeys.TryGetValue("mute", out key) && key.Trim().Length > 0 ? key + " turns it on" : "");
                 mutedBox.Visibility = Visibility.Visible;
             }
             else mutedBox.Visibility = Visibility.Collapsed;
@@ -3652,6 +3656,22 @@ namespace ClaudeSpeaks
             };
         }
 
+        // The voice off or on, as one row: the speaker (struck out, or sounding in the blue of
+        // "working"), the words, and the key beside them. The mute key's banner and the line in the
+        // details while muted are this same row, so nothing moves when one gives way to the other
+        // (the author, 2026-11-19: "one layout does enough ... the side-by-side is good"), and the
+        // speaker is the same drawing at the same size and gap both ways (they saw the emoji
+        // speaker of "Voice on" sit out of line with its words).
+        void VoiceRow(TextBlock row, bool muted, string text, string hint)
+        {
+            row.Inlines.Clear();
+            var speaker = new MutedSpeaker(15) { Struck = muted, Margin = new Thickness(0, 0, 7, -2) };
+            if (!muted) speaker.Ink = Ui.Alpha(Ui.Tint("working"), 1);
+            row.Inlines.Add(new InlineUIContainer(speaker) { BaselineAlignment = BaselineAlignment.Center });
+            row.Inlines.Add(new Run(text) { Foreground = Ui.Dim });
+            if (hint.Length > 0) row.Inlines.Add(new Run("   " + hint) { Foreground = Ui.Faint, FontSize = 11.5 });
+        }
+
         // Push-to-talk feedback: who is being recorded for, the transcript about to be sent, and so on.
         void ShowBanner(Dictionary<string, object> msg)
         {
@@ -3662,12 +3682,17 @@ namespace ClaudeSpeaks
                 bannerTitle.Inlines.Clear();
                 // The microphone (moving the bar), or a speaker struck out or sounding (the mute key).
                 string icon = Str(msg, "icon", "");
-                if (icon == "muted") bannerTitle.Inlines.Add(new InlineUIContainer(new MutedSpeaker(16) { Margin = new Thickness(0, 0, 8, -2) }) { BaselineAlignment = BaselineAlignment.Center });
-                else bannerTitle.Inlines.Add(new Run(icon == "voice" ? "\uD83D\uDD0A  " : "\uD83C\uDFA4  ")
-                    { Foreground = icon == "muted" ? Ui.Dim : Ui.Alpha(Ui.Tint("working"), 1), FontFamily = Ui.Symbols,
-                      FontSize = icon.Length > 0 ? 17 : bannerTitle.FontSize });  // the speaker's stroke is lost at the size of the words
-                bannerTitle.Inlines.Add(new Run(Str(msg, "text")) { FontWeight = FontWeights.SemiBold });
-                bannerHint.Text = Str(msg, "hint");
+                if (icon == "muted" || icon == "voice")
+                {
+                    VoiceRow(bannerTitle, icon == "muted", Str(msg, "text"), Str(msg, "hint"));
+                    bannerHint.Text = "";
+                }
+                else
+                {
+                    bannerTitle.Inlines.Add(new Run("\uD83C\uDFA4  ") { Foreground = Ui.Alpha(Ui.Tint("working"), 1), FontFamily = Ui.Symbols });
+                    bannerTitle.Inlines.Add(new Run(Str(msg, "text")) { FontWeight = FontWeights.SemiBold });
+                    bannerHint.Text = Str(msg, "hint");
+                }
                 bannerHint.Visibility = bannerHint.Text.Length > 0 ? Visibility.Visible : Visibility.Collapsed;
                 double seconds = Num(msg, "seconds", 0);
                 if (seconds > 0) { bannerTimer.Interval = TimeSpan.FromSeconds(seconds); bannerTimer.Start(); }
