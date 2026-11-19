@@ -39,7 +39,11 @@ The taskbar's icon is the mark in white on a rounded square of that blue which f
 whole icon (`Logo.Draw(dc, s, tile)`, `assets/icon.png`). The plain mark, a small disc in a
 thin arc with air around it, looked smaller there than its neighbours (the author: "it's
 still pretty small. It doesn't have the circumference of the other apps"). In the window's
-menu and the README it is still the plain mark. **Not seen by them yet.**
+menu and the README it is still the plain mark. On seeing that square: "I would prefer a
+round one and the wave inside the circle are not very clear. Could you provide another
+solution?" So the icon is a disc that fills the side, with nothing on it but three broad
+white bars (no arc; five thin bars were under two pixels wide at taskbar size), and the
+plain mark has the same three bars in its disc. **The round one not seen by them yet.**
 
 In the same message: "I still see [claude-speaks] as a name on the top left of each session
 ... you just have to [restart] the hub." A restart would not have done it: a session's name
@@ -885,8 +889,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   or just, yeah, I just want a different name. And also, can you make a logo". So the
   tool's mark and name head the menu (`settings.NAME`, sent as `title`; one place to
   change when a name is chosen) and nothing is at the bottom left. The mark (`Logo` in
-  `Overlay.cs`): a session's light while it speaks, a pink disc with five white voice
-  bars, and around it the context arc, three quarters round, in the microphone's pink,
+  `Overlay.cs`): a session's light while it speaks, a disc with white voice bars (five at
+  first, three since the same night), and around it the context arc, three quarters round, in the microphone's pink,
   which the author once called "the brand color". It is drawn by the overlay and kept
   nowhere as a picture: the window, its taskbar icon and `assets/logo.png` for the README
   (the `logo` message writes it) are the same drawing. The window's switches and sliders

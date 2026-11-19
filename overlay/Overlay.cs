@@ -968,41 +968,45 @@ namespace ClaudeSpeaks
         }
     }
 
-    // The tool's mark: a session's light while it speaks, as the overlay draws it. A round
-    // light with five voice bars in it, and around it the arc that says how full a context is.
+    // The tool's mark: a session's light while it speaks. A round light with three voice bars
+    // in it, and around it the arc that says how full a context is.
     // In the blue the author gave for it (they typed "#006896" on seeing it in pink).
     // Drawn here and nowhere kept as a picture, so the window, its place in the taskbar and the
     // file for the README (`logo` message) are all the same drawing.
     static class Logo
     {
-        static readonly double[] Bars = { 0.15, 0.29, 0.40, 0.23, 0.13 };  // each bar's height, as a share of the side
+        static readonly double[] Bars = { 0.20, 0.37, 0.27 };  // each bar's height, as a share of the side (of the plain mark)
 
-        // In a square of side `s`, from its corner. `tile`: the mark in white on a rounded square
-        // of its color that fills the whole side, for the taskbar, where the plain mark, a
-        // small disc inside a thin arc, looked smaller than the icons beside it (the author:
-        // "it doesn't have the circumference of the other apps").
+        // In a square of side `s`, from its corner. `tile`: the taskbar's icon, a disc of the
+        // mark's color that fills the whole side, with only the voice bars on it, in white and
+        // large. The plain mark, a small disc inside a thin arc, looked smaller there than the
+        // icons beside it; a rounded square with five thin bars and the arc was tried first and
+        // the author asked for "a round one", the bars being "not very clear" at that size.
         public static void Draw(DrawingContext dc, double s, bool tile)
         {
             // The author's color, #006896, at the lower right; a lighter step of it at the upper left.
             var ink = new LinearGradientBrush(Color.FromRgb(0x2E, 0x9C, 0xC9), Color.FromRgb(0x00, 0x68, 0x96), new Point(0.15, 0), new Point(0.85, 1));
             ink.Freeze();
             var c = new Point(s / 2, s / 2);
-            if (tile) dc.DrawRoundedRectangle(ink, null, new Rect(0, 0, s, s), s * 0.23, s * 0.23);
-            double r = s * (tile ? 0.365 : 0.435), grow = tile ? 1.22 : 1;
-            var rim = new Pen(tile ? (Brush)Ui.Paint("#B8FFFFFF") : ink, s * (tile ? 0.062 : 0.07)) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
-            var arc = new StreamGeometry();
-            using (StreamGeometryContext g = arc.Open())
+            if (!tile)
             {
-                g.BeginFigure(new Point(c.X, c.Y - r), false, false);  // from the top, three quarters round
-                g.ArcTo(new Point(c.X - r, c.Y), new Size(r, r), 0, true, SweepDirection.Clockwise, true, false);
+                double r = s * 0.435;
+                var rim = new Pen(ink, s * 0.07) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+                var arc = new StreamGeometry();
+                using (StreamGeometryContext g = arc.Open())
+                {
+                    g.BeginFigure(new Point(c.X, c.Y - r), false, false);  // from the top, three quarters round
+                    g.ArcTo(new Point(c.X - r, c.Y), new Size(r, r), 0, true, SweepDirection.Clockwise, true, false);
+                }
+                arc.Freeze();
+                dc.DrawGeometry(null, rim, arc);
             }
-            arc.Freeze();
-            dc.DrawGeometry(null, rim, arc);
-            if (!tile) dc.DrawEllipse(ink, null, c, s * 0.30, s * 0.30);
-            double wide = s * 0.058 * grow, apart = s * 0.098 * grow;
+            dc.DrawEllipse(ink, null, c, s * (tile ? 0.5 : 0.30), s * (tile ? 0.5 : 0.30));
+            // Three bars, broad enough to be told apart at the size of a taskbar icon.
+            double grow = tile ? 1.62 : 1, wide = s * 0.076 * grow, apart = s * 0.128 * grow;
             for (int i = 0; i < Bars.Length; i++)
             {
-                double high = Bars[i] * s * grow, x = c.X + (i - 2) * apart;
+                double high = Bars[i] * s * grow, x = c.X + (i - 1) * apart;
                 dc.DrawRoundedRectangle(Brushes.White, null, new Rect(x - wide / 2, c.Y - high / 2, wide, high), wide / 2, wide / 2);
             }
         }
