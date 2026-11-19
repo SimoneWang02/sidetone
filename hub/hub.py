@@ -191,6 +191,11 @@ class Hub(Permissions, Talk):
             self.last_event = time.monotonic()
             if event == "SessionEnd":
                 self._cleared(sid, ev.get("reason") == "clear")
+                if ev.get("reason") == "clear":
+                    # The chat is gone, so are its lines: the session that follows in the same
+                    # terminal gets the same name, and the history (kept by name) showed them.
+                    self.history = collections.deque((e for e in self.history if e.get("session") != sid),
+                                                     maxlen=self.history.maxlen)
                 self._forget(sid, "session ended")
                 return
             s = self.sessions.touch(sid, ev.get("cwd", ""))

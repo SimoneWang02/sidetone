@@ -1386,6 +1386,18 @@ class PushToTalk(HubCase):
         self.assertTrue(hub.speech.wait_idle(5))
         self.assertEqual(self.spoken()[-1], "Chat cleared.")  # "Clearing." goes with the session if not yet said
 
+    def test_a_cleared_chat_takes_its_lines_out_of_the_history(self):
+        """/clear ends the conversation and the next one in that terminal has the same name,
+        so its old lines would show under it: they go with the chat. Another end keeps them."""
+        hub = self.make()
+        for sid in ("a", "b"):
+            hub.on_event(ev("SessionStart", sid=sid, cwd=f"/w/{sid}"))
+            hub.history.append({"time": time.time(), "session": sid, "name": sid, "text": f"line of {sid}"})
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="clear"))
+        hub.on_event(ev("SessionEnd", sid="b", cwd="/w/b", reason="other"))
+        self.assertEqual([e["text"] for e in hub.history], ["line of b"])
+        self.assertEqual(hub.history.maxlen, 100)
+
     def test_clear_the_chat_is_only_typed_for_a_session_at_its_prompt(self):
         """It is typed with an Enter, which would answer a dialog that is open in the terminal:
         said during a turn, it waits for the session to be back at its prompt."""
