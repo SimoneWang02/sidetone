@@ -38,8 +38,8 @@ microphone is `#006896` too (`overlay.mic_color`; `"#FF6E8A"` is the pink). The 
 the session you talk to is filled with it; what is drawn thin on the glass, the wave of
 your voice above all, uses it lifted two fifths toward white (`Ui.MicLine`), since in the
 blue itself the wave could hardly be seen (a picture showed it). The nearness to the blue
-of "working" was their call to take. Seen in a picture (`talk-listening.png`), on their
-overlay since; **not judged by them yet**.
+of "working" was their call to take. Seen in a picture (`talk-listening.png`), and by
+them while talking: "okay, looks good. Let's see", so it stays and is to be watched in use.
 
 The taskbar's icon is the mark in white on a rounded square of that blue which fills the
 whole icon (`Logo.Draw(dc, s, tile)`, `assets/icon.png`). The plain mark, a small disc in a
