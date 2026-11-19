@@ -1170,7 +1170,14 @@ Smaller ideas:
       for now and look for others. Done: Italian lines are said by Paola (`piper:` voices
       in the Kokoro engine, `PREFERRED_VOICE`). Open: `install.sh` should fetch Paola when
       Italian is chosen; every session shares her, so sessions are told apart only by the
-      overlay in Italian. Not built: Piper as
+      overlay in Italian.
+      Searched for others (2026-11-19, blog round-ups, nothing benchmarked for Italian):
+      Pocket TTS by Kyutai (100M, said to run on a CPU, Italian listed, clones a voice from
+      a short recording; licence and Italian not checked) is the one to sample next;
+      Cartesia's azzurra-voice (Italian only, built on a 1B model, likely needs a graphics
+      card); Qwen3-TTS (Apache 2.0, GPU preferred); NVIDIA Magpie Multilingual (357M);
+      Voxtral TTS (non-commercial). Chatterbox has no Italian voices of its own: its
+      variants come from a reference recording. Not built: Piper as
       the engine for Italian lines (the hub already knows Piper as a fallback).
       Seen the same evening: a short Italian answer seems to come out as English. Asked to
       say "procedi" and then "sì", the author's replies were written "See you soon" (twice)
