@@ -390,18 +390,17 @@ class OverlayFeed(HubCase):
                 "input_tokens": 2, "cache_creation_input_tokens": 149998, "cache_read_input_tokens": 470000, "output_tokens": 4000}}}, f)
         row = lambda: self.overlay.of("state")[-1]["sessions"][0]
         hub.on_event(ev("UserPromptSubmit"))
-        self.assertEqual(row()["details"], [["Context", "", None, ""], ["Last reply", "", None, ""], ["This turn", "<1m", None, ""],
-                                            ["Tasks", "", None, ""]], "what is not known keeps its place")
+        self.assertEqual(row()["details"], [["Context", "", None, ""], ["Last reply", "", None, ""], ["This turn", "<1m", None, ""]],
+                         "what is not known keeps its place")
         hub.on_event(ev("TaskCreated", task_id="1"))
         hub.on_event(ev("TaskCreated", task_id="2"))
         hub.on_event(ev("TaskCompleted", task_id="1"))
         hub.on_event(ev("PostToolUse", transcript_path=record))
         self.assertEqual(row()["meta"], "<1m")
-        self.assertEqual(row()["details"], [["Context", "62%", 0.62, ""], ["This reply", "154k", None, ""], ["This turn", "<1m", None, ""],
-                                            ["Tasks", "1/2", 0.5, ""]])
+        self.assertEqual(row()["details"], [["Context", "62%", 0.62, ""], ["This reply", "154k", None, ""], ["This turn", "<1m", None, ""]])
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
         self.assertEqual(row()["meta"], "")
-        self.assertEqual([d[:2] for d in row()["details"]], [["Context", "62%"], ["Last reply", "154k"], ["Last turn", "<1m"], ["Tasks", "1/2"]])
+        self.assertEqual([d[:2] for d in row()["details"]], [["Context", "62%"], ["Last reply", "154k"], ["Last turn", "<1m"]])
         hub.cfg.overlay["context_warn"] = 60
         hub.cfg.row_metrics, hub.cfg.detail_metrics = ["tasks", "tokens"], ["waiting", "context"]  # a choice of one's own
         hub.publish()
@@ -462,6 +461,7 @@ class OverlayFeed(HubCase):
 
     def test_rows_show_activity_tasks_and_how_the_turn_ended(self):
         hub = self.make()
+        hub.cfg.detail_metrics = ["context", "tokens", "time", "tasks"]  # off by default, still a choice
         hub.on_event(ev("UserPromptSubmit"))
         hub.on_event(ev("TaskCreated", task_id="1"))
         hub.on_event(ev("PreToolUse", tool_name="Bash", tool_input={"description": "Run tests"}))
