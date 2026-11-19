@@ -411,6 +411,24 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   "Oh, by the way ...", waited for the session: the opening had to be the very first
   word. Since then small words before it are passed over (`base.ASIDE_LEAD`) and the copy
   is told the day and time (`base.aside_prompt`); neither tried by voice yet.
+- In Italian and Chinese (2026-11-19, the author's words: "per by the way userei comunque,
+  ad esempio e comunque che ore sono?"). `aside_words` has "comunque" and "a proposito" and
+  three Chinese ones ("顺便问一下" and the like, matched without a word boundary since Chinese
+  has no spaces); `ASIDE_LEAD` passes over Italian small words ("e", "allora", "senti" ...).
+  The copy is told to answer in the language the speech model heard (`Pending.lang`,
+  `Aside.lang`, `base.aside_prompt(question, lang)`), and the answer is said with the
+  session's voice for that language; with `reply_language: english` it stays English. Known
+  risk: "comunque" also opens ordinary messages ("comunque, procedi"), and while the session
+  works those become side questions. Not tried by voice yet.
+- Usage and context by voice in Italian (2026-11-19, their examples: "quanto stai
+  consumando? quant'è il contesto al momento?"). `usage.asked` returns what is asked (usage,
+  context or both) and the language: English as before (`asks`), the session's context in
+  English (`asks_context`: "how full is the context?"; a smaller word list, so "what is the
+  context window of this model" still goes to the session), and Italian (`_asks_it`, accents
+  taken off, every word one such a question is made of). The context is known already and
+  said at once (`usage.say_context`); the usage is read as before and said in Italian
+  (`usage.say(read, "it")`, times on a 24-hour clock, `clock24`) with the Italian voice.
+  Not tried by voice yet.
 - Taking words back after they went out (2026-11-17, `Hub._take_back`, `unsend_seconds`, 4;
   0 = off). The author wanted an easier way to cancel; offered a spoken ending ("never mind")
   and an unsend key, they pointed out that the spoken one could throw away a message they

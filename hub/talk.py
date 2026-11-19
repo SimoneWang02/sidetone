@@ -132,16 +132,17 @@ class Talk:
                 self._signal("failed")
                 log(self.cfg, "hub.log", f"follow-up [{session[:8]}] not sent: the session is gone")
             else:
-                self.follow_up(text, session)
+                self.follow_up(text, session, lang=heard)
         finally:
             if job is None or self._heard is job:
                 self._transcribing, self._heard = False, None
 
-    def follow_up(self, text: str, session: str | None = None, delay: float | None = None) -> bool:
+    def follow_up(self, text: str, session: str | None = None, delay: float | None = None, lang: str = "") -> bool:
         """Show a follow-up, then send it to the session.
 
         A heard follow-up (no `delay` given) goes out after `followup_delay` (at once by default),
-        or, with `followup_confirm` on, only after a confirming tap of the talk key.
+        or, with `followup_confirm` on, only after a confirming tap of the talk key. `lang`: the
+        language the speech model heard it in, which a side question is answered in.
         """
         with self.lock:
             s = self.sessions.by_id.get(session) if session else self._target()
@@ -150,7 +151,7 @@ class Talk:
             self._cancel_pending()
             keys = self.cfg.overlay.get("hotkeys", {})
             confirm = delay is None and self._needs_confirmation(s)
-            pending = self._pending = Pending(s.id, text, confirm)
+            pending = self._pending = Pending(s.id, text, confirm, lang=lang)
             if confirm:
                 hint = f"tap {keys.get('talk') or 'the talk key'} to send{base.gap(self.cfg, True)}{keys.get('cancel', '')} cancels"
                 pending.timer = threading.Timer(base.CONFIRM_WINDOW, self._expire, args=(pending,))
@@ -177,10 +178,10 @@ class Talk:
             question = self._aside_question(s, pending.text)
             if self.cfg.clear_by_voice and base.asks_to_clear(pending.text, self.cfg.clear_words):
                 self._clear_chat(s, pending.text)
-            elif self.cfg.usage_by_voice and usage.asks(pending.text):
-                self._ask_usage(s, pending.text)
+            elif self.cfg.usage_by_voice and (asked := usage.asked(pending.text))[0]:
+                self._ask_usage(s, pending.text, *asked)
             elif question:
-                self._ask_aside(s, pending.text, question)
+                self._ask_aside(s, pending.text, question, pending.lang)
             else:
                 self._hand_over(s, pending.text)
         self.publish()
@@ -315,26 +316,34 @@ class Talk:
 
     # --- the plan's usage --------------------------------------------------------------------
 
-    def _ask_usage(self, s, text: str) -> None:
-        """Words that ask how much of the plan is used: the hub answers them itself, aloud, and
-        no session gets them. Call with the lock held."""
+    def _ask_usage(self, s, text: str, what: str = "usage", lang: str = "en") -> None:
+        """Words that ask how much of the plan is used, or how full this session's context is
+        (`what`: usage, context or both): the hub answers them itself, aloud, in the language
+        they were asked in, and no session gets them. Call with the lock held."""
+        self._signal("sent", s)
+        log(self.cfg, "hub.log", f"{'usage' if what != 'context' else 'context'} asked by voice: {text[:80]}")
+        if what == "context":  # known already: said at once
+            self._talk(None)
+            self._say_aside(s, usage.say_context(s.context, lang), self._voice_for(s, lang))
+            return
         self._talk("aside", s, text, "Reading your usage\u2026")
         self._usage_shown = True
-        self._signal("sent", s)
-        log(self.cfg, "hub.log", f"usage asked by voice: {text[:80]}")
-        threading.Thread(target=self._answer_usage, args=(s.id,), daemon=True).start()
+        threading.Thread(target=self._answer_usage, args=(s.id, what, lang), daemon=True).start()
 
-    def _answer_usage(self, sid: str) -> None:
-        line = self.usage()["line"]
+    def _answer_usage(self, sid: str, what: str = "usage", lang: str = "en") -> None:
+        line = self.usage(lang=lang)["line"]
         with self.lock:
             if self._usage_shown:  # nothing newer is on screen
                 self._talk(None)
             s = self.sessions.by_id.get(sid) or self._target()
             if s:
-                self._say_aside(s, line)  # in that session's voice, without touching its own lines
+                if what == "both":
+                    line += " " + usage.say_context(s.context, lang)
+                # in that session's voice (or its voice for that language), without touching its own lines
+                self._say_aside(s, line, self._voice_for(s, lang))
         self.publish()
 
-    def usage(self, quiet: bool = False) -> dict:
+    def usage(self, quiet: bool = False, lang: str = "en") -> dict:
         """The plan's usage as it is this moment, asked of Claude Code (about a second and a
         half, no model request): the sentence to say and the figures. They are kept for the
         overlay (`plan`). `quiet`: the regular reading, which is not worth a line in the log
@@ -345,7 +354,7 @@ class Talk:
         except Exception as e:  # nothing here may take the hub down
             text, why = "", str(e)
         read = usage.parse(text)
-        line = usage.say(read)
+        line = usage.say(read, lang)
         if why or not quiet:
             log(self.cfg, "hub.log", f"usage read in {time.monotonic() - started:.1f}s: {line}" + (f" ({why[:200]})" if why else ""))
         window = lambda w: {"used": w.used, "resets": w.resets} if w else None  # noqa: E731
@@ -427,10 +436,12 @@ class Talk:
             return ""
         return aside_question(text, self.cfg.aside_words) if SAFE_ID.match(s.id) else ""
 
-    def _ask_aside(self, s, text: str, question: str) -> None:
-        """Have a throwaway copy of the session answer a side question. Call with the lock held."""
+    def _ask_aside(self, s, text: str, question: str, lang: str = "") -> None:
+        """Have a throwaway copy of the session answer a side question, in the language it was
+        heard in (English with `reply_language: english`). Call with the lock held."""
         self._drop_aside(self._asides.get(s.id))  # a newer question for the same session replaces the older
-        aside = self._asides[s.id] = Aside(s.id, text)
+        lang = "" if self.cfg.reply_language == "english" else lang
+        aside = self._asides[s.id] = Aside(s.id, text, lang=lang)
         self._talk("aside", s, text, "Answering on the side\u2026")
         self._aside_shown = aside
         self._signal("sent", s)
@@ -454,7 +465,7 @@ class Talk:
                 pass  # taken back, replaced by a newer one, or the session ended
             elif answer:
                 log(self.cfg, "hub.log", f"side question [{s.id[:8]}] answered in {took:.1f}s")
-                self._say_aside(s, answer)
+                self._say_aside(s, answer, self._voice_for(s, aside.lang))
             else:  # the words are not lost: the session gets them like any others
                 log(self.cfg, "hub.log", f"side question [{s.id[:8]}] not answered after {took:.1f}s ({why[:200]}); "
                                          "the words go to the session instead")
@@ -497,7 +508,7 @@ class Talk:
         with self.lock:
             if aside.dropped:
                 return "", "dropped"
-            aside.proc = subprocess.Popen(cmd + ["--", base.aside_prompt(question)], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
+            aside.proc = subprocess.Popen(cmd + ["--", base.aside_prompt(question, aside.lang)], cwd=cwd, env=env, stdin=subprocess.DEVNULL,
                                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                           start_new_session=True)
         try:
@@ -510,18 +521,18 @@ class Talk:
             return "", (err or out).strip() or f"exit {aside.proc.returncode}"
         return spoken_answer(out), "" if out.strip() else "an empty answer"
 
-    def _say_aside(self, s, answer: str) -> None:
-        """Say the answer in the session's voice. It is not what the session said, so it neither
+    def _say_aside(self, s, answer: str, voice: str | None = None) -> None:
+        """Say the answer in the session's voice (or `voice`, its voice for another language). It is not what the session said, so it neither
         replaces the session's waiting line nor is replaced by it; it is in the history, so the
         repeat key and catching up have it. Call with the lock held."""
         entry = {"time": time.time(), "session": s.id, "name": s.name, "color": s.color,
-                 "spoken_name": _spoken_name(s.name), "voice": s.voice, "text": answer, "kind": "aside", "heard": False}
+                 "spoken_name": _spoken_name(s.name), "voice": voice or s.voice, "text": answer, "kind": "aside", "heard": False}
         self.history.append(entry)
         if self._muted():
             self._flash(s, answer)  # voice is off
             entry["shown"] = True
         else:
-            self.speech.put(Utterance(text=answer, voice=s.voice, session=s.id, kind="notice", src="aside", entry=entry))
+            self.speech.put(Utterance(text=answer, voice=voice or s.voice, session=s.id, kind="notice", src="aside", entry=entry))
 
     def _drop_aside(self, aside: Aside | None) -> bool:
         """Stop waiting for a side question's answer. Call with the lock held."""

@@ -317,6 +317,37 @@ NO = """
 
 
 class Recognising(unittest.TestCase):
+    def test_italian_questions_and_the_context(self):
+        for said, wanted in (
+                ("Hey, quanto... quanto stai consumando? Quanta è il contesto al momento?", ("both", "it")),  # the author's own
+                ("quanto ho usato?", ("usage", "it")), ("Quanto stai consumando?", ("usage", "it")),
+                ("quant'è il contesto al momento?", ("context", "it")), ("quanto contesto ci resta?", ("context", "it")),
+                ("Allora, a che punto sono le cinque ore?", ("usage", "it")),
+                ("How full is the context?", ("context", "en")), ("what's the context at right now", ("context", "en")),
+                ("Hey, how is my context?", ("context", "en")), ("what's my usage", ("usage", "en"))):
+            with self.subTest(said=said):
+                self.assertEqual(usage.asked(said), wanted)
+        for said in ("quanto costa il piano?", "quanto è lungo il file di usage?", "usa il contesto per decidere",
+                     "comunque, procedi", "come va la settimana", "what is the context window of this model",
+                     "check the context of the file", "what context do you need", "quanto ho usato di", ""):
+            with self.subTest(said=said):
+                self.assertEqual(usage.asked(said), ("", ""))
+        for said in filter(None, map(str.strip, NO.splitlines())):  # what goes to the session in English still does
+            with self.subTest(said=said):
+                self.assertEqual(usage.asked(said), ("", ""))
+
+    def test_said_in_italian(self):
+        read = usage.Usage(usage.Window(15, "Nov 19, 3pm"), usage.Window(37, ""), {"Fable": usage.Window(70, "")})
+        self.assertEqual(usage.say(read, "it"), "Hai usato il 15 percento delle cinque ore, si azzera alle 15. "
+                                                "La settimana è al 37 percento, Fable al 70.")
+        self.assertEqual(usage.say(None, "it"), usage.SORRY_IT)
+        self.assertEqual(usage.clock24("resets 2:39am"), "2:39")
+        self.assertEqual(usage.clock24("resets 12:05am"), "0:05")
+        self.assertEqual(usage.clock24("resets 14:30"), "14:30")
+        self.assertEqual(usage.say_context(34.4, "it"), "Il contesto è al 34 percento.")
+        self.assertEqual(usage.say_context(34.4), "The context is at 34 percent.")
+        self.assertEqual(usage.say_context(None), "I don't know how full the context is yet.")
+
     def test_questions_about_the_usage(self):
         for said in filter(None, map(str.strip, YES.splitlines())):
             with self.subTest(said=said):

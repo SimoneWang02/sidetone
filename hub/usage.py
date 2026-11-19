@@ -16,6 +16,7 @@ import re
 import shutil
 import signal
 import subprocess
+import unicodedata
 from typing import NamedTuple
 
 # Variables that tie a new Claude Code process to the session whose hook started the hub. The
@@ -23,6 +24,7 @@ from typing import NamedTuple
 OWN_SESSION = re.compile(r"CLAUDECODE\Z|CLAUDE_(PID|EFFORT)\Z|CLAUDE_CODE_(CHILD|MESSAGING|SESSION)_"
                          r"|CLAUDE_CODE_(SSE_PORT|ENTRYPOINT|EXECPATH)\Z")
 SORRY = "I could not read the usage."
+SORRY_IT = "Non sono riuscito a leggere i consumi."
 WINDOW = 1_000_000  # tokens; measured for Fable 5.2, Opus 5.5 and Haiku 5.5. The record does not say it.
 
 
@@ -120,9 +122,12 @@ def clock(resets: str) -> str:
     return f"{int(m.group(1))}:{m.group(2)}" if m else ""
 
 
-def say(usage: Usage | None) -> str:
+def say(usage: Usage | None, lang: str = "en") -> str:
     """One or two short sentences for the voice, the five hours first: "15 percent of the five
-    hours used, back at 2:39 AM. The week is at 37 percent, Fable at 70." """
+    hours used, back at 2:39 AM. The week is at 37 percent, Fable at 70." In Italian with
+    `lang` "it"; English for any other."""
+    if lang == "it":
+        return _say_it(usage)
     if not usage:
         return SORRY
     said = []
@@ -135,6 +140,85 @@ def say(usage: Usage | None) -> str:
     if rest:
         said.append(", ".join(rest) + ".")
     return " ".join(said) or SORRY
+
+
+def _say_it(usage: Usage | None) -> str:
+    """`say` in Italian: "Hai usato il 15 percento delle cinque ore, si azzera alle 2:39. La
+    settimana è al 37 percento, Fable al 70." """
+    if not usage:
+        return SORRY_IT
+    said = []
+    if usage.five_hour:
+        at = clock24(usage.five_hour.resets)
+        said.append(f"Hai usato il {usage.five_hour.used:.0f} percento delle cinque ore" + (f", si azzera alle {at}" if at else "") + ".")
+    rest = [f"La settimana è al {usage.week.used:.0f} percento"] if usage.week else []
+    for name, window in usage.models.items():
+        rest.append(f"{name} al {window.used:.0f}" if rest else f"La settimana di {name} è al {window.used:.0f} percento")
+    if rest:
+        said.append(", ".join(rest) + ".")
+    return " ".join(said) or SORRY_IT
+
+
+def clock24(resets: str) -> str:
+    """`clock` on a 24-hour clock, as Italian says the time: "2:39 AM" gives "2:39", "3 PM" "15"."""
+    said = clock(resets)
+    m = re.fullmatch(r"(\d{1,2})(?::(\d\d))? ([AP])M", said)
+    if not m:
+        return said
+    hour = int(m.group(1)) % 12 + (12 if m.group(3) == "P" else 0)
+    return f"{hour}:{m.group(2)}" if m.group(2) else str(hour)
+
+
+def say_context(percent: float | None, lang: str = "en") -> str:
+    """How full a session's context is, for the voice."""
+    if percent is None:
+        return "Non so ancora quanto è pieno il contesto." if lang == "it" else "I don't know how full the context is yet."
+    return f"Il contesto è al {percent:.0f} percento." if lang == "it" else f"The context is at {percent:.0f} percent."
+
+
+def asked(text: str) -> tuple[str, str]:
+    """What spoken words ask the hub rather than the session: (what, language), what being
+    "usage" (the plan), "context" (how full the session's is) or "both"; ("", "") for words
+    that are for the session."""
+    if asks(text):
+        return "usage", "en"
+    if asks_context(text):
+        return "context", "en"
+    what = _asks_it(text)
+    return (what, "it") if what else ("", "")
+
+
+def asks_context(text: str) -> bool:
+    """Whether these English words ask how full the session's context is: "how full is the
+    context?", "what's the context at?". As strict as `asks`."""
+    said = re.sub(r"['\u2019]", "", (text or "").lower())
+    said = " ".join(re.sub(r"[^a-z0-9]+", " ", said).split())
+    m = POLITE.match(said)
+    said = said[m.end():] if m else said
+    m = CAN_YOU.match(said)
+    said = said[m.end():] if m else said
+    words = said.split()
+    if not words or len(words) > 12 or "context" not in words or not CONTEXT_WORDS.issuperset(words):
+        return False
+    return words[-1] not in OPEN_END and bool(ASKING_CONTEXT.match(said))
+
+
+def _asks_it(text: str) -> str:
+    """`asked` for Italian words: "quanto ho usato?", "quanto stai consumando?", "quant'è il
+    contesto al momento?" (the author's own, 2026-11-19). Every word must be one such a
+    question is made of, as in English."""
+    said = unicodedata.normalize("NFKD", (text or "").lower())
+    said = "".join(c for c in said if not unicodedata.combining(c))  # "è" is written "e"
+    said = " ".join(re.sub(r"[^a-z0-9]+", " ", said).split())  # "quant'è" is "quant e"
+    m = POLITE_IT.match(said)
+    said = said[m.end():] if m else said
+    words = said.split()
+    if not words or len(words) > 16 or not WORDS_IT.issuperset(words) or words[-1] in OPEN_END_IT:
+        return ""
+    if not ASKING_IT.match(said) and not BARE_IT.issuperset(words):
+        return ""
+    plan, context = bool(TOPIC_IT.search(said)), "contesto" in words
+    return "both" if plan and context else "usage" if plan else "context" if context else ""
 
 
 # Is a spoken sentence a question about the plan's usage? A yes takes the words away from the
@@ -161,6 +245,30 @@ OPEN_END = frozenset("of in on for to at about a the my".split())  # a sentence 
 POLITE = re.compile(r"((hey|hi|ok|okay|alright|all right|right|yeah|yes|sure|oh|so|um|uh|well|and|also|then|now|"
                     r"claude|please|by the way|btw) )+")
 CAN_YOU = re.compile(r"(can|could|would|will) you (please |just |quickly )*")
+# Fewer words than for the usage: "what is the context window of this model" is for the session.
+CONTEXT_WORDS = frozenset("""
+    context full fullness how hows much big what whats s is are the my our your this session current currently
+    now right at in of percent percentage left remaining used so far still there it tell me give check""".split())
+ASKING_CONTEXT = re.compile(r"(whats|what is|what s|hows|how is|how s|how much|how full|tell me|give me|check)\b")
+
+# The same in Italian, with the accents taken off. "Uso" and "usato" alone are too common to
+# name the plan, so they count only with the words around them all being of such a question.
+TOPIC_IT = re.compile(r"\b(usage|consum\w*|utilizzo|uso|usat[oa]|usando|limit[ei]|(cinque|5) ore)\b")
+ASKING_IT = re.compile(r"(quanto|quanta|quanti|quante|quant|come|com|a che punto|dimmi|fammi sapere|mi dici|"
+                       r"qual|quale|che|quando|cosa|hai|ho|abbiamo|sei|siamo)\b")
+BARE_IT = frozenset("usage consumi consumo utilizzo contesto il lo la i gli le mio miei mia piano per favore adesso ora".split())
+WORDS_IT = BARE_IT | frozenset("""
+    quanto quanta quanti quante quant come com a che punto dimmi fammi sapere mi dici qual quale cosa quando
+    e il l lo la i gli le al allo alla ai agli alle del dello della dei degli delle di da in su per con
+    ho hai ha abbiamo avete sto stai sta stiamo sei siamo sono si ci ne
+    usato usata usati usando uso consumato consumata consumando consumi consumo consumare utilizzo usage
+    limite limiti cinque 5 ore settimana settimanale piano abbonamento finestra contesto pieno piena
+    momento adesso ora oggi finora ancora gia rimasto rimasta rimasti rimane resta restano manca mancano
+    percentuale percento cento azzera azzerano resetta ricomincia riparte torna tornano totale
+    claude fable opus sonnet haiku modello modelli tutto tutti""".split())
+OPEN_END_IT = frozenset("di del della il la lo a al per e in su con".split())
+POLITE_IT = re.compile(r"((hey|hi|ehi|ei|ok|okay|allora|senti|dai|e|beh|be|quindi|ma|claude|comunque|scusa|"
+                       r"per favore|a proposito) )+")
 
 
 def asks(text: str) -> bool:

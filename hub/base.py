@@ -79,6 +79,7 @@ class Aside:
     text: str  # the words as they were heard, opening words and all
     proc: subprocess.Popen | None = None
     dropped: bool = False  # the cancel key, a newer side question, or the session ended
+    lang: str = ""  # the language the words were heard in, which the answer is given in
 
 
 # What the copy is asked. It has the whole conversation of the session in front of it, and
@@ -92,13 +93,20 @@ ASIDE_PROMPT = ("This is a side question from me, asked by voice while you work 
 # Small words a spoken sentence may begin with before the opening of a side question: the
 # author's first real one was "Oh, by the way, what time is it right now?" (2026-11-18), and
 # with the "oh" it waited for the session like any other words.
-ASIDE_LEAD = "oh|ah|so|hey|and|also|alright|all right|right|ok|okay|um|uh|well|yeah|actually|claude"
+# The Italian ones after them ("e comunque, che ore sono?", the author's own, 2026-11-19).
+ASIDE_LEAD = ("oh|ah|so|hey|and|also|alright|all right|right|ok|okay|um|uh|well|yeah|actually|claude"
+              "|e|allora|senti|ehi|beh|dai|quindi|ma")
+# The name of a language a side question may be heard in, for telling the copy which to answer in.
+LANGUAGE_NAMES = {"it": "Italian", "zh": "Chinese", "es": "Spanish", "fr": "French", "de": "German",
+                  "pt": "Portuguese", "ja": "Japanese", "hi": "Hindi"}
 
 
-def aside_prompt(question: str) -> str:
+def aside_prompt(question: str, lang: str = "") -> str:
     """What the copy is asked. It is told the day and the time, which it cannot look up (that
-    first real question got "I can't read the clock from a side question")."""
-    return ASIDE_PROMPT + time.strftime("Right now it is %A, %d %B %Y, %H:%M. ") + "The question: " + question
+    first real question got "I can't read the clock from a side question"). `lang`: the
+    language the question was heard in, which the answer is to be in ("" or "en": English)."""
+    told = ASIDE_PROMPT.replace("plain spoken English", f"plain spoken {LANGUAGE_NAMES[lang]}") if lang in LANGUAGE_NAMES else ASIDE_PROMPT
+    return told + time.strftime("Right now it is %A, %d %B %Y, %H:%M. ") + "The question: " + question
 # Tools a copy on the session's own model may not use: it would have to ask, and nobody is there.
 ASIDE_ASK = ["Bash", "Edit", "Write", "NotebookEdit", "Read", "Grep", "Glob", "WebFetch", "WebSearch", "Agent", "Skill", "mcp__*"]
 # Variables that tie a new Claude Code process to the session whose hook started the hub.
@@ -118,6 +126,7 @@ class Pending:
     text: str
     confirm: bool  # True: wait for a tap of the talk key; False: goes out when the timer ends
     timer: threading.Timer | None = None
+    lang: str = ""  # the language the speech model heard it in ("" when not known)
 
 
 @dataclass
@@ -322,7 +331,8 @@ class Config:
     # all. If no answer comes within `aside_timeout` seconds, the words go to the session
     # after all. `aside_claude`: the Claude Code program; "" = the one on the PATH.
     aside: str = "busy"
-    aside_words: list = field(default_factory=lambda: ["by the way", "btw"])
+    aside_words: list = field(default_factory=lambda: ["by the way", "btw", "comunque", "a proposito",
+                                                       "顺便问一下", "顺便问下", "顺便说一下"])
     aside_model: str = "session"
     aside_timeout: float = 60.0
     aside_claude: str = ""
@@ -413,12 +423,16 @@ FLASH_LOOK = {"allowed": "done", "denied": "failed", "progress": "working", "asi
 NUMBER_WORDS = ("One", "Two", "Three", "Four")
 
 
+CJK = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff]")
+
+
 def aside_question(text: str, words: list) -> str:
     """The question in spoken words that open with one of `words` ("By the way, where is it?"
     gives "where is it?"), or "" when they do not, or nothing follows."""
     for opening in sorted((w for w in words if isinstance(w, str) and w.strip()), key=len, reverse=True):
         spaced = r"\s+".join(map(re.escape, opening.split()))
-        m = re.match(rf"\W*(?:(?:{ASIDE_LEAD})\W+)*{spaced}\b\W*(\w.*)", text, re.IGNORECASE | re.DOTALL)
+        end = "" if CJK.match(opening.strip()[-1]) else r"\b"  # Chinese is written without spaces between words
+        m = re.match(rf"\W*(?:(?:{ASIDE_LEAD})\W+)*{spaced}{end}\W*(\w.*)", text, re.IGNORECASE | re.DOTALL)
         if m:
             return m.group(1).strip()
     return ""

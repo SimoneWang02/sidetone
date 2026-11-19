@@ -1629,6 +1629,20 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.collect(listener), "add a usage meter to the overlay")
         self.assertEqual(len(asked), 1)
 
+    def test_asked_in_italian_it_is_answered_in_italian_with_the_context(self):
+        hub = self.make(talk_feedback="none")
+        hub.usage_ask = lambda program, timeout: (self.USAGE, "")
+        hub._voice_for = lambda s, lang: "if_sara" if lang == "it" else None
+        hub.sessions.by_id["a"].context = 41.0
+        listener = hub.listen("a")
+        hub.follow_up("Hey, quanto stai consumando? Quant'è il contesto al momento?", "a", delay=0)
+        self.assertTrue(wait_for(lambda: any("26 percento" in line for line in self.spoken())), self.spoken())
+        self.assertIn("Il contesto è al 41 percento.", self.spoken()[-1])
+        self.assertEqual(self.engine.spoken[-1][1], "if_sara")
+        hub.follow_up("how full is the context?", "a", delay=0)  # known already: said at once, in English
+        self.assertTrue(wait_for(lambda: self.spoken()[-1:] == ["The context is at 41 percent."]), self.spoken())
+        self.assertFalse(listener.wake.is_set(), "the session was given the question")
+
     def test_the_plans_usage_goes_to_the_overlay_and_is_read_again_only_when_it_is_old(self):
         hub = self.make(usage_shown=True, usage_warn=30)
         asked = []
@@ -2081,6 +2095,26 @@ class SideQuestions(HubCase):
         self.assertEqual(q("Oh, by the way, what time is it right now?", ["by the way", "btw"]), "what time is it right now?")
         self.assertEqual(q("Alright, so, btw is it done?", ["by the way", "btw"]), "is it done?")
         self.assertEqual(q("Oh no, by the way is blocked", ["by the way"]), "")  # "no" is not such a word
+
+    def test_italian_and_chinese_openings_ask_on_the_side_too(self):
+        q, words = hub_module.aside_question, hub_module.Config(run="r", state="s").aside_words
+        self.assertEqual(q("E comunque, che ore sono?", words), "che ore sono?")  # the author's own
+        self.assertEqual(q("Allora, a proposito: dove siamo?", words), "dove siamo?")
+        self.assertEqual(q("顺便问一下现在几点", words), "现在几点")  # no spaces between Chinese words
+        self.assertEqual(q("Comunquemente parlando", words), "")
+
+    def test_a_side_question_is_answered_in_the_language_it_was_heard_in(self):
+        hub = self.make(answer="Sono le tre.")
+        hub._voice_for = lambda s, lang: "if_sara" if lang == "it" else None
+        self.assertIn("plain spoken Italian", hub_module.base.aside_prompt("che ore sono?", "it"))
+        self.assertIn("plain spoken English", hub_module.base.aside_prompt("what time is it?", "en"))
+        hub.follow_up("E comunque, che ore sono?", "a", delay=0, lang="it")
+        self.assertTrue(wait_for(lambda: self.engine.spoken))
+        self.assertEqual((self.spoken(), self.engine.spoken[0][1]), (["Sono le tre."], "if_sara"))
+        hub.cfg.reply_language = "english"
+        hub.follow_up("E comunque, che ore sono?", "a", delay=0, lang="it")
+        self.assertTrue(wait_for(lambda: len(self.engine.spoken) == 2))
+        self.assertNotEqual(self.engine.spoken[1][1], "if_sara")
 
     def test_the_copy_is_told_the_time(self):
         asked = hub_module.base.aside_prompt("what time is it?")

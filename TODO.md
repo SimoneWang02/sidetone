@@ -15,6 +15,15 @@ not as replacements.
 Built, and working in the automated tests or in pictures taken from WSL, but not yet tried
 by the author with the real keys, voice or eyes.
 
+- [ ] Italian openings for side questions and for asking the usage. `aside_words` and the
+      words `usage.asks` accepts are English only, so "a proposito, ..." waits for the session
+      and "quanto ho usato?" goes to it. Add Italian (and Chinese, now that it is spoken)
+      defaults, and the small words passed over before them (`base.ASIDE_LEAD`).
+      Built 2026-11-19 with the author's own words ("comunque", "e comunque che ore
+      sono?", "quanto stai consumando? quant'è il contesto al momento?"), and the session's
+      context can now be asked in English and Italian too; answers in the language asked
+      (see `docs/dev/features.md`). **Not tried by voice yet.** Risk to watch: "comunque,
+      procedi" said to a working session becomes a side question.
 - [ ] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
       mute shortcut"). Press it while a session speaks: the line stops, two low notes go
       down, and the overlay shows "Voice off" with a struck-out speaker for 2.5 s. While
@@ -170,10 +179,6 @@ Questions for the author; nothing to build until they answer.
 
 Roughly easiest first.
 
-- [ ] Italian openings for side questions and for asking the usage. `aside_words` and the
-      words `usage.asks` accepts are English only, so "a proposito, ..." waits for the session
-      and "quanto ho usato?" goes to it. Add Italian (and Chinese, now that it is spoken)
-      defaults, and the small words passed over before them (`base.ASIDE_LEAD`).
 - [ ] `install.sh` fetching the voices of the languages chosen: Piper's
       `it_IT-paola-medium` when Italian is chosen (`tts.PREFERRED_VOICE` asks for it), and
       Kokoro's Chinese model v1.1-zh with `misaki-fork[zh]` when Chinese is. Both were put on
