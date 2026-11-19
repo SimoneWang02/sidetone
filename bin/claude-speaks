@@ -26,6 +26,9 @@ Usage: claude-speaks <command>
   follow-up [-s PROJECT] TEXT   send a follow-up to a session as if you had said it
   talk start|stop|cancel     the talk key and the cancel key, from a shell
   target [PROJECT]           show or choose which session a spoken follow-up goes to
+  settings [close]           open the settings window (or close it)
+  settings list              every setting and what it is now
+  settings KEY VALUE         change one setting at once, e.g.  settings overlay.layout island
   overlay dots|list|toggle|restart   switch the on-screen overlay's view, or restart it
   overlay layout NAME|next   how sessions are shown: bar or island
   overlay move               make the overlay easy to find and drag (you can drag it any time)
@@ -166,6 +169,28 @@ case ${1:-} in
   missed)
     count=$(echo '{"what": "missed"}' | hub_post /replay | jq -r .count) || { echo "hub is not running"; exit 1; }
     echo "$count missed"
+    ;;
+  settings)
+    case ${2:-open} in
+      open|close)
+        reply=$(jq -nc --arg a "${2:-open}" '{open: ($a == "open")}' | hub_post /settings) || true
+        [ -n "$reply" ] || { echo "hub is not running"; exit 1; }
+        error=$(jq -r '.error // empty' <<<"$reply"); [ -z "$error" ] || { echo "$error"; exit 1; }
+        ;;
+      list)
+        echo '{"list": true}' | hub_post /settings |
+          jq -r '.sections[] | "\(.name)", (.items[] | "  \(.key) = \(.value | tojson)" + (if .kind == "choice" then "   (" + ([.options[][0] | tostring] | join(", ")) + ")" elif .kind == "pick" then "   (see: claude-speaks voices)" elif .kind == "number" then "   (\(.min) to \(.max))" else "" end))' ||
+          { echo "hub is not running"; exit 1; }
+        ;;
+      *)
+        [ $# -ge 3 ] || { usage; exit 2; }
+        # The value as JSON where it is JSON (true, 3, 0.5), else as the words it is.
+        reply=$(jq -nc --arg k "$2" --arg v "$3" '{key: $k, value: ($v | try fromjson catch $v)}' | hub_post /settings 5) ||
+          { echo "hub is not running"; exit 1; }
+        error=$(jq -r '.error // empty' <<<"$reply"); [ -z "$error" ] || { echo "$error"; exit 1; }
+        echo "$2 = $3"
+        ;;
+    esac
     ;;
   overlay)
     case ${2:-toggle} in

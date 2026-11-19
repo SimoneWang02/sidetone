@@ -3,8 +3,8 @@
 // appears while a session talks. The bar can be dragged with the mouse. It only draws what the
 // hub tells it to and reports hotkeys.
 // Protocol: one JSON object per line.
-// In on stdin: config, state, flash, wave, request, banner, keys, mode, move, peek, bounds, quit.
-// Out on stdout: ready, hotkey, mode, moved, bounds, error.
+// In on stdin: config, state, flash, wave, request, banner, keys, mode, move, peek, settings, bounds, quit.
+// Out on stdout: ready, hotkey, mode, moved, setting, settings, bounds, error.
 // Built with the C# compiler that ships with Windows (csc.exe of .NET Framework 4) or, failing
 // that, by Windows PowerShell 5.1 (Add-Type). Both stop at C# 5, and the file is kept ASCII.
 using System;
@@ -843,7 +843,10 @@ namespace ClaudeSpeaks
         FrameworkElement body;
         double speed;
 
-        public Glass(double unfoldingWidth)
+        public Glass(double unfoldingWidth) : this(unfoldingWidth, false) { }
+
+        // `takesInput`: a window to click and type in (the settings), not one to look through.
+        public Glass(double unfoldingWidth, bool takesInput)
         {
             Unfolds = unfoldingWidth > 0;
             WindowStyle = WindowStyle.None;
@@ -851,9 +854,9 @@ namespace ClaudeSpeaks
             Background = Brushes.Transparent;
             Topmost = true;
             ShowInTaskbar = false;
-            ShowActivated = false;
-            Focusable = false;
-            IsHitTestVisible = false;
+            ShowActivated = takesInput;
+            Focusable = takesInput;
+            IsHitTestVisible = takesInput;
             ResizeMode = ResizeMode.NoResize;
             if (Unfolds) { Width = unfoldingWidth; Height = 1; MinHeight = 0; Panel.ClipToBounds = true; }
             else SizeToContent = SizeToContent.WidthAndHeight;
@@ -868,7 +871,8 @@ namespace ClaudeSpeaks
             Content = Panel;
             Handle = new WindowInteropHelper(this).EnsureHandle();
             // Click-through, no taskbar or Alt+Tab entry, never takes focus from the app in front.
-            SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+            // One that takes input keeps only the middle of those.
+            SetWindowLong(Handle, GWL_EXSTYLE, GetWindowLong(Handle, GWL_EXSTYLE) | WS_EX_TOOLWINDOW | (takesInput ? 0 : WS_EX_TRANSPARENT | WS_EX_NOACTIVATE));
         }
 
         public FrameworkElement Body
@@ -953,6 +957,468 @@ namespace ClaudeSpeaks
             WindowRect r;
             GetWindowRect(Handle, out r);
             return new[] { r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top };
+        }
+    }
+
+    // A switch: on or off.
+    class Toggle : FrameworkElement
+    {
+        readonly bool on;
+
+        public Toggle(bool on)
+        {
+            this.on = on;
+            Width = 36; Height = 20;
+            Cursor = Cursors.Hand;
+            VerticalAlignment = VerticalAlignment.Center;
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            dc.DrawRoundedRectangle(on ? Ui.Alpha(SettingsWindow.Accent, 0.95) : Ui.Paint("#33FFFFFF"), null, new Rect(0, 0, 36, 20), 10, 10);
+            dc.DrawEllipse(on ? Brushes.White : Ui.Paint("#E6FFFFFF"), null, new Point(on ? 26 : 10, 10), 7.5, 7.5);
+        }
+    }
+
+    // A number chosen by sliding: a thin track, filled up to a round knob. It reports every
+    // value it passes (Moved, for the figure beside it) and the one it is let go at (Chosen).
+    class Slide : FrameworkElement
+    {
+        const double Edge = 8;
+        readonly double min, max, step;
+        public double Value;
+        public Action<double> Moved, Chosen;
+        bool sliding;
+
+        public Slide(double min, double max, double step, double value)
+        {
+            this.min = min; this.max = max; this.step = step > 0 ? step : 1;
+            Value = Math.Max(min, Math.Min(max, value));
+            Width = 150; Height = 22;
+            Cursor = Cursors.Hand;
+            VerticalAlignment = VerticalAlignment.Center;
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, Width, Height));  // all of it takes the mouse
+            double share = max > min ? (Value - min) / (max - min) : 0, at = Edge + share * (Width - 2 * Edge);
+            dc.DrawRoundedRectangle(Ui.Paint("#2EFFFFFF"), null, new Rect(Edge, 9, Width - 2 * Edge, 4), 2, 2);
+            if (at > Edge) dc.DrawRoundedRectangle(Ui.Alpha(SettingsWindow.Accent, 0.95), null, new Rect(Edge, 9, at - Edge, 4), 2, 2);
+            dc.DrawEllipse(Brushes.White, null, new Point(at, 11), sliding ? 7.5 : 6.5, sliding ? 7.5 : 6.5);
+        }
+
+        void Take(double x)
+        {
+            double share = Ui.Clamp((x - Edge) / (Width - 2 * Edge));
+            double value = Math.Max(min, Math.Min(max, Math.Round((min + share * (max - min)) / step) * step));
+            if (Math.Abs(value - Value) < 1e-9) return;
+            Value = value;
+            InvalidateVisual();
+            if (Moved != null) Moved(value);
+        }
+
+        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            sliding = true;
+            CaptureMouse();
+            Take(e.GetPosition(this).X);
+            InvalidateVisual();
+            e.Handled = true;
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e) { if (sliding) Take(e.GetPosition(this).X); }
+
+        protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+        {
+            if (!sliding) return;
+            sliding = false;
+            ReleaseMouseCapture();
+            InvalidateVisual();
+            if (Chosen != null) Chosen(Value);
+            e.Handled = true;
+        }
+    }
+
+    // The settings window: sections down the left, the settings of one section on the right.
+    // The only window of the overlay that takes the mouse and the keyboard. Like the rest it
+    // decides nothing: the hub says what there is to set and what each thing is now (sections
+    // of items: key, kind, name, help, value, and options or a range), a click sends back
+    // "this key, this value", and the hub answers with how things stand, which is drawn.
+    class SettingsWindow
+    {
+        public static readonly Color Accent = Color.FromRgb(0x4F, 0xC3, 0xF7);
+        const double High = 560, Broad = 780, NavWidth = 172;
+        public readonly Glass Window = new Glass(0, true);
+        readonly Action<string, object> choose;  // a setting was chosen
+        readonly Action closed;                  // the window was closed from here
+        readonly Action<bool> typingKey;         // a hotkey is being typed: the overlay's own hotkeys must let the keys through
+        readonly StackPanel nav = new StackPanel { Margin = new Thickness(10, 2, 8, 12) };
+        readonly StackPanel list = new StackPanel { Margin = new Thickness(8, 0, 20, 20) };
+        readonly ScrollViewer scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
+        readonly Border thumb = new Border { Width = 3, CornerRadius = new CornerRadius(1.5), Background = Ui.Paint("#4DFFFFFF"), HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top, Margin = new Thickness(0, 0, 7, 0), Visibility = Visibility.Collapsed, IsHitTestVisible = false };
+        object[] sections = new object[0];
+        string current = "", capturing = "";
+        bool placed;
+
+        public SettingsWindow(Action<string, object> choose, Action closed, Action<bool> typingKey)
+        {
+            this.choose = choose; this.closed = closed; this.typingKey = typingKey;
+            Window.SizeToContent = SizeToContent.Manual;
+            Window.Width = Broad; Window.Height = High;
+            Window.Title = "claude-speaks settings";
+
+            var root = new Grid();
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(52) });
+            root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+
+            // The head: what this is, and the way out. The window is moved by it.
+            var head = new Grid { Background = Brushes.Transparent };
+            var title = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(22, 4, 0, 0) };
+            title.Children.Add(new TextBlock { Text = "Settings", FontSize = 15, FontWeight = FontWeights.SemiBold });
+            title.Children.Add(new TextBlock { Text = "claude-speaks", FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(10, 0, 0, 1), VerticalAlignment = VerticalAlignment.Bottom });
+            head.Children.Add(title);
+            var cross = new System.Windows.Shapes.Path { Data = Geometry.Parse("M0,0 L9,9 M9,0 L0,9"), Stroke = Ui.Dim, StrokeThickness = 1.4, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            var close = new Border { Width = 30, Height = 30, CornerRadius = new CornerRadius(7), Background = Brushes.Transparent, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 4, 12, 0), Cursor = Cursors.Hand, Child = cross };
+            Lit(close, "#00FFFFFF", "#24FFFFFF");
+            close.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; };  // not the start of a move
+            close.MouseLeftButtonUp += delegate { Close(); };
+            head.Children.Add(close);
+            head.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { try { Window.DragMove(); } catch (InvalidOperationException) { } };
+            root.Children.Add(head);
+
+            var body = new Grid();
+            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NavWidth) });
+            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            body.Children.Add(nav);
+            scroll.Content = list;
+            scroll.ScrollChanged += delegate { ShowThumb(); };
+            Grid.SetColumn(scroll, 1);
+            body.Children.Add(scroll);
+            Grid.SetColumn(thumb, 1);
+            body.Children.Add(thumb);
+            Grid.SetRow(body, 1);
+            root.Children.Add(body);
+
+            Window.Panel.Child = root;
+            Window.PreviewKeyDown += OnKey;
+            Window.Deactivated += delegate { if (capturing.Length > 0) StopTyping(); };
+        }
+
+        public bool IsOpen { get { return Window.IsVisible; } }
+
+        public void Look(string kind)
+        {
+            Window.Look(kind);
+            // Denser than the lights: this is read for minutes, over whatever is behind it.
+            if (kind != "solid") Window.Panel.Background = Ui.Paint(kind == "none" ? "#F51A1D24" : "#E01A1D24");
+        }
+
+        // `area`: the part of the screen it may open in the middle of.
+        // `quiet`: shown without taking the keyboard (for pictures of it).
+        public void Show(object[] sections, string section, Rect area, bool quiet)
+        {
+            this.sections = sections;
+            var names = new List<string>();
+            foreach (object o in sections) names.Add(Overlay.Str((Dictionary<string, object>)o, "name"));
+            if (section.Length > 0 && names.Contains(section)) { if (section != current) scroll.ScrollToVerticalOffset(0); current = section; }
+            if (!names.Contains(current)) current = names.Count > 0 ? names[0] : "";
+            Fill();
+            if (!Window.IsVisible)
+            {
+                if (!placed)
+                {
+                    Window.Left = area.Left + Math.Max(0, (area.Width - Broad) / 2);
+                    Window.Top = area.Top + Math.Max(0, (area.Height - High) / 2);
+                    placed = true;
+                }
+                Window.ShowActivated = !quiet;
+                Window.Show();
+                if (!quiet) Window.Activate();
+            }
+        }
+
+        // A click at a place in the window, as the mouse would make it, without the mouse: for
+        // checking from outside that what is drawn there answers to it.
+        public void Click(double x, double y)
+        {
+            Window.UpdateLayout();
+            HitTestResult hit = VisualTreeHelper.HitTest(Window.Panel, new Point(x, y));
+            var under = hit == null ? null : hit.VisualHit as UIElement;
+            if (under == null) return;
+            foreach (RoutedEvent step in new[] { Mouse.MouseDownEvent, Mouse.MouseUpEvent })
+                under.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = step });
+        }
+
+        public void Hide()
+        {
+            if (capturing.Length > 0) StopTyping();
+            if (Window.IsVisible) Window.Hide();
+        }
+
+        void Close()
+        {
+            Hide();
+            closed();
+        }
+
+        void StopTyping()
+        {
+            capturing = "";
+            typingKey(false);
+            Fill();
+        }
+
+        // A background that answers to the mouse being on it.
+        static void Lit(Border box, string rest, string under)
+        {
+            Brush plain = Ui.Paint(rest), bright = Ui.Paint(under);
+            box.Background = plain;
+            box.MouseEnter += delegate { box.Background = bright; };
+            box.MouseLeave += delegate { box.Background = plain; };
+        }
+
+        static bool Same(object a, object b)
+        {
+            return Convert.ToString(a, CultureInfo.InvariantCulture) == Convert.ToString(b, CultureInfo.InvariantCulture);
+        }
+
+        void ShowThumb()
+        {
+            bool more = scroll.ExtentHeight > scroll.ViewportHeight + 1;
+            thumb.Visibility = more ? Visibility.Visible : Visibility.Collapsed;
+            if (!more) return;
+            thumb.Height = Math.Max(24, scroll.ViewportHeight * scroll.ViewportHeight / scroll.ExtentHeight);
+            double room = scroll.ViewportHeight - thumb.Height, far = scroll.ExtentHeight - scroll.ViewportHeight;
+            thumb.Margin = new Thickness(0, far > 0 ? room * scroll.VerticalOffset / far : 0, 7, 0);
+        }
+
+        // Draws the sections at the left and the settings of the one that is chosen.
+        void Fill()
+        {
+            nav.Children.Clear();
+            list.Children.Clear();
+            foreach (object o in sections)
+            {
+                var section = (Dictionary<string, object>)o;
+                string name = Overlay.Str(section, "name");
+                bool on = name == current;
+                var entry = new Border { CornerRadius = new CornerRadius(7), Padding = new Thickness(12, 7, 12, 8), Margin = new Thickness(0, 1, 0, 1), Cursor = Cursors.Hand };
+                entry.Child = new TextBlock { Text = name, FontSize = 13, FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal, Foreground = on ? Brushes.White : Ui.Dim };
+                if (on) entry.Background = Ui.Paint("#24FFFFFF");
+                else
+                {
+                    Lit(entry, "#00FFFFFF", "#12FFFFFF");
+                    entry.MouseLeftButtonUp += delegate { if (capturing.Length > 0) StopTyping(); current = name; scroll.ScrollToVerticalOffset(0); Fill(); };
+                }
+                nav.Children.Add(entry);
+                if (!on) continue;
+
+                list.Children.Add(new TextBlock { Text = name, FontSize = 19, FontWeight = FontWeights.SemiBold, Margin = new Thickness(6, 0, 0, 12) });
+                var card = new Border { CornerRadius = new CornerRadius(10), Background = Ui.Paint("#12FFFFFF") };
+                var lines = new StackPanel();
+                card.Child = lines;
+                object[] items = section.ContainsKey("items") && section["items"] is object[] ? (object[])section["items"] : new object[0];
+                foreach (object i in items)
+                {
+                    if (lines.Children.Count > 0) lines.Children.Add(new Border { Height = 1, Background = Ui.Paint("#14FFFFFF"), Margin = new Thickness(16, 0, 0, 0) });
+                    lines.Children.Add(Line((Dictionary<string, object>)i));
+                }
+                list.Children.Add(card);
+            }
+            scroll.UpdateLayout();
+            ShowThumb();
+        }
+
+        // One setting: its name and a sentence about it at the left, what sets it at the right.
+        UIElement Line(Dictionary<string, object> item)
+        {
+            string key = Overlay.Str(item, "key"), kind = Overlay.Str(item, "kind"), help = Overlay.Str(item, "help");
+            object value = item.ContainsKey("value") ? item["value"] : null;
+            object[] options = item.ContainsKey("options") && item["options"] is object[] ? (object[])item["options"] : new object[0];
+            bool typing = kind == "key" && capturing == key;
+            var line = new Grid { Margin = new Thickness(16, 10, 14, 11) };
+            line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            words.Children.Add(new TextBlock { Text = Overlay.Str(item, "name"), FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis });
+            if (typing) help = "Press the new keys. Esc keeps the old ones, Delete leaves it without a key.";
+            if (help.Length > 0) words.Children.Add(new TextBlock { Text = help, FontSize = 11.5, Foreground = typing ? Ui.Dim : Ui.Faint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) });
+            line.Children.Add(words);
+
+            FrameworkElement control;
+            if (kind == "switch")
+            {
+                bool on = value != null && Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+                control = new Toggle(on);
+                control.MouseLeftButtonUp += delegate { choose(key, !on); };
+            }
+            else if (kind == "number") control = Number(key, item, value);
+            else if (kind == "key") control = KeyBox(key, Convert.ToString(value, CultureInfo.InvariantCulture) ?? "", typing);
+            else if (kind == "pick") control = Pick(key, options, value);
+            else control = Segments(key, options, value);
+            control.Margin = new Thickness(18, 0, 0, 0);
+            control.VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(control, 1);
+            line.Children.Add(control);
+            return line;
+        }
+
+        // A few choices side by side, the chosen one raised.
+        FrameworkElement Segments(string key, object[] options, object value)
+        {
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            foreach (object o in options)
+            {
+                var pair = o as object[];
+                if (pair == null || pair.Length < 2) continue;
+                object mine = pair[0];
+                bool on = Same(mine, value);
+                var part = new Border { CornerRadius = new CornerRadius(6), Padding = new Thickness(11, 4, 11, 5), Cursor = Cursors.Hand };
+                part.Child = new TextBlock { Text = Convert.ToString(pair[1], CultureInfo.InvariantCulture), FontSize = 12, FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal, Foreground = on ? Brushes.White : Ui.Dim };
+                if (on) part.Background = Ui.Paint("#3DFFFFFF");
+                else
+                {
+                    Lit(part, "#00FFFFFF", "#1AFFFFFF");
+                    part.MouseLeftButtonUp += delegate { choose(key, mine); };
+                }
+                row.Children.Add(part);
+            }
+            return new Border { CornerRadius = new CornerRadius(8), Background = Ui.Paint("#17FFFFFF"), Padding = new Thickness(2), Child = row };
+        }
+
+        FrameworkElement Number(string key, Dictionary<string, object> item, object value)
+        {
+            double min = Convert.ToDouble(item["min"], CultureInfo.InvariantCulture), max = Convert.ToDouble(item["max"], CultureInfo.InvariantCulture);
+            double step = Convert.ToDouble(item["step"], CultureInfo.InvariantCulture);
+            string unit = Overlay.Str(item, "unit"), places = step >= 1 ? "0" : step >= 0.1 ? "0.0" : "0.00";
+            var slide = new Slide(min, max, step, value == null ? min : Convert.ToDouble(value, CultureInfo.InvariantCulture));
+            var figure = new TextBlock { FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Ui.Dim, Width = 46, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+            figure.Text = slide.Value.ToString(places, CultureInfo.InvariantCulture) + unit;
+            slide.Moved = delegate(double now) { figure.Text = now.ToString(places, CultureInfo.InvariantCulture) + unit; };
+            slide.Chosen = delegate(double now) { choose(key, now); };
+            var row = new StackPanel { Orientation = Orientation.Horizontal };
+            row.Children.Add(slide);
+            row.Children.Add(figure);
+            return row;
+        }
+
+        // One key of a hotkey. Not amber like the keys of a request: nothing here asks for you.
+        static Border Cap(string key)
+        {
+            return new Border {
+                CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(0, 0, 4, 0), MinWidth = 22,
+                BorderBrush = Ui.Paint("#52FFFFFF"), Background = Ui.Paint("#1FFFFFFF"),
+                Child = new TextBlock { Text = key, FontSize = 11.5, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center },
+            };
+        }
+
+        // A hotkey as its keys. A click on it waits for new ones.
+        FrameworkElement KeyBox(string key, string combo, bool typing)
+        {
+            var box = new Border { CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), Padding = new Thickness(7, 5, 3, 5), Cursor = Cursors.Hand, MinHeight = 32 };
+            if (typing)
+            {
+                box.Background = Ui.Alpha(Accent, 0.16);
+                box.BorderBrush = Ui.Alpha(Accent, 0.9);
+                box.Padding = new Thickness(10, 5, 10, 5);
+                box.Child = new TextBlock { Text = "Press the keys", FontSize = 12, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
+            }
+            else
+            {
+                box.BorderBrush = Ui.Paint("#00FFFFFF");
+                Lit(box, "#00FFFFFF", "#14FFFFFF");
+                if (combo.Trim().Length == 0)
+                {
+                    box.Padding = new Thickness(10, 5, 10, 5);
+                    box.Child = new TextBlock { Text = "No key", FontSize = 12, Foreground = Ui.Faint, VerticalAlignment = VerticalAlignment.Center };
+                }
+                else
+                {
+                    var caps = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+                    foreach (string part in combo.Split('+')) if (part.Trim().Length > 0) caps.Children.Add(Cap(part.Trim()));
+                    box.Child = caps;
+                }
+            }
+            box.MouseLeftButtonUp += delegate
+            {
+                bool start = capturing != key;
+                capturing = start ? key : "";
+                typingKey(start);
+                Fill();
+                Window.Activate();
+                Window.Focus();
+            };
+            return box;
+        }
+
+        // One of many: what is chosen, and a list that drops down from it.
+        FrameworkElement Pick(string key, object[] options, object value)
+        {
+            string shown = Convert.ToString(value, CultureInfo.InvariantCulture) ?? "";
+            var menu = new StackPanel();
+            var popup = new System.Windows.Controls.Primitives.Popup { Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true, VerticalOffset = 4 };
+            foreach (object o in options)
+            {
+                var pair = o as object[];
+                if (pair == null || pair.Length < 2) continue;
+                object mine = pair[0];
+                bool on = Same(mine, value);
+                if (on) shown = Convert.ToString(pair[1], CultureInfo.InvariantCulture);
+                var entry = new Border { CornerRadius = new CornerRadius(5), Padding = new Thickness(10, 4, 10, 5), Cursor = Cursors.Hand };
+                entry.Child = new TextBlock { Text = Convert.ToString(pair[1], CultureInfo.InvariantCulture), FontSize = 12, FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal, Foreground = on ? Brushes.White : Ui.Dim };
+                Lit(entry, on ? "#2EFFFFFF" : "#00FFFFFF", "#24FFFFFF");
+                entry.MouseLeftButtonUp += delegate { popup.IsOpen = false; if (!on) choose(key, mine); };
+                menu.Children.Add(entry);
+            }
+            popup.Child = new Border {
+                CornerRadius = new CornerRadius(9), Background = Ui.Paint("#FA20242C"), BorderBrush = Ui.Paint("#38FFFFFF"), BorderThickness = new Thickness(1), Padding = new Thickness(4), MinWidth = 160,
+                Child = new ScrollViewer { MaxHeight = 264, VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, Focusable = false, Content = menu },
+            };
+            var face = new Grid();
+            face.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            face.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            face.Children.Add(new TextBlock { Text = shown, FontSize = 12, VerticalAlignment = VerticalAlignment.Center });
+            var arrow = new System.Windows.Shapes.Path { Data = Geometry.Parse("M0,0 L4,4 L8,0"), Stroke = Ui.Dim, StrokeThickness = 1.4, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 2, 0, 0) };
+            Grid.SetColumn(arrow, 1);
+            face.Children.Add(arrow);
+            var box = new Border { CornerRadius = new CornerRadius(8), BorderBrush = Ui.Paint("#24FFFFFF"), BorderThickness = new Thickness(1), Padding = new Thickness(11, 5, 10, 6), MinWidth = 160, Cursor = Cursors.Hand, Child = face };
+            Lit(box, "#17FFFFFF", "#26FFFFFF");
+            popup.PlacementTarget = box;
+            box.MouseLeftButtonUp += delegate { popup.IsOpen = !popup.IsOpen; };
+            return box;
+        }
+
+        // Esc closes the window. While a hotkey is being typed every key is for that: the keys
+        // held and one more make the new hotkey.
+        void OnKey(object sender, KeyEventArgs e)
+        {
+            Key key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (capturing.Length == 0)
+            {
+                if (key == Key.Escape) { Close(); e.Handled = true; }
+                return;
+            }
+            e.Handled = true;
+            if (key == Key.LeftCtrl || key == Key.RightCtrl || key == Key.LeftAlt || key == Key.RightAlt || key == Key.LeftShift
+                || key == Key.RightShift || key == Key.LWin || key == Key.RWin || key == Key.None || key == Key.ImeProcessed) return;
+            ModifierKeys held = Keyboard.Modifiers;
+            if (key == Key.Escape && held == ModifierKeys.None) { StopTyping(); return; }
+            string combo = "";
+            if (!(key == Key.Delete && held == ModifierKeys.None))
+            {
+                // A key by itself would be taken from every program while you type; the F keys are the exception.
+                if (held == ModifierKeys.None && !(key >= Key.F1 && key <= Key.F24)) return;
+                if ((held & ModifierKeys.Control) != 0) combo += "Ctrl+";
+                if ((held & ModifierKeys.Alt) != 0) combo += "Alt+";
+                if ((held & ModifierKeys.Shift) != 0) combo += "Shift+";
+                if ((held & ModifierKeys.Windows) != 0) combo += "Win+";
+                combo += new KeyConverter().ConvertToInvariantString(key);
+            }
+            string which = capturing;
+            capturing = "";
+            typingKey(false);
+            choose(which, combo);
         }
     }
 
@@ -1205,6 +1671,8 @@ namespace ClaudeSpeaks
         const long Ours = 0x43535031;  // marks the key events the overlay sends itself
         readonly Dictionary<string, uint[]> claims = new Dictionary<string, uint[]>();  // hotkey name -> its key and MOD_ flags
         readonly IntPtr hwnd;
+        SettingsWindow settings;  // made when it is first asked for
+        bool typingKey;  // a hotkey is being typed into the settings: our own hotkeys are let go meanwhile
 
         object[] sessions = new object[0];
         object[] history = new object[0];
@@ -1310,7 +1778,7 @@ namespace ClaudeSpeaks
             holdTimer.Tick += delegate { if (!Down((int)heldKey)) EndHold(); };
             // Other always-on-top windows (and some games) push us down; climb back regularly.
             topTimer.Interval = TimeSpan.FromSeconds(2);
-            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); };
+            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); if (settings != null) settings.Window.Raise(); };
 
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
             SetGlass();
@@ -1497,6 +1965,26 @@ namespace ClaudeSpeaks
                     historyOf = Str(msg, "over", "");  // as if the mouse were on that session's row
                     Render();
                     break;
+                case "settings":  // the settings window: open with what there is to set, or closed
+                    if (msg.ContainsKey("open") && Convert.ToBoolean(msg["open"]))
+                    {
+                        if (settings == null)
+                        {
+                            settings = new SettingsWindow(
+                                delegate(string key, object value) { Write(new Dictionary<string, object> { { "type", "setting" }, { "key", key }, { "value", value } }); },
+                                delegate { Write(new Dictionary<string, object> { { "type", "settings" }, { "open", false } }); },
+                                delegate(bool typing) { typingKey = typing; RegisterHotkeys(); });
+                            settings.Look(opaque ? "solid" : glass);
+                        }
+                        settings.Show(msg.ContainsKey("sections") && msg["sections"] is object[] ? (object[])msg["sections"] : new object[0], Str(msg, "section"), WorkArea(), msg.ContainsKey("quiet") && Convert.ToBoolean(msg["quiet"]));
+                    }
+                    else if (settings != null) settings.Hide();
+                    if (settings != null && msg.ContainsKey("click") && msg["click"] is object[])
+                    {
+                        var at = (object[])msg["click"];
+                        settings.Click(Convert.ToDouble(at[0], CultureInfo.InvariantCulture), Convert.ToDouble(at[1], CultureInfo.InvariantCulture));
+                    }
+                    break;
                 case "bounds":
                     ReportBounds();
                     break;
@@ -1514,6 +2002,7 @@ namespace ClaudeSpeaks
             rail.Look(kind);
             panel.Look(kind);
             bubble.Look(kind);
+            if (settings != null) settings.Look(kind);
         }
 
         // A different layout: start again from nothing, so every light lands in its new home.
@@ -2801,6 +3290,7 @@ namespace ClaudeSpeaks
             hotkeyKeys.Clear();
             claims.Clear();
             talkKey = talkMods = 0;
+            if (typingKey) return;  // the keys pressed now are a new hotkey being chosen, not ours to act on
             int next = 1;
             foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
@@ -2878,6 +3368,7 @@ namespace ClaudeSpeaks
             {
                 if (panel.IsVisible) pieces.Add(panel.Area());
                 if (bubble.IsVisible) pieces.Add(bubble.Area());
+                if (settings != null && settings.IsOpen) pieces.Add(settings.Window.Area());
                 int[] area = rail.Area();
                 reply["x"] = area[0]; reply["y"] = area[1]; reply["w"] = area[2]; reply["h"] = area[3];
                 reply["pieces"] = pieces;

@@ -10,6 +10,7 @@ import time
 import base
 import claude_sessions
 import overlay as overlay_mod
+import settings as settings_mod
 import stt
 from state import permission_summary
 from base import OWN_DIALOG, Request, _answerable, _read_out, _same_call, log
@@ -259,10 +260,34 @@ class Permissions:
         self.say(f"{name} layout", kind="notice")
         return name
 
+    # --- the settings window (what it offers and what a choice does: settings.py) -----------
+
+    _settings_open = False
+
+    def show_settings(self, open: bool | None = None) -> bool:
+        """Open or close the settings window; None = the other of what it is now."""
+        self._settings_open = (not self._settings_open) if open is None else bool(open)
+        if self.overlay:
+            self.overlay.send({"type": "settings", "open": True, "sections": settings_mod.describe(self)}
+                              if self._settings_open else {"type": "settings", "open": False})
+        return self._settings_open
+
+    def set_setting(self, key: str, value) -> str | None:
+        """Something was chosen, in the window or with `claude-speaks settings KEY VALUE`. Returns
+        what is wrong with it, or None. The window is then told how things stand: it draws
+        what the hub has, so a choice that was not taken does not look as if it were."""
+        error = settings_mod.apply(self, key, value)
+        if error:
+            log(self.cfg, "hub.log", f"setting not changed: {error}")
+        if self._settings_open and self.overlay:
+            self.overlay.send({"type": "settings", "open": True, "sections": settings_mod.describe(self)})
+        return error
+
     def on_overlay(self, msg: dict) -> None:
         if msg.get("type") == "ready":
             # A window that has just started is handed the sessions again by its own module, and
             # nothing else: tell it the question that is still open and the keys that are live.
+            self._settings_open = False  # a new window has no settings open
             with self.lock:
                 self._keys = None
                 if self.requests:
@@ -276,6 +301,12 @@ class Permissions:
         if msg.get("type") == "mode":  # details kept out, or only the lights: the same after a hub restart
             if msg.get("mode") in ("dots", "list"):
                 self.place_overlay(False, mode=msg["mode"])
+            return
+        if msg.get("type") == "setting":  # chosen in the settings window
+            self.set_setting(str(msg.get("key", "")), msg.get("value"))
+            return
+        if msg.get("type") == "settings":  # the window was closed there
+            self._settings_open = bool(msg.get("open"))
             return
         if msg.get("type") != "hotkey":
             return
@@ -302,3 +333,5 @@ class Permissions:
             self.set_layout("next")
         elif name == "jump":
             self.show_terminal()
+        elif name == "settings":
+            self.show_settings()

@@ -617,6 +617,18 @@ Bigger pieces:
       falls back to English where Kokoro has no voice.
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
+      A first one built on the evening of 2026-11-18 and put on their screen:
+      `Ctrl+Alt+S` or `claude-speaks settings`. Sections at the left (Voice, Voices,
+      Talking, Overlay, Figures, Terminal, Keys), 54 settings, each changed with a
+      click and in effect at once; hotkeys are changed by clicking one and pressing the
+      new keys. **For the author to judge, none of it agreed beforehand:** the look,
+      the wording, which settings are in it, and the key that opens it. **To try by
+      hand** (checked from WSL only with pictures and with clicks made inside the
+      program): a choice, a switch, a slider, the list of voices, typing a new hotkey
+      and getting the old one back, moving the window by its head, Esc.
+      Not in it yet: languages, the colors, where the overlay sits and on which
+      monitor, which figures a row and the card show, your own voices, voices of
+      projects that are not open, a way back to what a new install has, a search.
 - [ ] Packaging as a Claude Code plugin, so it installs in one step.
 - [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
       tools that only speak after the reply has ended.

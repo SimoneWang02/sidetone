@@ -1,4 +1,4 @@
-"""Manual check of the overlay window from WSL: python3 tests/overlay_check.py OUT_DIR [--glass]
+"""Manual check of the overlay window from WSL: python3 tests/overlay_check.py OUT_DIR [--glass] [--only=NAME]
 
 Starts the overlay by itself, feeds it made-up content, and saves a PNG of each view to OUT_DIR.
 The window is drawn opaque, and its picture is asked from the window itself, not copied from
@@ -26,6 +26,9 @@ import overlay  # noqa: E402
 import state  # noqa: E402
 
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
+# --only=settings: keep only the pictures whose names begin so, and skip the waits and the proof
+# for the rest (for looking at one view again and again while working on it).
+ONLY = next((a[7:] for a in sys.argv[1:] if a.startswith("--only=")), "")
 out = os.path.abspath(args[0] if args else ".")
 os.makedirs(out, exist_ok=True)
 
@@ -123,6 +126,8 @@ def bounds():
 def shot(name, settle=0.9):
     """Capture the overlay's own rectangles. If it changed size meanwhile, the picture could hold
     a strip of the screen behind it, so it is taken again, and dropped if it never holds still."""
+    if ONLY and not name.startswith(ONLY):
+        return bounds()
     time.sleep(settle)
     for _ in range(4):
         b = bounds()
@@ -334,7 +339,7 @@ send(type="state", sessions=sessions(), history=HISTORY)
 shot("closed")
 send(type="peek", on=True)
 time.sleep(1.2)
-proved = prove()
+proved = None if ONLY else prove()
 send(type="peek", on=False)
 say(3)
 shot("speaking-closed", 1.6)
@@ -512,6 +517,45 @@ send(type="peek", on=False)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="bar", **HERE)
 send(type="state", sessions=sessions(), history=HISTORY)
 time.sleep(0.3)
+# The settings window, one picture for each of its sections, with what a new install has.
+import base  # noqa: E402
+import settings as settings_mod  # noqa: E402
+
+
+class FakeHub:
+    cfg = base.Config(run="", state="")
+    lock = threading.Lock()
+    sessions = type("Open", (), {"by_id": {n: type("S", (), {"name": n}) for n in ("claude-speaks", "api-server", "web-app")}})
+
+    def voices(self):
+        return {"choosable": True, "builtin": sorted(state.VOICE_POOL) + ["if_sara", "im_nicola"], "custom": ["my_mix"],
+                "pool": list(state.VOICE_POOL), "projects": {"claude-speaks": "af_heart", "api-server": "bm_fable", "web-app": "af_bella"}}
+
+
+SETTINGS = settings_mod.describe(FakeHub())
+for section in SETTINGS:
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section=section["name"])
+    shot("settings-" + section["name"].lower(), 0.7)
+# What is drawn answers to a click: one on a choice, a switch, a section at the left, a
+# hotkey. The places are read off the pictures above (the window's own units, from its corner).
+def click(section, x, y, expect):
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section=section, click=[x, y])
+    got = wait("setting", 3)
+    told = (got.get("key"), got.get("value")) if got else None
+    print(f"  click in {section} at {x},{y}: {told}" + ("" if told == expect else f"   !! expected {expect}"))
+    return told == expect
+
+
+clicks = [click("Overlay", 716, 117, ("overlay.layout", "island")),
+          click("Voice", 727, 287, ("progress", False)),
+          click("Figures", 690, 117, ("context_shown", "both"))]
+send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voice", click=[46, 278])  # "Keys" at the left
+shot("settings-clicked-keys", 0.5)
+send(type="settings", open=True, quiet=True, sections=SETTINGS, click=[690, 230])  # the hotkey of "Keep the details out"
+shot("settings-typing-key", 0.5)
+print("  the settings window answers to clicks:", "yes" if all(clicks) else "NO (see above)")
+send(type="settings", open=False)
+time.sleep(0.3)
 # The same steps with the sign at the right of the session's line instead of in its light.
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, talk_sign="line")
 send(type="talk", state="sent", name="web-app", text="Also add a test for the empty input case.", seconds=6)
@@ -610,5 +654,5 @@ try:
     camera.wait(5)
 except subprocess.TimeoutExpired:
     camera.kill()
-print("  pictures hold only the overlay under test:", "proved" if proved else "NOT PROVED (see above)")
-sys.exit(0 if proved else 1)
+print("  pictures hold only the overlay under test:", "not checked (--only)" if ONLY else "proved" if proved else "NOT PROVED (see above)")
+sys.exit(0 if proved or ONLY else 1)

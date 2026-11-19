@@ -12,6 +12,7 @@ import time
 from http.server import BaseHTTPRequestHandler
 
 import demo
+import settings as settings_mod
 import terminal as terminal_mod
 from base import EDITOR_WAIT
 
@@ -112,6 +113,15 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/stop":
             hub.speech.stop_all()
             self._reply({})
+        elif self.path == "/settings":  # the settings window, or one setting from the command line
+            if "key" in body:
+                error = hub.set_setting(str(body["key"]), body.get("value"))
+                return self._reply({"error": error})
+            if body.get("list"):
+                return self._reply({"sections": settings_mod.describe(hub)})
+            if not hub.overlay:
+                return self._reply({"error": "the settings window needs the overlay, which is not available here"}, 409)
+            self._reply({"open": hub.show_settings(body.get("open"))})
         elif self.path == "/overlay":
             if not hub.overlay:
                 return self._reply({"error": "the overlay is not available here"}, 409)

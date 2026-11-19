@@ -107,6 +107,8 @@ DEFAULTS = {
                 # claude-speaks extension holds that terminal. No key unless you give it one
                 # ("Ctrl+Alt+T" was its first): the author saw no use for it with terminals side by side.
                 "jump": "",
+                # Open and close the settings window.
+                "settings": "Ctrl+Alt+S",
                 # Move the focus to the session before or after; claimed only while there are two or more.
                 # The first pair is for the bar, where the lights run down; the second for the island,
                 # where they run across. Only the pair of the layout in use is claimed.

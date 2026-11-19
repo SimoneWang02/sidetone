@@ -129,6 +129,7 @@ work, run `cs demo` in a terminal.
 |---|---|
 | `Ctrl+Alt+L` | Overlay: keep the panel out ↔ only the lights |
 | `Ctrl+Alt+K` | Overlay: switch layout (bar ↔ island) |
+| `Ctrl+Alt+S` | Open or close the settings window |
 | `Ctrl+Alt+Y` / `Ctrl+Alt+N` | Allow / deny the permission prompt shown in the overlay |
 | `Ctrl+Alt+1` … `Ctrl+Alt+4` | Answer the question shown in the overlay |
 | hold `Ctrl+Alt` | Show the details panel while held |
@@ -172,12 +173,18 @@ claude-speaks terminal show [PROJECT]         bring a session's terminal to the 
 claude-speaks terminal strength N | background COLOR | pulse on|off|N | title on|off
 claude-speaks terminal follow on|off          going to a terminal in VS Code selects its session
 claude-speaks vscode install|uninstall        the VS Code extension that reports the terminal you are in
+claude-speaks settings               open the settings window (Ctrl+Alt+S); "settings close" shuts it
+claude-speaks settings list          every setting the window has, and what it is now
+claude-speaks settings KEY VALUE     change one at once, e.g. settings overlay.layout island
 claude-speaks demo                   three made-up sessions through every state
 claude-speaks hub start|stop|restart
 claude-speaks log                    follow the speech log
 ```
 
-Settings are optional and live in `~/.config/claude-speaks/config.json`:
+The settings window (`Ctrl+Alt+S`) has the ones most people change: voice, voices per project,
+push-to-talk, how the overlay looks, the figures, the terminal tint and every hotkey. A change
+takes effect at once and is written to `~/.config/claude-speaks/config.json`. That file is
+optional and holds all of them:
 
 ```json
 {

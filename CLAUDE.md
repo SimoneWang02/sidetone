@@ -776,6 +776,50 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   place in its history, the focus. Run by hand in a plain terminal it is tied to nobody,
   as before. Tried on the live hub (`voice.log` has the session's id); **the wave itself
   not seen by the author yet**.
+- The settings window (2026-11-18, `hub/settings.py`, `SettingsWindow` in `overlay/Overlay.cs`,
+  `Permissions.show_settings` and `set_setting`, `tests/test_settings.py`). The author's
+  idea from the first days ("a settings panel"); started on "Okay, so what's next?" after
+  it had been named twice as the next piece and not turned down. **What it is, how it
+  looks and its key are not agreed with them; they have it on screen and have not said
+  anything yet.** `Ctrl+Alt+S` (`settings` under `hotkeys`) or `claude-speaks settings`
+  opens it, the same key, Esc or its cross closes it. A dark glass window of 780 by 560 in
+  the middle of the overlay's monitor, moved by its head: sections down the left (Voice,
+  Voices, Talking, Overlay, Figures, Terminal, Keys), the settings of one section in a
+  card at the right, each a name, a sentence, and what sets it: a few choices side by
+  side, a switch, a slider with its figure, a hotkey as key caps, or a list that drops
+  down (voices). It is the one window of the overlay that takes the mouse and keyboard
+  (`Glass(width, takesInput)`).
+  As everywhere, the window decides nothing. The hub sends `settings` with `sections`
+  (items: `key`, `kind` choice/switch/number/key/pick, `name`, `help`, `value`, `options`
+  or `min`/`max`/`step`/`unit`); a click sends `setting` with `key` and `value`;
+  `settings.apply` checks it against what is offered, sets it at once (the overlay's own
+  through `place_overlay`, the terminal's through `set_terminal`, the rest on `cfg`, with
+  the voice's speed handed to the engine), writes it to `config.json` and logs it; then
+  the hub sends the sections again and the window draws what the hub has, so a choice
+  that was refused does not look taken. A slider only sends where it is let go. Keys are
+  paths: `speed`, `overlay.layout`, `terminal.tint`, `overlay.hotkeys.talk`, and two that
+  are not in the file: `voice` (the voice-off file) and `voice_of.<project>` (says "This
+  is my voice." in the new one). To add a setting to the window, add a line to
+  `settings.SECTIONS`; a test checks that each is a setting the hub has and that each one
+  at the top of the file is read back at start. `claude-speaks settings list` prints them
+  all and `claude-speaks settings KEY VALUE` sets one, which is also how the live hub was
+  tried (`history_time` on and off; a wrong value refused).
+  A hotkey is changed by clicking its caps and pressing the new keys (Esc keeps the old,
+  Delete leaves it without one; a key with nothing held is not taken, except F keys).
+  While that waits, the overlay lets go of all its own hotkeys and of the talk key's
+  hook (`typingKey`, the early return in `RegisterHotkeys`), or Windows would hand the
+  press to them and not to the window.
+  Checked from WSL: pictures of every section (`settings-*.png`), and clicks made inside
+  the program at places read off those pictures (`settings` with `click: [x, y]`, which
+  goes through WPF's own hit testing and events, without the mouse): a choice, a switch
+  and a section each sent what they should, and a click on a hotkey showed "Press the
+  keys". **Not tried by anyone: a real mouse, sliding, typing a hotkey, the list of
+  voices dropping down, the window over a game.** Not in it yet: languages, colors, where
+  the overlay sits, the lists of figures (`row_metrics`, `detail_metrics`), your own
+  voices, and voices of projects that are not open. `tests/overlay_check.py OUT
+  --only=settings` takes only those pictures, in 15 s. While it ran the first time the
+  window jumped between two pictures; it did not the second time, so most likely the
+  author moved it, since the check's own window opens in the middle of their screen.
 - `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
@@ -784,8 +828,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `languages [CODES]`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | show [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
-  `demo`, `hub start|stop|restart`, `log`.
-- `tests/test_hub.py`: 280 tests in all with a silent engine and fake microphone, including the real hook
+  `settings [close | list | KEY VALUE]`, `demo`, `hub start|stop|restart`, `log`.
+- `tests/test_hub.py`: 297 tests in all with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
