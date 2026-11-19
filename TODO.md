@@ -798,7 +798,7 @@ Bigger pieces:
       passed, to see whether you are ahead of an even pace. The offers above are
       still open. They then asked which is better for the two bars, one line or a
       line each; told a line each, and shown it live (`overlay.usage_layout`: `rows`,
-      or `line`). **Their choice between the two is open.** Also said with the command in the middle of that work, so they could
+      or `line`). Their choice: "each on their own" row, so it stays. Also said with the command in the middle of that work, so they could
       watch the bubble and wave of such a line: not answered yet.
 - [x] Tokens per request (the author, 2026-11-18, as a side question: "is it possible for
       each request to ... show me the metrics of how much token you've used? Is it
