@@ -69,6 +69,9 @@ DEFAULTS = {
     # With the details kept out (the list key), a drag on them moves the whole overlay; a click
     # on them still goes to what is behind. False: only the bar of lights can be grabbed.
     "panel_drag": True,
+    # How the open details take a new height when the mouse goes to another session: quick = they
+    # grow at once and shrink in about a tenth of a second | instant = both at once
+    "resize": "quick",
     # What the history under the kept-out details shows: session = the lines of the session the
     # mouse is on (before it touched one: the session in focus) | all = every session's lines
     "history": "session",

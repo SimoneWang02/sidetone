@@ -197,7 +197,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   second), at about 10 ms a frame for resizing the glass window; it never caught up and what
   was below its height stayed cut off. A quick spring of about 60 ms was "better, but ...
   I want it to be more responsive", so a panel already fully open now takes a new height at
-  once (`Glass.settled`); opening keeps the soft spring.
+  once (`Glass.settled`); opening keeps the soft spring. "It's super responsive." Asked
+  whether a faster animation is the standard instead: under a tenth of a second reads as at
+  once, and the animation must not hold the words back. So `overlay.resize`: quick (the
+  default, "Sure, yes") grows at once and shrinks in about 90 ms, easing from wherever it is;
+  instant does both at once.
 - Sessions in an order of your own (2026-11-19, `overlay.reorder_keys`, `Press`, `LiftStep`,
   `EndLift` in `Overlay.cs`, `Sessions.reorder`). The author, by voice: "if we could move the
   ... sessions", by dragging; Ctrl+Alt was already the key for dragging the bar ("they're kind

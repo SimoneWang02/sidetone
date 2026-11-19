@@ -915,6 +915,9 @@ namespace ClaudeSpeaks
         public readonly bool Unfolds;
         public double Goal, Tall, Full;  // unfolding: the height wanted, the height now, the last open height
         bool settled;  // it has been fully open since it last opened: a new height is a resize, not an opening
+        // How an open window takes a new height (overlay.resize): instant = at once; quick = it grows
+        // at once, so nothing is cut off, and shrinks in about a tenth of a second.
+        public static string Resize = "quick";
         FrameworkElement body;
         double speed;
 
@@ -985,7 +988,17 @@ namespace ClaudeSpeaks
             // caught up while the mouse went from row to row and what was below the old height
             // stayed cut off (the author, 2026-11-19: "if I move it real fast, there's a latency");
             // a quick spring of 60 ms was "better", and they wanted it "more responsive".
-            if (!moving || instantly || (settled && Goal > 0)) { Tall = Goal; speed = 0; if (Goal > 0) settled = true; }
+            // The author, asked which is the standard: under a tenth of a second reads as at once,
+            // and an animation must not hold the words back; so quick grows at once and only the
+            // shrinking moves ("Sure, yes").
+            bool resizing = settled && Goal > 0;
+            if (!moving || instantly || (resizing && (Resize == "instant" || Goal > Tall))) { Tall = Goal; speed = 0; if (Goal > 0) settled = true; }
+            else if (resizing)
+            {
+                Tall += (Goal - Tall) * (1 - Math.Exp(-dt / 0.03));  // 95% of the way in 90 ms; a new goal takes over from wherever it is
+                speed = 0;
+                if (Math.Abs(Goal - Tall) < 0.4) Tall = Goal;
+            }
             else
             {
                 double pull = Goal > 0 ? 230 : 420, drag = Goal > 0 ? 22 : 41;
@@ -2146,6 +2159,7 @@ namespace ClaudeSpeaks
                     historyTicks = (int)Math.Max(1, Math.Round(Num(msg, "history_after", historyTicks * 0.03) / 0.03));
                     if (msg.ContainsKey("hover")) hoverOpens = Str(msg, "hover") != "keys";
                     if (msg.ContainsKey("panel_drag")) panelDrag = Convert.ToBoolean(msg["panel_drag"]);
+                    if (msg.ContainsKey("resize")) Glass.Resize = Str(msg, "resize", "quick");
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
                     if (msg.ContainsKey("share_taken_keys")) shareTaken = Convert.ToBoolean(msg["share_taken_keys"]);
                     if (msg.ContainsKey("muted_mark")) mutedMark = Convert.ToBoolean(msg["muted_mark"]);

@@ -26,7 +26,9 @@ these come before anything new.
 - [ ] The history following the mouse from row to row without lag (2026-11-19, the
       author: "if I move it real fast, there's a latency"): the open panel changed height
       in about 60 ms instead of half a second: "That's better ... more responsive". Now it
-      takes the new height at once. Not tried by them.
+      takes the new height at once: "super responsive". Then, on their yes, `overlay.resize`
+      quick (grows at once, shrinks in about 90 ms; the default) or instant. Quick not
+      tried by them.
 - [ ] Your own words' sign hidden by another session's line (2026-11-19, the author: "I
       just send an audio to session three and I immediately switch to session one, try
       sending an audio, and I don't see the icon for sending the audio. I don't see the
