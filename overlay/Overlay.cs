@@ -1555,9 +1555,9 @@ namespace ClaudeSpeaks
         public readonly Wave Wave;
         public readonly TranslateTransform Slide = new TranslateTransform();
         // While sessions are being reordered: how far the light is moved along the bar (the one
-        // held follows the mouse, the others make room), and how much bigger the one held is.
+        // held follows the mouse, the others make room). The one held keeps its size (the
+        // author did not like it growing).
         public readonly TranslateTransform Shift = new TranslateTransform();
-        public readonly ScaleTransform Lift = new ScaleTransform(1, 1, High / 2, High / 2);
         readonly Border glow = new Border { CornerRadius = new CornerRadius(6), Background = Ui.Paint("#FFFFFF"), Opacity = 0 };
         readonly Grid row2 = new Grid();
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
@@ -1580,10 +1580,7 @@ namespace ClaudeSpeaks
             Strip.NewestRight = right;
             Light.Children.Add(Orb);
             Light.Children.Add(Pip);
-            var moves = new TransformGroup();
-            moves.Children.Add(Lift);
-            moves.Children.Add(Shift);
-            Light.RenderTransform = moves;
+            Light.RenderTransform = Shift;
             Strip.Margin = right ? new Thickness(8, 0, 0, 0) : new Thickness(0, 0, 8, 0);
             words.Margin = new Thickness(12, 5, 12, 6);
             words.RenderTransform = Slide;
@@ -3071,16 +3068,25 @@ namespace ClaudeSpeaks
 
         void Press(Point at)
         {
-            CursorPoint cursor;
             if (dragging) return;
-            Row row = CanReorder() && GetCursorPos(out cursor) ? LightAt(cursor) : null;
+            if (!CanReorder()) { BeginDrag(at); return; }
+            // With the keys held a press never moves the bar: it takes the light nearest to it,
+            // also on the bar's rim or between two lights (a press that missed the light by a
+            // pixel moved the whole overlay). `at` is where the press was, as the press itself
+            // reported it; the cursor has moved on since.
+            double along = (Island ? at.X : at.Y) - 4, start = 0;
+            Row row = order[order.Count - 1];
+            foreach (Row r in order)
+            {
+                if (along < start + Room(r)) { row = r; break; }
+                start += Room(r);
+            }
             BeginDrag(at);
-            if (row == null || !dragging) return;
-            // `at` is where the press was; the bar has not moved since, so it gives the place along it.
+            if (!dragging) return;
             lifted = row;
-            liftGrab = (Island ? at.X : at.Y) - 4;
+            liftGrab = along;
             Panel.SetZIndex(row.Light, 1);
-            row.Lift.ScaleX = row.Lift.ScaleY = 1.18;
+            hot = null;  // nor does it keep the size a light has under the mouse
         }
 
         // Where the light held would go if let go now: its middle, past how many others' middles.
@@ -3139,7 +3145,6 @@ namespace ClaudeSpeaks
             int from = order.IndexOf(row), target = from < 0 ? -1 : LiftTarget(moved);  // needs `lifted`
             lifted = null;
             foreach (Row r in order) { r.Shift.X = r.Shift.Y = 0; }
-            row.Lift.ScaleX = row.Lift.ScaleY = 1;
             Panel.SetZIndex(row.Light, 0);
             if (from >= 0 && target != from)
             {

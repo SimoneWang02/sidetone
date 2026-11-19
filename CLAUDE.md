@@ -344,7 +344,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   end. With the keys held the cursor is a double arrow along the bar over a light, and
   a drag elsewhere on the bar still moves it. Told them before: the bar takes every press
   on it again, and a game that reads the mouse its own way may miss a click passed on.
-  Compiles; tested in the hub; **the dragging itself not seen by anyone yet**.
+  Tried by the author the same night: lights left on top of each other after a drop (the
+  drop threw, `lifted` was cleared before `LiftTarget` needed it), the focus frame not
+  following (it now adds the light's `Shift`), the held light growing ("I don't like it":
+  it keeps its size now, also the size a light has under the mouse), and "sometimes ...
+  the whole layout overlay moves" (with the keys held, a press on the bar's rim or
+  between two lights fell back to moving the bar; it now always takes the nearest light).
+  **The last two fixes not tried yet.**
 - What brings the details out (`overlay.hover`, 2026-11-17): `always` (default) = the mouse
   resting on the bar, as ever; `keys` = only holding Ctrl+Alt or the list key, and then a
   mouse passing over the bar changes nothing at all (no light growing under it either).
@@ -895,6 +901,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   "Not cleared: the chat is still there", and the low notes. Nothing sounds when the
   order goes out. A run of four notes for "cleared" was played to them first; their
   word: "keep a positive tune and a negative one", the positive being the one for sent.
+  A clear that waited is typed by `reconcile`, maybe while you hold the talk key for
+  another session, and its "sent" took the listening sign away, since the overlay shows
+  one push-to-talk step (the author, 2026-11-19: "I don't see the registering icon
+  anymore"; the recording went on and arrived). Late news of a clear (`late=True`,
+  `_clear_late`) now leaves the overlay alone while `Talk._talk_held`.
 - Words handed over do not take the bubble from a speaker (2026-11-19, `quiet` on the
   `talk` message, `hushed` in `UpdateBubble`). The author: while this session was speaking,
   "session one was done. His message popped out briefly and then your message continued.
