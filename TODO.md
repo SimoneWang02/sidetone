@@ -164,6 +164,8 @@ voice, and the wait for the transcript.
       Again 15:24, the other way: a 2.6 s clip, surely "quant'è il contesto al momento?"
       just after the Italian context question was built, came back as English "How much
       did you count this moment?", so the hub did not answer it and the session got it.
+      Again 15:34: 2.3 s, surely "quanto ho usato?", came back as English "One dosa,
+      what the?" and took 2.7 s. Four short clips out of four in the wrong language today.
 - [ ] A spoken line with no `lang` in its tag: guess its language in the hub (Chinese
       characters are easy; Italian against English needs a small detector, or the language
       Whisper heard in the user's last recording). Seen 2026-11-19: a session answered in
