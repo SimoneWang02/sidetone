@@ -40,10 +40,22 @@ ACTIVE_WINDOW = 15 * 60  # a session counts as active this long after its last e
 FORGET_AFTER = 6 * 3600  # sessions killed without a SessionEnd are dropped after this
 KEPT_FOR = 15 * 60  # after a hub restart, a session that has not reported yet keeps its name, color and voice this long
 
-# The spoken line. Its tag may carry the session's own title: <speak title="Login page redesign">...</speak>
-_TITLE = r"""(?:\s+title\s*=\s*(?:"([^"]*)"|'([^']*)'))?"""
-_SPEAK_LINE = re.compile(r"^\s*<speak" + _TITLE + r"\s*>\s*(.*?)\s*</speak>\s*$")
-_SPEAK_LAST = re.compile(r".*<speak" + _TITLE + r"\s*>(.*)</speak>")
+# The spoken line. Its tag may carry the session's own title and, when the line is not in
+# English, its language: <speak title="Login page redesign" lang="it">...</speak>, in any order.
+_ATTRS = r"""((?:\s+[A-Za-z]+\s*=\s*(?:"[^"]*"|'[^']*'))*)"""
+_SPEAK_LINE = re.compile(r"^\s*<speak" + _ATTRS + r"\s*>\s*(.*?)\s*</speak>\s*$")
+_SPEAK_LAST = re.compile(r".*<speak" + _ATTRS + r"\s*>(.*)</speak>")
+_ATTR = re.compile(r"""([A-Za-z]+)\s*=\s*(?:"([^"]*)"|'([^']*)')""")
+
+
+def _attrs(text: str) -> dict:
+    return {m.group(1).lower(): (m.group(2) if m.group(2) is not None else m.group(3)).strip() for m in _ATTR.finditer(text or "")}
+
+
+def tag_lang(attrs: dict) -> str:
+    """The language a speak line says it is in, as a short code ("it", "pt"), or "" for none."""
+    m = re.fullmatch(r"([a-z]{2,3})(?:[-_][A-Za-z]+)?", str(attrs.get("lang", "")).lower())
+    return m.group(1) if m else ""
 
 
 def _lab(color: str) -> tuple[float, float, float]:
@@ -73,19 +85,21 @@ def usable_colors(wanted) -> list[str]:
     return own if len(own) >= 2 else list(COLORS)
 
 
-def split_display(delta: str) -> tuple[str | None, str, str]:
-    """Return (speech, display, title) for one streamed batch; the title is "" when the tag has none.
+def split_display(delta: str) -> tuple[str | None, str, str, str]:
+    """Return (speech, display, title, lang) for one streamed batch; title and lang are "" when
+    the tag has none.
 
     Only a line that is nothing but a speak tag counts, so prose that mentions the tag is left alone.
     """
-    speech, shown, title = None, [], ""
+    speech, shown, title, lang = None, [], "", ""
     for line in delta.split("\n"):
         m = _SPEAK_LINE.match(line)
         if m:
-            speech, title = m.group(3), (m.group(1) or m.group(2) or "").strip()
+            attrs = _attrs(m.group(1))
+            speech, title, lang = m.group(2), attrs.get("title", ""), tag_lang(attrs)
             line = f"🔊 {speech}"
         shown.append(line)
-    return speech, "\n".join(shown), title
+    return speech, "\n".join(shown), title, lang
 
 
 def speech_from_message(message: str) -> str:
@@ -98,10 +112,18 @@ def title_from_message(message: str) -> str:
     return _spoken(message)[1]
 
 
-def _spoken(message: str) -> tuple[str, str]:
+def lang_from_message(message: str) -> str:
+    """The language a finished reply gives its speak line, or "" (English)."""
+    return _spoken(message)[2]
+
+
+def _spoken(message: str) -> tuple[str, str, str]:
     m = next((m for m in map(_SPEAK_LINE.match, reversed(message.splitlines())) if m), None)
     m = m or _SPEAK_LAST.match(re.sub(r"[\r\n]", " ", message))
-    return (m.group(3).strip(), (m.group(1) or m.group(2) or "").strip()) if m else ("", "")
+    if not m:
+        return ("", "", "")
+    attrs = _attrs(m.group(1))
+    return (m.group(2).strip(), attrs.get("title", ""), tag_lang(attrs))
 
 
 def short_title(text: str, limit: int = 44) -> str:

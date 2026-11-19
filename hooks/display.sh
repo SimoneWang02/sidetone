@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # MessageDisplay hook: runs on each batch of streamed lines. When a line that is
 # exactly <speak>...</speak> appears, speak it right away and show it as "🔊 ...".
-# The tag may carry the session's title (<speak title="...">); the hub keeps it, and it is not shown.
+# The tag may carry the session's title and the line's language (<speak title="..." lang="it">);
+# the hub keeps them, and they are not shown.
 # Must be fast: Claude Code waits for this hook before rendering the batch.
 [ -e "$HOME/.claude/voice-off" ] && exit 0
 input=$(cat)
@@ -17,7 +18,7 @@ fi
 # No hub: start one for next time, and speak this line directly.
 hub_start
 out=$(jq -c '
-  def tag: "^\\s*<speak(\\s+title\\s*=\\s*(\"[^\"]*\"|\u0027[^\u0027]*\u0027))?\\s*>\\s*(?<t>.*?)\\s*</speak>\\s*$";
+  def tag: "^\\s*<speak(\\s+[A-Za-z]+\\s*=\\s*(\"[^\"]*\"|\u0027[^\u0027]*\u0027))*\\s*>\\s*(?<t>.*?)\\s*</speak>\\s*$";
   (.delta // "" | split("\n")) as $lines
   | { session: .session_id,
       speech: [ $lines[] | select(test(tag)) | sub(tag; "\(.t)") ] | last,

@@ -21,6 +21,7 @@ import subprocess
 import sys
 import threading
 import time
+import zlib
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler
 
@@ -35,8 +36,8 @@ import stale  # noqa: E402
 import stt  # noqa: E402
 import terminal as terminal_mod  # noqa: E402
 from state import (COLORS, FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
-                   speech_from_message, split_display, title_from_message)
-from tts import Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
+                   lang_from_message, speech_from_message, split_display, title_from_message)
+from tts import LANG_LETTER, Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
 
 import base  # noqa: E402
 import usage  # noqa: E402
@@ -256,7 +257,7 @@ class Hub(Permissions, Talk):
                 s.note = speech or "done"
                 self._title_from(s, reply=speech, given=title_from_message(message))
                 if speech and speech != s.spoken and not self._spoken_without_hub(sid, speech):
-                    self._say(s, speech, "done", "stop")
+                    self._say(s, speech, "done", "stop", self._voice_for(s, lang_from_message(message)))
                 elif not speech:
                     self._flash(s, "done")  # nothing is spoken for this turn, so show it instead
                 self._unstop(sid, "its turn ended by itself")
@@ -422,7 +423,7 @@ class Hub(Permissions, Talk):
 
     def on_display(self, ev: dict) -> dict | None:
         """MessageDisplay: speak a speak-tag line as soon as it streams in; return the rewrite."""
-        speech, shown, title = split_display(str(ev.get("delta") or ""))
+        speech, shown, title, lang = split_display(str(ev.get("delta") or ""))
         sid = ev.get("session_id")
         if not speech or not sid:
             return None
@@ -431,9 +432,25 @@ class Hub(Permissions, Talk):
             s = self.sessions.touch(sid, ev.get("cwd", ""))
             s.spoken = speech
             self._title_from(s, reply=speech, given=title)
-            self._say(s, speech, "done", "stream")
+            self._say(s, speech, "done", "stream", self._voice_for(s, lang))
         self.publish()
         return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
+
+    def _voice_for(self, s, lang: str) -> str | None:
+        """The voice for a line in another language than English: one of Kokoro's voices for
+        that language, of the same kind (female or male) as the session's own where there is
+        one, and always the same for a session. None = the session's own voice, for English,
+        for a language Kokoro has no voice for, and with `reply_language: english`."""
+        if not lang or lang == "en" or self.cfg.reply_language == "english":
+            return None
+        letter = LANG_LETTER.get(lang)
+        known = getattr(self.speech.engine, "voices", None) or ()
+        choices = sorted(v for v in known if letter and re.fullmatch(letter + r"[fm]_\w+", v))
+        if not choices:
+            return None
+        kind = s.voice[1:2] if re.fullmatch(r"[a-z][fm]_\w+", s.voice or "") else ""
+        same = [v for v in choices if v[1] == kind] or choices
+        return same[zlib.crc32(s.name.encode()) % len(same)]
 
     def _title_from(self, s, prompt: str = "", reply: str = "", given: str = "") -> None:
         """What a session is called beside its name.

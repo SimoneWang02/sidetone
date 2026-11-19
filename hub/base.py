@@ -177,6 +177,10 @@ class Config:
     # on, in its speak tag, and may change that as the work moves on. "auto": never asked; the
     # title is Claude Code's own name for the session, else the start of its first spoken line.
     titles: str = "ask"
+    # The language of the spoken line. "spoken": the one you wrote or spoke in; a line that is not
+    # English carries lang="it" (or another code) in its tag and is said by a voice of that
+    # language. "english": always English, as before (the hook then asks for that).
+    reply_language: str = "spoken"
     # What a quick tap of the talk key does (a press too short to be speech). "none": nothing,
     # the focus is moved with the arrow keys or the wheel. "next": the focus goes to the next
     # session, as it did before those keys existed.
@@ -367,7 +371,7 @@ class Config:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
-                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles",
+                    "followup_confirm", "whisper_language", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language",
                     "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
                     "progress", "progress_after", "progress_interval"):
             if key in user:

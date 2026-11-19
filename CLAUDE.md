@@ -251,6 +251,21 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   unless the key was held to answer that very session (`SpeechQueue.resume(answering)`); and
   time spent holding the key does not count towards the 60 s. `voice.log` now says `cut`
   for a line that was stopped, and such a line stays "not heard" for catching up.
+- Replies in your language (2026-11-19, `reply_language`, `Hub._voice_for`, `tts.voice_lang`,
+  `state.tag_lang`). The author, by voice, on being offered it as the next thing: "yes
+  proceed". The reminder asks for the spoken line "in the language of my last message", with
+  `lang="xx"` in the tag when that is not English; the tag's attributes are read in any
+  order (`state._attrs`; the no-hub fallback in `display.sh` takes any too). A line with a
+  language gets one of Kokoro's voices for it, of the same kind (female or male) as the
+  session's own and always the same for a session; Kokoro is told how to pronounce from the
+  voice's first letter (`if_sara` is Italian), so a replayed line keeps its language. The
+  installed voices: Italian 2, Spanish 3, French 1, Portuguese 3, Hindi 4, Japanese 5,
+  Chinese 8; all seven languages synthesized in a test (Japanese and Chinese go through
+  espeak and were not listened to). No voice for the language (German, say): the session's
+  own English voice reads it. `reply_language: english` keeps it as before; the hook reads
+  that from `config.json` like `titles`. The hub's own words ("Sent.", "I need your
+  input") stay English. Heard on the live hub only through `sidetone say -v if_sara`;
+  **no session has answered the author in Italian yet.**
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
   was active in the last 15 min and no overlay is on screen (the author, 2026-11-17: "i dont
   think it's necessary to say the project folder whenever it speaks"; the bubble and the voice

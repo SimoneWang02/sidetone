@@ -21,7 +21,8 @@ import base  # noqa: E402  (what the hub's parts share; the waits these tests sh
 from hub import Config, Hub, serve  # noqa: E402
 import sounds  # noqa: E402
 import terminal  # noqa: E402
-from tts import CommandEngine, NullEngine  # noqa: E402
+from tts import CommandEngine, NullEngine, voice_lang  # noqa: E402
+from state import split_display  # noqa: E402
 
 
 def ev(event, sid="s1", cwd="/work/alpha", **extra):
@@ -198,6 +199,53 @@ class LabelsAndVoices(HubCase):
         hub = self.make(voices={"alpha": "bm_george"})
         hub.on_event(ev("SessionStart"))
         self.assertEqual(self.session()["voice"], "bm_george")
+
+
+class ReplyLanguage(HubCase):
+    """A line in another language than English is said by a voice of that language."""
+    VOICES = {"af_heart", "am_michael", "if_sara", "im_nicola", "ef_dora", "em_alex", "em_santa"}
+
+    def make(self, **cfg):
+        hub = super().make(**cfg)
+        self.engine.voices = set(self.VOICES)
+        return hub
+
+    def test_the_tag_reads_title_and_language_in_any_order(self):
+        self.assertEqual(split_display('<speak lang="it" title="Tasto muto">Ho finito.</speak>'),
+                         ("Ho finito.", "\U0001f50a Ho finito.", "Tasto muto", "it"))
+        self.assertEqual(split_display("<speak title='T'>Done.</speak>")[2:], ("T", ""))
+        self.assertEqual(split_display('<speak lang="pt-BR">Feito.</speak>')[3], "pt")
+
+    def test_an_italian_line_gets_an_italian_voice_of_the_same_kind(self):
+        hub = self.make()
+        hub.on_display(ev("MessageDisplay", delta='<speak lang="it">Ho aggiunto il tasto.</speak>'))
+        self.spoken()
+        own = self.session()["voice"]
+        said = self.engine.spoken[-1][1]
+        self.assertTrue(said.startswith("i" + own[1]), (own, said))  # if_sara for a female voice
+        hub.on_display(ev("MessageDisplay", delta=tag("Done.")))
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][1], own)  # English again: its own voice
+
+    def test_the_stop_event_reads_the_language_too(self):
+        hub = self.make()
+        hub.on_event(ev("Stop", last_assistant_message='<speak lang="es">Listo.</speak>\nmore'))
+        self.spoken()
+        self.assertTrue(self.engine.spoken[-1][1].startswith("e"))
+
+    def test_english_only_or_unknown_language_keeps_the_own_voice(self):
+        hub = self.make(reply_language="english")
+        hub.on_display(ev("MessageDisplay", delta='<speak lang="it">Ciao.</speak>'))
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][1], self.session()["voice"])
+        hub.cfg.reply_language = "spoken"
+        hub.on_display(ev("MessageDisplay", delta='<speak lang="de">Hallo.</speak>'))  # no German voice
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][1], self.session()["voice"])
+
+    def test_the_voice_says_how_to_pronounce(self):
+        self.assertEqual([voice_lang(v) for v in ("if_sara", "af_heart", "bm_george", "pm_alex", "mine")],
+                         ["it", "en-us", "en-gb", "pt-br", "en-us"])
 
 
 class State(HubCase):

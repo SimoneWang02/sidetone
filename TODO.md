@@ -1149,8 +1149,12 @@ Smaller ideas:
 - [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
       as a small sign on the tab for a moment (its visual bell setting is off by default).
 - [ ] A phone notification when a session needs you and you are away
-- [ ] Spoken summaries in the language you spoke (they are always English today; part of
-      "Any language" above)
+- [x] Spoken summaries in the language you spoke. Built 2026-11-19 on the author's "yes
+      proceed" (`reply_language`, `spoken` by default): the session writes its line in the
+      language of your last message with `lang="it"` in the tag, and the hub gives it a voice
+      of that language. **To try:** speak or write to a session in Italian and listen.
+      Open: the hub's own words are still English; languages without a Kokoro voice
+      (German, Russian, ...) are read by the English voice; Japanese and Chinese not heard.
 - [ ] Running the speech model on the graphics card to make transcription faster
 - [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
       2026-11-19: "a feature that let you register my voice and evaluate the correctness

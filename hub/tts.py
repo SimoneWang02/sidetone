@@ -20,6 +20,17 @@ PRIORITY = {"needs_you": 0, "allowed": 0, "denied": 0, "notice": 0, "failed": 1,
 # not what the session said, so they neither replace its waiting line nor are replaced by it.
 FEEDBACK = {"allowed", "denied", "notice"}
 
+# Kokoro's voices say which language they speak by their first letter (if_sara: Italian,
+# female). A line is pronounced in the language of the voice that says it, so a line in
+# Italian is given an Italian voice (Hub._voice_for) and Kokoro is told "it".
+KOKORO_LANG = {"a": "en-us", "b": "en-gb", "e": "es", "f": "fr-fr", "h": "hi", "i": "it", "j": "ja", "p": "pt-br", "z": "cmn"}
+LANG_LETTER = {"en": "a", "es": "e", "fr": "f", "hi": "h", "it": "i", "ja": "j", "pt": "p", "zh": "z", "cmn": "z"}
+
+
+def voice_lang(voice: str) -> str:
+    """How Kokoro should pronounce a line in this voice. Voices of one's own count as American English."""
+    return KOKORO_LANG.get(voice[0], "en-us") if re.fullmatch(r"[a-z][fm]_\w+", voice or "") else "en-us"
+
 
 @dataclass
 class Utterance:
@@ -141,7 +152,7 @@ class KokoroEngine:
     def _pcm(self, text: str, voice: str) -> bytes:
         import numpy as np
 
-        samples, _ = self.kokoro.create(text, voice=self.custom.get(voice, voice), speed=self.speed, lang="en-us")
+        samples, _ = self.kokoro.create(text, voice=self.custom.get(voice, voice), speed=self.speed, lang=voice_lang(voice))
         return (np.clip(samples, -1, 1) * 32767).astype("<i2").tobytes()
 
     def speak(self, parts: list[str], voice: str) -> float | None:

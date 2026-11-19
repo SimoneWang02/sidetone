@@ -43,6 +43,8 @@ SECTIONS = [
     ("Voice", [
         switch("voice", "Voice", "Speak a short summary of each reply."),
         number("speed", "Speed", "How fast the voice talks.", 0.7, 1.6, 0.05, "x"),
+        choice("reply_language", "Language of the summary", "The language you wrote or spoke in, said by a voice of that language, or always English.",
+               ("spoken", "Yours"), ("english", "English")),
         choice("label", "Say the project name", "Before a line, so you know who talks without looking.",
                ("auto", "When needed"), ("always", "Always"), ("never", "Never")),
         switch("progress", "Progress in long turns", "Say how many steps are done while a long turn runs."),
