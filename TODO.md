@@ -380,6 +380,9 @@ real keys yet.
       right and stays; it does so again when another message joins. `waiting_mark` is
       `number` (default), `clock` or `dot`. Seen in pictures of both ends of the
       motion; **the author has not seen it move yet.**
+      (Seen on the evening of 2026-11-18 in its last form, the number coming up in its
+      corner: they spoke three times to a session kept busy, all three waited and
+      arrived at its end, and the third was "Looks good".)
       Having seen "9+" in a picture: "very compact very dense in that circle. Maybe use
       like a funny emoji ... like a shocked emoji". Above nine messages the disc is now
       a shocked face, drawn by the overlay (`overlay.waiting_many`: `face`, or `number`

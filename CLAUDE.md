@@ -456,7 +456,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   disc with no border, which covers the whole light for `overlay.waiting_hold` seconds (0.9)
   as the words go into the queue, then shrinks and glides to the upper right
   (`Orb.WaitingSince`, set whenever the count grows). With `number` and `dot` the `queued`
-  step puts no sign in the light. **They have not seen the number move yet.** Above nine
+  step puts no sign in the light. Seen by them on 2026-11-18: asked to speak twice to a
+  session kept busy for it, they did, and said in a third message while two waited:
+  "Looks good." Above nine
   messages the disc is a shocked face (`Orb.Shocked`, drawn, since WPF here has no color
   emoji; `overlay.waiting_many`: `face` or `number` for "9+"), the author's idea on
   seeing "9+": "very dense in that circle". That face was first a shocked one in white on
