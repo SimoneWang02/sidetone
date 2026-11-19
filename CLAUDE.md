@@ -350,7 +350,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   it keeps its size now, also the size a light has under the mouse), and "sometimes ...
   the whole layout overlay moves" (with the keys held, a press on the bar's rim or
   between two lights fell back to moving the bar; it now always takes the nearest light).
-  **The last two fixes not tried yet.**
+  That last fix did not do it ("I'll still see this issue"), and neither did taking one of
+  the keys, or both within 0.4 s, as enough: `hub.log` then showed "ctrl up, alt up" at
+  each press that moved the bar, a second after a reorder. So the press decides nothing
+  now (`undecided`): the first frames after it look for the keys, and the bar only goes
+  with the mouse once it has moved 6 px with none of them held or seen in the last
+  0.4 s. A press that moves the bar still writes the keys to `hub.log` ("bar moved by
+  the mouse: ..."). **Not tried yet.**
 - What brings the details out (`overlay.hover`, 2026-11-17): `always` (default) = the mouse
   resting on the bar, as ever; `keys` = only holding Ctrl+Alt or the list key, and then a
   mouse passing over the bar changes nothing at all (no light growing under it either).

@@ -1738,6 +1738,8 @@ namespace ClaudeSpeaks
         int[] reorderKeys = { VK_CONTROL, VK_MENU };  // held while a light is dragged: it goes to another place in the bar
         Row lifted;  // the light being dragged to another place, while `dragging`
         double liftGrab;  // where along the bar it was taken hold of, in the bar's units
+        bool undecided;  // pressed, and not moved far enough yet to say whether a light or the bar is dragged
+        double pressAlong;
         double reorderHeldAt = -1;  // when the reorder keys were last seen held, over the bar
         int wheelTurned;
         double wheelUntil, selectorY, selectorShown, heldSince;
@@ -3002,7 +3004,9 @@ namespace ClaudeSpeaks
             if (!GetCursorPos(out cursor)) return;
             int button = GetSystemMetrics(SM_SWAPBUTTON) != 0 ? VK_RBUTTON : VK_LBUTTON;
             if ((GetAsyncKeyState(button) & 0x8000) == 0) { EndDrag(); return; }
-            if (lifted != null) { LiftStep(cursor); return; }
+            if (undecided) Decide(cursor);
+            if (undecided) return;
+            if (lifted != null) { ReorderKeyed(); LiftStep(cursor); return; }
             Point to = HwndSource.FromHwnd(hwnd).CompositionTarget.TransformFromDevice.Transform(new Point(cursor.X - grabX, cursor.Y - grabY));
             rail.Left = to.X;
             rail.Top = to.Y;
@@ -3013,6 +3017,7 @@ namespace ClaudeSpeaks
         void EndDrag()
         {
             dragging = false;
+            undecided = false;  // let go before it moved: the bar is where it was, so it was a click
             if (lifted != null) { EndLift(); return; }
             int[] now = rail.Area();
             if (Math.Abs(now[0] - grabbedAt[0]) + Math.Abs(now[1] - grabbedAt[1]) > 3)
@@ -3043,9 +3048,7 @@ namespace ClaudeSpeaks
         // in it, and the others make room as it passes them; anywhere else a drag moves the bar.
         bool CanReorder()
         {
-            bool can = reorderKeys.Length > 0 && order.Count > 1 && !moving && Held(reorderKeys);
-            if (can) reorderHeldAt = Ui.Now;
-            return can;
+            return reorderKeys.Length > 0 && order.Count > 1 && !moving && Held(reorderKeys);
         }
 
         // How far along the bar a point on the screen is, in the bar's own units, from its first light.
@@ -3069,38 +3072,52 @@ namespace ClaudeSpeaks
             return null;
         }
 
+        // A press on the bar. What it does is decided once the mouse starts to move, not at the
+        // press: Windows reported Ctrl and Alt still up at presses the author made with them, as
+        // the press can come a moment before the keys, and those presses moved the whole overlay.
         void Press(Point at)
         {
             if (dragging) return;
-            // Any one of the keys, or all of them a moment ago, is enough: a press that came with
-            // Ctrl down and Alt not quite, or just after letting go, moved the whole overlay.
-            bool keyed = false;
-            foreach (int key in reorderKeys) if (Pressed(key)) keyed = true;
-            keyed = reorderKeys.Length > 0 && order.Count > 1 && !moving && (keyed || Ui.Now - reorderHeldAt < 0.4);
-            if (!keyed)
-            {
-                Send("note", "message", "bar taken by the mouse: ctrl " + (Down(VK_CONTROL) ? "down" : "up") + ", alt "
-                     + (Down(VK_MENU) ? "down" : "up") + ", right alt " + (Down(VK_RMENU) ? "down" : "up") + ", " + order.Count + " sessions");
-                BeginDrag(at);
-                return;
-            }
-            // With the keys held a press never moves the bar: it takes the light nearest to it,
-            // also on the bar's rim or between two lights (a press that missed the light by a
-            // pixel moved the whole overlay). `at` is where the press was, as the press itself
-            // reported it; the cursor has moved on since.
-            double along = (Island ? at.X : at.Y) - 4, start = 0;
-            Row row = order[order.Count - 1];
-            foreach (Row r in order)
-            {
-                if (along < start + Room(r)) { row = r; break; }
-                start += Room(r);
-            }
             BeginDrag(at);
             if (!dragging) return;
-            lifted = row;
-            liftGrab = along;
-            Panel.SetZIndex(row.Light, 1);
-            hot = null;  // nor does it keep the size a light has under the mouse
+            undecided = true;
+            pressAlong = (Island ? at.X : at.Y) - 4;
+        }
+
+        bool ReorderKeyed()
+        {
+            if (reorderKeys.Length == 0 || order.Count < 2 || moving) return false;
+            foreach (int key in reorderKeys) if (Pressed(key)) { reorderHeldAt = Ui.Now; return true; }
+            return Ui.Now - reorderHeldAt < 0.4;  // let go a moment ago
+        }
+
+        // Until the mouse has moved a few pixels nothing moves. Any of the keys by then, or a
+        // moment before: the light nearest the press is taken (also from the bar's rim or between
+        // two lights); none: the bar goes with the mouse from where it was taken hold of.
+        void Decide(CursorPoint cursor)
+        {
+            if (ReorderKeyed())
+            {
+                undecided = false;
+                double start = 0;
+                Row row = order[order.Count - 1];
+                foreach (Row r in order)
+                {
+                    if (pressAlong < start + Room(r)) { row = r; break; }
+                    start += Room(r);
+                }
+                lifted = row;
+                liftGrab = pressAlong;
+                Panel.SetZIndex(row.Light, 1);
+                hot = null;  // nor does it keep the size a light has under the mouse
+                return;
+            }
+            int[] bar = rail.Area();
+            double dx = cursor.X - (bar[0] + grabX), dy = cursor.Y - (bar[1] + grabY);
+            if (dx * dx + dy * dy < 36) return;  // 6 px
+            undecided = false;
+            Send("note", "message", "bar moved by the mouse: ctrl " + (Down(VK_CONTROL) ? "down" : "up") + ", alt "
+                 + (Down(VK_MENU) ? "down" : "up") + ", " + order.Count + " sessions");
         }
 
         // Where the light held would go if let go now: its middle, past how many others' middles.
