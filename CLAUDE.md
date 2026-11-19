@@ -1023,6 +1023,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   changes in the time", such a limit may not stay, and the bar "might become unused". So
   it is off by default and there for whoever sets it. Said to them as further ideas, not built: when
   each window starts again, and a tick on each bar for how much of its time has passed.
+- The usage bars on a line each (2026-11-18, `overlay.usage_layout`: `rows`, default, or
+  `line` = the two side by side as at first). The author, after the third bar was taken
+  out again: "the two bars, what do you think is better? Like two bars in a single row or
+  each bar has its own row?" Answered: a line each, since the names then stand in one
+  column and the bars are one length and can be compared, at the price of 20 px of height
+  (measured in `metrics-other.png` against `metrics-usage-line.png`). Made the default on
+  that answer and put on their overlay so they can see it; **their choice is not made
+  yet**, and `line` is what they had passed as "good".
 - No time on the history's lines (2026-11-18, `history_time`, off). Asked what the history
   could give up to make room, the author was offered the tokens on each line and the
   progress lines; they kept the tokens ("which I find pretty cool. So I don't think it

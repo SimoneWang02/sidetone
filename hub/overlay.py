@@ -56,6 +56,9 @@ DEFAULTS = {
     # Seconds the mouse rests on the kept-out details before the history joins them (0.66 is
     # what it was at first; the details themselves come after 0.1)
     "history_after": 0.1,
+    # The plan's usage at the foot of the card: rows = each bar on a line of its own, names in
+    # one column | line = the five hours and the week side by side, as at first
+    "usage_layout": "rows",
     # Lines a sentence may take in a session's row of the details: 1 = cut with dots, and the bar
     # never changes size; 2 or 3 = the row grows and the bar stretches to keep lights and rows level.
     "row_lines": 1,

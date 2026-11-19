@@ -1208,6 +1208,7 @@ namespace ClaudeSpeaks
 
         object[] sessions = new object[0];
         object[] history = new object[0];
+        bool usageRows = true;  // each bar of the plan's usage on a line of its own (`usage_layout`)
         bool historyAll;  // the history shows every session's lines, not only those of the one under the mouse
         // The mouse alone on the bar brings the details out. `hover: keys` turns that off, for a
         // bar that must not answer to a mouse passing over it in a game: then only holding
@@ -1428,6 +1429,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
                     if (msg.ContainsKey("history")) historyAll = Str(msg, "history") == "all";
+                    if (msg.ContainsKey("usage_layout")) usageRows = Str(msg, "usage_layout") != "line";
                     historyTicks = (int)Math.Max(1, Math.Round(Num(msg, "history_after", historyTicks * 0.03) / 0.03));
                     if (msg.ContainsKey("hover")) hoverOpens = Str(msg, "hover") != "keys";
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
@@ -1896,10 +1898,10 @@ namespace ClaudeSpeaks
             if (usage.Length > 0)  // the plan's usage, which is nobody's in particular: at the foot, under a faint line
             {
                 metricsBody.Children.Add(new Border { Height = 1, Background = Ui.Paint("#22FFFFFF"), Margin = new Thickness(0, 9, 0, 7) });
-                // Two share one line. With a third (the week of one model) each has a line of its
-                // own, the names in one column and the bars one length, so they can be compared:
-                // three in one line left each bar some 25 px, too short to read anything from.
-                bool stacked = usage.Length > 2;
+                // Each has a line of its own, the names in one column and the bars one length, so
+                // they can be compared. `usage_layout: line` puts two side by side; three (with
+                // the week of one model) never share a line: that left each bar some 25 px.
+                bool stacked = usage.Length > 2 || usageRows;
                 Panel plan = stacked ? (Panel)new Grid() : new System.Windows.Controls.Primitives.UniformGrid { Rows = 1, Margin = new Thickness(0, 0, -14, 0) };
                 if (stacked) Grid.SetIsSharedSizeScope(plan, true);
                 foreach (object o in usage)
