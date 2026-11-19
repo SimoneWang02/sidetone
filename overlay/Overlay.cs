@@ -977,15 +977,19 @@ namespace ClaudeSpeaks
     {
         static readonly double[] Bars = { 0.15, 0.29, 0.40, 0.23, 0.13 };  // each bar's height, as a share of the side
 
-        // In a square of side `s`, from its corner.
-        public static void Draw(DrawingContext dc, double s)
+        // In a square of side `s`, from its corner. `tile`: the mark in white on a rounded square
+        // of its color that fills the whole side, for the taskbar, where the plain mark, a
+        // small disc inside a thin arc, looked smaller than the icons beside it (the author:
+        // "it doesn't have the circumference of the other apps").
+        public static void Draw(DrawingContext dc, double s, bool tile)
         {
             // The author's color, #006896, at the lower right; a lighter step of it at the upper left.
             var ink = new LinearGradientBrush(Color.FromRgb(0x2E, 0x9C, 0xC9), Color.FromRgb(0x00, 0x68, 0x96), new Point(0.15, 0), new Point(0.85, 1));
             ink.Freeze();
             var c = new Point(s / 2, s / 2);
-            double r = s * 0.435;
-            var rim = new Pen(ink, s * 0.07) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
+            if (tile) dc.DrawRoundedRectangle(ink, null, new Rect(0, 0, s, s), s * 0.23, s * 0.23);
+            double r = s * (tile ? 0.365 : 0.435), grow = tile ? 1.22 : 1;
+            var rim = new Pen(tile ? (Brush)Ui.Paint("#B8FFFFFF") : ink, s * (tile ? 0.062 : 0.07)) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round };
             var arc = new StreamGeometry();
             using (StreamGeometryContext g = arc.Open())
             {
@@ -994,29 +998,29 @@ namespace ClaudeSpeaks
             }
             arc.Freeze();
             dc.DrawGeometry(null, rim, arc);
-            dc.DrawEllipse(ink, null, c, s * 0.30, s * 0.30);
-            double wide = s * 0.058, apart = s * 0.098;
+            if (!tile) dc.DrawEllipse(ink, null, c, s * 0.30, s * 0.30);
+            double wide = s * 0.058 * grow, apart = s * 0.098 * grow;
             for (int i = 0; i < Bars.Length; i++)
             {
-                double high = Bars[i] * s, x = c.X + (i - 2) * apart;
+                double high = Bars[i] * s * grow, x = c.X + (i - 2) * apart;
                 dc.DrawRoundedRectangle(Brushes.White, null, new Rect(x - wide / 2, c.Y - high / 2, wide, high), wide / 2, wide / 2);
             }
         }
 
-        public static BitmapSource Picture(int side)
+        public static BitmapSource Picture(int side, bool tile)
         {
             var visual = new DrawingVisual();
-            using (DrawingContext dc = visual.RenderOpen()) Draw(dc, side);
+            using (DrawingContext dc = visual.RenderOpen()) Draw(dc, side, tile);
             var picture = new RenderTargetBitmap(side, side, 96, 96, PixelFormats.Pbgra32);
             picture.Render(visual);
             picture.Freeze();
             return picture;
         }
 
-        public static void Save(string path, int side)
+        public static void Save(string path, int side, bool tile)
         {
             var png = new PngBitmapEncoder();
-            png.Frames.Add(BitmapFrame.Create(Picture(side)));
+            png.Frames.Add(BitmapFrame.Create(Picture(side, tile)));
             using (FileStream file = File.Create(path)) png.Save(file);
         }
     }
@@ -1024,7 +1028,7 @@ namespace ClaudeSpeaks
     class LogoMark : FrameworkElement
     {
         public LogoMark(double side) { Width = Height = side; }
-        protected override void OnRender(DrawingContext dc) { Logo.Draw(dc, Width); }
+        protected override void OnRender(DrawingContext dc) { Logo.Draw(dc, Width, false); }
     }
 
     // A switch: on or off.
@@ -1135,7 +1139,7 @@ namespace ClaudeSpeaks
             Window.SizeToContent = SizeToContent.Manual;
             Window.Width = Broad; Window.Height = High;
             Window.Title = "Sidetone settings";
-            Window.Icon = Logo.Picture(64);
+            Window.Icon = Logo.Picture(256, true);
 
             // Two columns over the whole height: the sections at the left on a darker ground of
             // their own (the author: "the menu ... a different background color to compare to
@@ -2091,7 +2095,7 @@ namespace ClaudeSpeaks
                     }
                     break;
                 case "logo":  // the tool's mark, written to a file as a picture
-                    try { Logo.Save(Str(msg, "path"), (int)Num(msg, "size", 256)); Send("logo", "saved", Str(msg, "path")); }
+                    try { Logo.Save(Str(msg, "path"), (int)Num(msg, "size", 256), msg.ContainsKey("tile") && Convert.ToBoolean(msg["tile"])); Send("logo", "saved", Str(msg, "path")); }
                     catch (Exception e) { Error("logo not saved: " + e.Message); }
                     break;
                 case "bounds":

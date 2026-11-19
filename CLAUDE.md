@@ -35,6 +35,12 @@ for the blue of "working" (`#4FC3F7`; 34 apart by `state.color_distance`, the li
 microphone in the overlay is still pink (`Ui.Mic`). **Open: whether they want the
 microphone's pink changed too, and to what.**
 
+The taskbar's icon is the mark in white on a rounded square of that blue which fills the
+whole icon (`Logo.Draw(dc, s, tile)`, `assets/icon.png`). The plain mark, a small disc in a
+thin arc with air around it, looked smaller there than its neighbours (the author: "it's
+still pretty small. It doesn't have the circumference of the other apps"). In the window's
+menu and the README it is still the plain mark. **Not seen by them yet.**
+
 In the same message: "I still see [claude-speaks] as a name on the top left of each session
 ... you just have to [restart] the hub." A restart would not have done it: a session's name
 is its folder's as Claude Code gave it when the session began, and the hub keeps it. Done

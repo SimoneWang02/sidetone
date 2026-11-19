@@ -537,6 +537,9 @@ SETTINGS = settings_mod.describe(FakeHub())
 if not ONLY or "settings".startswith(ONLY) or "logo".startswith(ONLY):
     send(type="logo", path=f"{win(out)}\\logo.png", size=512)
     print("  logo.png:", "saved" if wait("logo", 5) else "NOT saved")
+    for name, size in (("logo-icon", 256), ("logo-icon-32", 32), ("logo-icon-24", 24)):  # as the taskbar shows it
+        send(type="logo", path=f"{win(out)}\\{name}.png", size=size, tile=True)
+        print(f"  {name}.png:", "saved" if wait("logo", 5) else "NOT saved")
 for section in SETTINGS:
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section=section["name"])
     shot("settings-" + section["name"].lower(), 0.7)
