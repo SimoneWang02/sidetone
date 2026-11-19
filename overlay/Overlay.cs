@@ -968,14 +968,14 @@ namespace ClaudeSpeaks
         }
     }
 
-    // The tool's mark: a session's light while it speaks. A round light with three voice bars
+    // The tool's mark: a session's light while it speaks. A round light with five voice bars
     // in it, and around it the arc that says how full a context is.
     // In the blue the author gave for it (they typed "#006896" on seeing it in pink).
     // Drawn here and nowhere kept as a picture, so the window, its place in the taskbar and the
     // file for the README (`logo` message) are all the same drawing.
     static class Logo
     {
-        static readonly double[] Bars = { 0.20, 0.37, 0.27 };  // each bar's height, as a share of the side (of the plain mark)
+        static readonly double[] Bars = { 0.22, 0.42, 0.62, 0.42, 0.22 };  // each bar's height, as a share of the disc's width
 
         // In a square of side `s`, from its corner. `tile`: the taskbar's icon, a disc of the
         // mark's color that fills the whole side, with only the voice bars on it, in white and
@@ -1002,11 +1002,12 @@ namespace ClaudeSpeaks
                 dc.DrawGeometry(null, rim, arc);
             }
             dc.DrawEllipse(ink, null, c, s * (tile ? 0.5 : 0.30), s * (tile ? 0.5 : 0.30));
-            // Three bars, broad enough to be told apart at the size of a taskbar icon.
-            double grow = tile ? 1.62 : 1, wide = s * 0.076 * grow, apart = s * 0.128 * grow;
+            // Five bars, as broad as five can be and still stand apart at the size of a taskbar
+            // icon (three were tried at the author's wish for a clearer wave: "might not be enough").
+            double disc = s * (tile ? 1 : 0.6), wide = disc * 0.088, apart = disc * 0.148;
             for (int i = 0; i < Bars.Length; i++)
             {
-                double high = Bars[i] * s * grow, x = c.X + (i - 1) * apart;
+                double high = Bars[i] * disc, x = c.X + (i - 2) * apart;
                 dc.DrawRoundedRectangle(Brushes.White, null, new Rect(x - wide / 2, c.Y - high / 2, wide, high), wide / 2, wide / 2);
             }
         }
