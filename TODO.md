@@ -170,16 +170,6 @@ Questions for the author; nothing to build until they answer.
 
 Roughly easiest first.
 
-- [ ] Confirmation before a spoken message is sent, as a setting in the settings window
-      ("un'opzione nei settings per la gente che vuole la conferma": see the transcript,
-      then send). It exists in the hub already, off by default since the author found it
-      "too many clicks": `followup_confirm` (false, true, or "auto" for sessions that act
-      without asking) and `followup_delay` (seconds the transcript is shown and can be
-      cancelled before it goes). Neither is in `settings.SECTIONS`; add both to "Talking",
-      and check how the confirming tap and the delay look on the overlay today.
-      Built 2026-11-19 on their "proceed": both under Talking, seen in the window's
-      picture and clicked there by `tests/overlay_check.py`. **Not tried by them**, and
-      how the confirming tap and the delay look on the overlay is not yet looked at.
 - [ ] Italian openings for side questions and for asking the usage. `aside_words` and the
       words `usage.asks` accepts are English only, so "a proposito, ..." waits for the session
       and "quanto ho usato?" goes to it. Add Italian (and Chinese, now that it is spoken)
@@ -452,6 +442,17 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] Confirmation before a spoken message is sent, as a setting in the settings window
+      ("un'opzione nei settings per la gente che vuole la conferma": see the transcript,
+      then send). It exists in the hub already, off by default since the author found it
+      "too many clicks": `followup_confirm` (false, true, or "auto" for sessions that act
+      without asking) and `followup_delay` (seconds the transcript is shown and can be
+      cancelled before it goes). Neither is in `settings.SECTIONS`; add both to "Talking",
+      and check how the confirming tap and the delay look on the overlay today.
+      Built 2026-11-19 on their "proceed": both under Talking, seen in the window's
+      picture and clicked there by `tests/overlay_check.py`. Tried by them the same
+      minute: set to Always, spoke, tapped to send (sent 7 s after it was written), set
+      back to Never: "I tried it. Looks good."
 - [x] Sessions in an order of your own (the author's idea, 2026-11-17): hold `Ctrl+Alt`,
       take a light with the mouse and drop it where it should sit in the bar. The hub keeps
       the order (by project, so it survives restarts) and new sessions join at the end. Fits
