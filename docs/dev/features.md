@@ -190,6 +190,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   panel catches the mouse while the cursor is on it in list mode; a drag moves the bar and
   the panel goes along (`PlaceSides` each step, no folding), a click without a move is passed
   through as for the bar (`PassClick`). It never puts a light elsewhere.
+- The history following the mouse without lag (2026-11-19, the author: "if I move it real
+  fast, there's a latency, there's a lag"). Measured with the mouse's stand-in going from row
+  to row every 60 ms in list mode: a full redraw takes 4 to 8 ms, but every new history has
+  another height, and the panel went there with the spring it opens with (about half a
+  second), at about 10 ms a frame for resizing the glass window; it never caught up and what
+  was below its height stayed cut off. Now a panel already fully open reaches a new height
+  without the bounce in about 60 ms (`Glass.settled`); opening keeps the soft spring.
 - Sessions in an order of your own (2026-11-19, `overlay.reorder_keys`, `Press`, `LiftStep`,
   `EndLift` in `Overlay.cs`, `Sessions.reorder`). The author, by voice: "if we could move the
   ... sessions", by dragging; Ctrl+Alt was already the key for dragging the bar ("they're kind

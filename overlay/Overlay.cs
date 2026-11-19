@@ -914,6 +914,7 @@ namespace ClaudeSpeaks
         public readonly IntPtr Handle;
         public readonly bool Unfolds;
         public double Goal, Tall, Full;  // unfolding: the height wanted, the height now, the last open height
+        bool settled;  // it has been fully open since it last opened: a new height is a resize, not an opening
         FrameworkElement body;
         double speed;
 
@@ -978,10 +979,17 @@ namespace ClaudeSpeaks
             if (Goal > 0) Full = Goal;
             if (Goal > 0 && !IsVisible) { Tall = Math.Min(Tall, Goal); speed = 0; Height = Math.Max(1, Tall); Show(); }
             bool moving = Math.Abs(Goal - Tall) >= 0.4 || Math.Abs(speed) > 5;
-            if (!moving || instantly) { Tall = Goal; speed = 0; }
+            if (Goal == 0) settled = false;
+            if (!moving || instantly) { Tall = Goal; speed = 0; if (Goal > 0) settled = true; }
             else
             {
-                double pull = Goal > 0 ? 230 : 420, drag = Goal > 0 ? 22 : 41;
+                // Opening: a soft spring of about half a second. Already open, a new height (the
+                // history of another session under the mouse) is reached in under a tenth of a
+                // second and without the bounce: with the soft spring it never caught up while the
+                // mouse went from row to row, and what was below the old height stayed cut off
+                // (the author, 2026-11-19: "if I move it real fast, there's a latency, there's a
+                // lag"; each frame of resizing costs about 10 ms here).
+                double pull = Goal > 0 ? (settled ? 2400 : 230) : 420, drag = Goal > 0 ? (settled ? 98 : 22) : 41;
                 for (double left = dt; left > 0; left -= 0.004)
                 {
                     double h = Math.Min(0.004, left);
