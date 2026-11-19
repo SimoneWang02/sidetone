@@ -1724,11 +1724,11 @@ namespace ClaudeSpeaks
         // The bar of lights, the panel that unfolds beside it, and the speech bubble.
         readonly Glass rail = new Glass(0), panel = new Glass(PanelWidth), bubble = new Glass(BubbleWidth);
         // While the voice is off, a small piece of glass with a struck-out speaker just past the far
-        // end of the bar (overlay.muted_mark), so a mute is not forgotten once its notice is gone.
-        // A window of its own, so the lights and the rows level with them stay where they are.
+        // end of the bar (overlay.muted_mark, off: the author did not like it there and chose a
+        // line in the details, muted_line). A window of its own, so the lights and rows stay put.
         readonly Glass muteChip = new Glass(0);
         const double ChipSize = 32, ChipGap = 4;
-        bool muted, mutedMark = true;
+        bool muted, mutedMark;
         readonly StackPanel lights = new StackPanel { Margin = new Thickness(3) };
         // A soft frame that slides to the light of the session in focus.
         readonly Border selector = new Border {
@@ -1756,6 +1756,11 @@ namespace ClaudeSpeaks
         readonly StackPanel sections = new StackPanel { Margin = new Thickness(3) };
         readonly StackPanel rowsPanel = new StackPanel();
         readonly StackPanel requestBox = new StackPanel(), bannerBox = new StackPanel(), historyBox = new StackPanel();
+        // "Voice is muted" in the details while the voice is off (overlay.muted_line): the author
+        // wanted it there rather than as a mark past the bar.
+        readonly StackPanel mutedBox = new StackPanel();
+        readonly TextBlock mutedText = new TextBlock();
+        bool mutedLine = true;
         readonly StackPanel historyLines = new StackPanel();
         // The figures of one session, each with its name in front, under the rows: the session
         // the mouse is on, else the one in focus. The hub says which figures (`details` of a row).
@@ -1893,6 +1898,7 @@ namespace ClaudeSpeaks
             bannerHint.Foreground = Ui.Faint;
             bannerHint.Margin = new Thickness(0, 2, 0, 0);
             Section(bannerBox, bannerTitle, bannerHint);
+            Section(mutedBox, mutedText);
             metricsCard.Child = metricsBody;
             Section(historyBox, metricsLine, metricsCard, historyLines);
             panel.Body = sections;
@@ -2056,6 +2062,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
                     if (msg.ContainsKey("share_taken_keys")) shareTaken = Convert.ToBoolean(msg["share_taken_keys"]);
                     if (msg.ContainsKey("muted_mark")) mutedMark = Convert.ToBoolean(msg["muted_mark"]);
+                    if (msg.ContainsKey("muted_line")) mutedLine = Convert.ToBoolean(msg["muted_line"]);
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
                     if (msg.ContainsKey("hotkeys"))
@@ -2202,11 +2209,11 @@ namespace ClaudeSpeaks
         void Stack()
         {
             bool bottom = Low;
-            var parts = new List<UIElement> { rowsPanel, emptyLine, requestBox, bannerBox, historyBox };
+            var parts = new List<UIElement> { rowsPanel, emptyLine, mutedBox, requestBox, bannerBox, historyBox };
             if (bottom) parts.Reverse();
             sections.Children.Clear();
             foreach (UIElement part in parts) sections.Children.Add(part);
-            foreach (StackPanel box in new[] { requestBox, bannerBox, historyBox })
+            foreach (StackPanel box in new[] { mutedBox, requestBox, bannerBox, historyBox })
             {
                 UIElement line = box.Children[0] is Border ? box.Children[0] : box.Children[1];
                 box.Children.Remove(line);
@@ -2253,6 +2260,17 @@ namespace ClaudeSpeaks
             bool linesFollow = historyLines.Children.Count > 0;
             metricsCard.Margin = Low ? new Thickness(-3, -1, -3, linesFollow ? 6 : 1) : new Thickness(-3, 2, -3, linesFollow ? 6 : -3);
             historyBox.Visibility = showMetrics || historyLines.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+            if (muted && mutedLine && asked && !hasBanner)  // with the details, and not twice while "Voice off" is up
+            {
+                string key;
+                mutedText.Inlines.Clear();
+                mutedText.Inlines.Add(new Run("\uD83D\uDD07  ") { FontFamily = Ui.Symbols, Foreground = Ui.Dim, FontSize = 15 });
+                mutedText.Inlines.Add(new Run("Voice is muted") { Foreground = Ui.Dim });
+                if (wantedKeys.TryGetValue("mute", out key) && key.Trim().Length > 0)
+                    mutedText.Inlines.Add(new Run("   " + key + " turns it on") { Foreground = Ui.Faint, FontSize = 11.5 });
+                mutedBox.Visibility = Visibility.Visible;
+            }
+            else mutedBox.Visibility = Visibility.Collapsed;
             bool talking = talkState.Length > 0;
             foreach (Row row in order)
                 if (talking && row.Name == talkName) row.SetTalk(TalkKind(), TalkWords(), TalkInk(), talkState == "listening" ? mic : null);

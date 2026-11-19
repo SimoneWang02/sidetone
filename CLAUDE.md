@@ -685,8 +685,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   glass square with a struck-out speaker stands just past the far end of the bar (under a bar
   at the top, over one at the bottom, at the right of the island). It is a window of its own,
   so the lights and the rows level with them do not move; it goes away while the bar is
-  dragged. `state` carries `muted`. The author said "sure" to it when offered. Seen in a
-  picture (`mute-mark.png`), not by them.
+  dragged. `state` carries `muted`. The author said "sure" to it when offered, then on
+  seeing it: "I don't like the icon underneath the sessions", and asked for words in the
+  details instead, adding that a line shown while muted has a flat wave, which already tells
+  them. So `muted_mark` is off, and `overlay.muted_line` (on) writes "Voice is muted" and the
+  key that turns it on in a section of the panel next to the rows (`mutedBox`), whenever the
+  details are out, except while the "Voice off" notice is up. Seen in a picture
+  (`mute-line.png`), not by them.
   Found on the way: `SpeechQueue.wait_idle` returned before `on_change(None)` and `on_done`
   had run, so a test could read the overlay's state before its last update; it now also
   waits for those (`_settling`). Claimed only while they can act: `allow` Ctrl+Alt+Y,
