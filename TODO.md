@@ -263,8 +263,9 @@ real keys yet.
       recording wtf"). Found and mended the same hour: a press of the talk key shorter
       than a third of a second left the sign up until the next hold, though nothing was
       being recorded. **Not known whether that is what they saw**; the log had no line for
-      it (it has one for a short press now). To ask: was it a quick press, did the wave
-      still move, and how did it end. If it was a real hold that would not end, the
+      it (it has one for a short press now). Asked, they said: "I don't know. I wasn't
+      paying attention." So it stays open until it happens again; then `hub.log` will
+      show a short press if that was it. If it was a real hold that would not end, the
       place to look is the overlay's keyboard hook losing the release (see `CLAUDE.md`).
 - [x] Sessions started from the VS Code extension showing up in the bar. The author,
       2026-11-17, opened Claude Code in a new editor tab: "it seems to be added below",
