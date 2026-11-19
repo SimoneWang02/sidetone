@@ -74,6 +74,14 @@ one middle line are how sound is. A third page, all on the disc and on the middl
 a line of their own: F1 uneven bars, F2 the same leaning forward, F3 one wave (an S lying
 down), F4 a wave that swells and fades, F5 bars that end in a round light, F6 seven
 bars. Recommended: F5, the voice and the lights of the tool in one mark; F3 second.
+Their answer: "I would probably prefer E ... but it's not very creative, it's pretty
+anonymous. I want you to be very bizarre." A fourth page, the voice bars as part of
+something with a face, all on the disc: G1 a closed eye whose lashes are the bars
+(eyes-free), G2 a wink with the other eye a light, G3 a ghost at your side with a wave for
+a hem, G4 a face singing through a mouth of bars, G5 a crescent that speaks, G6 a grin with
+teeth of sound, G7 a cockatoo with a crest of bars. Recommended: the ghost (it keeps its
+face at taskbar size and says "a voice beside you that you do not look at"), the closed
+eye second (the tool's own story, but it can read as tears).
 **Their choice is open; the riding bars are still what is drawn.**
 While it was on screen the picture check could not take the settings window: the live
 window stood at the same place in the middle of the screen, and the check refuses when two
