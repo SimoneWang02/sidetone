@@ -643,6 +643,16 @@ Bigger pieces:
       Heard are taken) and "keep it for now", they answered by voice: "Sidetone is
       cool, but why?" The why was explained; **no name chosen, nothing renamed**. The
       speech model wrote the word as "Saiton". The window shows `settings.NAME`.
+      Chosen minutes later: Sidetone. Done that evening, as they asked: the name in the
+      window and the README, the GitHub repo (`sidetone`), the project folder
+      (`~/personal/sidetone`, with a link left at the old place for the sessions and
+      the editor window that were open). **Left, for them to decide:** the commands
+      (`claude-speaks`, `cs`), the folders for settings, logs and models, the
+      `CLAUDE_SPEAKS_*` variables, the VS Code extension's name, the words in the
+      overlay ("claude-speaks" is nowhere on screen now), and `CLAUDE.md` and this
+      file, which still say claude-speaks throughout. And to do once no session is
+      left from before: remove the link `~/personal/claude-speaks`, and open the
+      editor on the new folder.
 - [ ] Packaging as a Claude Code plugin, so it installs in one step.
 - [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
       tools that only speak after the reply has ended.

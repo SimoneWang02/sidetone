@@ -1,4 +1,21 @@
-# claude-speaks
+# Sidetone (called claude-speaks until 2026-11-18)
+
+The author chose the name on the evening of 2026-11-18, of three offered after they said of
+the old one "I don't like [it] as a name": sidetone is the sound of your own line in a headset,
+which tells you it is alive while you work. Renamed that evening, on their word ("call it
+Sidetone and also rename the project folder as well as the repo"): the name in the settings
+window (`settings.NAME`) and the README's heading; the GitHub repo, now
+github.com/SimoneWang02/sidetone; the folder, now `~/personal/sidetone`, with a link left at
+`~/personal/claude-speaks` because sessions that were open, their listeners and the editor's
+window still go by the old path (remove it once none does). With the folder went: the hooks in
+`~/.claude/settings.json` (backup: `settings.json.bak-before-sidetone`), the links in
+`~/.local/bin`, the hub (restarted from the new place), Claude's memory for the project (copied
+to the folder's new name under `~/.claude/projects`), and the voice `af_heart` for sessions
+that will be named `sidetone` after the folder. **Still called claude-speaks**, not asked for
+and so not touched: the commands `claude-speaks` and `cs`, the folders under `~/.config`,
+`~/.local/state`, `~/.local/share` and the run folder, the `CLAUDE_SPEAKS_*` variables, the
+VS Code extension, the overlay program's file name, and these notes, which say claude-speaks
+throughout. Sessions opened before the change keep `claude-speaks` as their name in the bar.
 
 Eyes-free Claude Code. A local voice reads a 1–2 sentence spoken summary of each turn, never the
 full output, and starts while the reply is still streaming. With several sessions open they
@@ -11,7 +28,7 @@ you → session) so you can keep your eyes on your own work.
 ## Status
 
 - Working day to day on the author's machine (WSL2 Linux). Since 2026-11-16 the live hooks run
-  **from this repo**: `~/.claude/settings.json` points at `~/personal/claude-speaks/hooks/`.
+  **from this repo**: `~/.claude/settings.json` points at `~/personal/sidetone/hooks/`.
   Rollback: `~/.claude/settings.json.bak-before-hub` plus the old scripts in `~/.claude/hooks/`.
 - Not yet packaged as a plugin. Paths outside the repo: `~/.local/share/{kokoro,piper}`.
 - `README.md`, `LICENSE` (MIT) and `install.sh` / `uninstall.sh` exist since 2026-11-16. The
@@ -20,7 +37,7 @@ you → session) so you can keep your eyes on your own work.
   with nothing cached (22 s, 906 MB; the hub from that install spoke and its speech model
   wrote the sentence back), not yet on a machine without the apt tools and `uv`. It also
   fetches the Whisper model since then; before, the first push-to-talk waited for it.
-- Private GitHub repo: github.com/SimoneWang02/claude-speaks. Claude may commit and push.
+- Private GitHub repo: github.com/SimoneWang02/sidetone. Claude may commit and push.
 
 ## Roadmap (decided with the author 2026-11-16)
 
