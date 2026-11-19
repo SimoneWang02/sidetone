@@ -647,7 +647,10 @@ Bigger pieces:
       projects that are not open, a way back to what a new install has, a search.
       Their first look: it must be an ordinary window that can go behind others and be
       put away, the menu at the left on a ground of its own, and the tool's name not
-      beside the heading. All three done the same hour; **for them to look at again**.
+      beside the heading. All three done the same hour and seen by them ("that's
+      better"); putting it away and bringing it back from the taskbar: "It works
+      perfectly". Still untried by hand: a slider, the list of voices, typing a new
+      hotkey.
 - [ ] Another name for the tool (the author, 2026-11-18, on seeing "claude-speaks" in the
       settings window: "I don't like [it] as a name. Maybe we can think about it ...
       Maybe there's a better name"). Open. A new name would touch the repo, the commands
