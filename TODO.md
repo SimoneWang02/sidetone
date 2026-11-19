@@ -17,6 +17,10 @@ real keys yet.
       The author pressed it the same day: "It works." They asked for M ("M for mute"); it
       was moved there while the NVIDIA overlay was closed, and that overlay came back by
       itself and took the key again ("It's not working"), so it is Q again.
+      Their rule for default keys, the same day, on learning that M is the NVIDIA overlay's
+      default microphone key: the tool is meant to reach as many people as possible, so a
+      default must not clash with a popular program's own keys ("there's no point in
+      overriding them"), even where they themselves do not use that program. Q stays.
       Open: mute is for every session, not only the one in focus; and once the notice
       is gone nothing on screen says the voice is off.
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
