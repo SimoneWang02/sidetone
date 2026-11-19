@@ -161,7 +161,7 @@ def build(source: str, log: Callable[[str], None] = lambda line: None) -> str | 
     """Compile Overlay.cs into a Windows program and return its path (as WSL sees it).
 
     Uses the C# compiler that ships with Windows, so nothing has to be installed. The program is
-    kept in %LOCALAPPDATA%\\claude-speaks under a name that changes with the source, so it is
+    kept in %LOCALAPPDATA%\\sidetone under a name that changes with the source, so it is
     built once per version. Returns None when that is not possible; the caller then falls back
     to running the same source through PowerShell.
     """
@@ -179,13 +179,13 @@ def build(source: str, log: Callable[[str], None] = lambda line: None) -> str | 
         if not appdata or "%" in appdata:
             return None
         folder = subprocess.run(["wslpath", "-u", appdata], capture_output=True, text=True, check=True).stdout.strip()
-        folder = os.path.join(folder, "claude-speaks")
-        program = os.path.join(folder, f"claude-speaks-overlay-{version}.exe")
+        folder = os.path.join(folder, "sidetone")
+        program = os.path.join(folder, f"sidetone-overlay-{version}.exe")
         if os.path.isfile(program):
             return program
         os.makedirs(folder, exist_ok=True)
         for old in os.listdir(folder):  # earlier versions; one still running cannot be deleted and is skipped
-            if old.startswith("claude-speaks-overlay-") and old.endswith(".exe"):
+            if old.startswith("sidetone-overlay-") and old.endswith(".exe"):
                 try:
                     os.unlink(os.path.join(folder, old))
                 except OSError:
@@ -198,7 +198,7 @@ def build(source: str, log: Callable[[str], None] = lambda line: None) -> str | 
         if done.returncode != 0 or not os.path.isfile(program):
             log("overlay could not be compiled: " + " ".join((done.stdout + done.stderr).split())[:400])
             return None
-        log(f"overlay program built: {appdata}\\claude-speaks\\{os.path.basename(program)}")
+        log(f"overlay program built: {appdata}\\sidetone\\{os.path.basename(program)}")
         return program
     except (OSError, subprocess.SubprocessError) as e:
         log(f"overlay could not be compiled: {e}")
@@ -207,7 +207,7 @@ def build(source: str, log: Callable[[str], None] = lambda line: None) -> str | 
 
 def command(script: str, log: Callable[[str], None] = lambda line: None) -> list[str]:
     """How to start the overlay: the compiled program, or else the PowerShell script next to it."""
-    if os.environ.get("CLAUDE_SPEAKS_OVERLAY") != "script":
+    if os.environ.get("SIDETONE_OVERLAY") != "script":
         program = build(os.path.join(os.path.dirname(script), "Overlay.cs"), log)
         if program:
             return [program]

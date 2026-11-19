@@ -157,7 +157,7 @@ case ${1:-} in
     py=$KOKORO_DIR/venv/bin/python
     [ -x "$py" ] || py=$(command -v python3) || { echo "no Python found"; exit 1; }
     shift
-    "$py" -I "$CS_ROOT/hub/stt.py" languages "${XDG_CONFIG_HOME:-$HOME/.config}/claude-speaks/config.json" "$@" || exit 2
+    "$py" -I "$CS_ROOT/hub/stt.py" languages "${XDG_CONFIG_HOME:-$HOME/.config}/sidetone/config.json" "$@" || exit 2
     if [ $# -gt 0 ] && [ -S "$CS_SOCK" ]; then  # a running hub takes it up at once
       hub_post /languages </dev/null >/dev/null 2>&1 || echo "The running hub is older than this command: 'sidetone hub restart' applies it."
     fi

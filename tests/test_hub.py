@@ -3014,8 +3014,8 @@ class HubProcess(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="cs-test-")
         self.env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp,
-                    "XDG_CONFIG_HOME": self.tmp, "CLAUDE_SPEAKS_TTS": "null", "CLAUDE_SPEAKS_OVERLAY": "off",
-                    "CLAUDE_SPEAKS_TERMINAL": "off",
+                    "XDG_CONFIG_HOME": self.tmp, "SIDETONE_TTS": "null", "SIDETONE_OVERLAY": "off",
+                    "SIDETONE_TERMINAL": "off",
                     "CS_RETRY": "0.2"}
         self.sock = os.path.join(self.tmp, "hub.sock")
 

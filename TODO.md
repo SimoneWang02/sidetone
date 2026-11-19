@@ -152,11 +152,14 @@ Questions for the author; nothing to build until they answer.
       seen by them while talking ("looks good. Let's see"); to be watched in use for
       the two being mixed up. **Left, for them to decide:** the
       folders for settings, logs and models, the
-      `CLAUDE_SPEAKS_*` variables, the VS Code extension's name, the words in the
+      `SIDETONE_*` variables, the VS Code extension's name, the words in the
       overlay ("claude-speaks" is nowhere on screen now), and `CLAUDE.md` and this
       file, which still say claude-speaks throughout. And to do once no session is
       left from before: remove the link `~/personal/claude-speaks`, and open the
       editor on the new folder.
+      Done 2026-11-19 on their word: the link and the old commands removed, the
+      folders and variables renamed (see `docs/dev/name-and-logo.md`). Left: the VS
+      Code extension's name and id.
 - [ ] Session names in the terminal's tab. The hub can write "name · title" as the
       terminal's title (`terminal title on`), but a VS Code tab only shows it with
       `"terminal.integrated.tabs.title": "${sequence}"`, and Claude Code overwrites it
@@ -307,7 +310,7 @@ Roughly easiest first.
       practice that costs nothing extra. On hearing that: "I think it's a good
       feature." Kept for later, not started. Notes for whoever builds it:
       - Opt in, off by default; recordings and results stay on the machine (a folder
-        under `~/.local/state/claude-speaks/`), with a way to delete them.
+        under `~/.local/state/sidetone/`), with a way to delete them.
       - Never in the way: no correction while you are talking to a session. A report you
         ask for (`sidetone english`, or by voice), said in a few sentences and with the
         details in a page or the settings window.

@@ -88,7 +88,7 @@ class OnePass(unittest.TestCase):
 class TheCommand(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="cs-test-")
-        self.config = os.path.join(self.tmp, "cfg", "claude-speaks", "config.json")
+        self.config = os.path.join(self.tmp, "cfg", "sidetone", "config.json")
         # No hub in this run folder, so the real one is never told anything.
         self.env = {**os.environ, "HOME": self.tmp, "XDG_CONFIG_HOME": os.path.join(self.tmp, "cfg"),
                     "CS_RUN": os.path.join(self.tmp, "run"), "CS_STATE": self.tmp}

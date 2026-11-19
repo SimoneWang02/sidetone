@@ -79,7 +79,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 Where the code is:
 
 - `hub/`: the one background process, Python in the Kokoro venv. HTTP over a Unix socket at
-  `$XDG_RUNTIME_DIR/claude-speaks/hub.sock` (no TCP port, so no web page or other machine can
+  `$XDG_RUNTIME_DIR/sidetone/hub.sock` (no TCP port, so no web page or other machine can
   make it speak, approve or type). Started lazily by the hooks, one at a time by `flock`, exits
   after 30 min with no sessions. `hub.py` the `Hub` and `main`; `base.py` settings (`Config`),
   small records and helpers; `permissions.py` and `talk.py` are parts of the `Hub` class
@@ -97,9 +97,9 @@ Where the code is:
   hub can have it type Escape (stop), `/clear`, or show a terminal. `sidetone vscode install`.
 - `bin/sidetone` (`st`): every command (`sidetone` with no arguments lists them).
 - `hooks/tts-lib.sh`: every hook still works without a hub, through a system voice.
-- Config: `~/.config/claude-speaks/config.json` (every setting; also `sidetone settings list`).
-  Runtime: `~/.local/state/claude-speaks/` (`hub.log`, `voice.log`, `voices.json`), the run
-  folder `$XDG_RUNTIME_DIR/claude-speaks/` (`sessions.json`, `followups.json`). Voice off while
+- Config: `~/.config/sidetone/config.json` (every setting; also `sidetone settings list`).
+  Runtime: `~/.local/state/sidetone/` (`hub.log`, `voice.log`, `voices.json`), the run
+  folder `$XDG_RUNTIME_DIR/sidetone/` (`sessions.json`, `followups.json`). Voice off while
   `~/.claude/voice-off` exists.
 
 ## Testing

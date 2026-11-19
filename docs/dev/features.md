@@ -32,7 +32,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Config` works; the three waits the tests shorten (`MIN_SHOWN`, `TAP`, `CONFIRM_WINDOW`)
   are read as `base.NAME` wherever they are used and set on `base` in the tests.
 - `hub/hub.py`: the one background process. HTTP over a Unix socket at
-  `$XDG_RUNTIME_DIR/claude-speaks/hub.sock` (not a TCP port, so no web page or other machine can
+  `$XDG_RUNTIME_DIR/sidetone/hub.sock` (not a TCP port, so no web page or other machine can
   make it speak, and later approve or inject). Started lazily by the hooks, single instance by
   `flock`, exits after 30 min with no sessions.
 - `hub/tts.py`: Kokoro kept loaded, synthesized sentence by sentence into `paplay`. Queue rules:
@@ -99,9 +99,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `hub/overlay.py` + `overlay/Overlay.cs` (+ `overlay/overlay.ps1` as fallback): the on-screen
   overlay, a child process of the hub (only where `powershell.exe` exists). `overlay.build()`
   compiles `Overlay.cs` with `csc.exe` of .NET Framework 4 (ships with Windows; about 0.2 s)
-  into `%LOCALAPPDATA%\claude-speaks\claude-speaks-overlay-<hash of the source>.exe`, once per
+  into `%LOCALAPPDATA%\sidetone\claude-speaks-overlay-<hash of the source>.exe`, once per
   version of the source; if that fails the same source runs through PowerShell `Add-Type`
-  (`CLAUDE_SPEAKS_OVERLAY=script` forces that). The hub sends `config`, `state` (one
+  (`SIDETONE_OVERLAY=script` forces that). The hub sends `config`, `state` (one
   ready-to-draw row per session, with `title` and `synth`), `flash` (a line shown for a few
   seconds, sent when it starts being spoken, or instead of speech when the voice is off) and
   `wave` (loudness values while a line plays); the program sends `ready`, `hotkey`, `mode`,
@@ -693,7 +693,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   [PROJECT]` does the same on request. Stopping the hub gives every terminal its own
   background back, and a terminal seen for the first time is reset, which clears what a hub
   that died left. `title` (off by default) writes "name · title"; control characters are
-  taken out, since a title can hold words from a prompt. `CLAUDE_SPEAKS_TERMINAL=off` writes
+  taken out, since a title can hold words from a prompt. `SIDETONE_TERMINAL=off` writes
   to no terminal (the tests that start a real hub use it; the others record the writes).
   Checked: VS Code's terminal (xterm.js, in its `node_modules.asar`) handles OSC 11 and 111;
   the live hub found all four terminals. The author saw the tint and the flash at these strengths
@@ -846,7 +846,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   was interrupted; a session that had a file and lost it is gone. Undocumented files, so
   sessions that never had one are left alone.
 - Voices: `voices.json` remembers project → voice; own voices are `.npy` style arrays of shape
-  (510, 1, 256) in `~/.local/share/claude-speaks/voices/`, passed to Kokoro as arrays.
+  (510, 1, 256) in `~/.local/share/sidetone/voices/`, passed to Kokoro as arrays.
 - Overlay placement: `monitor`, `corner`, `offset_x`, `offset_y` of the bar. Dragging it reports
   the nearest corner and offsets, which the hub saves into `config.json`. The panel and bubble
   go on the side of the bar that faces the middle of the screen.
@@ -1004,15 +1004,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `tests/test_hub.py`: 301 tests in all with a silent engine and fake microphone, including the real hook
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
-- Config (optional): `~/.config/claude-speaks/config.json` with `voices` (project name → voice),
+- Config (optional): `~/.config/sidetone/config.json` with `voices` (project name → voice),
   `voice_pool`, `colors`, `label` (`auto`/`always`/`never`), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
   `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
-  `pulse`, `pulse_strength`, `title`, `follow`). `CLAUDE_SPEAKS_OVERLAY=off` disables the overlay.
-- `~/.local/state/claude-speaks/voices.json`: the voice each project was given, kept so it stays
+  `pulse`, `pulse_strength`, `title`, `follow`). `SIDETONE_OVERLAY=off` disables the overlay.
+- `~/.local/state/sidetone/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
 - Toggle: voice is off while `~/.claude/voice-off` exists (the hub still tracks state).
-- Runtime files live outside the repo: `~/.local/state/claude-speaks/` (`voice.log` contains
+- Runtime files live outside the repo: `~/.local/state/sidetone/` (`voice.log` contains
   spoken summaries, `hub.log`, `.state/`, `.tts.pid`).
 - `hooks/settings-snippet.json`: the `hooks` block as registered in settings.json.

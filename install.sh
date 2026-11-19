@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs claude-speaks from this checkout: the Python environment, the voice model, and the
+# Installs Sidetone from this checkout: the Python environment, the voice model, and the
 # hooks in ~/.claude/settings.json (your existing hooks are kept; a backup is written first).
 # Re-running is safe. Options: --no-models (skip downloads), --hooks-only (only settings.json),
 # --languages CODES (what you will speak to it, for example en,it; without it the script asks once),
@@ -9,7 +9,7 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 KOKORO_DIR=${KOKORO_DIR:-$HOME/.local/share/kokoro}
 SETTINGS=$HOME/.claude/settings.json
 MODELS=https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
-CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}/claude-speaks/config.json
+CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}/sidetone/config.json
 models=1 hooks_only=0 languages= vscode=ask
 EXTENSION=claude-speaks.claude-speaks
 while [ $# -gt 0 ]; do
@@ -79,7 +79,7 @@ fi
 # install (any command under this checkout's hooks/) is replaced, so paths stay current.
 mkdir -p "$(dirname "$SETTINGS")"
 [ -s "$SETTINGS" ] || echo '{}' > "$SETTINGS"
-backup=$SETTINGS.bak-claude-speaks-$(date +%Y%m%d-%H%M%S)
+backup=$SETTINGS.bak-sidetone-$(date +%Y%m%d-%H%M%S)
 cp -p "$SETTINGS" "$backup"
 sed "s|\$HOME/personal/sidetone|$ROOT|g" "$ROOT/hooks/settings-snippet.json" |
   jq --arg ours "$ROOT/hooks/" --slurpfile current "$backup" '

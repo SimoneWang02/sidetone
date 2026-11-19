@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Removes the claude-speaks hooks from ~/.claude/settings.json (other hooks are kept; a backup
+# Removes the Sidetone hooks from ~/.claude/settings.json (other hooks are kept; a backup
 # is written first), stops the hub and takes the VS Code extension out again (--keep-vscode
 # leaves it). Models, the Python environment and logs are left in place.
 set -euo pipefail
@@ -24,7 +24,7 @@ if [ $keep_vscode = 0 ] && command -v code >/dev/null 2>&1 &&
 fi
 SETTINGS=$HOME/.claude/settings.json
 [ -s "$SETTINGS" ] || { echo "no $SETTINGS, nothing to do"; exit 0; }
-backup=$SETTINGS.bak-claude-speaks-$(date +%Y%m%d-%H%M%S)
+backup=$SETTINGS.bak-sidetone-$(date +%Y%m%d-%H%M%S)
 cp -p "$SETTINGS" "$backup"
 jq --arg ours "$ROOT/hooks/" --arg home_form "\$HOME${ROOT#"$HOME"}/hooks/" '
   def ours: (.command // "") as $c | ($c | startswith($ours)) or ($c | startswith($home_form));
@@ -39,4 +39,4 @@ for name in sidetone st claude-speaks cs; do  # the last two: its names until 20
   if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$ROOT/bin/sidetone" ]; then rm -f "$link"; fi
 done
 echo "Hooks removed from $SETTINGS (backup: $backup)"
-echo "Left in place: ~/.local/share/kokoro (models, Python environment), ~/.local/state/claude-speaks (logs)."
+echo "Left in place: ~/.local/share/kokoro (models, Python environment), ~/.local/state/sidetone (logs)."

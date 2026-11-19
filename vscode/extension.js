@@ -28,8 +28,8 @@ const vscode = require("vscode");
 function socket() {  // the same place hooks/lib.sh looks
   const env = process.env;
   const run = env.CS_RUN || (env.XDG_RUNTIME_DIR
-    ? path.join(env.XDG_RUNTIME_DIR, "claude-speaks")
-    : `/tmp/claude-speaks-${os.userInfo().uid}`);
+    ? path.join(env.XDG_RUNTIME_DIR, "sidetone")
+    : `/tmp/sidetone-${os.userInfo().uid}`);
   return path.join(run, "hub.sock");
 }
 

@@ -121,7 +121,7 @@ class Chosen(SettingsCase):
                            ("overlay.usage_layout", "line"), ("overlay.hotkeys.repeat", "Ctrl+Shift+R"), ("terminal.tint", "all")):
             self.assertIsNone(hub.set_setting(key, value), key)
         home = os.path.dirname(os.path.dirname(self.cfg.config_path))
-        os.rename(os.path.dirname(self.cfg.config_path), os.path.join(home, "claude-speaks"))
+        os.rename(os.path.dirname(self.cfg.config_path), os.path.join(home, "sidetone"))
         with unittest.mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": home}):
             fresh = Config.load()
         self.assertEqual((fresh.label, fresh.progress, fresh.usage_models, fresh.turn_tokens), ("never", False, "near", "all"))
@@ -137,7 +137,7 @@ class Chosen(SettingsCase):
                      if item["kind"] == "switch" else item["max"])
             self.assertIsNone(hub.set_setting(item["key"], value), item["key"])
         home = os.path.dirname(os.path.dirname(self.cfg.config_path))
-        os.rename(os.path.dirname(self.cfg.config_path), os.path.join(home, "claude-speaks"))
+        os.rename(os.path.dirname(self.cfg.config_path), os.path.join(home, "sidetone"))
         with unittest.mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": home}):
             fresh = Config.load()
         for item in top:

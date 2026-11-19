@@ -47,7 +47,7 @@ def ask(program: str = "", timeout: float = 20.0, cwd: str = "") -> tuple[str, s
     nothing, Claude Code waits three seconds for it before it starts."""
     program = program or shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
     folder = cwd or os.path.join(os.environ.get("XDG_RUNTIME_DIR") or os.path.expanduser("~/.cache"),
-                                 "claude-speaks", "usage")
+                                 "sidetone", "usage")
     env = {k: v for k, v in os.environ.items() if not OWN_SESSION.match(k)}
     cmd = [program, "-p", "--no-session-persistence", "--strict-mcp-config",
            "--settings", '{"disableAllHooks": true}', "--", "/usage"]

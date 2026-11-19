@@ -167,7 +167,7 @@ class Asking(unittest.TestCase):
         run = tempfile.mkdtemp(prefix="cs-test-")
         with mock.patch.dict(os.environ, {"XDG_RUNTIME_DIR": run}):
             out, why = usage.ask(program("pwd"), 5)
-        self.assertEqual(os.path.realpath(out.strip()), os.path.realpath(os.path.join(run, "claude-speaks", "usage")))
+        self.assertEqual(os.path.realpath(out.strip()), os.path.realpath(os.path.join(run, "sidetone", "usage")))
         self.assertEqual(stat.S_IMODE(os.stat(out.strip()).st_mode), 0o700)
 
     def test_a_missing_program(self):

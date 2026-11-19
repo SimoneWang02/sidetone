@@ -2,15 +2,14 @@
 
 # Sidetone
 
-*Sidetone was called claude-speaks until November 2026. Its folders for settings and
-logs still carry that name.*
+*Sidetone was called claude-speaks until November 2026.*
 
 Eyes-free Claude Code. A local voice tells you, in one or two sentences, what each session just
 did. It starts speaking while the reply is still streaming, so you keep your eyes on your own work.
 
 I built it because I code next to Claude Code, and every reply meant moving my eyes to another
 screen, reading, and finding my place again. The model was fast; noticing it and switching to
-it was the slow part. claude-speaks cuts that delay in both directions: Claude reaches you by
+it was the slow part. Sidetone cuts that delay in both directions: Claude reaches you by
 voice and a small overlay, and you answer by hotkey or by talking, without changing windows.
 
 Everything runs on your machine. No cloud speech service, and no extra LLM call: Claude writes
@@ -119,7 +118,7 @@ PulseAudio tools (`paplay`, `parec`) and [`uv`](https://docs.astral.sh/uv/).
 
 ```bash
 sudo apt install jq curl pulseaudio-utils     # Debian/Ubuntu
-git clone https://github.com/SimoneWang02/claude-speaks && cd claude-speaks
+git clone https://github.com/SimoneWang02/sidetone && cd sidetone
 ./install.sh
 ```
 
@@ -194,7 +193,7 @@ sidetone log                    follow the speech log
 
 The settings window (`Ctrl+Alt+S`) has the ones most people change: voice, voices per project,
 push-to-talk, how the overlay looks, the figures, the terminal tint and every hotkey. A change
-takes effect at once and is written to `~/.config/claude-speaks/config.json`. That file is
+takes effect at once and is written to `~/.config/sidetone/config.json`. That file is
 optional and holds all of them:
 
 ```json
@@ -262,7 +261,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
   Unix socket that only your user can open, never on a network port.
 - The **overlay** is a small Windows program. The hub builds it on first start from
   `overlay/Overlay.cs` with the C# compiler that ships with Windows (nothing to install; it
-  lands in `%LOCALAPPDATA%\claude-speaks`), runs it as a child, and talks to it over its
+  lands in `%LOCALAPPDATA%\sidetone`), runs it as a child, and talks to it over its
   stdin and stdout. Windows itself blurs what is behind the glass. While a line plays, the hub
   listens to the speakers' own output and sends its loudness, which is what the wave draws.
 - A `PermissionRequest` hook holds each permission prompt open on the hub until you answer it

@@ -5,7 +5,7 @@
 # a title for the session, which the overlay shows beside its name. The line is in the language
 # the user wrote or spoke in, with lang="xx" in the tag when that is not English, so the hub can
 # give it a voice of that language ("reply_language": "english" in config.json keeps it English).
-config=${XDG_CONFIG_HOME:-$HOME/.config}/claude-speaks/config.json
+config=${XDG_CONFIG_HOME:-$HOME/.config}/sidetone/config.json
 titles=ask language=spoken
 if [ -f "$config" ]; then
   read -r titles language < <(jq -r '[.titles // "ask", .reply_language // "spoken"] | join(" ")' "$config" 2>/dev/null) || true

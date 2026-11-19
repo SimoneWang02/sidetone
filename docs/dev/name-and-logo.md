@@ -24,6 +24,15 @@ VS Code extension, the overlay program's file name, and the name in these notes 
 it is not a command. Sessions opened before the change keep `claude-speaks` as their name
 in the bar.
 
+On 2026-11-19 the leftovers went, on their word. The link `~/personal/claude-speaks` and the
+commands `claude-speaks` and `cs` were removed (nothing used them; "removed them"). Then the
+folders, asked "if it doesn't change anything, that's good": `~/.config/sidetone`,
+`~/.local/state/sidetone`, `~/.local/share/sidetone`, the run folder `$XDG_RUNTIME_DIR/sidetone`,
+`%LOCALAPPDATA%\sidetone` with `sidetone-overlay-*.exe`, and the `SIDETONE_*` variables (were
+`CLAUDE_SPEAKS_*`). The author's folders were moved, not copied, with the hub stopped; no code
+looks for the old ones, since nobody else has them. Still claude-speaks: the VS Code
+extension's name and id (`claude-speaks.claude-speaks`), only its run folder changed.
+
 The mark's color is theirs too: on seeing the logo in the microphone's pink they typed
 "#006896", taken as the color for it (they said nothing else). The logo runs from a lighter
 step of that blue to it, and the settings window's switches and sliders use it.

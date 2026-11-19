@@ -337,7 +337,7 @@ class Config:
     whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
     config_path: str = ""  # the user's config.json; overlay placement chosen by dragging is saved there
-    voices_dir: str = os.path.expanduser("~/.local/share/claude-speaks/voices")  # the user's own voices
+    voices_dir: str = os.path.expanduser("~/.local/share/sidetone/voices")  # the user's own voices
     progress: bool = True  # say "3 of 5 steps done" during long turns
     progress_after: float = 45.0  # only in turns that have already run this many seconds
     progress_interval: float = 60.0  # and at most this often per session
@@ -354,19 +354,19 @@ class Config:
     def load(cls) -> "Config":
         env, home = os.environ, os.path.expanduser("~")
         run = env.get("CS_RUN") or (
-            os.path.join(env["XDG_RUNTIME_DIR"], "claude-speaks")
-            if env.get("XDG_RUNTIME_DIR") else f"/tmp/claude-speaks-{os.getuid()}")
+            os.path.join(env["XDG_RUNTIME_DIR"], "sidetone")
+            if env.get("XDG_RUNTIME_DIR") else f"/tmp/sidetone-{os.getuid()}")
         cfg = cls(
             run=run,
             state=env.get("CS_STATE") or os.path.join(
-                env.get("XDG_STATE_HOME") or f"{home}/.local/state", "claude-speaks"),
+                env.get("XDG_STATE_HOME") or f"{home}/.local/state", "sidetone"),
             kokoro_dir=env.get("KOKORO_DIR") or f"{home}/.local/share/kokoro",
-            engine=env.get("CLAUDE_SPEAKS_TTS", "auto"),
+            engine=env.get("SIDETONE_TTS", "auto"),
             default_voice=env.get("KOKORO_VOICE", "af_heart"),
             speed=float(env.get("KOKORO_SPEED", "1.1")),
         )
         path = cfg.config_path = os.path.join(env.get("XDG_CONFIG_HOME") or f"{home}/.config",
-                                              "claude-speaks", "config.json")
+                                              "sidetone", "config.json")
         try:
             with open(path) as f:
                 user = json.load(f)
@@ -382,10 +382,10 @@ class Config:
         wanted = user.get("overlay") or {}
         cfg.overlay.update({k: v for k, v in wanted.items() if k != "hotkeys"})
         cfg.overlay["hotkeys"].update(wanted.get("hotkeys") or {})
-        if env.get("CLAUDE_SPEAKS_OVERLAY") == "off":
+        if env.get("SIDETONE_OVERLAY") == "off":
             cfg.overlay["enabled"] = False
         cfg.terminal.update(user.get("terminal") or {})
-        if env.get("CLAUDE_SPEAKS_TERMINAL") == "off":  # write to no terminal at all
+        if env.get("SIDETONE_TERMINAL") == "off":  # write to no terminal at all
             cfg.terminal.update(tint="off", pulse=False, title=False)
         return cfg
 

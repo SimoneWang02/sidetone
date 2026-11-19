@@ -2,9 +2,9 @@
 # The hub (hub/hub.py) does the speaking when it is running; every hook can also work without it.
 CS_ROOT=${CS_ROOT:-$(cd "${BASH_SOURCE[0]%/*}/.." && pwd)}
 if [ -z "${CS_RUN:-}" ]; then
-  if [ -n "${XDG_RUNTIME_DIR:-}" ]; then CS_RUN=$XDG_RUNTIME_DIR/claude-speaks; else CS_RUN=/tmp/claude-speaks-$UID; fi
+  if [ -n "${XDG_RUNTIME_DIR:-}" ]; then CS_RUN=$XDG_RUNTIME_DIR/sidetone; else CS_RUN=/tmp/sidetone-$UID; fi
 fi
-CS_STATE=${CS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/claude-speaks}
+CS_STATE=${CS_STATE:-${XDG_STATE_HOME:-$HOME/.local/state}/sidetone}
 CS_SOCK=$CS_RUN/hub.sock
 KOKORO_DIR=${KOKORO_DIR:-$HOME/.local/share/kokoro}
 

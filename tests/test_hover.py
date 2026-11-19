@@ -45,7 +45,7 @@ class KeptOut(HubCase):
         from hub import Config
 
         folder = tempfile.mkdtemp(prefix="cs-test-")
-        config = os.path.join(folder, "claude-speaks", "config.json")
+        config = os.path.join(folder, "sidetone", "config.json")
         hub = self.make(config_path=config)
         hub.on_overlay({"type": "mode", "mode": "list"})
         with open(config) as f:
