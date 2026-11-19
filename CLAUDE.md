@@ -656,11 +656,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   same day (the author: "it doesn't feel centered"): its three corners are equally far from
   the middle and it is the same on both sides of its line of flight (`Badge.Aim`).
 - Hotkeys (rebind or blank them under `overlay.hotkeys`; `jump` has no key by default, see further down): always claimed are `toggle` Ctrl+Alt+L,
-  `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R, `missed` Ctrl+Alt+U, `settings` Ctrl+Alt+S and `mute` Ctrl+Alt+M
+  `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R, `missed` Ctrl+Alt+U, `settings` Ctrl+Alt+S and `mute` Ctrl+Alt+Q
   (2026-11-19, `Permissions.toggle_mute`: the voice-off file for every session, cuts the line being
-  said, the sounds `voice_off`/`voice_on` and a banner "Voice off" or "Voice on"; first on Q, moved to M on the author's "M for mute"
-  once it was found free: the NVIDIA overlay (`NVIDIA Overlay.exe`) had held it, and with that
-  program closed a probe got the key; that is also why `missed` is U and not M). Claimed only while they can act: `allow` Ctrl+Alt+Y,
+  said, the sounds `voice_off`/`voice_on` and a banner "Voice off" or "Voice on"). The author asked
+  for "M for mute", but on their machine the NVIDIA overlay (`NVIDIA Overlay.exe`) holds
+  Ctrl+Alt+M: with it closed a probe got the key, and it came back by itself within minutes and
+  took it again. That is also why `missed` is U and not M. The overlay reports a taken key only
+  once per run (`complained`), so a second try at it fails without a line in `hub.log`. Claimed only while they can act: `allow` Ctrl+Alt+Y,
   `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace, and
   with two or more sessions `focus_prev` Ctrl+Alt+Up and `focus_next` Ctrl+Alt+Down.
 - The arrow keys move the focus (2026-11-17). Before, besides the wheel, a quick tap of the

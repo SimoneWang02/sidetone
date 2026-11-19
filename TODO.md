@@ -9,14 +9,14 @@ started. `CLAUDE.md` has the details of how things work.
 These work in the automated tests or in pictures taken from WSL, but nobody has pressed the
 real keys yet.
 
-- [ ] The mute key, `Ctrl+Alt+M` (asked for and built 2026-11-19: "I would rather have ... a
+- [ ] The mute key, `Ctrl+Alt+Q` (asked for and built 2026-11-19: "I would rather have ... a
       mute shortcut"). Press it while a session speaks: the line stops, two low notes go
       down, and the overlay shows "Voice off" with a struck-out speaker for 2.5 s. While
       muted, what sessions say is shown instead. Press again: two low notes go up, "Voice
       on". The same as `sidetone off` and `on`; rebind it in the settings window, Keys.
-      The author pressed it on Q the same day: "It works." Moved to M on their word ("M for
-      mute") once it was free: the NVIDIA overlay held it, read from which program had gone
-      when a probe got the key. If that overlay starts before ours it takes M again.
+      The author pressed it the same day: "It works." They asked for M ("M for mute"); it
+      was moved there while the NVIDIA overlay was closed, and that overlay came back by
+      itself and took the key again ("It's not working"), so it is Q again.
       Open: mute is for every session, not only the one in focus; and once the notice
       is gone nothing on screen says the voice is off.
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
