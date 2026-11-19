@@ -1,4 +1,4 @@
-// The claude-speaks overlay: a glass bar with one status light per Claude session. Under the
+// The sidetone overlay: a glass bar with one status light per Claude session. Under the
 // mouse a panel unfolds beside it with names and titles, and a speech bubble with a voice wave
 // appears while a session talks. The bar can be dragged with the mouse. It only draws what the
 // hub tells it to and reports hotkeys.
@@ -970,6 +970,7 @@ namespace ClaudeSpeaks
 
     // The tool's mark: a session's light while it speaks, as the overlay draws it. A round
     // light with five voice bars in it, and around it the arc that says how full a context is.
+    // In the blue the author gave for it (they typed "#006896" on seeing it in pink).
     // Drawn here and nowhere kept as a picture, so the window, its place in the taskbar and the
     // file for the README (`logo` message) are all the same drawing.
     static class Logo
@@ -979,7 +980,8 @@ namespace ClaudeSpeaks
         // In a square of side `s`, from its corner.
         public static void Draw(DrawingContext dc, double s)
         {
-            var ink = new LinearGradientBrush(Color.FromRgb(0xFF, 0xA0, 0xAC), Color.FromRgb(0xEE, 0x52, 0x88), new Point(0.15, 0), new Point(0.85, 1));
+            // The author's color, #006896, at the lower right; a lighter step of it at the upper left.
+            var ink = new LinearGradientBrush(Color.FromRgb(0x2E, 0x9C, 0xC9), Color.FromRgb(0x00, 0x68, 0x96), new Point(0.15, 0), new Point(0.85, 1));
             ink.Freeze();
             var c = new Point(s / 2, s / 2);
             double r = s * 0.435;
@@ -1112,7 +1114,7 @@ namespace ClaudeSpeaks
     // "this key, this value", and the hub answers with how things stand, which is drawn.
     class SettingsWindow
     {
-        public static readonly Color Accent = Color.FromRgb(0xF2, 0x6B, 0x92);  // the pink of the tool's mark
+        public static readonly Color Accent = Color.FromRgb(0x00, 0x68, 0x96);  // the color of the tool's mark, the author's choice
         const double High = 560, Broad = 790, NavWidth = 176;
         public readonly Glass Window = new Glass(0, true);
         readonly Action<string, object> choose;  // a setting was chosen
@@ -2978,7 +2980,7 @@ namespace ClaudeSpeaks
             rail.Panel.BorderBrush = dragging || moving ? Ui.AmberEdge : catching ? Ui.BrightEdge : Ui.GlassEdge;
         }
 
-        // "claude-speaks overlay move": the same dragging, announced, for when the bar is hard to find.
+        // "sidetone overlay move": the same dragging, announced, for when the bar is hard to find.
         void BeginMove()
         {
             moving = true;

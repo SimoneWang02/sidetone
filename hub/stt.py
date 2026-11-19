@@ -220,7 +220,7 @@ def describe(model: str, language: str) -> str:
     return f"push-to-talk listens for: {spoken}  (model {model})"
 
 
-if __name__ == "__main__":  # stt.py languages CONFIG [CODES]: show or choose; used by `claude-speaks languages`
+if __name__ == "__main__":  # stt.py languages CONFIG [CODES]: show or choose; used by `sidetone languages`
     import sys
 
     if len(sys.argv) < 3 or sys.argv[1] != "languages":

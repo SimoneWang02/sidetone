@@ -213,7 +213,7 @@ class Permissions:
             log(self.cfg, "hub.log", f"could not save the {section} settings: {e}")
 
     def reload_languages(self) -> dict:
-        """Take up the languages chosen with `claude-speaks languages` (written to config.json)
+        """Take up the languages chosen with `sidetone languages` (written to config.json)
         without a restart: the next push-to-talk loads the model for them."""
         try:
             with open(self.cfg.config_path) as f:
@@ -275,7 +275,7 @@ class Permissions:
         return self._settings_open
 
     def set_setting(self, key: str, value) -> str | None:
-        """Something was chosen, in the window or with `claude-speaks settings KEY VALUE`. Returns
+        """Something was chosen, in the window or with `sidetone settings KEY VALUE`. Returns
         what is wrong with it, or None. The window is then told how things stand: it draws
         what the hub has, so a choice that was not taken does not look as if it were."""
         error = settings_mod.apply(self, key, value)

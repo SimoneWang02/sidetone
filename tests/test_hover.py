@@ -27,7 +27,7 @@ class Hover(HubCase):
         self.addCleanup(server.server_close)
         self.addCleanup(server.shutdown)
         env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp}
-        run = lambda *args: subprocess.run([os.path.join(ROOT, "bin", "claude-speaks"), "overlay", *args],  # noqa: E731
+        run = lambda *args: subprocess.run([os.path.join(ROOT, "bin", "sidetone"), "overlay", *args],  # noqa: E731
                                            capture_output=True, text=True, env=env, timeout=10)
         self.assertEqual(run("hover", "keys").stdout.strip(), "hover: keys")
         self.assertEqual(hub.cfg.overlay["hover"], "keys")

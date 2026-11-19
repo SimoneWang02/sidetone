@@ -2,8 +2,8 @@
 
 # Sidetone
 
-*Sidetone was called claude-speaks until November 2026. Its commands (`claude-speaks`, `cs`) and its
-folders still carry that name.*
+*Sidetone was called claude-speaks until November 2026. Its folders for settings and
+logs still carry that name.*
 
 Eyes-free Claude Code. A local voice tells you, in one or two sentences, what each session just
 did. It starts speaking while the reply is still streaming, so you keep your eyes on your own work.
@@ -75,20 +75,20 @@ its own spoken line as the first line of its reply.
   takes a faint tint of that session's color, the color its name has in the overlay, and lights
   up brighter for a moment when you move the focus to it. No extension is needed: the hub
   writes to the terminal each session runs in, which works in VS Code's terminal and most
-  others. `claude-speaks terminal tint all` lets every terminal wear its color all the time,
-  `tint off` none; `claude-speaks terminal find` lights up the one in focus again.
+  others. `sidetone terminal tint all` lets every terminal wear its color all the time,
+  `tint off` none; `sidetone terminal find` lights up the one in focus again.
 - **Go to a terminal, and its session has the focus.** With the small VS Code extension
   (the installer offers it when it finds VS Code, `--vscode` or `--no-vscode` answers ahead;
-  or `claude-speaks vscode install`, run in a VS Code terminal), switching to another terminal
+  or `sidetone vscode install`, run in a VS Code terminal), switching to another terminal
   in VS Code selects the session running there, so push-to-talk goes to the terminal you are
   looking at. VS Code reports a change of terminal, not every click: going back into the
-  terminal you were last in changes nothing. `claude-speaks terminal follow off` turns it off.
-  The other way round, `claude-speaks terminal show` takes you to the terminal of the session
+  terminal you were last in changes nothing. `sidetone terminal follow off` turns it off.
+  The other way round, `sidetone terminal show` takes you to the terminal of the session
   in focus (give it a key with `"jump"` under `hotkeys`; it has none by default). It works
   inside VS Code's window and does not bring that window in front of other programs.
 - **How much is used.** Ask by voice ("what's my usage?") and the hub says how much of the
   plan's five hours and week is used and when they start again; the words go to no session.
-  `claude-speaks usage` prints the same. A thin arc around each session's light shows how full its context is (`context_shown`: `arc`, `text`, `both`, `off`), and a card under the rows gives the figures of the session under the mouse: context, tokens of the reply, time and tasks.
+  `sidetone usage` prints the same. A thin arc around each session's light shows how full its context is (`context_shown`: `arc`, `text`, `both`, `off`), and a card under the rows gives the figures of the session under the mouse: context, tokens of the reply, time and tasks.
 - **Catch up.** `Ctrl+Alt+U` replays what your sessions said since you were last there;
   `Ctrl+Alt+R` repeats the last line of the session in focus. Long turns say "3 of 5 steps done" along the way.
 - **Your own voices.** Pick a voice per project, blend two into a new one, or load a Kokoro
@@ -120,13 +120,13 @@ git clone https://github.com/SimoneWang02/claude-speaks && cd claude-speaks
 `install.sh` creates a Python environment in `~/.local/share/kokoro/venv`, downloads the Kokoro
 voice model (about 350 MB), and adds the hooks to `~/.claude/settings.json`. Your existing
 hooks are kept and a backup of the file is written first. It also links the command into
-`~/.local/bin` as `claude-speaks` and the shorter `cs`. It asks once which languages you will
-speak to it (`./install.sh --languages en,it` answers in advance; `claude-speaks languages`
+`~/.local/bin` as `sidetone` and the shorter `st`. It asks once which languages you will
+speak to it (`./install.sh --languages en,it` answers in advance; `sidetone languages`
 changes it later). The Whisper model for push-to-talk (about 460 MB for the default size) is
 downloaded too; `--no-models` leaves it for the first time you use the talk key. `./uninstall.sh` removes the hooks again.
 
 Start a new Claude Code session and it speaks. To see and hear everything without doing real
-work, run `cs demo` in a terminal.
+work, run `st demo` in a terminal.
 
 ## Using it
 
@@ -142,7 +142,7 @@ work, run `cs demo` in a terminal.
 | `Ctrl+Alt` + mouse wheel | The same with the wheel |
 | hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send |
 | `Ctrl+Alt+Backspace` | Stop recording, take back a follow-up, cut the line being spoken, or stop the session in focus (at once in VS Code with the extension, elsewhere at its next step) |
-| none (`jump` under `hotkeys`) | Go to the terminal of the session in focus: VS Code brings it to the front with the keyboard in it (needs the extension; claimed only while that can be done). `claude-speaks terminal show` does the same |
+| none (`jump` under `hotkeys`) | Go to the terminal of the session in focus: VS Code brings it to the front with the keyboard in it (needs the extension; claimed only while that can be done). `sidetone terminal show` does the same |
 | `Ctrl+Alt+U` | Replay what was said since you were last there |
 | `Ctrl+Alt+R` | Repeat the last line of the session in focus |
 
@@ -152,38 +152,38 @@ changed or switched off in the settings file. With the panel kept out, rest the 
 for a moment to see the last few lines that were spoken.
 
 ```
-claude-speaks status                 what each session is doing, and what is queued
-claude-speaks say [-v VOICE] TEXT    speak a line
-claude-speaks stop                   stop speaking and clear the queue
-claude-speaks on | off               voice on or off for every session
-claude-speaks allow | deny           answer the permission prompt on screen
-claude-speaks answer N               pick option N of the question on screen
-claude-speaks follow-up [-s PROJECT] TEXT
-claude-speaks target [PROJECT]       who a spoken follow-up goes to
-claude-speaks missed | repeat        catch up, or hear the focused session's last line again
-claude-speaks sound sent|queued|failed   hear the short sounds that answer push-to-talk
-claude-speaks voices                 every voice, and which project has which
-claude-speaks languages en,it        the languages push-to-talk listens for (name only the ones you speak)
-claude-speaks voice PROJECT VOICE    give a project a voice
-claude-speaks voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
-claude-speaks voice add NAME FILE    load your own Kokoro voice file (.npy)
-claude-speaks overlay dots|list|toggle|restart     only the lights, or kept open
-claude-speaks overlay layout NAME|next   bar or island
-claude-speaks overlay move           makes the bar easy to find and drag (or hold Ctrl+Alt and drag it)
-claude-speaks overlay monitor N | corner top-left|top-right|bottom-left|bottom-right
-claude-speaks terminal               how sessions' own terminals are marked
-claude-speaks terminal tint focus|all|off     whose terminal wears its session's color
-claude-speaks terminal find [PROJECT]         light a session's terminal up for a moment
-claude-speaks terminal show [PROJECT]         bring a session's terminal to the front in VS Code
-claude-speaks terminal strength N | background COLOR | pulse on|off|N | title on|off
-claude-speaks terminal follow on|off          going to a terminal in VS Code selects its session
-claude-speaks vscode install|uninstall        the VS Code extension that reports the terminal you are in
-claude-speaks settings               open the settings window (Ctrl+Alt+S); "settings close" shuts it
-claude-speaks settings list          every setting the window has, and what it is now
-claude-speaks settings KEY VALUE     change one at once, e.g. settings overlay.layout island
-claude-speaks demo                   three made-up sessions through every state
-claude-speaks hub start|stop|restart
-claude-speaks log                    follow the speech log
+sidetone status                 what each session is doing, and what is queued
+sidetone say [-v VOICE] TEXT    speak a line
+sidetone stop                   stop speaking and clear the queue
+sidetone on | off               voice on or off for every session
+sidetone allow | deny           answer the permission prompt on screen
+sidetone answer N               pick option N of the question on screen
+sidetone follow-up [-s PROJECT] TEXT
+sidetone target [PROJECT]       who a spoken follow-up goes to
+sidetone missed | repeat        catch up, or hear the focused session's last line again
+sidetone sound sent|queued|failed   hear the short sounds that answer push-to-talk
+sidetone voices                 every voice, and which project has which
+sidetone languages en,it        the languages push-to-talk listens for (name only the ones you speak)
+sidetone voice PROJECT VOICE    give a project a voice
+sidetone voice mix NAME af_heart=0.6 bm_george=0.4     blend a new voice
+sidetone voice add NAME FILE    load your own Kokoro voice file (.npy)
+sidetone overlay dots|list|toggle|restart     only the lights, or kept open
+sidetone overlay layout NAME|next   bar or island
+sidetone overlay move           makes the bar easy to find and drag (or hold Ctrl+Alt and drag it)
+sidetone overlay monitor N | corner top-left|top-right|bottom-left|bottom-right
+sidetone terminal               how sessions' own terminals are marked
+sidetone terminal tint focus|all|off     whose terminal wears its session's color
+sidetone terminal find [PROJECT]         light a session's terminal up for a moment
+sidetone terminal show [PROJECT]         bring a session's terminal to the front in VS Code
+sidetone terminal strength N | background COLOR | pulse on|off|N | title on|off
+sidetone terminal follow on|off          going to a terminal in VS Code selects its session
+sidetone vscode install|uninstall        the VS Code extension that reports the terminal you are in
+sidetone settings               open the settings window (Ctrl+Alt+S); "settings close" shuts it
+sidetone settings list          every setting the window has, and what it is now
+sidetone settings KEY VALUE     change one at once, e.g. settings overlay.layout island
+sidetone demo                   three made-up sessions through every state
+sidetone hub start|stop|restart
+sidetone log                    follow the speech log
 ```
 
 The settings window (`Ctrl+Alt+S`) has the ones most people change: voice, voices per project,
@@ -273,7 +273,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python) ──stdin─�
 - The hub uses about 0.5 GB of memory with the voice loaded, and about 1.2 GB while the Whisper
   model is loaded (from the first push-to-talk until ten minutes after the last one). Each spoken
   line is a short burst of CPU.
-- Push-to-talk listens for the languages you name: `claude-speaks languages en,it` (the install
+- Push-to-talk listens for the languages you name: `sidetone languages en,it` (the install
   script asks the same question). A sentence of four seconds is text in about 0.7 to 0.8 s,
   with one language or with five (measured with `tests/stt_speed.py` on a 24-thread desktop
   CPU, no graphics card). With two or more, each recording is taken as whichever of your

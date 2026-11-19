@@ -187,7 +187,7 @@ class Handler(BaseHTTPRequestHandler):
         else:
             decision = {"behavior": req.decision}
         if req.decision == "deny":
-            decision["message"] = req.message or "Denied by the user from the claude-speaks overlay."
+            decision["message"] = req.message or "Denied by the user from the sidetone overlay."
         self._reply({"hookSpecificOutput": {"hookEventName": "PermissionRequest", "decision": decision}})
 
     def _listen(self, hub: Hub, body: dict) -> None:

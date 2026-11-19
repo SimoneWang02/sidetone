@@ -55,15 +55,15 @@ fi
 # a short recording is not taken for a language you never speak. Asked once, of a person at a
 # terminal: a choice already in config.json (or --languages) is kept.
 if [ -n "$languages" ]; then
-  "$ROOT/bin/claude-speaks" languages "$languages" || exit 2
+  "$ROOT/bin/sidetone" languages "$languages" || exit 2
 elif [ $hooks_only = 0 ] && [ -t 0 ] && [ -t 1 ] &&
      ! jq -e 'has("whisper_model") or has("whisper_language")' "$CONFIG" >/dev/null 2>&1; then
   echo "Which languages will you speak to it? Name only those, so a short recording is not taken for another language."
   for _ in 1 2 3; do
     read -r -p "Language codes, for example en or en,it (Enter = en): " languages || languages=
-    "$ROOT/bin/claude-speaks" languages "${languages:-en}" && break
+    "$ROOT/bin/sidetone" languages "${languages:-en}" && break
   done
-  echo "Change it any time with: claude-speaks languages en,it"
+  echo "Change it any time with: sidetone languages en,it"
 fi
 
 # The speech model for push-to-talk. Without this it is fetched at the first hold of the talk
@@ -81,7 +81,7 @@ mkdir -p "$(dirname "$SETTINGS")"
 [ -s "$SETTINGS" ] || echo '{}' > "$SETTINGS"
 backup=$SETTINGS.bak-claude-speaks-$(date +%Y%m%d-%H%M%S)
 cp -p "$SETTINGS" "$backup"
-sed "s|\$HOME/personal/claude-speaks|$ROOT|g" "$ROOT/hooks/settings-snippet.json" |
+sed "s|\$HOME/personal/sidetone|$ROOT|g" "$ROOT/hooks/settings-snippet.json" |
   jq --arg ours "$ROOT/hooks/" --slurpfile current "$backup" '
     .hooks as $new
     | ($current[0].hooks // {}) as $old
@@ -92,20 +92,20 @@ jq -e . "$SETTINGS.tmp" >/dev/null
 mv "$SETTINGS.tmp" "$SETTINGS"
 echo "Hooks registered in $SETTINGS (backup: $backup)"
 
-# Put the command on the PATH as `claude-speaks` and the short `cs`. A name that already
+# Put the command on the PATH as `sidetone` and the short `st`. A name that already
 # belongs to something else is left alone.
 BIN=$HOME/.local/bin
 mkdir -p "$BIN"
-try=$ROOT/bin/claude-speaks
-for name in claude-speaks cs; do
+try=$ROOT/bin/sidetone
+for name in sidetone st; do
   link=$BIN/$name
-  if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$ROOT/bin/claude-speaks" ]; then
+  if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$ROOT/bin/sidetone" ]; then
     :
   elif [ -e "$link" ] || [ -L "$link" ] || command -v "$name" >/dev/null 2>&1; then
     echo "Note: '$name' already exists, so it was not linked."
     continue
   else
-    ln -s "$ROOT/bin/claude-speaks" "$link"
+    ln -s "$ROOT/bin/sidetone" "$link"
   fi
   case ":$PATH:" in *":$BIN:"*) try=$name ;; *) echo "Note: $BIN is not on your PATH, so '$name' will not be found yet." ;; esac
 done
@@ -123,14 +123,14 @@ if [ $vscode = ask ]; then
   else
     echo "VS Code is here. Its claude-speaks extension tells the hub which terminal you are in, so going to a terminal gives its session the focus, and it lets the cancel key stop a session at once."
     read -r -p "Install the extension? (Enter = yes, n = no): " answer || answer=n
-    case $answer in ""|[Yy]*) vscode=yes ;; *) vscode=no; echo "Not installed. Any time later: claude-speaks vscode install" ;; esac
+    case $answer in ""|[Yy]*) vscode=yes ;; *) vscode=no; echo "Not installed. Any time later: sidetone vscode install" ;; esac
   fi
 fi
 if [ $vscode = yes ]; then
   if ! command -v code >/dev/null 2>&1; then
-    echo "Note: no 'code' command here, so the VS Code extension was not installed. In a VS Code terminal: claude-speaks vscode install"
-  elif ! "$ROOT/bin/claude-speaks" vscode install; then
-    echo "Note: the VS Code extension could not be installed. Try in a VS Code terminal: claude-speaks vscode install"
+    echo "Note: no 'code' command here, so the VS Code extension was not installed. In a VS Code terminal: sidetone vscode install"
+  elif ! "$ROOT/bin/sidetone" vscode install; then
+    echo "Note: the VS Code extension could not be installed. Try in a VS Code terminal: sidetone vscode install"
   fi
 fi
 echo "Done. Start a new Claude Code session and it will speak. Try: $try demo"

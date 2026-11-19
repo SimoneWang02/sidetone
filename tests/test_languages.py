@@ -93,7 +93,7 @@ class TheCommand(unittest.TestCase):
         self.env = {**os.environ, "HOME": self.tmp, "XDG_CONFIG_HOME": os.path.join(self.tmp, "cfg"),
                     "CS_RUN": os.path.join(self.tmp, "run"), "CS_STATE": self.tmp}
 
-    def run_it(self, *args, script="bin/claude-speaks"):
+    def run_it(self, *args, script="bin/sidetone"):
         return subprocess.run([os.path.join(ROOT, script), *args], env=self.env, stdin=subprocess.DEVNULL,
                               capture_output=True, text=True, timeout=60)
 

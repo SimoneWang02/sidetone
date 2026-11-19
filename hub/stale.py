@@ -2,7 +2,7 @@
 
 A fix only counts once the hub was restarted: on 2026-11-17 a reply was cut by a fault that had
 been mended and committed two minutes earlier, because the hub was still running the old code.
-`claude-speaks status` says so with this.
+`sidetone status` says so with this.
 """
 from __future__ import annotations
 

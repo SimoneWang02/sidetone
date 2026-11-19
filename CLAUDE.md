@@ -11,11 +11,21 @@ window still go by the old path (remove it once none does). With the folder went
 `~/.claude/settings.json` (backup: `settings.json.bak-before-sidetone`), the links in
 `~/.local/bin`, the hub (restarted from the new place), Claude's memory for the project (copied
 to the folder's new name under `~/.claude/projects`), and the voice `af_heart` for sessions
-that will be named `sidetone` after the folder. **Still called claude-speaks**, not asked for
-and so not touched: the commands `claude-speaks` and `cs`, the folders under `~/.config`,
+that will be named `sidetone` after the folder. Minutes later, asked whether the commands
+should follow, they said yes ("Yeah, rename those"; written down as "renamed though"): the
+command is `bin/sidetone`, linked as `sidetone` and `st` (was `claude-speaks` and `cs`; on the
+author's machine the two old names are still linked to it), and every mention of a command in
+the code, the help, the README and these notes was changed with it. **Still called
+claude-speaks**, not asked for and so not touched: the folders under `~/.config`,
 `~/.local/state`, `~/.local/share` and the run folder, the `CLAUDE_SPEAKS_*` variables, the
-VS Code extension, the overlay program's file name, and these notes, which say claude-speaks
-throughout. Sessions opened before the change keep `claude-speaks` as their name in the bar.
+VS Code extension, the overlay program's file name, and the name in these notes wherever
+it is not a command. Sessions opened before the change keep `claude-speaks` as their name
+in the bar.
+
+The mark's color is theirs too: on seeing the logo in the microphone's pink they typed
+"#006896", taken as the color for it (they said nothing else). The logo runs from a lighter
+step of that blue to it, and the settings window's switches and sliders use it.
+**Not confirmed that the logo is what the color was for.**
 
 Eyes-free Claude Code. A local voice reads a 1–2 sentence spoken summary of each turn, never the
 full output, and starts while the reply is still streaming. With several sessions open they
@@ -47,7 +57,7 @@ you → session) so you can keep your eyes on your own work.
    lines over stdin/stdout), see-through and click-through. Two modes: faint dots that expand to
    one line on a change, and a full list.
 3. **Allow or deny by hotkey**: built 2026-11-16 and verified end to end against a real session
-   through `claude-speaks allow|deny`; the author still has to try the actual `Ctrl+Alt+Y` /
+   through `sidetone allow|deny`; the author still has to try the actual `Ctrl+Alt+Y` /
    `Ctrl+Alt+N` keys. `PermissionRequest` hook long-polls the hub; the terminal dialog stays usable
    and whichever answers first wins.
 4. **Push-to-talk follow-ups**: built 2026-11-16 and verified end to end without the author (a
@@ -70,7 +80,7 @@ Second round, same day, on the author's request (all built and pushed; verified 
   with Kokoro and was not built. A settings panel (their earlier idea) is still open.
 - Features: number keys answer Claude's questions, `Ctrl+Alt+U` catch-up, `Ctrl+Alt+R` repeat,
   spoken progress in long turns.
-- Overlay polish: monitor choice, drag to move (`claude-speaks overlay move`), history on hover.
+- Overlay polish: monitor choice, drag to move (`sidetone overlay move`), history on hover.
 - **Still to be checked by the author** in addition to the list above: dragging the overlay,
   hovering the list, the number keys, `Ctrl+Alt+U`/`R`, and the confirming tap.
 
@@ -86,7 +96,7 @@ seen it yet**):
   name, a short title and activity per session. The author saw this version and said it
   "looks" right, then asked for direct dragging and more animation (built the same night)
 - while a session talks: a speech bubble beside its light, and bars driven by the real sound
-- `claude-speaks` and `cs` are linked into `~/.local/bin` by `install.sh`
+- `sidetone` and `st` (then `claude-speaks` and `cs`) are linked into `~/.local/bin` by `install.sh`
 
 Decisions: overlay is Windows-native (must be usable over games; no browser chrome);
 sessions are told apart by a spoken label plus a stable voice per project.
@@ -178,7 +188,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   back to `dots`, and since the history under the rows only shows in `list`, the author
   missed it after one ("I don't see the history anymore").
 - Layouts (2026-11-17): `overlay.layout` is `bar` or `island`; `Ctrl+Alt+K` or
-  `claude-speaks overlay layout NAME|next` switches, and `Hub.set_layout` saves it. `island` lays
+  `sidetone overlay layout NAME|next` switches, and `Hub.set_layout` saves it. `island` lays
   the lights out sideways at the top middle of the screen, with a dash of the session's color
   under each light, and drops the panel and bubble from its middle. It keeps its own place
   (`island_x`: where its middle is across the screen, 0 to 1; `island_y`: pixels from the top),
@@ -214,7 +224,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   crossed the bar: "it would be wiser to ... drag and move when I have the combination of
   alt and control". Without the keys nothing of the bar is in the mouse's way now (no move
   cursor, no brighter edge, no wheel on the bar); it still unfolds under the mouse, which
-  only needs the cursor's position. `claude-speaks overlay move` works without the keys.
+  only needs the cursor's position. `sidetone overlay move` works without the keys.
   The author dragged it with the keys held the same day ("it works. Now perfect"), and the
   new place was saved. Later that day: "sometimes the cursor is not aligned" with the bar
   while dragging. `BeginDrag` took the grab point from `GetCursorPos` when the press was
@@ -223,7 +233,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - What brings the details out (`overlay.hover`, 2026-11-17): `always` (default) = the mouse
   resting on the bar, as ever; `keys` = only holding Ctrl+Alt or the list key, and then a
   mouse passing over the bar changes nothing at all (no light growing under it either).
-  `claude-speaks overlay hover always|keys`. Asked whether the bar should stop opening under
+  `sidetone overlay hover always|keys`. Asked whether the bar should stop opening under
   the mouse because of games, the author said yes, as the default, and took it back a minute
   later ("Actually never mind ... I like hovering ... opening up its details"), so the
   default did not change and `keys` is untried on screen.
@@ -445,7 +455,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the same day right after speaking to an idle session: it had the words already, got the
   ignore message after its reply and answered that it had changed nothing. **Not tried by
   hand yet: a busy session, where the words are removed** (done once through
-  `claude-speaks follow-up` and `talk cancel` on the live hub).
+  `sidetone follow-up` and `talk cancel` on the live hub).
 - Sounds instead of "Sent." (2026-11-17; the author, in Italian: the word waits in the queue
   behind a line being spoken, so it comes late and is of little use; they suggested a sound or
   a visual effect and agreed to this): `hub/sounds.py` makes three short sounds in code and
@@ -453,7 +463,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   going up = sent, the same note twice = waiting for a busy session, two notes going down =
   not heard, not sent or cancelled. `Hub._signal` picks by `talk_feedback`: `sound` (default),
   `voice` ("Sent." or "Queued." as before; also used when there is no `paplay`), `none`.
-  `sound_volume` is 0 to 1 (0.3). Quiet while the voice is off. `claude-speaks sound NAME`
+  `sound_volume` is 0 to 1 (0.3). Quiet while the voice is off. `sidetone sound NAME`
   plays one. Measured on the sink's monitor: sound within a few hundredths of a second, about
   0.2 s long. "Allowed." and "Denied." are still spoken. **The author has not said yet
   whether the sounds are right**; the pitches are in `sounds.TONES`.
@@ -490,7 +500,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   number in its corner: "That's really perfect." Digits are centered by the box of their own
   strokes (`Orb.Number`): placed by their line of text they sat up to a pixel low. `overlay.waiting_cover` says which messages show their number across
   the whole light: `never` (default since the author said "just put it top right"; the
-  number comes up in its corner with a small jump), `first` or `each`. To show the mark on the live overlay: `claude-speaks follow-up -s NAME TEXT`
+  number comes up in its corner with a small jump), `first` or `each`. To show the mark on the live overlay: `sidetone follow-up -s NAME TEXT`
   several times for a session that is busy.
 - What push-to-talk shows (changed 2026-11-17: the author did not like the text line with
   arrows, "listening → name", and it kept the old name when the focus moved): the hub sends
@@ -653,7 +663,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   strength), `off` none. `Hub.focus` (wheel, tap) also calls `Terminals.pulse`: 14 steps over
   0.7 s from `pulse_strength` down to the resting tint (0.15; the author, having seen
   it at 0.42, said "maybe the flash might be too much", and it came down with the tint;
-  `terminal pulse off` removes it). `claude-speaks terminal find
+  `terminal pulse off` removes it). `sidetone terminal find
   [PROJECT]` does the same on request. Stopping the hub gives every terminal its own
   background back, and a terminal seen for the first time is reset, which clears what a hub
   that died left. `title` (off by default) writes "name · title"; control characters are
@@ -686,7 +696,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   wheel), without a flash. A `window` report only counts when it names another terminal than
   the last report (several windows): coming back to the window must not take the focus from
   a session that spoke meanwhile. `terminal.follow: false` ignores the reports.
-  `vscode/pack.py` zips the folder into a `.vsix` and `claude-speaks vscode install` hands
+  `vscode/pack.py` zips the folder into a `.vsix` and `sidetone vscode install` hands
   it to `code --install-extension` (the `code` of a VS Code terminal installs on the WSL
   side, where the hub's socket is; `extensionKind` is `workspace` for that reason). Measured:
   VS Code 1.146 started it at once, without a reload ("_doActivateExtension ...
@@ -704,7 +714,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   moving the focus in the overlay could bring that session's terminal up by itself
   (`TODO.md`). What follows is how it was built.
 - Session → terminal, the jump key (2026-11-18, `Talk.show_terminal`, `_showable`, hotkey
-  `jump` = `Ctrl+Alt+T`, `claude-speaks terminal show [PROJECT]`, `vscode/extension.js`
+  `jump` = `Ctrl+Alt+T`, `sidetone terminal show [PROJECT]`, `vscode/extension.js`
   0.3.0; built while the author was away, **key and letter not agreed with them, not
   pressed by anyone**). The extension's held request now says what it can do (`"can":
   ["escape", "show"]`), and the hub's answer can carry `show`, a list of process ids; the
@@ -720,7 +730,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   what they hold, not their time of change, so a file that was only touched does not count),
   and the overlay does the same for its source when a window is started. `/state` carries
   `outdated` (`hub`: the files that differ now; `overlay`: true or false), and
-  `claude-speaks status` turns it into a note with the command that applies the change. A
+  `sidetone status` turns it into a note with the command that applies the change. A
   file another session is still working on counts too, so the note is a reason to look, not
   an order to restart.
 - `hub/claude_sessions.py`: reads `~/.claude/sessions/<pid>.json` (pid, sessionId, status
@@ -784,10 +794,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the click pauses the video, and Backspace with the keys still down cancels.
 - A line a session says with the command is its own (2026-11-18, `Hub.say(session=)`).
   Asked to "list me right now" what was next before going on working, a session said the
-  list with `claude-speaks say`, since the speak tag is only for the final message. The
+  list with `sidetone say`, since the speak tag is only for the final message. The
   author: "I've noticed you've talked, but I didn't" see "the audio wave". The line
   belonged to no session (`[cli]` in `voice.log`), so no bubble, no bars, no wave.
-  `bin/claude-speaks say` now sends `CLAUDE_CODE_SESSION_ID`, which Claude Code hands every
+  `bin/sidetone say` now sends `CLAUDE_CODE_SESSION_ID`, which Claude Code hands every
   command of its Bash tool, and for a session the hub knows the line goes through `_say`
   as kind `progress`: the session's voice unless `-v` names one, its bubble and wave, a
   place in its history, the focus. Run by hand in a plain terminal it is tied to nobody,
@@ -798,7 +808,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   idea from the first days ("a settings panel"); started on "Okay, so what's next?" after
   it had been named twice as the next piece and not turned down. **What it is, how it
   looks and its key are not agreed with them; they have it on screen and have not said
-  anything yet.** `Ctrl+Alt+S` (`settings` under `hotkeys`) or `claude-speaks settings`
+  anything yet.** `Ctrl+Alt+S` (`settings` under `hotkeys`) or `sidetone settings`
   opens it, the same key, Esc or its cross closes it. A dark glass window of 780 by 560 in
   the middle of the overlay's monitor, moved by its head: sections down the left (Voice,
   Voices, Talking, Overlay, Figures, Terminal, Keys), the settings of one section in a
@@ -818,8 +828,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   are not in the file: `voice` (the voice-off file) and `voice_of.<project>` (says "This
   is my voice." in the new one). To add a setting to the window, add a line to
   `settings.SECTIONS`; a test checks that each is a setting the hub has and that each one
-  at the top of the file is read back at start. `claude-speaks settings list` prints them
-  all and `claude-speaks settings KEY VALUE` sets one, which is also how the live hub was
+  at the top of the file is read back at start. `sidetone settings list` prints them
+  all and `sidetone settings KEY VALUE` sets one, which is also how the live hub was
   tried (`history_time` on and off; a wrong value refused).
   A hotkey is changed by clicking its caps and pressing the new keys (Esc keeps the old,
   Delete leaves it without one; a key with nothing held is not taken, except F keys).
@@ -869,11 +879,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.
-- `hub/demo.py`: three made-up sessions that go through every state (`claude-speaks demo`).
+- `hub/demo.py`: three made-up sessions that go through every state (`sidetone demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
   does not repeat the line once the hub is back.
-- `bin/claude-speaks` (linked by `install.sh` into `~/.local/bin` as `claude-speaks` and `cs`;
+- `bin/sidetone` (linked by `install.sh` into `~/.local/bin` as `sidetone` and `st`;
   on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `languages [CODES]`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | show [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
@@ -1003,7 +1013,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   a short question made only of words from a fixed list) are not handed to the session:
   `_ask_usage` shows "Reading your usage" on its light and `_answer_usage` says the sentence
   in that session's voice as a side answer (`usage_by_voice`). `POST /usage` and
-  `claude-speaks usage [say]` give the same. `Hub._count_context` runs on Stop, PostToolUse,
+  `sidetone usage [say]` give the same. `Hub._count_context` runs on Stop, PostToolUse,
   UserPromptSubmit and SessionStart: `usage.context(transcript_path, context_window)` (the
   last main-chain assistant line's input plus both cache counts, or a newer compaction's
   `postTokens`; 2 ms) goes into `Session.context` and from there into the row
@@ -1280,7 +1290,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   multilingual model, the author said: "What if we let the people choose the language they
   speak? So ... we don't include all languages." So `install.sh` asks once, at a terminal,
   which languages you will speak (`--languages en,it` answers in advance; a choice already in
-  `config.json` is kept), and `claude-speaks languages [CODES]` shows or changes it later.
+  `config.json` is kept), and `sidetone languages [CODES]` shows or changes it later.
   Both go through `stt.setup` (run as `hub/stt.py languages CONFIG CODES`): English alone gives
   the English-only model of the size already chosen, anything else the multilingual one with
   `whisper_language` set to those codes, `auto` any language. Codes are checked against
@@ -1347,7 +1357,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - The Notification `permission_prompt` also fires for question dialogs after about 6 s.
 - Memory: the hub holds about 0.5 GB with Kokoro loaded and about 1.2 GB once Whisper `small.en`
   has been loaded by the first push-to-talk.
-- `claude-speaks hub stop` and `uninstall.sh` act on the hub of the current `XDG_RUNTIME_DIR`,
+- `sidetone hub stop` and `uninstall.sh` act on the hub of the current `XDG_RUNTIME_DIR`,
   whatever `HOME` is, so a test with a fake home folder still stops the real hub.
   Since 2026-11-17 `uninstall.sh` also removes the VS Code extension, through whatever
   `code` is on the PATH, and a session's PATH has the real one: a test that runs it needs

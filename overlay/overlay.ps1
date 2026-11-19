@@ -1,4 +1,4 @@
-# Starts the claude-speaks overlay window. The hub runs this with Windows PowerShell and
+# Starts the sidetone overlay window. The hub runs this with Windows PowerShell and
 # talks to it over stdin/stdout (see Overlay.cs for the protocol). Nothing here uses the network.
 $ErrorActionPreference = 'Stop'
 try {

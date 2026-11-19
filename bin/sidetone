@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# claude-speaks: control the voice hub from a terminal.
+# sidetone: control the voice hub from a terminal.
 set -u
 . "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../hooks/lib.sh"
 
 usage() {
   cat <<'EOF'
-Usage: claude-speaks <command>
+Usage: sidetone <command>
 
   status                     sessions the hub knows, and what is queued
   say [-v VOICE] TEXT        speak a line through the hub
@@ -68,8 +68,8 @@ case ${1:-} in
     state=$(hub_get /state) || { echo "hub is not running"; exit 1; }
     jq -r 'if .muted then "voice: off" else "voice: on" end' <<<"$state"
     # A fix only counts once what runs was restarted.
-    jq -r '(.outdated.hub // []) | if length > 0 then "note: the hub is running older code than is on disk (\(join(", "))); to apply: claude-speaks hub restart" else empty end' <<<"$state"
-    jq -r 'if .outdated.overlay then "note: the overlay is running an older version than is on disk; to apply: claude-speaks overlay restart" else empty end' <<<"$state"
+    jq -r '(.outdated.hub // []) | if length > 0 then "note: the hub is running older code than is on disk (\(join(", "))); to apply: sidetone hub restart" else empty end' <<<"$state"
+    jq -r 'if .outdated.overlay then "note: the overlay is running an older version than is on disk; to apply: sidetone overlay restart" else empty end' <<<"$state"
     jq -r 'if (.sessions | length) == 0 then "no sessions" else
         (.sessions[] | [.name, .state, (.activity | if . == "" then "-" else . end),
           (if .tasks_total > 0 then "\(.tasks_done)/\(.tasks_total)" else "-" end), .voice] | @tsv) end' <<<"$state" |
@@ -93,20 +93,20 @@ case ${1:-} in
     echo "Given to new projects:"; jq -r '"  " + (.pool | join(" "))' <<<"$v"
     echo "All built-in voices:"; jq -r '.builtin | join(" ")' <<<"$v" | fold -s -w 96 | sed 's/^/  /'
     echo "Your own voices:"; jq -r '"  " + (if (.custom | length) > 0 then (.custom | join(" ")) else "(none yet; see: voice add, voice mix)" end)' <<<"$v"
-    echo "Hear one:  claude-speaks say -v VOICE \"Hello, this is how I sound.\""
+    echo "Hear one:  sidetone say -v VOICE \"Hello, this is how I sound.\""
     ;;
   voice)
     case ${2:-} in
       add)
-        [ $# -eq 4 ] && [ -f "$4" ] || { echo "usage: claude-speaks voice add NAME FILE"; exit 2; }
+        [ $# -eq 4 ] && [ -f "$4" ] || { echo "usage: sidetone voice add NAME FILE"; exit 2; }
         request=$(jq -nc --arg n "$3" --arg p "$(readlink -f "$4")" '{action: "add", name: $n, path: $p}') ;;
       mix)
-        [ $# -ge 5 ] || { echo "usage: claude-speaks voice mix NAME VOICE=WEIGHT VOICE=WEIGHT..."; exit 2; }
+        [ $# -ge 5 ] || { echo "usage: sidetone voice mix NAME VOICE=WEIGHT VOICE=WEIGHT..."; exit 2; }
         name=$3; shift 3
         request=$(printf '%s\n' "$@" | jq -Rnc --arg n "$name" '{action: "add", name: $n, mix: ([inputs | split("=") | {(.[0]): (.[1] // "1" | tonumber)}] | add)}') ||
           { echo "weights must be numbers, like af_heart=0.6"; exit 2; } ;;
       remove)
-        [ $# -eq 3 ] || { echo "usage: claude-speaks voice remove NAME"; exit 2; }
+        [ $# -eq 3 ] || { echo "usage: sidetone voice remove NAME"; exit 2; }
         request=$(jq -nc --arg n "$3" '{action: "remove", name: $n}') ;;
       *)
         [ $# -eq 3 ] || { usage; exit 2; }
@@ -158,7 +158,7 @@ case ${1:-} in
     shift
     "$py" -I "$CS_ROOT/hub/stt.py" languages "${XDG_CONFIG_HOME:-$HOME/.config}/claude-speaks/config.json" "$@" || exit 2
     if [ $# -gt 0 ] && [ -S "$CS_SOCK" ]; then  # a running hub takes it up at once
-      hub_post /languages </dev/null >/dev/null 2>&1 || echo "The running hub is older than this command: 'claude-speaks hub restart' applies it."
+      hub_post /languages </dev/null >/dev/null 2>&1 || echo "The running hub is older than this command: 'sidetone hub restart' applies it."
     fi
     ;;
   repeat) echo '{"what": "last"}' | hub_post /replay >/dev/null || { echo "hub is not running"; exit 1; } ;;
@@ -179,7 +179,7 @@ case ${1:-} in
         ;;
       list)
         echo '{"list": true}' | hub_post /settings |
-          jq -r '.sections[] | "\(.name)", (.items[] | "  \(.key) = \(.value | tojson)" + (if .kind == "choice" then "   (" + ([.options[][0] | tostring] | join(", ")) + ")" elif .kind == "pick" then "   (see: claude-speaks voices)" elif .kind == "number" then "   (\(.min) to \(.max))" else "" end))' ||
+          jq -r '.sections[] | "\(.name)", (.items[] | "  \(.key) = \(.value | tojson)" + (if .kind == "choice" then "   (" + ([.options[][0] | tostring] | join(", ")) + ")" elif .kind == "pick" then "   (see: sidetone voices)" elif .kind == "number" then "   (\(.min) to \(.max))" else "" end))' ||
           { echo "hub is not running"; exit 1; }
         ;;
       *)
@@ -200,7 +200,7 @@ case ${1:-} in
       monitor) jq -nc --arg n "${3:-0}" '{monitor: ($n | tonumber)}' | hub_post /overlay >/dev/null ;;
       hover)
         got=$(jq -nc --arg h "${3:-}" '{hover: $h}' | hub_post /overlay | jq -r '.hover // empty')
-        [ -n "$got" ] && echo "hover: $got" || { echo "hover: always or keys (needs a hub that knows it: claude-speaks hub restart)"; exit 2; } ;;
+        [ -n "$got" ] && echo "hover: $got" || { echo "hover: always or keys (needs a hub that knows it: sidetone hub restart)"; exit 2; } ;;
       layout)
         got=$(jq -nc --arg l "${3:-next}" '{layout: $l}' | hub_post /overlay | jq -r '.layout // empty')
         [ -n "$got" ] && echo "layout: $got" || { echo "layouts: bar, island (or: next)"; exit 2; } ;;

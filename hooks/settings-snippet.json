@@ -5,12 +5,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/report.sh --start",
+            "command": "$HOME/personal/sidetone/hooks/report.sh --start",
             "async": true
           },
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/listen.sh",
+            "command": "$HOME/personal/sidetone/hooks/listen.sh",
             "asyncRewake": true,
             "timeout": 86400
           }
@@ -22,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/report.sh",
+            "command": "$HOME/personal/sidetone/hooks/report.sh",
             "timeout": 2
           }
         ]
@@ -33,17 +33,17 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/voice-reminder.sh",
+            "command": "$HOME/personal/sidetone/hooks/voice-reminder.sh",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/report.sh --start",
+            "command": "$HOME/personal/sidetone/hooks/report.sh --start",
             "async": true
           },
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/listen.sh",
+            "command": "$HOME/personal/sidetone/hooks/listen.sh",
             "timeout": 86400,
             "asyncRewake": true
           }
@@ -55,12 +55,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/report.sh",
+            "command": "$HOME/personal/sidetone/hooks/report.sh",
             "async": true
           },
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/stop.sh",
+            "command": "$HOME/personal/sidetone/hooks/stop.sh",
             "timeout": 5
           }
         ]
@@ -71,7 +71,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/permission.sh",
+            "command": "$HOME/personal/sidetone/hooks/permission.sh",
             "timeout": 3600
           }
         ]
@@ -82,12 +82,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/report.sh",
+            "command": "$HOME/personal/sidetone/hooks/report.sh",
             "async": true
           },
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/stop.sh",
+            "command": "$HOME/personal/sidetone/hooks/stop.sh",
             "timeout": 5
           }
         ]
@@ -98,7 +98,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/report.sh",
+            "command": "$HOME/personal/sidetone/hooks/report.sh",
             "async": true
           }
         ]
@@ -109,7 +109,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/report.sh",
+            "command": "$HOME/personal/sidetone/hooks/report.sh",
             "async": true
           }
         ]
@@ -120,7 +120,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/report.sh",
+            "command": "$HOME/personal/sidetone/hooks/report.sh",
             "async": true
           }
         ]
@@ -131,12 +131,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/speak.sh",
+            "command": "$HOME/personal/sidetone/hooks/speak.sh",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/listen.sh",
+            "command": "$HOME/personal/sidetone/hooks/listen.sh",
             "asyncRewake": true,
             "timeout": 86400
           }
@@ -148,7 +148,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/report.sh",
+            "command": "$HOME/personal/sidetone/hooks/report.sh",
             "async": true
           }
         ]
@@ -160,7 +160,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/notify.sh",
+            "command": "$HOME/personal/sidetone/hooks/notify.sh",
             "timeout": 10
           }
         ]
@@ -171,7 +171,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$HOME/personal/claude-speaks/hooks/display.sh",
+            "command": "$HOME/personal/sidetone/hooks/display.sh",
             "timeout": 5
           }
         ]

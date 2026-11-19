@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""claude-speaks hub: the one local process every Claude Code hook reports to.
+"""sidetone hub: the one local process every Claude Code hook reports to.
 
 It keeps the voice loaded, speaks sessions one at a time, and tracks what each session is
 doing. It listens on a Unix socket only, so nothing outside this user account can make it
@@ -529,7 +529,7 @@ class Hub(Permissions, Talk):
         if not hasattr(engine, "has"):
             return "this machine's voice engine has only one voice"
         if not engine.has(voice):
-            return f"no voice called {voice}; see: claude-speaks voices"
+            return f"no voice called {voice}; see: sidetone voices"
         with self.lock:
             self.sessions.set_voice(project, voice)
         return None

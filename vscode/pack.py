@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Packs this folder into a .vsix, the file VS Code installs an extension from.
 
-Usage: pack.py OUT.vsix   (then: code --install-extension OUT.vsix; `claude-speaks vscode
+Usage: pack.py OUT.vsix   (then: code --install-extension OUT.vsix; `sidetone vscode
 install` does both). A .vsix is a zip with the extension under extension/ and two small
 descriptions of it, so no build tool is needed.
 """

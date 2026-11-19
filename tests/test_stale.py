@@ -1,4 +1,4 @@
-"""`claude-speaks status` says when what is running is older than the code on disk."""
+"""`sidetone status` says when what is running is older than the code on disk."""
 import os
 import subprocess
 import sys
@@ -54,7 +54,7 @@ class TheStatusCommand(HubCase):
         self.addCleanup(server.server_close)
         self.addCleanup(server.shutdown)
         env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp}
-        return subprocess.run([os.path.join(ROOT, "bin", "claude-speaks"), "status"], capture_output=True,
+        return subprocess.run([os.path.join(ROOT, "bin", "sidetone"), "status"], capture_output=True,
                               text=True, env=env, timeout=10).stdout
 
     def test_it_is_quiet_when_nothing_changed(self):
@@ -65,7 +65,7 @@ class TheStatusCommand(HubCase):
         with mock.patch.object(stale, "LOADED", {**stale.LOADED, "hub.py": "older", "tts.py": "older"}):
             said = self.status()
         self.assertIn("note: the hub is running older code than is on disk (hub.py, tts.py)", said)
-        self.assertIn("claude-speaks hub restart", said)
+        self.assertIn("sidetone hub restart", said)
         self.assertNotIn("overlay", said)
 
     def test_it_says_when_the_overlay_is_behind(self):

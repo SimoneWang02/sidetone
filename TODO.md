@@ -257,7 +257,7 @@ real keys yet.
       the first session after the hub had gone away had no listener until its first
       prompt; the author spoke to it twice and asked "why are you not receiving audio
       inputs?"). Tests only. To try: close every session, wait for the hub to go
-      (`claude-speaks hub stop` does it at once), open one session and speak to it
+      (`sidetone hub stop` does it at once), open one session and speak to it
       without typing.
 - [ ] "Release to send" staying on the light (the author, 2026-11-18: "it got stuck in
       recording wtf"). Found and mended the same hour: a press of the talk key shorter
@@ -317,7 +317,7 @@ real keys yet.
       "just selecting English it will mean faster answers right? ... What if we let the
       people choose the language they speak? So ... we don't include all languages." Built
       the same day: `install.sh` asks once which languages you will speak, and
-      `claude-speaks languages en,it` changes it later, also in a running hub. English
+      `sidetone languages en,it` changes it later, also in a running hub. English
       alone keeps the English-only model; other languages get the multilingual one,
       told which to expect. Not tried by a person: the question in the install script
       (answered by a script in a throwaway home folder), and no language other than
@@ -526,7 +526,7 @@ real keys yet.
       Asked on 2026-11-17, the author first said the details should by default only open
       with `Ctrl+Alt` held, and a minute later, before it was live: "Actually never mind
       ... I like hovering ... opening up its details. It's fine." So the mouse still opens
-      them, and the other way is there for whoever wants it: `claude-speaks overlay hover
+      them, and the other way is there for whoever wants it: `sidetone overlay hover
       keys` (or `"hover": "keys"` under `overlay`). With it a mouse passing over the bar
       changes nothing, not even the light under it. Compiled and covered by a test for
       the command; nobody has looked at `hover: keys` on screen or in a game.
@@ -538,7 +538,7 @@ real keys yet.
 - [x] A hub that is running old code keeps old faults: a fix only counts once the hub was
       restarted. On 2026-11-17 a reply was cut by the author's own voice message two minutes
       after that fault was fixed and committed, because the hub had not been restarted yet.
-      Say in `claude-speaks status` when the running hub is older than the code on disk.
+      Say in `sidetone status` when the running hub is older than the code on disk.
       Done 2026-11-17: `status` adds a note naming the hub's files that changed since it
       started, and one when the overlay on screen is older than its source, each with the
       command that applies it. It shows from the next hub restart on. Not done: saying it
@@ -603,7 +603,7 @@ Bigger pieces:
       `whisper_language` already takes any language codes, or `auto`, with a multilingual
       model. What is still tied to English:
       - the start: done 2026-11-17 for listening. `install.sh` asks which languages you
-        speak and `claude-speaks languages` changes it; the settings window should offer
+        speak and `sidetone languages` changes it; the settings window should offer
         it too.
       - the spoken summaries: the reminder asks Claude for "plain spoken English", and
         `hub/tts.py` has Kokoro pronounce every line as American English (`lang="en-us"`)
@@ -618,7 +618,7 @@ Bigger pieces:
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
       A first one built on the evening of 2026-11-18 and put on their screen:
-      `Ctrl+Alt+S` or `claude-speaks settings`. Sections at the left (Voice, Voices,
+      `Ctrl+Alt+S` or `sidetone settings`. Sections at the left (Voice, Voices,
       Talking, Overlay, Figures, Terminal, Keys), 54 settings, each changed with a
       click and in effect at once; hotkeys are changed by clicking one and pressing the
       new keys. **For the author to judge, none of it agreed beforehand:** the look,
@@ -646,8 +646,9 @@ Bigger pieces:
       Chosen minutes later: Sidetone. Done that evening, as they asked: the name in the
       window and the README, the GitHub repo (`sidetone`), the project folder
       (`~/personal/sidetone`, with a link left at the old place for the sessions and
-      the editor window that were open). **Left, for them to decide:** the commands
-      (`claude-speaks`, `cs`), the folders for settings, logs and models, the
+      the editor window that were open). The commands followed on their yes: `sidetone` and `st`. The
+      logo is in the blue they typed, `#006896`. **Left, for them to decide:** the
+      folders for settings, logs and models, the
       `CLAUDE_SPEAKS_*` variables, the VS Code extension's name, the words in the
       overlay ("claude-speaks" is nowhere on screen now), and `CLAUDE.md` and this
       file, which still say claude-speaks throughout. And to do once no session is
@@ -868,7 +869,7 @@ Bigger pieces:
       five hour window", to work like the side questions): spoken words that ask for
       the usage are answered aloud by the hub and reach no session, the five-hour
       window first, e.g. "35 percent of the five hours used, back at 2:39 AM. The week
-      is at 40 percent, Fable at 76." `claude-speaks usage` prints it, `usage say`
+      is at 40 percent, Fable at 76." `sidetone usage` prints it, `usage say`
       speaks it. `hub/usage.py` (by another session) reads it with a headless `/usage`
       call, 0.8 to 1.5 s, no model request. Which sentences count is strict
       (`usage.asks`): "add a usage meter to the overlay" goes to the session. Tried on
@@ -892,12 +893,12 @@ guesses to check first.
 - [ ] AirPods on the phone, PC out of range: the phone has to be the bridge, because the
       gestures cannot be given to another program there. Candidates:
       - a phone Shortcut ("Hey Siri, tell Claude ...", or the Action button) that dictates a
-        sentence and runs `claude-speaks follow-up` on the PC over SSH. Needs no new server,
+        sentence and runs `sidetone follow-up` on the PC over SSH. Needs no new server,
         only a private way to reach the PC (for example Tailscale).
       - spoken summaries as phone notifications; the phone can read notifications aloud
         into AirPods. This grows out of the "phone notification" idea below.
       - allow and deny from the phone: buttons on the notification, or a Shortcut that runs
-        `claude-speaks allow|deny`.
+        `sidetone allow|deny`.
       - a small phone app of our own could read AirPods head movement (nod to allow, shake
         to deny) and stream the voice. By far the most work.
       - Claude Code's own remote control from the phone may already cover typing and
@@ -991,7 +992,7 @@ Smaller ideas:
 - [x] A key that jumps to the terminal of the session in focus
       Built 2026-11-18 while the author was away ("list me ... the next things to do ...
       and you'll do it"; the key and its letter are not agreed with them): `Ctrl+Alt+T`
-      (`jump` under `hotkeys`; `""` turns it off), or `claude-speaks terminal show
+      (`jump` under `hotkeys`; `""` turns it off), or `sidetone terminal show
       [PROJECT]`. The hub asks the VS Code extension (0.3.0), which shows that terminal
       and puts the keyboard in it. The key is only claimed while an editor with that
       extension holds the terminal of the session in focus. Tested with the real
@@ -1008,7 +1009,7 @@ Smaller ideas:
       Their decision the same evening: "I think we can just delete this one ... I
       don't think I'll use it." Their terminals are side by side, and the tint
       already shows which one to look at. The key is gone from the defaults (`jump`
-      is blank; `claude-speaks terminal show` and the extension's part stay, for the
+      is blank; `sidetone terminal show` and the extension's part stay, for the
       idea below).
 - [ ] The terminal comes up by itself when the focus moves (the author's idea,
       2026-11-18, kept on the list on their word, with "I don't think I'm gonna do
@@ -1040,7 +1041,7 @@ Smaller ideas:
       default.
 - [x] The focus follows the terminal you go to (the author's idea, 2026-11-17: "if I focus
       on a terminal it would be great to automatically select that" session). Built the
-      same day as a small VS Code extension (`vscode/`, `claude-speaks vscode install`):
+      same day as a small VS Code extension (`vscode/`, `sidetone vscode install`):
       VS Code tells it which terminal became the active one, it tells the hub that
       terminal's process, and the hub gives the focus to the session running there
       (`terminal follow off` turns it off). Installed on the author's machine and seen

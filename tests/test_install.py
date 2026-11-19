@@ -99,7 +99,7 @@ class Installing(unittest.TestCase):
     def test_every_hook_of_the_snippet_is_registered_and_taken_out_again(self):
         with open(os.path.join(ROOT, "hooks", "settings-snippet.json")) as f:
             snippet = json.load(f)["hooks"]
-        wanted = {event: [hook["command"].replace("$HOME/personal/claude-speaks", ROOT)
+        wanted = {event: [hook["command"].replace("$HOME/personal/sidetone", ROOT)
                           for group in groups for hook in group["hooks"]] for event, groups in snippet.items()}
         for script in ("stop.sh", "listen.sh", "permission.sh", "report.sh --start"):
             self.assertTrue(any(c.endswith("/hooks/" + script) for cs in wanted.values() for c in cs), script)
@@ -138,7 +138,7 @@ class Installing(unittest.TestCase):
         self.assertEqual(self.run_it("uninstall.sh").returncode, 0)
         with open(self.settings) as f:
             self.assertEqual(json.load(f), {})
-        for name in ("claude-speaks", "cs"):
+        for name in ("sidetone", "st"):
             self.assertFalse(os.path.lexists(os.path.join(self.tmp, ".local", "bin", name)))
 
     # The VS Code extension
@@ -196,7 +196,7 @@ class Installing(unittest.TestCase):
         self.vs_code()
         shown = self.at_a_terminal(typed="n\n")
         self.assertIn("Install the extension?", shown)
-        self.assertIn("claude-speaks vscode install", shown)  # how to get it later
+        self.assertIn("sidetone vscode install", shown)  # how to get it later
         self.assertEqual(self.asked_of_code(), ["--list-extensions"])
 
     def test_an_answer_given_ahead_is_not_asked_for(self):

@@ -1,7 +1,7 @@
 """Manual measurement: how long push-to-talk takes to turn speech into text, by choice of languages.
 
 It speaks English and Italian sentences of three lengths with Kokoro, then times the hub's own
-`stt.Transcriber` on them for each choice (`claude-speaks languages ...`): English alone, one
+`stt.Transcriber` on them for each choice (`sidetone languages ...`): English alone, one
 other language, two, five, any. Prints a table; with a path as argument also writes the numbers
 as JSON. Not part of the test run (it loads two Whisper models and takes a few minutes).
 

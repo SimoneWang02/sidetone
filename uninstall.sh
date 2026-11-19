@@ -19,7 +19,7 @@ if [ $keep_vscode = 0 ] && command -v code >/dev/null 2>&1 &&
   if code --uninstall-extension "$EXTENSION" >/dev/null 2>&1; then
     echo "VS Code extension removed."
   else
-    echo "Note: the VS Code extension could not be removed. In a VS Code terminal: claude-speaks vscode uninstall"
+    echo "Note: the VS Code extension could not be removed. In a VS Code terminal: sidetone vscode uninstall"
   fi
 fi
 SETTINGS=$HOME/.claude/settings.json
@@ -33,10 +33,10 @@ jq --arg ours "$ROOT/hooks/" --arg home_form "\$HOME${ROOT#"$HOME"}/hooks/" '
   | if .hooks == {} then del(.hooks) else . end' "$backup" > "$SETTINGS.tmp"
 jq -e . "$SETTINGS.tmp" >/dev/null
 mv "$SETTINGS.tmp" "$SETTINGS"
-"$ROOT/bin/claude-speaks" hub stop >/dev/null 2>&1 || true
-for name in claude-speaks cs; do
+"$ROOT/bin/sidetone" hub stop >/dev/null 2>&1 || true
+for name in sidetone st claude-speaks cs; do  # the last two: its names until 2026-11-18
   link=$HOME/.local/bin/$name
-  if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$ROOT/bin/claude-speaks" ]; then rm -f "$link"; fi
+  if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$ROOT/bin/sidetone" ]; then rm -f "$link"; fi
 done
 echo "Hooks removed from $SETTINGS (backup: $backup)"
 echo "Left in place: ~/.local/share/kokoro (models, Python environment), ~/.local/state/claude-speaks (logs)."
