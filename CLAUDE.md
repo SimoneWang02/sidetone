@@ -661,7 +661,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   said, the sounds `voice_off`/`voice_on` and a banner "Voice off" or "Voice on"). The author asked
   for "M for mute", but on their machine the NVIDIA overlay (`NVIDIA Overlay.exe`) holds
   Ctrl+Alt+M: with it closed a probe got the key, and it came back by itself within minutes and
-  took it again. That is also why `missed` is U and not M. The overlay reports a taken key only
+  took it again. Confirmed in the registry: `HKCU\Software\NVIDIA Corporation\Global\ShadowPlay\NVSPCAPS`
+  holds each NVIDIA shortcut as virtual-key codes, and `MicToggleHKey0-2` are Ctrl, Alt, M: the
+  overlay's "toggle microphone", NVIDIA's default, so many machines with an NVIDIA card will have
+  it. The same place has `PMOCOverlayVisibilityHKey` = Ctrl+Alt+R (its performance overlay),
+  which is our repeat key; the hub has always got R first, which could flip if NVIDIA's overlay
+  starts before it. That is also why `missed` is U and not M. The overlay reports a taken key only
   once per run (`complained`), so a second try at it fails without a line in `hub.log`. Claimed only while they can act: `allow` Ctrl+Alt+Y,
   `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace, and
   with two or more sessions `focus_prev` Ctrl+Alt+Up and `focus_next` Ctrl+Alt+Down.
