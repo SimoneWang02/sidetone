@@ -18,12 +18,6 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] The history following the mouse from row to row without lag (2026-11-19, the
-      author: "if I move it real fast, there's a latency"): the open panel changed height
-      in about 60 ms instead of half a second: "That's better ... more responsive". Now it
-      takes the new height at once: "super responsive". Then, on their yes, `overlay.resize`
-      quick (grows at once, shrinks in about 90 ms; the default) or instant. Quick not
-      tried by them.
 - [ ] Your own words' sign hidden by another session's line (2026-11-19, the author: "I
       just send an audio to session three and I immediately switch to session one, try
       sending an audio, and I don't see the icon for sending the audio. I don't see the
@@ -359,6 +353,11 @@ To choose before release: which of these the first version has, and which wait.
       completion of the product"). Not to be offered as the next thing before then.
 - [ ] A demo video with sound and screenshots for the README, plus a measured comparison with
       tools that only speak after the reply has ended.
+- [ ] Practice speaking (the author, by voice, 2026-11-20: "put at the end of the to-do list
+      with the documentation stuff like practice voice-[speaking]. I'm not sure if the things I
+      say gets transcribed well"). Wording not settled: a way to speak and see what the speech
+      model wrote without sending it anywhere, or a guide on speaking to it. To ask when
+      this step comes.
 
 ## Later: away from the PC
 
@@ -398,6 +397,13 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] The history following the mouse from row to row without lag (2026-11-19, the
+      author: "if I move it real fast, there's a latency"): the open panel changed height
+      in about 60 ms instead of half a second: "That's better ... more responsive". Now it
+      takes the new height at once: "super responsive". Then, on their yes, `overlay.resize`
+      quick (grows at once, shrinks in about 90 ms; the default) or instant. Quick not
+      tried by them.
+      Tried with quick on 2026-11-20: "It's pretty responsive, I like it."
 - [x] Moving the overlay by its details (2026-11-19, the author: "if it's fully displayed
       with Ctrl+Alt+L, I should be able to move the entire overlay"). Built the same day
       (`overlay.panel_drag`, on): with the details kept out, drag them and the whole
