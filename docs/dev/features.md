@@ -1113,6 +1113,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   on Voice: "Can you do that in Chinese?"): `base.FEEDBACK_WORDS` has Italian and Chinese,
   said in the session's voice for that language; with a summary language chosen, that one.
   The hub's other words stay English.
+  The same hour the author took the choice out of the window: "I think we can remove this
+  setting. I think the sound is kind of necessary ... only to sound". `talk_feedback` stays
+  in config.json (and the words where no sound can be played); Sound Volume explains the sounds.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.

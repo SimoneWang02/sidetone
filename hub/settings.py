@@ -59,9 +59,10 @@ SECTIONS = [
          "options": [["spoken", "Match My Language"]] + [[code, base.LANGUAGE_NAMES.get(code, "English")] for code in SUMMARY_LANGUAGES]},
         choice("label", "Say the Project Name", "Say \"sidetone 2\" before each line, so you know who talks without looking.",
                ("always", "Always"), ("never", "Never")),
-        choice("talk_feedback", "When Your Words Go Out", "A short sound, a spoken word, or nothing.",
-               ("sound", "Sound"), ("voice", "Voice"), ("none", "Nothing")),
-        number("sound_volume", "Sound Volume", "How loud those short sounds are.", 0.0, 1.0, 0.05),
+        # "When Your Words Go Out" (talk_feedback: sound, voice, nothing) left the window on
+        # 2026-11-20, the author: "I think the sound is kind of necessary ... only to sound". It is
+        # still read from config.json.
+        number("sound_volume", "Sound Volume", "How loud the short sounds are that say your words went out, waited or failed.", 0.0, 1.0, 0.05),
     ]),
     ("Voices", []),  # filled in by `describe`: one line for each project, with the voices this machine has
     ("Talking", [
