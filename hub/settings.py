@@ -64,7 +64,7 @@ SECTIONS = [
         # still read from config.json.
         # One volume for the voice and the sounds (the author, 2026-11-20: "do one thing for both so
         # it's more consistent"); `sound_volume` stays in config.json as the sounds' level beside the voice.
-        number("volume", "Volume", "The voice and the short sounds together, below your system's own volume.", 0.0, 1.0, 0.05),
+        number("volume", "Volume", "The voice and the short sounds together.", 0, 100, 5),
     ]),
     ("Voices", []),  # filled in by `describe`: one line for each project, with the voices this machine has
     ("Talking", [

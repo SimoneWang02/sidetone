@@ -111,10 +111,11 @@ def set_volume(hub) -> None:
     """Give the voice and the sounds the volume in `Config.volume`: both players get it, so
     the sounds keep their level beside the voice (`sound_volume`)."""
     cfg = hub.cfg
+    share = max(0.0, min(1.0, float(cfg.volume) / 100))
     if hasattr(hub.speech.engine, "volume"):
-        hub.speech.engine.volume = cfg.volume
+        hub.speech.engine.volume = share
     if hub.sounds:
-        hub.sounds.master = cfg.volume
+        hub.sounds.master = share
 
 
 def fixed_language(cfg) -> str:
@@ -377,7 +378,7 @@ class Config:
     # Without a way to play sounds, "sound" falls back to the voice.
     talk_feedback: str = "sound"
     sound_volume: float = 0.3  # 0 to 1: the short sounds beside the voice
-    volume: float = 1.0  # 0 to 1: the voice and the sounds together, below the system's volume
+    volume: float = 100  # 0 to 100, like a game's master volume: the voice and the sounds together
     whisper_language: str = "en"  # for multilingual models such as "small": "it", "en,it" (the ones you speak), or "auto"
     # With several languages: a short recording whose language the model is unsure of is also
     # written in the language you last spoke clearly in, and kept so unless clearly worse

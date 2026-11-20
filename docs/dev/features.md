@@ -1116,7 +1116,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   The same hour the author took the choice out of the window: "I think we can remove this
   setting. I think the sound is kind of necessary ... only to sound". `talk_feedback` stays
   in config.json (and the words where no sound can be played); Sound Volume explains the sounds.
-  Then one Volume for the voice and the sounds (`volume`, 0 to 1, 1 by default; the author:
+  Then one Volume for the voice and the sounds (`volume`, 0 to 100 like a game's master
+  volume, 100 by default, at their word: "video games ... have master volume and they go from 0
+  to 100"; the author:
   "do one thing for both so it's more consistent ... maybe I want it overall below the
   window[s] system"): both players get `paplay --volume` (PulseAudio's scale, 65536 = the
   system's own), set at once by `base.set_volume`; `sound_volume` (0.3) stays in config.json

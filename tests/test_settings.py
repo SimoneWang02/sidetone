@@ -119,8 +119,8 @@ class Chosen(SettingsCase):
         hub = self.make()
         self.engine.volume = 1.0
         hub.sounds = type("Sounds", (), {"master": 1.0})()
-        self.assertIsNone(hub.set_setting("volume", 0.6))
-        self.assertEqual((self.engine.volume, hub.sounds.master, self.saved()["volume"]), (0.6, 0.6, 0.6))
+        self.assertIsNone(hub.set_setting("volume", 60))  # 0 to 100, like a game's master volume
+        self.assertEqual((self.engine.volume, hub.sounds.master, self.saved()["volume"]), (0.6, 0.6, 60))
         self.assertNotIn("sound_volume", settings.items(hub))
 
     def test_a_choice_takes_effect_and_is_kept(self):
