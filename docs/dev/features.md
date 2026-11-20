@@ -1097,6 +1097,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   description ... include also the shortcut key"); a key with no combination gets nothing.
   Setting names in title case (2026-11-20, the author: "all setting[s] ... the title should be
   in title case"); small words (of, the, to, ...) stay small inside a name. A test checks it.
+  A dropdown (`Pick`) closes on a second click on it (2026-11-20, the author: "if I click
+  again the select shouldn't it be closing"): the popup shut on the press, as for any click
+  outside it, and the release opened it again; a release within 400 ms of it shutting now
+  leaves it shut. Not tried by them yet.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.

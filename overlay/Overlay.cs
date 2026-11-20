@@ -1615,7 +1615,16 @@ namespace ClaudeSpeaks
             var box = new Border { CornerRadius = new CornerRadius(8), BorderBrush = Ui.Paint("#24FFFFFF"), BorderThickness = new Thickness(1), Padding = new Thickness(11, 5, 10, 6), MinWidth = 160, Cursor = Cursors.Hand, Child = face };
             Lit(box, "#17FFFFFF", "#26FFFFFF");
             popup.PlacementTarget = box;
-            box.MouseLeftButtonUp += delegate { popup.IsOpen = !popup.IsOpen; };
+            // A second click on the box closes the list (the author, 2026-11-20: "if I click again the
+            // select shouldn't it be closing"). The list already shuts on the press of that click, as
+            // any click outside it does, so the release must not open it again.
+            DateTime shut = DateTime.MinValue;
+            popup.Closed += delegate { shut = DateTime.UtcNow; };
+            box.MouseLeftButtonUp += delegate
+            {
+                if (popup.IsOpen) popup.IsOpen = false;
+                else if ((DateTime.UtcNow - shut).TotalMilliseconds > 400) popup.IsOpen = true;
+            };
             return box;
         }
 
