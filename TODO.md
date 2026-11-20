@@ -18,9 +18,6 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] The bubble no longer jumps to another session when words that waited are handed to
-      it while someone is speaking (2026-11-19): only a paper plane on that light. Seen in
-      a picture; whether that was the jump the author saw is read from the log.
 - [ ] A session's first spoken words before anything was typed to it (mended 2026-11-17:
       the first session after the hub had gone away had no listener until its first
       prompt; the author spoke to it twice and asked "why are you not receiving audio
@@ -29,14 +26,6 @@ these come before anything new.
       broken, the hub gone first, still untried. To try: close every session, wait for the hub to go
       (`sidetone hub stop` does it at once), open one session and speak to it
       without typing.
-- [ ] "Release to send" staying on the light (the author, 2026-11-18: "it got stuck in
-      recording wtf"). Found and mended the same hour: a press of the talk key shorter
-      than a third of a second left the sign up until the next hold, though nothing was
-      being recorded. **Not known whether that is what they saw**; the log had no line for
-      it (it has one for a short press now). Asked, they said: "I don't know. I wasn't
-      paying attention." So it stays open until it happens again; then `hub.log` will
-      show a short press if that was it. If it was a real hold that would not end, the
-      place to look is the overlay's keyboard hook losing the release (see `docs/dev/features.md`).
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
       A first one built on the evening of 2026-11-18 and put on their screen:
@@ -368,6 +357,23 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] "Release to send" staying on the light (the author, 2026-11-18: "it got stuck in
+      recording wtf"). Found and mended the same hour: a press of the talk key shorter
+      than a third of a second left the sign up until the next hold, though nothing was
+      being recorded. **Not known whether that is what they saw**; the log had no line for
+      it (it has one for a short press now). Asked, they said: "I don't know. I wasn't
+      paying attention." So it stays open until it happens again; then `hub.log` will
+      show a short press if that was it. If it was a real hold that would not end, the
+      place to look is the overlay's keyboard hook losing the release (see `docs/dev/features.md`).
+      The author, 2026-11-20, of this and the item on the bubble jumping (heard as "We already
+      0.2 and 3 from the muscle before": [did] 2 and 3 from the [list] before). The log
+      since has no short press and no words handed over late.
+- [x] The bubble no longer jumps to another session when words that waited are handed to
+      it while someone is speaking (2026-11-19): only a paper plane on that light. Seen in
+      a picture; whether that was the jump the author saw is read from the log.
+      The author, 2026-11-20, of this and the item on the bubble jumping (heard as "We already
+      0.2 and 3 from the muscle before": [did] 2 and 3 from the [list] before). The log
+      since has no short press and no words handed over late.
 - [x] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
       Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
       the talk key and say "clear the chat" to a session that is idle: its terminal should
