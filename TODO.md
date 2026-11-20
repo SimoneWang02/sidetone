@@ -18,15 +18,6 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] Your own words' sign hidden by another session's line (2026-11-19, the author: "I
-      just send an audio to session three and I immediately switch to session one, try
-      sending an audio, and I don't see the icon for sending the audio. I don't see the
-      status update"). In pictures of the same steps: with the details kept out the rows
-      show it ("Release to send", then the words and the paper plane); with only the bar,
-      session three's reply takes the bubble and session one's paper plane is only on its
-      light. That is the choice made earlier the same day (`overlay.sent_first`, off, after
-      "you started speaking without like the window popping out"). To ask which they were
-      in and which they want.
 - [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
       Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
       the talk key and say "clear the chat" to a session that is idle: its terminal should
@@ -48,10 +39,6 @@ these come before anything new.
 - [ ] The bubble no longer jumps to another session when words that waited are handed to
       it while someone is speaking (2026-11-19): only a paper plane on that light. Seen in
       a picture; whether that was the jump the author saw is read from the log.
-- [ ] A session that starts to speak right after you sent words to another one gets the
-      bubble at once (2026-11-19, the author: "you started speaking without like the
-      window popping out"); the "sent" sign stays on the other light. To try: talk to one
-      session while another has a line ready. `overlay.sent_first: true` is how it was.
 - [ ] A session's first spoken words before anything was typed to it (mended 2026-11-17:
       the first session after the hub had gone away had no listener until its first
       prompt; the author spoke to it twice and asked "why are you not receiving audio
@@ -397,6 +384,22 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] Your own words' sign hidden by another session's line (2026-11-19, the author: "I
+      just send an audio to session three and I immediately switch to session one, try
+      sending an audio, and I don't see the icon for sending the audio. I don't see the
+      status update"). In pictures of the same steps: with the details kept out the rows
+      show it ("Release to send", then the words and the paper plane); with only the bar,
+      session three's reply takes the bubble and session one's paper plane is only on its
+      light. That is the choice made earlier the same day (`overlay.sent_first`, off, after
+      "you started speaking without like the window popping out"). To ask which they were
+      in and which they want.
+      Tried 2026-11-20 (words sent to one session, then at once to another): "It seems to
+      have worked all [right]." So `overlay.sent_first` stays off.
+- [x] A session that starts to speak right after you sent words to another one gets the
+      bubble at once (2026-11-19, the author: "you started speaking without like the
+      window popping out"); the "sent" sign stays on the other light. To try: talk to one
+      session while another has a line ready. `overlay.sent_first: true` is how it was.
+      Tried with the item above on 2026-11-20: "It seems to have worked all [right]."
 - [x] The history following the mouse from row to row without lag (2026-11-19, the
       author: "if I move it real fast, there's a latency"): the open panel changed height
       in about 60 ms instead of half a second: "That's better ... more responsive". Now it
