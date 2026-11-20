@@ -4,14 +4,21 @@
 # With titles on (the default; "titles": "auto" in config.json turns them off) the tag also carries
 # a title for the session, which the overlay shows beside its name. The line is in the language
 # the user wrote or spoke in, with lang="xx" in the tag when that is not English, so the hub can
-# give it a voice of that language ("reply_language": "english" in config.json keeps it English).
+# give it a voice of that language.
 config=${XDG_CONFIG_HOME:-$HOME/.config}/sidetone/config.json
 titles=ask language=spoken
 if [ -f "$config" ]; then
   read -r titles language < <(jq -r '[.titles // "ask", .reply_language // "spoken"] | join(" ")' "$config" 2>/dev/null) || true
 fi
-if [ "$language" = english ]; then
+# Or always one language, chosen in the settings ("reply_language": "it"; "english" is the old "en").
+case $language in
+  english|en) name=English ;; it) name=Italian ;; es) name=Spanish ;; fr) name=French ;;
+  pt) name=Portuguese ;; ja) name=Japanese ;; zh) name=Chinese ;; hi) name=Hindi ;; *) name= ;;
+esac
+if [ "$name" = English ]; then
   words='plain spoken English'
+elif [ -n "$name" ]; then
+  words="plain spoken $name whatever language I used, with lang=\"$language\" in the tag"
 else
   words='plain spoken words in the language of my last message; when that is not English, also put lang="xx" in the tag with its two-letter code, such as lang="it"'
 fi

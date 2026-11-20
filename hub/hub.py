@@ -476,8 +476,8 @@ class Hub(Permissions, Talk):
         """The voice for a line in another language than English: one of Kokoro's voices for
         that language, of the same kind (female or male) as the session's own where there is
         one, and always the same for a session. None = the session's own voice, for English,
-        for a language Kokoro has no voice for, and with `reply_language: english`."""
-        if not lang or lang == "en" or self.cfg.reply_language == "english":
+        for a language Kokoro has no voice for, and with `reply_language: en`."""
+        if not lang or lang == "en" or base.fixed_language(self.cfg) == "en":
             return None
         engine = self.speech.engine
         for wanted in (self.cfg.language_voices.get(lang), PREFERRED_VOICE.get(lang)):

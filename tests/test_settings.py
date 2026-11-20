@@ -162,6 +162,29 @@ class Chosen(SettingsCase):
         described = {i["key"]: i for s in settings.describe(hub) for i in s["items"]}
         self.assertEqual(described["mute"]["help"], "No voice for any session. The mute key does the same.")
 
+    def test_the_summary_is_in_your_language_or_one_chosen(self):
+        """The author, 2026-11-20: "either dynamic ... or letting the user choose with a select"."""
+        hub = self.make(reply_language="english")  # the old name of English
+        self.assertEqual(settings.read(hub, "reply_language"), "en")
+        item = settings.items(hub)["reply_language"]
+        self.assertEqual((item["kind"], item["options"][:2]), ("pick", [["spoken", "Same as Yours"], ["en", "English"]]))
+        self.assertIn(["it", "Italian"], item["options"])
+        self.assertIsNone(hub.set_setting("reply_language", "it"))
+        self.assertEqual((base.fixed_language(hub.cfg), self.saved()["reply_language"]), ("it", "it"))
+        self.assertIsNone(hub.set_setting("reply_language", "spoken"))
+        self.assertEqual(base.fixed_language(hub.cfg), "")
+        self.assertIsNotNone(hub.set_setting("reply_language", "de"))  # no voice for it
+
+    def test_setting_names_are_in_title_case(self):
+        small = {"a", "an", "the", "of", "in", "to", "by", "for", "on", "or", "and", "at", "as"}
+        for _, section in settings.SECTIONS:
+            for item in section:
+                words = item["name"].strip('"').split()
+                for i, word in enumerate(words):
+                    if i and i < len(words) - 1 and word in small:
+                        continue
+                    self.assertTrue(word[0].isupper() or not word[0].isalpha(), item["name"])
+
     def test_the_voices_have_no_reset(self):
         hub = self.make()
         with unittest.mock.patch.object(settings, "_voices", lambda hub: [{"key": "voice_of.web", "kind": "pick", "name": "web", "help": "", "options": [["af_heart", "af_heart"]]}]):
@@ -186,7 +209,7 @@ class Chosen(SettingsCase):
         hub = self.make()
         top = [i for _, section in settings.SECTIONS for i in section if "." not in i["key"] and i["key"] != "mute"]
         for item in top:
-            value = (item["options"][-1][0] if item["kind"] == "choice" else not settings.read(hub, item["key"])
+            value = (item["options"][-1][0] if item["kind"] in ("choice", "pick") else not settings.read(hub, item["key"])
                      if item["kind"] == "switch" else item["max"])
             self.assertIsNone(hub.set_setting(item["key"], value), item["key"])
         home = os.path.dirname(os.path.dirname(self.cfg.config_path))

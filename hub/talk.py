@@ -441,9 +441,10 @@ class Talk:
 
     def _ask_aside(self, s, text: str, question: str, lang: str = "") -> None:
         """Have a throwaway copy of the session answer a side question, in the language it was
-        heard in (English with `reply_language: english`). Call with the lock held."""
+        heard in, or the one chosen in `reply_language`. Call with the lock held."""
         self._drop_aside(self._asides.get(s.id))  # a newer question for the same session replaces the older
-        lang = "" if self.cfg.reply_language == "english" else lang
+        fixed = base.fixed_language(self.cfg)
+        lang = ("" if fixed == "en" else fixed) if fixed else lang
         aside = self._asides[s.id] = Aside(s.id, text, lang=lang)
         self._talk("aside", s, text, "Answering on the side\u2026")
         self._aside_shown = aside

@@ -101,6 +101,14 @@ LANGUAGE_NAMES = {"it": "Italian", "zh": "Chinese", "es": "Spanish", "fr": "Fren
                   "pt": "Portuguese", "ja": "Japanese", "hi": "Hindi"}
 
 
+def fixed_language(cfg) -> str:
+    """The language every spoken line is in, as a two-letter code, or "" when it follows the
+    language you wrote or spoke in (`reply_language: spoken`). "english" is the name it had
+    before other languages could be chosen."""
+    chosen = str(cfg.reply_language or "spoken")
+    return "" if chosen == "spoken" else "en" if chosen == "english" else chosen
+
+
 def aside_prompt(question: str, lang: str = "") -> str:
     """What the copy is asked. It is told the day and the time, which it cannot look up (that
     first real question got "I can't read the clock from a side question"). `lang`: the
@@ -188,7 +196,9 @@ class Config:
     titles: str = "ask"
     # The language of the spoken line. "spoken": the one you wrote or spoke in; a line that is not
     # English carries lang="it" (or another code) in its tag and is said by a voice of that
-    # language. "english": always English, as before (the hook then asks for that).
+    # language. A code ("en", "it", ...): always that language, whatever you used (the author,
+    # 2026-11-20: "either dynamic ... or letting the user choose with a select"). "english" is
+    # the old name of "en". The hook asks for it in its reminder.
     reply_language: str = "spoken"
     # A voice per language for those lines, such as {"it": "if_sara"}; else tts.PREFERRED_VOICE,
     # else a Kokoro voice of that language picked per session.

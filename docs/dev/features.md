@@ -61,7 +61,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Chinese 8; all seven languages synthesized in a test (Japanese and Chinese go through
   espeak and were not listened to). No voice for the language (German, say): the session's
   own English voice reads it. `reply_language: english` keeps it as before; the hook reads
-  that from `config.json` like `titles`. The hub's own words ("Sent.", "I need your
+  that from `config.json` like `titles`. Since 2026-11-20 (the author: "either dynamic, so
+  depending on the input language, the output must match it ... or letting the user choose
+  with a select") it can be any language with a voice: `reply_language: it` and so on, a
+  dropdown in the window ("Same as Yours", English, then the rest by name);
+  `base.fixed_language` reads it, "english" being the old name of `en`. The hook then asks
+  for that language whatever was used, with its `lang` in the tag, and side questions are
+  answered in it. The hub's own words ("Sent.", "I need your
   input") stay English. Heard on the live hub only through `sidetone say -v if_sara`;
   **no session has answered the author in Italian yet.**
   Kokoro's Italian was "troppo robotica" to the author; of Kokoro's Sara and Nicola, Piper's
@@ -1086,6 +1092,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   A sentence that speaks of the mute, talk, cancel or repeat key gets the key it has now,
   "the mute key (Ctrl+Alt+M)" (`settings._with_keys`, 2026-11-20, the author: "in the
   description ... include also the shortcut key"); a key with no combination gets nothing.
+  Setting names in title case (2026-11-20, the author: "all setting[s] ... the title should be
+  in title case"); small words (of, the, to, ...) stay small inside a name. A test checks it.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.
