@@ -18,6 +18,12 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
+- [ ] Session names in the terminal tabs (the author said yes on 2026-11-20: "Sure, you can do
+      that"). Turned on: VS Code's `terminal.integrated.tabs.title` is `${sequence}`, the `env`
+      block of `~/.claude/settings.json` has `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1` (checked in
+      tmux: Claude Code then writes no title), `terminal title on`. **Not seen in VS Code yet.**
+      To try: open a new session; its tab should read "name · title". Sessions opened before
+      keep Claude Code's own title until restarted.
 - [ ] The history following the mouse from row to row without lag (2026-11-19, the
       author: "if I move it real fast, there's a latency"): the open panel changed height
       in about 60 ms instead of half a second: "That's better ... more responsive". Now it
@@ -99,11 +105,7 @@ these come before anything new.
 
 Questions for the author; nothing to build until they answer.
 
-- [ ] Session names in the terminal's tab. The hub can write "name · title" as the
-      terminal's title (`terminal title on`), but a VS Code tab only shows it with
-      `"terminal.integrated.tabs.title": "${sequence}"`, and Claude Code overwrites it
-      unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`. Both are the author's to
-      turn on; offered on 2026-11-17, not answered, not tried.
+Nothing open.
 
 ## 3. Speech in the author's languages
 

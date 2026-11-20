@@ -767,10 +767,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   to no terminal (the tests that start a real hub use it; the others record the writes).
   Checked: VS Code's terminal (xterm.js, in its `node_modules.asar`) handles OSC 11 and 111;
   the live hub found all four terminals. The author saw the tint and the flash at these strengths
-  in their four terminals and said "looks good". Tab names are not solved: VS Code
+  in their four terminals and said "looks good". Tab names: VS Code
   shows a written title only with `"terminal.integrated.tabs.title": "${sequence}"`, and Claude
-  Code writes its own title unless started with `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`; neither
-  is set on the author's machine, and nobody has checked which title wins.
+  Code writes its own title ("✳ Claude Code", then a summary of the prompt) unless
+  `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`. Checked 2026-11-20 in tmux: the variable works when set
+  in the `env` block of a settings file, and then Claude Code writes no title at all. All three
+  (VS Code's setting, the `env` block in `~/.claude/settings.json`, `terminal title on`) were
+  turned on that day at the author's yes ("Sure, you can do that"); backups end in
+  `.bak-before-title`. Sessions started before keep Claude Code's own title.
 - A typed prompt takes the focus (2026-11-18, `focus_on_prompt`, on by default; built
   while the author was away, on "list me ... the next things to do ... and you'll do it",
   **not agreed with them and not seen in use**). In `_apply`, a `UserPromptSubmit` whose

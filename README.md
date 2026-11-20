@@ -240,8 +240,8 @@ optional and holds all of them:
 mixed into; the default suits VS Code's dark theme, so set it if yours is light or different.
 `terminal.title` also writes the session's name into the terminal's title. A VS Code tab only
 shows that with `"terminal.integrated.tabs.title": "${sequence}"` in VS Code's settings, and
-Claude Code writes a title of its own unless it is started with
-`CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`.
+Claude Code writes a title of its own unless `CLAUDE_CODE_DISABLE_TERMINAL_TITLE` is `1`, which
+`"env": {"CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1"}` in `~/.claude/settings.json` does for every session.
 
 ## How it works
 
