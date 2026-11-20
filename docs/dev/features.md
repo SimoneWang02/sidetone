@@ -1124,6 +1124,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   system's own), set at once by `base.set_volume`; `sound_volume` (0.3) stays in config.json
   as the tones' level beside the voice, out of the window. Kokoro only; the system voices
   used without a hub keep the system volume.
+  "Say the Project Name" became "Say the Session Name" (the author: "the project name is
+  actually you saying the session name"). The settings window is resized from any edge or
+  corner (`AddGrips`, at least 700 by 400) and maximized by a button between minimize and
+  close or a double click on its top (`ToggleMax`: the work area of its screen; dragged
+  from there, it goes back to its size under the mouse); the settings keep at most 760 px
+  wide, in the middle (the author: "for settings panel to be resizable and also to have
+  like a maximized size button"). Not tried by them yet.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.

@@ -57,7 +57,7 @@ SECTIONS = [
         {"key": "reply_language", "kind": "pick", "name": "Language of the Summary",
          "help": "The spoken line in the language you wrote or spoke in, or always in one language.",
          "options": [["spoken", "Match My Language"]] + [[code, base.LANGUAGE_NAMES.get(code, "English")] for code in SUMMARY_LANGUAGES]},
-        choice("label", "Say the Project Name", "Say the session's name before each of its lines, so you know who talks without looking.",
+        choice("label", "Say the Session Name", "Say the session's name before each of its lines, so you know who talks without looking.",
                ("always", "Always"), ("never", "Never")),
         # "When Your Words Go Out" (talk_feedback: sound, voice, nothing) left the window on
         # 2026-11-20, the author: "I think the sound is kind of necessary ... only to sound". It is

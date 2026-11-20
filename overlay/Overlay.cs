@@ -1211,6 +1211,13 @@ namespace ClaudeSpeaks
     {
         public static readonly Color Accent = Color.FromRgb(0x00, 0x68, 0x96);  // the color of the tool's mark, the author's choice
         const double High = 560, Broad = 790, NavWidth = 176;
+        // Resized from any edge or corner, and maximized (the author, 2026-11-20: "for settings
+        // panel to be resizable and also to have like a maximized size button"). Maximized, the
+        // settings keep a width they read well at (ListMost), in the middle of the right side.
+        const double MinBroad = 700, MinHigh = 400, Edge = 6, ListMost = 760;
+        bool maxed;
+        Rect before;  // where it was before it was maximized
+        Border maxButton;
         public readonly Glass Window = new Glass(0, true);
         readonly Action<string, object> choose;  // a setting was chosen
         readonly Action closed;                  // the window was closed from here
@@ -1239,7 +1246,19 @@ namespace ClaudeSpeaks
             var root = new Grid();
             root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NavWidth) });
             root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            MouseButtonEventHandler move = delegate(object sender, MouseButtonEventArgs e) { try { Window.DragMove(); } catch (InvalidOperationException) { } };
+            MouseButtonEventHandler move = delegate(object sender, MouseButtonEventArgs e)
+            {
+                if (e.ClickCount == 2) { ToggleMax(); return; }  // as a window's title bar does
+                if (maxed)  // dragged away from maximized: back to its size, under the mouse where it was held
+                {
+                    Point at = e.GetPosition(Window), screen = OnScreen(e);
+                    double share = at.X / Math.Max(1, Window.Width);
+                    ToggleMax();
+                    Window.Left = screen.X - share * Window.Width;
+                    Window.Top = screen.Y - at.Y;
+                }
+                try { Window.DragMove(); } catch (InvalidOperationException) { }
+            };
 
             var side = new Grid();
             side.RowDefinitions.Add(new RowDefinition { Height = new GridLength(54) });
@@ -1264,6 +1283,8 @@ namespace ClaudeSpeaks
             head.MouseLeftButtonDown += move;
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 4, 10, 0) };
             buttons.Children.Add(HeadButton("M0,5 L9,5", delegate { Window.WindowState = WindowState.Minimized; }));
+            maxButton = HeadButton(MaxSign, delegate { ToggleMax(); });
+            buttons.Children.Add(maxButton);
             buttons.Children.Add(HeadButton("M0,0 L9,9 M9,0 L0,9", delegate { Close(); }));
             head.Children.Add(buttons);
             main.Children.Add(head);
@@ -1276,9 +1297,86 @@ namespace ClaudeSpeaks
             Grid.SetColumn(main, 1);
             root.Children.Add(main);
 
-            Window.Panel.Child = root;
+            list.MaxWidth = ListMost;
+            list.HorizontalAlignment = HorizontalAlignment.Center;
+            var frame = new Grid();
+            frame.Children.Add(root);
+            AddGrips(frame);
+            Window.Panel.Child = frame;
             Window.PreviewKeyDown += OnKey;
             Window.Deactivated += delegate { if (capturing.Length > 0) StopTyping(); };
+        }
+
+        const string MaxSign = "M0.5,0.5 L8.5,0.5 L8.5,8.5 L0.5,8.5 Z", RestoreSign = "M2.5,0.5 L8.5,0.5 L8.5,6.5 M0.5,2.5 L6.5,2.5 L6.5,8.5 L0.5,8.5 Z";
+
+        // Maximized to the work area of the screen it is on, or back to where it was.
+        void ToggleMax()
+        {
+            if (maxed)
+            {
+                maxed = false;
+                Window.Left = before.Left; Window.Top = before.Top; Window.Width = before.Width; Window.Height = before.Height;
+            }
+            else
+            {
+                before = new Rect(Window.Left, Window.Top, Window.Width, Window.Height);
+                System.Drawing.Rectangle area = System.Windows.Forms.Screen.FromHandle(Window.Handle).WorkingArea;
+                Matrix fromDevice = HwndSource.FromHwnd(Window.Handle).CompositionTarget.TransformFromDevice;
+                Point a = fromDevice.Transform(new Point(area.Left, area.Top)), b = fromDevice.Transform(new Point(area.Right, area.Bottom));
+                Window.Left = a.X; Window.Top = a.Y; Window.Width = b.X - a.X; Window.Height = b.Y - a.Y;
+                maxed = true;
+            }
+            ((System.Windows.Shapes.Path)maxButton.Child).Data = Geometry.Parse(maxed ? RestoreSign : MaxSign);
+            scroll.UpdateLayout();
+            ShowThumb();
+        }
+
+        // Where the mouse is, in the units the window is placed in.
+        Point OnScreen(MouseEventArgs e)
+        {
+            Point device = Window.PointToScreen(e.GetPosition(Window));
+            return HwndSource.FromHwnd(Window.Handle).CompositionTarget.TransformFromDevice.Transform(device);
+        }
+
+        // A thin strip along each edge and a square at each corner, which the window is resized by.
+        // The corners come last, so they are on top of the strips.
+        void AddGrips(Grid frame)
+        {
+            foreach (string side in new[] { "W", "E", "N", "S", "NW", "NE", "SW", "SE" })
+            {
+                bool west = side.Contains("W"), east = side.Contains("E"), north = side.Contains("N"), south = side.Contains("S");
+                var grip = new Border { Background = Brushes.Transparent };
+                grip.HorizontalAlignment = west ? HorizontalAlignment.Left : east ? HorizontalAlignment.Right : HorizontalAlignment.Stretch;
+                grip.VerticalAlignment = north ? VerticalAlignment.Top : south ? VerticalAlignment.Bottom : VerticalAlignment.Stretch;
+                if (west || east) grip.Width = side.Length == 2 ? Edge * 2 : Edge;
+                if (north || south) grip.Height = side.Length == 2 ? Edge * 2 : Edge;
+                grip.Cursor = (west && north) || (east && south) ? Cursors.SizeNWSE : (east && north) || (west && south) ? Cursors.SizeNESW
+                    : west || east ? Cursors.SizeWE : Cursors.SizeNS;
+                Point start = new Point();
+                Rect from = Rect.Empty;
+                grip.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e)
+                {
+                    e.Handled = true;
+                    if (maxed) return;
+                    start = OnScreen(e);
+                    from = new Rect(Window.Left, Window.Top, Window.Width, Window.Height);
+                    grip.CaptureMouse();
+                };
+                grip.MouseMove += delegate(object sender, MouseEventArgs e)
+                {
+                    if (!grip.IsMouseCaptured) return;
+                    Point now = OnScreen(e);
+                    double dx = now.X - start.X, dy = now.Y - start.Y, left = from.Left, top = from.Top, wide = from.Width, high = from.Height;
+                    if (east) wide = Math.Max(MinBroad, from.Width + dx);
+                    if (south) high = Math.Max(MinHigh, from.Height + dy);
+                    if (west) { wide = Math.Max(MinBroad, from.Width - dx); left = from.Right - wide; }
+                    if (north) { high = Math.Max(MinHigh, from.Height - dy); top = from.Bottom - high; }
+                    Window.Left = left; Window.Top = top; Window.Width = wide; Window.Height = high;
+                    ShowThumb();
+                };
+                grip.MouseLeftButtonUp += delegate { grip.ReleaseMouseCapture(); };
+                frame.Children.Add(grip);
+            }
         }
 
         // One of the small buttons at the top right: a sign drawn with a few strokes.
