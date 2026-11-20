@@ -151,6 +151,17 @@ class Chosen(SettingsCase):
         self.assertEqual(self.window.of("settings"), [])  # the window was shut: nothing sent to it
         self.assertIsNotNone(hub.set_setting("reset", "Colors"))
 
+    def test_a_description_names_the_key_it_speaks_of(self):
+        hub = self.make()
+        mute = settings.items(hub)["mute"]
+        described = {i["key"]: i for s in settings.describe(hub) for i in s["items"]}
+        self.assertEqual(described["mute"]["help"], "No voice for any session. The mute key (Ctrl+Alt+M) does the same.")
+        self.assertIn("the cancel key (Ctrl+Alt+Backspace)", described["followup_delay"]["help"])
+        self.assertEqual(mute["help"], "No voice for any session. The mute key does the same.")  # SECTIONS itself unchanged
+        hub.set_setting("overlay.hotkeys.mute", "")
+        described = {i["key"]: i for s in settings.describe(hub) for i in s["items"]}
+        self.assertEqual(described["mute"]["help"], "No voice for any session. The mute key does the same.")
+
     def test_the_voices_have_no_reset(self):
         hub = self.make()
         with unittest.mock.patch.object(settings, "_voices", lambda hub: [{"key": "voice_of.web", "kind": "pick", "name": "web", "help": "", "options": [["af_heart", "af_heart"]]}]):

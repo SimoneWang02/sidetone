@@ -1083,6 +1083,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `terminal.DEFAULTS`, the voice on. Voices has none (a project's voice comes from the
   pool), so no button there. Also `sidetone settings reset SECTION`. Not drawn in a picture:
   the author's own settings window was open where the test one opens.
+  A sentence that speaks of the mute, talk, cancel or repeat key gets the key it has now,
+  "the mute key (Ctrl+Alt+M)" (`settings._with_keys`, 2026-11-20, the author: "in the
+  description ... include also the shortcut key"); a key with no combination gets nothing.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.

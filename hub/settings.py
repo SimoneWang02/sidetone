@@ -19,6 +19,7 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+import re
 
 import base
 import overlay as overlay_mod
@@ -223,6 +224,18 @@ def _same(item: dict, now, then) -> bool:
         return False
 
 
+def _with_keys(hub, help: str) -> str:
+    """"the mute key" in a sentence gets the key it is now, "the mute key (Ctrl+Alt+M)" (the
+    author, 2026-11-20: "in the description ... include also the shortcut key"). A key left
+    without a combination gets nothing."""
+    keys = hub.cfg.overlay.get("hotkeys", {})
+
+    def named(m):
+        combo = keys.get(m.group(2).lower(), "")
+        return f"{m.group(0)} ({combo})" if combo else m.group(0)
+    return re.sub(r"\b(the) (mute|talk|cancel|repeat) key\b", named, help, flags=re.I)
+
+
 def describe(hub) -> list:
     """The sections as the window draws them: every setting with what it is now, and whether
     any of them differs from a new install's (`changed`, for the section's reset button)."""
@@ -230,7 +243,7 @@ def describe(hub) -> list:
     for name, section in SECTIONS:
         listed = _voices(hub) if name == "Voices" else section
         if listed:
-            values = [{**item, "value": read(hub, item["key"])} for item in listed]
+            values = [{**item, "help": _with_keys(hub, item["help"]), "value": read(hub, item["key"])} for item in listed]
             resettable = [i for i in values if default(i["key"]) is not None]
             sections.append({"name": name, "items": values, "resettable": bool(resettable),
                              "changed": any(not _same(i, i["value"], default(i["key"])) for i in resettable)})
