@@ -1423,9 +1423,41 @@ namespace ClaudeSpeaks
                     lines.Children.Add(Line((Dictionary<string, object>)i));
                 }
                 list.Children.Add(card);
+                if (section.ContainsKey("resettable") && Convert.ToBoolean(section["resettable"], CultureInfo.InvariantCulture))
+                    list.Children.Add(ResetButton(name, section.ContainsKey("changed") && Convert.ToBoolean(section["changed"], CultureInfo.InvariantCulture)));
             }
             scroll.UpdateLayout();
             ShowThumb();
+        }
+
+        // Under a section's card: its settings back as a new install has them (the author,
+        // 2026-11-20: "for each category ... a reset button at the end"). Faint while nothing
+        // differs; the first click asks, the second within 4 s resets.
+        string confirming = "";
+        UIElement ResetButton(string section, bool changed)
+        {
+            bool asking = changed && confirming == section;
+            var button = new Border { CornerRadius = new CornerRadius(7), Padding = new Thickness(13, 6, 13, 7), Margin = new Thickness(0, 14, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+            button.Child = new TextBlock { Text = asking ? "Click again to reset" : "Reset to defaults", FontSize = 12, FontWeight = asking ? FontWeights.SemiBold : FontWeights.Normal, Foreground = changed ? (asking ? Brushes.White : Ui.Dim) : Ui.Faint };
+            if (!changed)
+            {
+                button.Background = Ui.Paint("#08FFFFFF");
+                button.ToolTip = "Nothing here differs from the defaults";
+                return button;
+            }
+            button.Cursor = Cursors.Hand;
+            if (asking) button.Background = new SolidColorBrush(Color.FromArgb(0xB0, Accent.R, Accent.G, Accent.B));
+            else Lit(button, "#12FFFFFF", "#22FFFFFF");
+            button.MouseLeftButtonUp += delegate
+            {
+                if (confirming == section) { confirming = ""; choose("reset", section); return; }
+                confirming = section;
+                var wait = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+                wait.Tick += delegate { wait.Stop(); if (confirming == section) { confirming = ""; Fill(); } };
+                wait.Start();
+                Fill();
+            };
+            return button;
         }
 
         // One setting: its name and a sentence about it at the left, what sets it at the right.

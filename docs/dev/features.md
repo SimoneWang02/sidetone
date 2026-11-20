@@ -1071,6 +1071,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   program in front, and since it is no longer always on top it came up behind that
   program. `Show` now puts it on top for an instant (`Topmost` on and off) before asking
   for the keyboard. They then saw it and tried the taskbar: "It works perfectly, thanks."
+  A reset button under each section's card (2026-11-20, the author: "for each category I
+  think it would be cool to have like a reset button at the end"; `settings.reset`,
+  `settings.default`, `SettingsWindow.ResetButton`). "Reset to defaults", faint while the
+  section's `changed` is false; the first click turns it into "Click again to reset" on the
+  tool's blue for 4 s, the second sends the setting `reset` with the section's name, and the
+  hub puts each setting that differs back through `apply`, so it acts at once and is written
+  to config.json. A default is what a new install has: `Config`'s own, `overlay.DEFAULTS`,
+  `terminal.DEFAULTS`, the voice on. Voices has none (a project's voice comes from the
+  pool), so no button there. Also `sidetone settings reset SECTION`. Not drawn in a picture:
+  the author's own settings window was open where the test one opens.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.

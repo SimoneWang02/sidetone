@@ -551,6 +551,9 @@ if not ONLY or "settings".startswith(ONLY) or "logo".startswith(ONLY):
 for section in SETTINGS:
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section=section["name"])
     shot("settings-" + section["name"].lower(), 0.7)
+CHANGED = [{**s, "changed": s["name"] == "Voice"} for s in SETTINGS]  # one setting of Voice moved: its reset button lit
+send(type="settings", open=True, quiet=True, sections=CHANGED, section="Voice")
+shot("settings-voice-changed", 0.7)
 # What is drawn answers to a click: one on a choice, a switch, a section at the left, a
 # hotkey. The places are read off the pictures above (the window's own units, from its corner).
 def click(section, x, y, expect):

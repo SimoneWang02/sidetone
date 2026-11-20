@@ -16,10 +16,13 @@ restart. Adding a setting to the window is adding a line here.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 
 import base
+import overlay as overlay_mod
+import terminal as terminal_mod
 
 
 def choice(key: str, name: str, help: str, *options) -> dict:
@@ -194,14 +197,59 @@ def read(hub, key: str):
     return value
 
 
+def default(key: str):
+    """What a setting is on a new install; None for one that has no single default (a
+    project's voice is handed out from the pool)."""
+    if key == "voice":
+        return True
+    if key.startswith("voice_of."):
+        return None
+    if key.startswith("overlay.hotkeys."):
+        return overlay_mod.DEFAULTS["hotkeys"].get(key[16:], "")
+    if key.startswith("overlay."):
+        return overlay_mod.DEFAULTS.get(key[8:])
+    if key.startswith("terminal."):
+        return terminal_mod.DEFAULTS.get(key[9:])
+    found = {f.name: f for f in dataclasses.fields(base.Config)}[key]
+    return found.default_factory() if found.default is dataclasses.MISSING else found.default
+
+
+def _same(item: dict, now, then) -> bool:
+    try:
+        return _fit(item, now) == _fit(item, then)
+    except ValueError:
+        return False
+
+
 def describe(hub) -> list:
-    """The sections as the window draws them: every setting with what it is now."""
+    """The sections as the window draws them: every setting with what it is now, and whether
+    any of them differs from a new install's (`changed`, for the section's reset button)."""
     sections = []
     for name, section in SECTIONS:
         listed = _voices(hub) if name == "Voices" else section
         if listed:
-            sections.append({"name": name, "items": [{**item, "value": read(hub, item["key"])} for item in listed]})
+            values = [{**item, "value": read(hub, item["key"])} for item in listed]
+            resettable = [i for i in values if default(i["key"]) is not None]
+            sections.append({"name": name, "items": values, "resettable": bool(resettable),
+                             "changed": any(not _same(i, i["value"], default(i["key"])) for i in resettable)})
     return sections
+
+
+def reset(hub, section: str) -> str | None:
+    """Put every setting of one section back as a new install has it (the author, 2026-11-20:
+    "for each category ... a reset button at the end"). Each goes through `apply`, so it takes
+    effect at once as if chosen by hand. Returns what is wrong, or None."""
+    listed = next((s for name, s in SECTIONS if name.lower() == section.lower()), None)
+    if listed is None:
+        return f"no section called {section}"
+    changed = [item for item in listed if default(item["key"]) is not None
+               and not _same(item, read(hub, item["key"]), default(item["key"]))]
+    for item in changed:
+        error = apply(hub, item["key"], default(item["key"]))
+        if error:
+            return error
+    base.log(hub.cfg, "hub.log", f"settings of {section} reset: {len(changed)} changed back")
+    return None
 
 
 def _fit(item: dict, value):

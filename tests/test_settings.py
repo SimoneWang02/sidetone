@@ -125,6 +125,38 @@ class Chosen(SettingsCase):
         self.assertEqual(hub.cfg.unsend_seconds, 10)
         self.assertEqual(self.saved(), {"label": "always", "speed": 1.35, "unsend_seconds": 10})
 
+    def test_every_setting_has_a_default_it_can_take(self):
+        hub = self.make()
+        for key, item in settings.items(hub).items():
+            if not key.startswith("voice_of."):
+                self.assertEqual(settings._fit(item, settings.default(key)), settings.default(key), key)
+
+    def test_a_section_is_reset_to_what_a_new_install_has(self):
+        """The author, 2026-11-20: "for each category ... a reset button at the end"."""
+        hub = self.make()
+        open(self.cfg.mute_file, "a").close()
+        for key, value in (("speed", 1.4), ("label", "always"), ("overlay.layout", "island"), ("history_time", True)):
+            self.assertIsNone(hub.set_setting(key, value))
+        voice = next(s for s in settings.describe(hub) if s["name"] == "Voice")
+        self.assertTrue(voice["resettable"] and voice["changed"])
+        self.assertIsNone(hub.set_setting("reset", "Voice"))
+        self.assertEqual((hub.cfg.speed, self.engine.speed, hub.cfg.label), (Config.speed, Config.speed, Config.label))
+        self.assertFalse(os.path.exists(self.cfg.mute_file))  # the voice is on again
+        self.assertEqual((hub.cfg.overlay["layout"], hub.cfg.history_time), ("island", True))  # other sections stay
+        voice = next(s for s in settings.describe(hub) if s["name"] == "Voice")
+        self.assertFalse(voice["changed"])
+        self.assertEqual(self.saved()["speed"], Config.speed)  # what the next hub starts with
+        self.assertIsNone(hub.set_setting("reset", "overlay"))  # any case, as from the command line
+        self.assertEqual(hub.cfg.overlay["layout"], overlay.DEFAULTS["layout"])
+        self.assertEqual(self.window.of("settings"), [])  # the window was shut: nothing sent to it
+        self.assertIsNotNone(hub.set_setting("reset", "Colors"))
+
+    def test_the_voices_have_no_reset(self):
+        hub = self.make()
+        with unittest.mock.patch.object(settings, "_voices", lambda hub: [{"key": "voice_of.web", "kind": "pick", "name": "web", "help": "", "options": [["af_heart", "af_heart"]]}]):
+            voices = next(s for s in settings.describe(hub) if s["name"] == "Voices")
+        self.assertFalse(voices["resettable"])
+
     def test_what_is_kept_is_what_a_new_hub_starts_with(self):
         hub = self.make()
         for key, value in (("label", "never"), ("progress", False), ("usage_models", "near"), ("turn_tokens", "all"),

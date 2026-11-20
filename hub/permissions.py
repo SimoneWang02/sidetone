@@ -295,10 +295,11 @@ class Permissions:
         return muted
 
     def set_setting(self, key: str, value) -> str | None:
-        """Something was chosen, in the window or with `sidetone settings KEY VALUE`. Returns
+        """Something was chosen, in the window or with `sidetone settings KEY VALUE` (the key
+        `reset` with a section's name puts that section back as a new install has it). Returns
         what is wrong with it, or None. The window is then told how things stand: it draws
         what the hub has, so a choice that was not taken does not look as if it were."""
-        error = settings_mod.apply(self, key, value)
+        error = settings_mod.reset(self, value) if key == "reset" else settings_mod.apply(self, key, value)
         if error:
             log(self.cfg, "hub.log", f"setting not changed: {error}")
         if self._settings_open and self.overlay:

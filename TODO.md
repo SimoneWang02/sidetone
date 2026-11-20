@@ -48,6 +48,9 @@ these come before anything new.
       hotkey.
       On 2026-11-19 the author put it last of the things to try: "the settings are the
       last things to try because there are so many".
+      2026-11-20: going through it one section at a time, Voice first. Their idea on the
+      way in: a reset button at the end of each section; built ("Reset to defaults", a
+      second click within 4 s confirms; none for Voices). **Not seen by them yet.**
 
 ## 2. To decide
 
