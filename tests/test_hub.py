@@ -1511,6 +1511,21 @@ class PushToTalk(HubCase):
         self.assertEqual([e["text"] for e in hub.history], ["line of b"])
         self.assertEqual(hub.history.maxlen, 100)
 
+    def test_a_cleared_session_keeps_its_place_name_color_and_voice(self):
+        """The author cleared the third of four sessions and it "went straight to the bottom of
+        the overlay bar": /clear starts a new session, and a new one went last."""
+        hub = self.make()
+        for sid in ("a", "b", "c", "d"):
+            hub.on_event(ev("SessionStart", sid=sid, cwd="/w/proj"))
+        before = {k: getattr(hub.sessions.by_id["c"], k) for k in ("name", "color", "voice")}
+        hub.on_event(ev("SessionEnd", sid="c", cwd="/w/proj", reason="clear"))
+        hub.on_event(ev("SessionStart", sid="c2", cwd="/w/proj", source="clear"))
+        self.assertEqual(list(hub.sessions.by_id), ["a", "b", "c2", "d"])
+        self.assertEqual({k: getattr(hub.sessions.by_id["c2"], k) for k in before}, before)
+        hub.on_event(ev("SessionEnd", sid="b", cwd="/w/proj", reason="other"))
+        hub.on_event(ev("SessionStart", sid="e", cwd="/w/proj", source="startup"))
+        self.assertEqual(list(hub.sessions.by_id)[-1], "e")  # a session that was only closed leaves its place
+
     def test_clear_the_chat_is_only_typed_for_a_session_at_its_prompt(self):
         """It is typed with an Enter, which would answer a dialog that is open in the terminal:
         said during a turn, it waits for the session to be back at its prompt."""

@@ -193,6 +193,7 @@ class Hub(Permissions, Talk):
             if event == "SessionEnd":
                 self._cleared(sid, ev.get("reason") == "clear")
                 if ev.get("reason") == "clear":
+                    self.sessions.clearing(sid)
                     # The chat is gone, so are its lines: the session that follows in the same
                     # terminal gets the same name, and the history (kept by name) showed them.
                     self.history = collections.deque((e for e in self.history if e.get("session") != sid),
@@ -204,7 +205,8 @@ class Hub(Permissions, Talk):
                 return
             if sid in self._ended:  # an event of it that came after its end (hooks report on their own)
                 return
-            s = self.sessions.touch(sid, ev.get("cwd", ""))
+            s = self.sessions.touch(sid, ev.get("cwd", ""),
+                                    after_clear=event == "SessionStart" and ev.get("source") == "clear")
             s.permission_mode = str(ev.get("permission_mode") or s.permission_mode)
             if event in ("PostToolUse", "PostToolUseFailure"):  # that tool ran: its prompt was answered
                 self._settle(sid, "answered in the terminal", ev.get("tool_name"), ev.get("tool_input"))

@@ -26,7 +26,10 @@ these come before anything new.
       The author cleared one the same night. Asked for then and built: once the chat is
       really cleared, the "sent" notes (or "Chat cleared." with spoken feedback), and
       nothing before; nothing within 10 s gives "Not cleared" and the low notes.
-      **Not heard in use yet.**
+      Tried 2026-11-20: "It seemed to have cleared the [chat]"; it then went to the bottom of
+      the bar, mended the same hour (a cleared session keeps its place, name, color and
+      voice; tests only). The first try was heard as "I'll clear this hat." and went to
+      the session as a prompt.
       Open:
       - does the speech model write the order cleanly enough (it has to be the whole of
         what was said); other phrases go in `clear_words`, Italian ones too

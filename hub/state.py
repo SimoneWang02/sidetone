@@ -39,6 +39,7 @@ TOO_CLOSE = 40.0
 ACTIVE_WINDOW = 15 * 60  # a session counts as active this long after its last event
 FORGET_AFTER = 6 * 3600  # sessions killed without a SessionEnd are dropped after this
 KEPT_FOR = 15 * 60  # after a hub restart, a session that has not reported yet keeps its name, color and voice this long
+HEIR_WITHIN = 30.0  # seconds a cleared session's place waits for the session Claude Code starts after it
 
 # The spoken line. Its tag may carry the session's own title and, when the line is not in
 # English, its language: <speak title="Login page redesign" lang="it">...</speak>, in any order.
@@ -245,9 +246,13 @@ class Sessions:
         # Sessions an earlier hub knew that have not reported to this one yet (see keep()).
         self.kept: dict[str, dict] = {}
         self.kept_at = 0.0
+        # Places of sessions just cleared, by folder: /clear ends a session and starts a new one in
+        # the same terminal, which takes the old one's name, color, voice and place in the bar.
+        self.cleared: dict[str, tuple[dict, float]] = {}
 
-    def touch(self, sid: str, cwd: str) -> Session:
-        """Return the session, creating it on first sight (the hub may start after the session)."""
+    def touch(self, sid: str, cwd: str, after_clear: bool = False) -> Session:
+        """Return the session, creating it on first sight (the hub may start after the session).
+        `after_clear`: it is the one Claude Code started for a cleared conversation."""
         now = time.monotonic()
         for old in [k for k, s in self.by_id.items() if now - s.updated > FORGET_AFTER]:
             del self.by_id[old]
@@ -256,7 +261,12 @@ class Sessions:
         s = self.by_id.get(sid)
         if s is None:
             was = self.kept.pop(sid, None)
-            if was:  # known before the hub restarted: the same name, color, voice and place as then
+            heir = self.cleared.pop(cwd, None) if after_clear else None
+            if heir and now - heir[1] < HEIR_WITHIN and not any(o.name == heir[0]["name"] for o in self.by_id.values()):
+                old = heir[0]  # the chat is new, so its title is not kept
+                s = Session(id=sid, cwd=cwd, name=old["name"], voice=self.pinned.get(old["name"], old["voice"]),
+                            color=old["color"], order=old["order"])
+            elif was:  # known before the hub restarted: the same name, color, voice and place as then
                 s = Session(id=sid, cwd=cwd or was["cwd"], name=was["name"],
                             voice=self.pinned.get(was["name"], was["voice"]), color=was["color"],
                             title=was["title"], named=was["named"], settled=was["settled"], given=was["given"],
@@ -290,6 +300,12 @@ class Sessions:
         self.by_id.clear()
         self.by_id.update(now)
         return True
+
+    def clearing(self, sid: str) -> None:
+        """The session ended by /clear: keep its place for the one that follows (see touch)."""
+        s = self.by_id.get(sid)
+        if s:
+            self.cleared[s.cwd] = ({"name": s.name, "voice": s.voice, "color": s.color, "order": s.order}, time.monotonic())
 
     def remove(self, sid: str) -> None:
         self.by_id.pop(sid, None)

@@ -886,6 +886,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   one push-to-talk step (the author, 2026-11-19: "I don't see the registering icon
   anymore"; the recording went on and arrived). Late news of a clear (`late=True`,
   `_clear_late`) now leaves the overlay alone while `Talk._talk_held`.
+  Tried again 2026-11-20: cleared, but the session "went straight to the bottom of the
+  overlay bar", since the session `/clear` starts has a new id and a new one went last. Now
+  `Sessions.clearing` keeps the cleared one's name, color, voice and place by folder, and the
+  `SessionStart` with `source: "clear"` in that folder within `HEIR_WITHIN` (30 s) takes them
+  (not its title: the chat is new). Two sessions of one folder cleared in the same 30 s
+  could swap places. The same try showed a misheard order: "I'll clear this hat." went to
+  the session as a prompt.
 - Words handed over do not take the bubble from a speaker (2026-11-19, `quiet` on the
   `talk` message, `hushed` in `UpdateBubble`). The author: while this session was speaking,
   "session one was done. His message popped out briefly and then your message continued.
