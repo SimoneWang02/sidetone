@@ -43,6 +43,11 @@ def hotkey(name: str, label: str, help: str = "") -> dict:
     return {"key": f"overlay.hotkeys.{name}", "kind": "key", "name": label, "help": help}
 
 
+# The languages the summary can be held to: those whose voices have been chosen and heard (the
+# author, 2026-11-20: "we can just limit to Italian, English and Chinese ... we can add the rest
+# in the future"). Kokoro has voices for es, fr, hi, ja and pt as well, not yet listened to.
+SUMMARY_LANGUAGES = ["en", "it", "zh"]
+
 SECTIONS = [
     ("Voice", [
         # Was "Voice", "Speak a short summary of each reply.": the author took it for short or long
@@ -51,8 +56,7 @@ SECTIONS = [
         number("speed", "Speed", "How fast the voice talks.", 0.7, 1.6, 0.05, "x"),
         {"key": "reply_language", "kind": "pick", "name": "Language of the Summary",
          "help": "The spoken line in the language you wrote or spoke in, or always in one language.",
-         "options": [["spoken", "Same as Yours"], ["en", "English"]]
-         + sorted([[code, name] for code, name in base.LANGUAGE_NAMES.items() if code != "de"], key=lambda o: o[1])},
+         "options": [["spoken", "Match My Language"]] + [[code, base.LANGUAGE_NAMES.get(code, "English")] for code in SUMMARY_LANGUAGES]},
         choice("label", "Say the Project Name", "Before a line, so you know who talks without looking.",
                ("auto", "When needed"), ("always", "Always"), ("never", "Never")),
         switch("progress", "Progress in Long Turns", "Say how many steps are done while a long turn runs."),

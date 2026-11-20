@@ -64,7 +64,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   that from `config.json` like `titles`. Since 2026-11-20 (the author: "either dynamic, so
   depending on the input language, the output must match it ... or letting the user choose
   with a select") it can be any language with a voice: `reply_language: it` and so on, a
-  dropdown in the window ("Same as Yours", English, then the rest by name);
+  dropdown in the window ("Match My Language", English, Italian, Chinese: the languages
+  whose voices were chosen and heard, `settings.SUMMARY_LANGUAGES`; the author, the same hour:
+  "we can just limit to Italian, English and Chinese ... add the rest in the future". The
+  first label, "Same as Yours", they found unclear and offered "reactive to input");
   `base.fixed_language` reads it, "english" being the old name of `en`. The hook then asks
   for that language whatever was used, with its `lang` in the tag, and side questions are
   answered in it. The hub's own words ("Sent.", "I need your

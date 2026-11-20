@@ -167,13 +167,13 @@ class Chosen(SettingsCase):
         hub = self.make(reply_language="english")  # the old name of English
         self.assertEqual(settings.read(hub, "reply_language"), "en")
         item = settings.items(hub)["reply_language"]
-        self.assertEqual((item["kind"], item["options"][:2]), ("pick", [["spoken", "Same as Yours"], ["en", "English"]]))
-        self.assertIn(["it", "Italian"], item["options"])
+        self.assertEqual((item["kind"], item["options"]),
+                         ("pick", [["spoken", "Match My Language"], ["en", "English"], ["it", "Italian"], ["zh", "Chinese"]]))
         self.assertIsNone(hub.set_setting("reply_language", "it"))
         self.assertEqual((base.fixed_language(hub.cfg), self.saved()["reply_language"]), ("it", "it"))
         self.assertIsNone(hub.set_setting("reply_language", "spoken"))
         self.assertEqual(base.fixed_language(hub.cfg), "")
-        self.assertIsNotNone(hub.set_setting("reply_language", "de"))  # no voice for it
+        self.assertIsNotNone(hub.set_setting("reply_language", "fr"))  # its voices not heard yet
 
     def test_setting_names_are_in_title_case(self):
         small = {"a", "an", "the", "of", "in", "to", "by", "for", "on", "or", "and", "at", "as"}
