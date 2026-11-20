@@ -107,6 +107,16 @@ FEEDBACK_WORDS = {"Sent.": {"it": "Inviato.", "zh": "已发送。"},
                   "Queued.": {"it": "In attesa.", "zh": "排队中。"}}
 
 
+def set_volume(hub) -> None:
+    """Give the voice and the sounds the volume in `Config.volume`: both players get it, so
+    the sounds keep their level beside the voice (`sound_volume`)."""
+    cfg = hub.cfg
+    if hasattr(hub.speech.engine, "volume"):
+        hub.speech.engine.volume = cfg.volume
+    if hub.sounds:
+        hub.sounds.master = cfg.volume
+
+
 def fixed_language(cfg) -> str:
     """The language every spoken line is in, as a two-letter code, or "" when it follows the
     language you wrote or spoke in (`reply_language: spoken`). "english" is the name it had
@@ -366,7 +376,8 @@ class Config:
     # in the session's voice, which waits its turn behind a line being spoken) or "none".
     # Without a way to play sounds, "sound" falls back to the voice.
     talk_feedback: str = "sound"
-    sound_volume: float = 0.3  # 0 to 1
+    sound_volume: float = 0.3  # 0 to 1: the short sounds beside the voice
+    volume: float = 1.0  # 0 to 1: the voice and the sounds together, below the system's volume
     whisper_language: str = "en"  # for multilingual models such as "small": "it", "en,it" (the ones you speak), or "auto"
     # With several languages: a short recording whose language the model is unsure of is also
     # written in the language you last spoke clearly in, and kept so unless clearly worse
@@ -410,7 +421,7 @@ class Config:
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "whisper_language", "whisper_lean", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
-                    "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
+                    "talk_feedback", "sound_volume", "volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])
         wanted = user.get("overlay") or {}

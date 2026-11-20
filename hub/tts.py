@@ -95,6 +95,7 @@ class KokoroEngine:
     def __init__(self, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = "",
                  piper_dir: str = os.path.expanduser("~/.local/share/piper")):
         self.dir, self.speed, self.fallback_voice = kokoro_dir, speed, fallback_voice
+        self.volume = 1.0  # 0 to 1 of the system's volume (`Config.volume`)
         self.custom_dir = custom_dir  # the user's own voices, one .npy file each
         self.custom: dict = {}
         # Piper's voices, named "piper:<model>" (piper:it_IT-paola-medium): for languages whose
@@ -268,7 +269,8 @@ class KokoroEngine:
         proc = self._proc = subprocess.Popen(
             # A small buffer: by default the player waits for more audio before it starts, which
             # delayed a labelled line by about 0.3 s (measured on the speakers' output).
-            ["paplay", "--raw", f"--rate={self.RATE}", "--format=s16le", "--channels=1", "--latency-msec=50"],
+            ["paplay", "--raw", f"--rate={self.RATE}", "--format=s16le", "--channels=1", "--latency-msec=50",
+             f"--volume={round(65536 * max(0.0, min(1.0, self.volume)))}"],
             stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         try:

@@ -1116,6 +1116,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   The same hour the author took the choice out of the window: "I think we can remove this
   setting. I think the sound is kind of necessary ... only to sound". `talk_feedback` stays
   in config.json (and the words where no sound can be played); Sound Volume explains the sounds.
+  Then one Volume for the voice and the sounds (`volume`, 0 to 1, 1 by default; the author:
+  "do one thing for both so it's more consistent ... maybe I want it overall below the
+  window[s] system"): both players get `paplay --volume` (PulseAudio's scale, 65536 = the
+  system's own), set at once by `base.set_volume`; `sound_volume` (0.3) stays in config.json
+  as the tones' level beside the voice, out of the window. Kokoro only; the system voices
+  used without a hub keep the system volume.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.

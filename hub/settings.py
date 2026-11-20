@@ -62,7 +62,9 @@ SECTIONS = [
         # "When Your Words Go Out" (talk_feedback: sound, voice, nothing) left the window on
         # 2026-11-20, the author: "I think the sound is kind of necessary ... only to sound". It is
         # still read from config.json.
-        number("sound_volume", "Sound Volume", "How loud the short sounds are that say your words went out, waited or failed.", 0.0, 1.0, 0.05),
+        # One volume for the voice and the sounds (the author, 2026-11-20: "do one thing for both so
+        # it's more consistent"); `sound_volume` stays in config.json as the sounds' level beside the voice.
+        number("volume", "Volume", "The voice and the short sounds together, below your system's own volume.", 0.0, 1.0, 0.05),
     ]),
     ("Voices", []),  # filled in by `describe`: one line for each project, with the voices this machine has
     ("Talking", [
@@ -369,6 +371,8 @@ def apply(hub, key: str, value) -> str | None:
         setattr(cfg, key, value)
         if key == "speed" and hasattr(hub.speech.engine, "speed"):
             hub.speech.engine.speed = value
+        if key == "volume":
+            base.set_volume(hub)
         if key == "usage_shown" and value:
             hub._plan_asked = float("-inf")  # read it now, not in five minutes
         _save(cfg, [key], value)

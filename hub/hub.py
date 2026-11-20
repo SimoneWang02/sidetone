@@ -874,6 +874,7 @@ def main() -> int:
         hub.publish()  # starts the window now, so it is ready before the first session speaks
     if sounds_mod.Sounds.available() and not isinstance(hub.speech.engine, NullEngine):
         hub.sounds = sounds_mod.Sounds(cfg.sound_volume)
+    base.set_volume(hub)
     if stt.Recorder.available() and stt.Transcriber.available():
         hub.recorder = stt.Recorder(cfg.mic_source)
         hub.recorder.on_chunk = hub._mic_heard

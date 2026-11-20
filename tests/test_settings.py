@@ -114,6 +114,15 @@ class Chosen(SettingsCase):
         self.assertIsNone(hub.set_setting("followup_delay", 1.3))
         self.assertEqual(hub.cfg.followup_delay, 1.5)
 
+    def test_one_volume_for_the_voice_and_the_sounds(self):
+        """The author, 2026-11-20: "do one thing for both so it's more consistent"."""
+        hub = self.make()
+        self.engine.volume = 1.0
+        hub.sounds = type("Sounds", (), {"master": 1.0})()
+        self.assertIsNone(hub.set_setting("volume", 0.6))
+        self.assertEqual((self.engine.volume, hub.sounds.master, self.saved()["volume"]), (0.6, 0.6, 0.6))
+        self.assertNotIn("sound_volume", settings.items(hub))
+
     def test_a_choice_takes_effect_and_is_kept(self):
         hub = self.make()
         self.assertIsNone(hub.set_setting("label", "always"))

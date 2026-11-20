@@ -54,7 +54,8 @@ def tone(notes: list, volume: float) -> bytes:
 
 class Sounds:
     def __init__(self, volume: float = 0.3):
-        self.volume = volume
+        self.volume = volume  # how loud the tones are made, beside the voice (`Config.sound_volume`)
+        self.master = 1.0  # the player's volume, the same as the voice's (`Config.volume`)
         self._made: dict[str, bytes] = {}
 
     @staticmethod
@@ -73,7 +74,8 @@ class Sounds:
     def _out(self, pcm: bytes) -> None:
         try:
             subprocess.run(["paplay", "--raw", f"--rate={RATE}", "--format=s16le", "--channels=1",
-                            f"--latency-msec={LATENCY_MS}"], input=pcm, timeout=5,
+                            f"--latency-msec={LATENCY_MS}", f"--volume={round(65536 * max(0.0, min(1.0, self.master)))}"],
+                           input=pcm, timeout=5,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except (OSError, subprocess.SubprocessError):
             pass  # no sound is not worth failing over
