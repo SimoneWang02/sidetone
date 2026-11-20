@@ -62,7 +62,7 @@ class Offered(SettingsCase):
         for _, section in settings.SECTIONS:
             for item in section:
                 key = item["key"]
-                if key == "voice":
+                if key == "mute":
                     continue
                 if key.startswith("overlay.hotkeys."):
                     self.assertIn(key[16:], overlay.DEFAULTS["hotkeys"], key)
@@ -173,7 +173,7 @@ class Chosen(SettingsCase):
 
     def test_every_setting_at_the_top_of_the_file_is_read_back_at_start(self):
         hub = self.make()
-        top = [i for _, section in settings.SECTIONS for i in section if "." not in i["key"] and i["key"] != "voice"]
+        top = [i for _, section in settings.SECTIONS for i in section if "." not in i["key"] and i["key"] != "mute"]
         for item in top:
             value = (item["options"][-1][0] if item["kind"] == "choice" else not settings.read(hub, item["key"])
                      if item["kind"] == "switch" else item["max"])
@@ -208,11 +208,11 @@ class Chosen(SettingsCase):
 
     def test_the_voice_is_switched_with_its_file(self):
         hub = self.make()
-        self.assertTrue(settings.read(hub, "voice"))
-        self.assertIsNone(hub.set_setting("voice", False))
+        self.assertFalse(settings.read(hub, "mute"))
+        self.assertIsNone(hub.set_setting("mute", True))
         self.assertTrue(os.path.exists(self.cfg.mute_file))
-        self.assertFalse(settings.read(hub, "voice"))
-        self.assertIsNone(hub.set_setting("voice", "on"))
+        self.assertTrue(settings.read(hub, "mute"))
+        self.assertIsNone(hub.set_setting("mute", "off"))
         self.assertFalse(os.path.exists(self.cfg.mute_file))
 
     def test_a_terminal_setting_reaches_the_terminals(self):

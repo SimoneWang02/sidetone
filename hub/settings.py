@@ -5,8 +5,8 @@ The window itself (overlay/Overlay.cs) only draws what `describe` hands it and s
 setting is one entry of SECTIONS:
 
     key    where it lives: "speed" (the top of config.json), "overlay.layout", "terminal.tint",
-           "overlay.hotkeys.talk", and two that are not in that file: "voice" (the voice on or
-           off, which is the file ~/.claude/voice-off) and "voice_of.<project>"
+           "overlay.hotkeys.talk", and two that are not in that file: "mute" (the voice off for
+           every session, which is the file ~/.claude/voice-off) and "voice_of.<project>"
     kind   choice (a few named values, drawn side by side) | switch | number | key (a hotkey)
            | pick (one of many, drawn as a list that drops down)
     name, help   what the window writes: a few words, and one plain sentence under them
@@ -44,7 +44,9 @@ def hotkey(name: str, label: str, help: str = "") -> dict:
 
 SECTIONS = [
     ("Voice", [
-        switch("voice", "Voice", "Speak a short summary of each reply."),
+        # Was "Voice", "Speak a short summary of each reply.": the author took it for short or long
+        # answers (2026-11-20: "it sounds like it's more like a mute or not").
+        switch("mute", "Mute", "No voice for any session. The mute key does the same."),
         number("speed", "Speed", "How fast the voice talks.", 0.7, 1.6, 0.05, "x"),
         choice("reply_language", "Language of the summary", "The language you wrote or spoke in, said by a voice of that language, or always English.",
                ("spoken", "Yours"), ("english", "English")),
@@ -179,8 +181,8 @@ def items(hub) -> dict:
 def read(hub, key: str):
     """What a setting is now."""
     cfg = hub.cfg
-    if key == "voice":
-        return not os.path.exists(cfg.mute_file)
+    if key == "mute":
+        return os.path.exists(cfg.mute_file)
     if key.startswith("voice_of."):
         return hub.voices()["projects"].get(key[9:], "")
     if key.startswith("overlay.hotkeys."):
@@ -200,8 +202,8 @@ def read(hub, key: str):
 def default(key: str):
     """What a setting is on a new install; None for one that has no single default (a
     project's voice is handed out from the pool)."""
-    if key == "voice":
-        return True
+    if key == "mute":
+        return False
     if key.startswith("voice_of."):
         return None
     if key.startswith("overlay.hotkeys."):
@@ -314,8 +316,8 @@ def apply(hub, key: str, value) -> str | None:
     except ValueError as e:
         return str(e)
     cfg = hub.cfg
-    if key == "voice":
-        if value:
+    if key == "mute":
+        if not value:
             try:
                 os.remove(cfg.mute_file)
             except OSError:

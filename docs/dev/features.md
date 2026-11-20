@@ -1015,7 +1015,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the hub sends the sections again and the window draws what the hub has, so a choice
   that was refused does not look taken. A slider only sends where it is let go. Keys are
   paths: `speed`, `overlay.layout`, `terminal.tint`, `overlay.hotkeys.talk`, and two that
-  are not in the file: `voice` (the voice-off file) and `voice_of.<project>` (says "This
+  are not in the file: `mute` (the voice-off file; called `voice`, "Voice", "Speak a short
+  summary of each reply" until 2026-11-20, when the author took it for short or long answers:
+  "it sounds like it's more like a mute or not") and `voice_of.<project>` (says "This
   is my voice." in the new one). To add a setting to the window, add a line to
   `settings.SECTIONS`; a test checks that each is a setting the hub has and that each one
   at the top of the file is read back at start. `sidetone settings list` prints them

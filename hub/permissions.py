@@ -279,7 +279,7 @@ class Permissions:
         muted = not self._muted()
         if muted and self.sounds and self.cfg.talk_feedback != "none":
             self.sounds.play("voice_off")  # before the file: sounds are quiet while muted
-        settings_mod.apply(self, "voice", not muted)
+        settings_mod.apply(self, "mute", muted)
         if not muted and self.sounds and self.cfg.talk_feedback != "none":
             self.sounds.play("voice_on")
         log(self.cfg, "hub.log", "voice " + ("off" if muted else "on") + " (mute key)")
