@@ -18,12 +18,6 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] Session names in the terminal tabs (the author said yes on 2026-11-20: "Sure, you can do
-      that"). Turned on: VS Code's `terminal.integrated.tabs.title` is `${sequence}`, the `env`
-      block of `~/.claude/settings.json` has `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1` (checked in
-      tmux: Claude Code then writes no title), `terminal title on`. **Not seen in VS Code yet.**
-      To try: open a new session; its tab should read "name · title". Sessions opened before
-      keep Claude Code's own title until restarted.
 - [ ] The history following the mouse from row to row without lag (2026-11-19, the
       author: "if I move it real fast, there's a latency"): the open panel changed height
       in about 60 ms instead of half a second: "That's better ... more responsive". Now it
@@ -750,6 +744,10 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] Session names in the terminal tabs: turned on 2026-11-20 at the author's yes, and
+      turned back off the same hour ("I don't like them this much. I would prefer [Claude's
+      own] session [title] ... I think you should revert this"). `terminal.title` stays a
+      setting, off; the README says how to turn it on.
 - [x] `Ctrl+Alt+U` (what did I miss): removed on 2026-11-20 at the author's word ("You can
       remove it. I will use the replay anyway"), with `sidetone missed` and the catch-up code.
       It replayed every line since the last prompt or hotkey, so it mostly said "Nothing new".

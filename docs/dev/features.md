@@ -773,8 +773,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1`. Checked 2026-11-20 in tmux: the variable works when set
   in the `env` block of a settings file, and then Claude Code writes no title at all. All three
   (VS Code's setting, the `env` block in `~/.claude/settings.json`, `terminal title on`) were
-  turned on that day at the author's yes ("Sure, you can do that"); backups end in
-  `.bak-before-title`. Sessions started before keep Claude Code's own title.
+  turned on that day at the author's yes, and turned off again the same hour: "I don't like
+  them this much. I would prefer [Claude's own] session [title] ... I think you should revert
+  this." Kept as a setting, off by default.
 - A typed prompt takes the focus (2026-11-18, `focus_on_prompt`, on by default; built
   while the author was away, on "list me ... the next things to do ... and you'll do it",
   **not agreed with them and not seen in use**). In `_apply`, a `UserPromptSubmit` whose
