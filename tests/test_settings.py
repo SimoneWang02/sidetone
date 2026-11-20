@@ -226,7 +226,7 @@ class Chosen(SettingsCase):
         self.assertIn("number", hub.set_setting("speed", "fast"))
         self.assertIn("key", hub.set_setting("overlay.hotkeys.talk", "Ctrl+Alt"))  # the keys held, and no key
         self.assertIn("key", hub.set_setting("overlay.hotkeys.talk", "A+B"))
-        self.assertEqual((hub.cfg.label, hub.cfg.speed, hub.cfg.overlay["hotkeys"]["talk"]), ("auto", 1.1, "Ctrl+Alt+Space"))
+        self.assertEqual((hub.cfg.label, hub.cfg.speed, hub.cfg.overlay["hotkeys"]["talk"]), ("never", 1.1, "Ctrl+Alt+Space"))
         self.assertFalse(os.path.exists(self.cfg.config_path))
 
     def test_the_overlay_is_told_of_its_own_settings_at_once(self):

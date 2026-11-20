@@ -57,8 +57,8 @@ SECTIONS = [
         {"key": "reply_language", "kind": "pick", "name": "Language of the Summary",
          "help": "The spoken line in the language you wrote or spoke in, or always in one language.",
          "options": [["spoken", "Match My Language"]] + [[code, base.LANGUAGE_NAMES.get(code, "English")] for code in SUMMARY_LANGUAGES]},
-        choice("label", "Say the Project Name", "Say \"sidetone 2\" before its line. \"When needed\": only with several sessions open and no overlay on screen to show who talks.",
-               ("auto", "When needed"), ("always", "Always"), ("never", "Never")),
+        choice("label", "Say the Project Name", "Say \"sidetone 2\" before each line, so you know who talks without looking.",
+               ("always", "Always"), ("never", "Never")),
         switch("progress", "Progress in Long Turns", "Say how many steps are done while a long turn runs."),
         choice("repeat", "The Repeat Key Says", "The last line of the session in focus, or the last line anyone said.",
                ("focus", "In focus"), ("last", "Anyone")),
@@ -200,6 +200,8 @@ def read(hub, key: str):
         return cfg.terminal.get(key[9:])
     if key == "context_shown":
         return base.context_mode(cfg)
+    if key == "label":
+        return "always" if cfg.label == "always" else "never"  # "auto" is gone
     if key == "reply_language":
         return base.fixed_language(cfg) or "spoken"
     value = getattr(cfg, key)

@@ -189,7 +189,10 @@ class Config:
     # The colors sessions' names are written in ("#RRGGBB"). A session that joins others gets
     # the one furthest from theirs, so a short list of very different colors serves best.
     colors: list = field(default_factory=lambda: list(COLORS))
-    label: str = "auto"  # auto (several sessions and no overlay to show who talks) | always | never
+    # Say the session's name before its line: always | never. "auto" (only with several sessions and
+    # no overlay on screen) was dropped on 2026-11-20, the author: "make it two choices, either
+    # always or never ... I want to reduce [friction] ... I don't think it's that much needed".
+    label: str = "never"
     # Where a session's title comes from. "ask": each session is asked to name what it is working
     # on, in its speak tag, and may change that as the work moves on. "auto": never asked; the
     # title is Claude Code's own name for the session, else the start of its first spoken line.

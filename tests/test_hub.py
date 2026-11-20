@@ -166,11 +166,15 @@ class LabelsAndVoices(HubCase):
         hub.on_display(ev("MessageDisplay", delta=tag("Hello.")))
         self.assertEqual(self.spoken(), ["Hello."])
 
-    def test_label_when_several_sessions_are_active(self):
-        hub = self.make()
+    def test_the_name_is_said_first_only_when_asked_for(self):
+        hub = self.make()  # "never" by default since 2026-11-20
         hub.on_event(ev("SessionStart", sid="b", cwd="/work/web_app"))
         hub.on_display(ev("MessageDisplay", sid="a", cwd="/work/api-server", delta=tag("Tests pass.")))
-        self.assertEqual(self.spoken(), ["api server. Tests pass."])
+        self.assertEqual(self.spoken(), ["Tests pass."])
+        self.engine.spoken.clear()
+        hub.cfg.label = "always"
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/work/web_app", delta=tag("Page built.")))
+        self.assertEqual(self.spoken(), ["web app. Page built."])
 
     def test_same_project_same_voice_and_live_sessions_differ(self):
         first = self.make()
@@ -622,17 +626,6 @@ class OverlayFeed(HubCase):
         hub = self.make(titles="auto")
         hub.on_display(ev("MessageDisplay", delta='<speak title="Overlay key checks">All done here.</speak>'))
         self.assertEqual(self.title(), "All done here.")
-
-    def test_no_spoken_label_while_the_overlay_shows_who_talks(self):
-        hub = self.make()
-        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/alpha"))
-        hub.on_event(ev("UserPromptSubmit", sid="b", cwd="/w/beta"))
-        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/alpha", delta=tag("Tests pass.")))
-        self.assertEqual(self.spoken(), ["Tests pass."])
-        self.engine.spoken.clear()
-        self.overlay.ready = False  # the window is gone: the voice has to say who it is again
-        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/beta", delta=tag("Build is green.")))
-        self.assertEqual(self.spoken(), ["beta. Build is green."])
 
     def test_the_voice_wave_goes_to_the_session_that_speaks(self):
         class FakeMeter:

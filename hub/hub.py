@@ -842,13 +842,10 @@ class Hub(Permissions, Talk):
         return said == speech
 
     def _label_for(self, u: Utterance) -> str:
-        """The spoken project name, used only when nothing else tells sessions apart: several
-        are active and there is no overlay on screen showing who is talking."""
+        """The spoken project name, with `label: always`."""
         with self.lock:
             s = self.sessions.by_id.get(u.session)
-            several = self.sessions.active_count() > 1
-        shown = bool(self.overlay) and getattr(self.overlay, "ready", True)
-        if s is None or self.cfg.label == "never" or (self.cfg.label == "auto" and (shown or not several)):
+        if s is None or self.cfg.label != "always":
             return ""
         return _spoken_name(s.name)
 

@@ -197,7 +197,7 @@ optional and holds all of them:
 ```json
 {
   "voices": { "my-project": "bm_george" },
-  "label": "auto",
+  "label": "never",
   "repeat": "focus",
   "titles": "ask",
   "whisper_model": "small.en",
