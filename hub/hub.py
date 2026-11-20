@@ -103,7 +103,6 @@ class Hub(Permissions, Talk):
         self._asides: dict[str, Aside] = {}  # session id -> the side question a copy of it is answering
         self._aside_shown: Aside | None = None  # the one the overlay shows as being answered
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
-        self.last_seen = time.time()  # last sign the user was there: a prompt, a hotkey, a catch-up
         self._focus_lost: tuple[str, float] = ("", 0.0)  # the session a speaker last took the focus from, and when
         self._progress_said: dict[str, float] = {}  # session id -> when it last announced progress
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
@@ -213,7 +212,6 @@ class Hub(Permissions, Talk):
                 self._settle(sid, "turn moved on")
 
             if event == "UserPromptSubmit":
-                self.last_seen = time.time()
                 prompt = str(ev.get("prompt") or "")
                 self._title_from(s, prompt=prompt)
                 s.state, s.activity, s.note = "working", "Thinking", ""
@@ -525,13 +523,12 @@ class Hub(Permissions, Talk):
         outdated = {"hub": stale.changed(), "overlay": bool(getattr(self.overlay, "outdated", lambda: False)())}
         return {"sessions": sessions, "muted": self._muted(), "outdated": outdated, **self.speech.snapshot()}
 
-    # --- catching up -------------------------------------------------------------------------
+    # --- saying it again ----------------------------------------------------------------------
 
     def repeat(self) -> bool:
         """Say again the last line of the session in focus (the one the wheel or the last speaker
         chose), or with `repeat: last` the last line anyone said."""
         with self.lock:
-            self.last_seen = time.time()
             s = self._target() if self.cfg.repeat != "last" else None
             lines = [e for e in self.history if not s or e.get("session") == s.id]
             entry = lines[-1] if lines else None
@@ -542,9 +539,9 @@ class Hub(Permissions, Talk):
         self._replay(entry, "repeat")
         return True
 
-    def _replay(self, entry: dict, src: str, named: bool = False) -> None:
+    def _replay(self, entry: dict, src: str) -> None:
         """Say a line from the history again. It belongs to its session like the first time, so
-        the overlay shows it at that session's light; `named` says the session's name first."""
+        the overlay shows it at that session's light."""
         with self.lock:
             s = self.sessions.by_id.get(entry.get("session", ""))
             live = s is not None
@@ -557,20 +554,7 @@ class Hub(Permissions, Talk):
             return
         self.speech.put(Utterance(text=entry["text"], voice=entry["voice"], session=entry["session"] if live else "",
                                   kind="notice", src=src, entry=entry,
-                                  label=entry["spoken_name"] if named or not live else None))
-
-    def catch_up(self, limit: int = 8) -> int:
-        """Replay what sessions said since the user was last seen (a prompt, a hotkey, a catch-up)."""
-        with self.lock:
-            missed = [e for e in self.history if e["time"] > self.last_seen][-limit:]
-            self.last_seen = time.time()
-        if not missed:
-            self.say("Nothing new.", kind="notice")
-            return 0
-        self.say(f"You missed {len(missed)} update{'s' if len(missed) != 1 else ''}.", kind="notice")
-        for entry in missed:
-            self._replay(entry, "catch-up", named=True)
-        return len(missed)
+                                  label=entry["spoken_name"] if not live else None))
 
     def _maybe_say_progress(self, s) -> None:
         """During a long turn, say how far its task list is, but not often."""

@@ -107,7 +107,7 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path == "/answer":
             self._reply({"answered": hub.choose(int(body.get("option") or 0))})
         elif self.path == "/replay":
-            self._reply({"count": hub.catch_up() if body.get("what") == "missed" else int(hub.repeat())})
+            self._reply({"count": int(hub.repeat())})
         elif self.path == "/decide":
             self._reply({"answered": hub.decide("allow" if body.get("decision") == "allow" else "deny")})
         elif self.path == "/stop":

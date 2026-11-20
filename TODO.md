@@ -99,24 +99,6 @@ these come before anything new.
 
 Questions for the author; nothing to build until they answer.
 
-- [ ] `Ctrl+Alt+U` (what did I miss): the same minute it answered "Nothing new." twice,
-      which was right, since nothing had been said since the last message. Not heard yet:
-      a real replay, pressed after a session spoke while the author was away from it.
-      The author found it hard to grasp (2026-11-17: "so it detects when im away? so far
-      ctrl+alt+u says nothing new"). It does not detect anything: "missed" is every line
-      said since the last typed prompt or hotkey, so any key pressed after a line (repeat,
-      the wheel, push-to-talk) empties it, and a line heard at the desk still counts.
-      Ideas offered, none chosen: count a line as missed only when it was said while
-      keyboard and mouse had been still for a minute or more (the overlay can ask Windows
-      for that), plus lines that were cut or dropped unsaid (each line already carries a
-      `heard` mark that catch-up does not use yet).
-      Built the same day and parked on the branch `away-catch-up` (commit `07c9ff9`, 121
-      tests pass, the overlay compiles; not live, never tried with real idle time). The
-      author asked whether it is worth it and, asked again the same day with three choices
-      (keep, drop the key, leave it), said: "I think we can leave it for now." So the key
-      keeps its old behaviour until they bring it up again. Keep: merge the
-      branch and restart the hub. Drop: the offer was to remove the key and the catch-up
-      code altogether, since the present version mostly says "Nothing new".
 - [ ] Session names in the terminal's tab. The hub can write "name · title" as the
       terminal's title (`terminal title on`), but a VS Code tab only shows it with
       `"terminal.integrated.tabs.title": "${sequence}"`, and Claude Code overwrites it
@@ -766,6 +748,12 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] `Ctrl+Alt+U` (what did I miss): removed on 2026-11-20 at the author's word ("You can
+      remove it. I will use the replay anyway"), with `sidetone missed` and the catch-up code.
+      It replayed every line since the last prompt or hotkey, so it mostly said "Nothing new".
+      The version that counts only lines said while you were away stays on the branch
+      `away-catch-up` (commit `07c9ff9`). The white dot on lines not heard
+      (`history_missed`) stays.
 - [x] Another name for the tool (the author, 2026-11-18, on seeing "claude-speaks" in the
       settings window: "I don't like [it] as a name. Maybe we can think about it ...
       Maybe there's a better name"). Open. A new name would touch the repo, the commands

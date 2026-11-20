@@ -63,10 +63,8 @@ class Permissions:
                 ticked = [o["label"] for i, o in enumerate(req.question["options"]) if i in req.ticked]
                 if not (req.question.get("multiSelect") and decision == "allow" and ticked):
                     return False
-                self.last_seen = time.time()
                 self._answer(req, ", ".join(ticked), "hotkey")  # how Claude Code itself writes several choices
             else:
-                self.last_seen = time.time()
                 self._resolve(req, decision, "hotkey")
                 if s:
                     self.speech.drop_session(s.id)  # stop "permission needed" if it is still being said
@@ -83,7 +81,6 @@ class Permissions:
             if (not question or req.shown is None or time.monotonic() - req.shown < base.MIN_SHOWN
                     or not 1 <= number <= len(question["options"])):
                 return False
-            self.last_seen = time.time()
             label = question["options"][number - 1]["label"]
             if question.get("multiSelect"):  # tick or untick; the allow key hands the ticked ones in
                 on = number - 1 not in req.ticked
@@ -344,16 +341,12 @@ class Permissions:
         if msg.get("type") != "hotkey":
             return
         name = msg.get("name")
-        if name != "missed":  # any other key press shows the user is there
-            self.last_seen = time.time()
         if name in ("allow", "deny"):
             self.decide(name)
         elif name and name.startswith("option"):
             self.choose(int(name[6:]))
         elif name == "repeat":
             self.repeat()
-        elif name == "missed":
-            self.catch_up()
         elif name == "talk":
             self.talk_start()
         elif name == "talk_end":

@@ -136,7 +136,7 @@ DEFAULTS = {
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",
-                "repeat": "Ctrl+Alt+R", "missed": "Ctrl+Alt+U", "layout": "Ctrl+Alt+K",
+                "repeat": "Ctrl+Alt+R", "layout": "Ctrl+Alt+K",
                 # Go to the terminal of the session in focus; claimed only while an editor with the
                 # Sidetone extension holds that terminal. No key unless you give it one
                 # ("Ctrl+Alt+T" was its first): the author saw no use for it with terminals side by side.

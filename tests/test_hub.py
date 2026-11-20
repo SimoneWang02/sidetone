@@ -910,20 +910,7 @@ class Questions(HubCase):
         self.assertEqual(self.session()["note"], "has a question for you")
 
 
-class CatchingUp(HubCase):
-    def test_missed_replays_what_was_said_since_you_were_last_here(self):
-        hub = self.make(label="never")
-        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/api-server"))  # you were here
-        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/api-server", delta=tag("Tests pass.")))
-        hub.on_event(ev("StopFailure", sid="b", cwd="/w/web", error="rate_limit"))
-        self.spoken()
-        self.engine.spoken.clear()
-        self.assertEqual(hub.catch_up(), 2)
-        self.assertEqual(self.spoken(), ["You missed 2 updates.", "api server. Tests pass.", "web. I hit an error: rate limit"])
-        self.engine.spoken.clear()
-        self.assertEqual(hub.catch_up(), 0)
-        self.assertEqual(self.spoken(), ["Nothing new."])
-
+class SayingItAgain(HubCase):
     def test_repeat_says_the_last_line_again_in_the_same_voice(self):
         hub = self.make()
         hub.on_display(ev("MessageDisplay", delta=tag("All done.")))
@@ -932,12 +919,11 @@ class CatchingUp(HubCase):
         self.spoken()
         self.assertEqual(self.engine.spoken[-1], ("All done.", self.session()["voice"]))
 
-    def test_repeat_and_catch_up_stay_quiet_while_muted(self):
+    def test_repeat_stays_quiet_while_muted(self):
         hub = self.two_sessions_spoke()
         open(self.cfg.mute_file, "a").close()
         self.assertTrue(hub.repeat())
-        self.assertEqual(hub.catch_up(), 0)
-        self.assertEqual(self.spoken(), [])  # not "Page built." again, nor "Nothing new."
+        self.assertEqual(self.spoken(), [])  # not "Page built." again
         self.assertEqual(self.overlay.of("flash")[-1]["text"], "Page built.")  # shown at its light instead
 
     def two_sessions_spoke(self, **cfg):

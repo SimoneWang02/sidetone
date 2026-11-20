@@ -907,7 +907,6 @@ class Talk:
                 return None
             if time.monotonic() - self._shown_at.get(tty, base.NEVER) < SHOWN_ECHO:
                 return None  # the editor only did as asked, for a focus that has moved on since
-            self.last_seen = time.time()  # you are there
             self._focus_on(s)
             name = s.name
         log(self.cfg, "hub.log", f"focus on {name}: its terminal ({tty}) came to the front")

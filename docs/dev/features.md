@@ -553,7 +553,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   same day (the author: "it doesn't feel centered"): its three corners are equally far from
   the middle and it is the same on both sides of its line of flight (`Badge.Aim`).
 - Hotkeys (rebind or blank them under `overlay.hotkeys`; `jump` has no key by default, see further down): always claimed are `toggle` Ctrl+Alt+L,
-  `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R, `missed` Ctrl+Alt+U, `settings` Ctrl+Alt+S and `mute` Ctrl+Alt+M
+  `talk` Ctrl+Alt+Space, `repeat` Ctrl+Alt+R, `settings` Ctrl+Alt+S and `mute` Ctrl+Alt+M
   (2026-11-19, `Permissions.toggle_mute`: the voice-off file for every session, cuts the line being
   said, the sounds `voice_off`/`voice_on` and a banner "Voice off" or "Voice on"). The author asked
   for "M for mute", but on their machine the NVIDIA overlay (`NVIDIA Overlay.exe`) holds
@@ -563,7 +563,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   overlay's "toggle microphone", NVIDIA's default, so many machines with an NVIDIA card will have
   it. The same place has `PMOCOverlayVisibilityHKey` = Ctrl+Alt+R (its performance overlay),
   which is our repeat key; the hub has always got R first, which could flip if NVIDIA's overlay
-  starts before it. That is also why `missed` is U and not M. The overlay reports a taken key only
+  starts before it. The overlay reports a taken key only
   once per run (`complained`), so a second try at it fails without a line in `hub.log`.
   Keys shared with another program (2026-11-19, `overlay.share_taken_keys`, true; `shared`,
   `sharedDown` in `Overlay.cs`). The author did not want NVIDIA's key freed, and asked that
@@ -591,7 +591,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (`mute-line.png`), not by them. Their next idea, the same minute: the struck-out speaker
   in the top right corner of the card of figures (`overlay.muted_icon`, on; `mutedIcon`,
   laid over the card so nothing in it moves; `mute-icon.png`). And a fault they found:
-  the repeat key spoke while muted. `_replay` (repeat, catch-up) and `say` without a
+  the repeat key spoke while muted. `_replay` (repeat) and `say` without a
   session went to the voice without asking; while muted a replayed line is now shown at
   its light, and the hub's own words are left unsaid.
   The icon is drawn (`MutedSpeaker`), not the font's: at 14 px the font's speaker had a small
@@ -713,14 +713,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   call that ran comes back in `PostToolUse` with the answers added to its input, so it never
   equalled the open request. `_same_call` compares only the questions (checked for real: the
   request is closed in the second the dialog is answered).
-- History and catching up: the hub keeps the last 100 lines sessions said. `last_seen` moves on
-  every prompt and hotkey; `catch_up()` replays lines newer than it. `repeat()` says again the
+- History and saying it again: the hub keeps the last 100 lines sessions said. (A catch-up key,
+  `missed` Ctrl+Alt+U, replayed every line since the last prompt or hotkey; it mostly said "Nothing
+  new", and the author had it removed on 2026-11-20: "You can remove it. I will use the replay
+  anyway." A version counting only lines said while you were away is on the branch
+  `away-catch-up`.) `repeat()` says again the
   last line of the session in focus (the author, 2026-11-17, after trying the key: "it would be
   better to have it replay the selected session, also i noticed the detail box doesnt come
   out"); `repeat: last` in the settings brings back the last line anyone said. A replayed line
   is tied to its session (`Hub._replay`), so its bubble, voice bars and wave show as they did
-  the first time; before, it belonged to no session and nothing showed. Catch-up still says
-  each session's name first (`Utterance.label`). The overlay gets the newest lines with each
+  the first time; before, it belonged to no session and nothing showed. The overlay gets the newest lines with each
   `state`, up to four of each session, and shows them while the cursor rests on the list
   (found by polling the cursor position, since the window is click-through). It shows the
   lines of the session under the mouse (`historyOf`; before a row was touched, the session
@@ -1065,7 +1067,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event
   does not repeat the line once the hub is back.
 - `bin/sidetone` (linked by `install.sh` into `~/.local/bin` as `sidetone` and `st`;
-  on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `missed`, `repeat`, `sound NAME`, `languages [CODES]`, `voices`, `voice …`, `target [PROJECT]`,
+  on the author's machine since 2026-11-16): `status`, `say [-v VOICE] TEXT`, `stop`, `on`/`off`, `allow`/`deny`, `answer N`, `repeat`, `sound NAME`, `languages [CODES]`, `voices`, `voice …`, `target [PROJECT]`,
   `follow-up [-s PROJECT] TEXT`, `talk start|stop|cancel`,
   `overlay dots|list|toggle|restart|move|monitor N|corner NAME`, `terminal [tint focus|all|off | find [PROJECT] | show [PROJECT] | strength N | background COLOR | pulse on|off|N | title on|off | follow on|off]`, `vscode install|uninstall`,
   `settings [close | list | KEY VALUE]`, `demo`, `hub start|stop|restart`, `log`.

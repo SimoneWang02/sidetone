@@ -94,8 +94,7 @@ its own spoken line as the first line of its reply.
 - **How much is used.** Ask by voice ("what's my usage?") and the hub says how much of the
   plan's five hours and week is used and when they start again; the words go to no session.
   `sidetone usage` prints the same. A thin arc around each session's light shows how full its context is (`context_shown`: `arc`, `text`, `both`, `off`), and a card under the rows gives the figures of the session under the mouse: context, tokens of the reply, time and tasks.
-- **Catch up.** `Ctrl+Alt+U` replays what your sessions said since you were last there;
-  `Ctrl+Alt+R` repeats the last line of the session in focus. Long turns say "3 of 5 steps done" along the way.
+- **Say it again.** `Ctrl+Alt+R` repeats the last line of the session in focus. Long turns say "3 of 5 steps done" along the way.
 - **Your own voices.** Pick a voice per project, blend two into a new one, or load a Kokoro
   voice file.
 
@@ -148,7 +147,6 @@ work, run `st demo` in a terminal.
 | hold `Ctrl+Alt+Space` | Talk to the session in focus; release to send |
 | `Ctrl+Alt+Backspace` | Stop recording, take back a follow-up, cut the line being spoken, or stop the session in focus (at once in VS Code with the extension, elsewhere at its next step) |
 | none (`jump` under `hotkeys`) | Go to the terminal of the session in focus: VS Code brings it to the front with the keyboard in it (needs the extension; claimed only while that can be done). `sidetone terminal show` does the same |
-| `Ctrl+Alt+U` | Replay what was said since you were last there |
 | `Ctrl+Alt+R` | Repeat the last line of the session in focus |
 
 The keys that answer something (allow, deny, the numbers, cancel) are only claimed while they
@@ -165,7 +163,7 @@ sidetone allow | deny           answer the permission prompt on screen
 sidetone answer N               pick option N of the question on screen
 sidetone follow-up [-s PROJECT] TEXT
 sidetone target [PROJECT]       who a spoken follow-up goes to
-sidetone missed | repeat        catch up, or hear the focused session's last line again
+sidetone repeat                 hear the focused session's last line again
 sidetone sound sent|queued|failed   hear the short sounds that answer push-to-talk
 sidetone voices                 every voice, and which project has which
 sidetone languages en,it        the languages push-to-talk listens for (name only the ones you speak)
