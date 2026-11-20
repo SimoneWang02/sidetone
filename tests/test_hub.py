@@ -391,17 +391,17 @@ class OverlayFeed(HubCase):
         row = lambda: self.overlay.of("state")[-1]["sessions"][0]
         hub.cfg.detail_metrics = ["context", "tokens", "time"]  # each turn's own, a choice
         hub.on_event(ev("UserPromptSubmit"))
-        self.assertEqual(row()["details"], [["Context", "", None, ""], ["Turn tokens", "", None, ""], ["Turn time", "<1m", None, ""]],
+        self.assertEqual(row()["details"], [["Context", "", None, ""], ["Turn Tokens", "", None, ""], ["Turn Time", "<1m", None, ""]],
                          "what is not known keeps its place")
         hub.on_event(ev("TaskCreated", task_id="1"))
         hub.on_event(ev("TaskCreated", task_id="2"))
         hub.on_event(ev("TaskCompleted", task_id="1"))
         hub.on_event(ev("PostToolUse", transcript_path=record))
         self.assertEqual(row()["meta"], "<1m")
-        self.assertEqual(row()["details"], [["Context", "62%", 0.62, ""], ["Turn tokens", "154k", None, ""], ["Turn time", "<1m", None, ""]])
+        self.assertEqual(row()["details"], [["Context", "62%", 0.62, ""], ["Turn Tokens", "154k", None, ""], ["Turn Time", "<1m", None, ""]])
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
         self.assertEqual(row()["meta"], "")
-        self.assertEqual([d[:2] for d in row()["details"]], [["Context", "62%"], ["Turn tokens", "154k"], ["Turn time", "<1m"]])
+        self.assertEqual([d[:2] for d in row()["details"]], [["Context", "62%"], ["Turn Tokens", "154k"], ["Turn Time", "<1m"]])
         hub.cfg.overlay["context_warn"] = 60
         hub.cfg.row_metrics, hub.cfg.detail_metrics = ["tasks", "tokens"], ["waiting", "context"]  # a choice of one's own
         hub.publish()
@@ -424,20 +424,20 @@ class OverlayFeed(HubCase):
                                prompt(720), helper, reply(780, "c", 3000)]) + "\n" + reply(810, "c", 4000))  # its last line unfinished
         figures = lambda: dict((d[0], d[1]) for d in self.overlay.of("state")[-1]["sessions"][0]["details"])
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
-        self.assertEqual(figures(), {"Context": "5%", "Total tokens": "9.0k", "Total time": "3m"})  # 6,000 written, 1,000 read new by each of 3
+        self.assertEqual(figures(), {"Context": "5%", "Total Tokens": "9.0k", "Total Time": "3m"})  # 6,000 written, 1,000 read new by each of 3
         with open(record, "a") as f:
             f.write("\n" + result(840) + "\n")  # the rest of that line, then a step that ended 30 s after
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
-        self.assertEqual(figures(), {"Context": "5%", "Total tokens": "10k", "Total time": "4m"}, "the rest is read on, each reply once")
+        self.assertEqual(figures(), {"Context": "5%", "Total Tokens": "10k", "Total Time": "4m"}, "the rest is read on, each reply once")
         hub.cfg.turn_tokens = "output"
         hub.publish()
-        self.assertEqual(figures()["Total tokens"], "7.0k")
+        self.assertEqual(figures()["Total Tokens"], "7.0k")
         # A new chat after /clear is another session, with a record of its own: it starts again.
         fresh = os.path.join(self.tmp, "fresh.jsonl")
         with open(fresh, "w") as f:
             f.write(prompt(900).replace("2026-11-20", "2020-01-01") + "\n")  # long ago: the clock runs from the prompt
         hub.on_event(ev("UserPromptSubmit", sid="s2", transcript_path=fresh))
-        self.assertEqual(self.overlay.of("state")[-1]["sessions"][1]["details"][1:], [["Total tokens", "", None, ""], ["Total time", "<1m", None, ""]])
+        self.assertEqual(self.overlay.of("state")[-1]["sessions"][1]["details"][1:], [["Total Tokens", "", None, ""], ["Total Time", "<1m", None, ""]])
 
     def test_a_row_says_what_the_turn_used_once_it_has_ended(self):
         hub = self.make()

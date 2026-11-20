@@ -1090,9 +1090,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   totals instead, each turn's own figure staying at the end of its line in the history
   (and the running turn's clock in the row). Their two choices: a /clear starts the totals
   again, and the time counts only while Claude works. `detail_metrics` is now `context`,
-  `session_tokens` ("Total tokens"), `session_time` ("Total time"; the author agreed
+  `session_tokens` ("Total Tokens"), `session_time` ("Total Time", in title case as the
+  author likes it; the author agreed
   the prefix the same evening, so they do not read as figures of the moment beside Context); `tokens` and `time`, each turn's
-  own, are still a choice and now say "Turn tokens" and "Turn time". Both come from the
+  own, are still a choice and now say "Turn Tokens" and "Turn Time". Both come from the
   session's record (`usage.tally`, `Hub._count_session`): read once from the top when the
   hub first sees the session, so a hub restart loses nothing (0.4 s for the largest record
   here, 77 MB), then from where it stopped at each prompt, step and end (0.1 ms). Tokens

@@ -284,11 +284,11 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
     its context is, in percent."""
     rows = [
         dict(name="sidetone", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta="",
-             details=[["Context", "7%", 0.07, ""], ["Total tokens", "1.4M", None, ""], ["Total time", "2h05", None, ""], ["Tasks", "", None, ""]]),
+             details=[["Context", "7%", 0.07, ""], ["Total Tokens", "1.4M", None, ""], ["Total Time", "2h05", None, ""], ["Tasks", "", None, ""]]),
         dict(name="api-server", title="Fix the flaky login test", state="working", text="Running the tests", meta="6m",
-             details=[["Context", "56%", 0.56, ""], ["Total tokens", "310k", None, ""], ["Total time", "48m", None, ""], ["Tasks", "3/5", 0.6, ""]]),
+             details=[["Context", "56%", 0.56, ""], ["Total Tokens", "310k", None, ""], ["Total Time", "48m", None, ""], ["Tasks", "3/5", 0.6, ""]]),
         dict(name="web-app", title="Dark mode for settings", state="needs_you", text="asks: Which drink would you like?", meta="",
-             details=[["Context", "83%", 0.83, "warn"], ["Total tokens", "96k", None, ""], ["Total time", "9m", None, ""], ["Tasks", "2/9", 0.22, ""]]),
+             details=[["Context", "83%", 0.83, "warn"], ["Total Tokens", "96k", None, ""], ["Total Time", "9m", None, ""], ["Tasks", "2/9", 0.22, ""]]),
         dict(name="data-pipeline", title="Nightly export", state="failed", text="error: rate limit", meta=""),
         dict(name="notes", title="", state="idle", text="", meta=""),
     ]
