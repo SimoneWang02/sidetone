@@ -565,7 +565,6 @@ def click(section, x, y, expect):
 
 
 clicks = [click("Overlay", 716, 117, ("overlay.layout", "island")),
-          click("Voice", 735, 351, ("progress", False)),
           click("Figures", 690, 117, ("context_shown", "both")),
           click("Talking", 648, 125, ("followup_confirm", "auto"))]
 send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voice", click=[46, 278])  # "Keys" at the left

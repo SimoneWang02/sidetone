@@ -49,10 +49,15 @@ def hotkey(name: str, label: str, help: str = "") -> dict:
 SUMMARY_LANGUAGES = ["en", "it", "zh"]
 
 SECTIONS = [
+    # Most used first (the author, 2026-11-20: "most use should be on top"): what you reach for
+    # every day, then what is set once.
     ("Voice", [
         # Was "Voice", "Speak a short summary of each reply.": the author took it for short or long
         # answers (2026-11-20: "it sounds like it's more like a mute or not").
         switch("mute", "Mute", "No voice for any session. The mute key does the same."),
+        # One volume for the voice and the sounds (the author, 2026-11-20: "do one thing for both so
+        # it's more consistent"); `sound_volume` stays in config.json as the sounds' level beside the voice.
+        number("volume", "Volume", "The voice and the short sounds together.", 0, 100, 5),
         number("speed", "Speed", "How fast the voice talks.", 0.7, 1.6, 0.05, "x"),
         {"key": "reply_language", "kind": "pick", "name": "Language of the Summary",
          "help": "The spoken line in the language you wrote or spoke in, or always in one language.",
@@ -62,9 +67,6 @@ SECTIONS = [
         # "When Your Words Go Out" (talk_feedback: sound, voice, nothing) left the window on
         # 2026-11-20, the author: "I think the sound is kind of necessary ... only to sound". It is
         # still read from config.json.
-        # One volume for the voice and the sounds (the author, 2026-11-20: "do one thing for both so
-        # it's more consistent"); `sound_volume` stays in config.json as the sounds' level beside the voice.
-        number("volume", "Volume", "The voice and the short sounds together.", 0, 100, 5),
     ]),
     ("Voices", []),  # filled in by `describe`: one line for each project, with the voices this machine has
     ("Talking", [

@@ -1131,6 +1131,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   from there, it goes back to its size under the mouse); the settings keep at most 760 px
   wide, in the middle (the author: "for settings panel to be resizable and also to have
   like a maximized size button"). Not tried by them yet.
+  The Voice section in the order of use (the author: "most use should be on top"; proposed
+  and agreed): Mute, Volume, Speed, Language of the Summary, Say the Session Name.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.
