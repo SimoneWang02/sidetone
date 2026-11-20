@@ -27,8 +27,8 @@ these come before anything new.
       (`sidetone hub stop` does it at once), open one session and speak to it
       without typing.
 - [ ] The card's figures as totals of the session (2026-11-20, the author's idea after
-      "This reply" and "This turn" were "not very intuitive"): "Tokens" and "Time" are now
-      what the whole session has used and how long Claude worked in it, since it began or
+      "This reply" and "This turn" were "not very intuitive"): "Total tokens" and "Total time"
+      are now what the whole session has used and how long Claude worked in it, since it began or
       was cleared; each turn's own tokens stay on its history line. Seen in a picture only.
       **Not seen by them on their own sessions yet.**
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these

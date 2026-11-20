@@ -52,8 +52,8 @@ from talk import Talk  # noqa: E402
 
 
 # What a figure is called under the rows while it is not known (see Hub._figures).
-DETAIL_NAMES = {"context": "Context", "tokens": "Turn tokens", "time": "Turn time", "session_tokens": "Tokens",
-                "session_time": "Time", "tasks": "Tasks", "waiting": "Waiting"}
+DETAIL_NAMES = {"context": "Context", "tokens": "Turn tokens", "time": "Turn time", "session_tokens": "Total tokens",
+                "session_time": "Total time", "tasks": "Tasks", "waiting": "Waiting"}
 
 
 class Hub(Permissions, Talk):
