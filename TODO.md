@@ -18,27 +18,6 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
-      Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
-      the talk key and say "clear the chat" to a session that is idle: its terminal should
-      show `/clear` and an empty conversation. Said to a session that is working, its light
-      should show the struck-out microphone and "Not cleared: it is still working".
-      The author cleared one the same night. Asked for then and built: once the chat is
-      really cleared, the "sent" notes (or "Chat cleared." with spoken feedback), and
-      nothing before; nothing within 10 s gives "Not cleared" and the low notes.
-      Tried 2026-11-20: "It seemed to have cleared the [chat]"; it then went to the bottom of
-      the bar, mended the same hour (a cleared session keeps its place, name, color and
-      voice; tests only). The first try was heard as "I'll clear this hat." and went to
-      the session as a prompt.
-      Open:
-      - does the speech model write the order cleanly enough (it has to be the whole of
-        what was said); other phrases go in `clear_words`, Italian ones too
-      - an order to a busy session waits for the end of its turn (built the same night,
-        tests only); words said to it afterwards, or a typed prompt, drop the clear
-        without a sound, which may be surprising
-      - one Ctrl+C is typed first, to empty a half-typed line; if you pressed Ctrl+C
-        yourself in that terminal a second before, the two together close the session
-      - VS Code only
 - [ ] The bubble no longer jumps to another session when words that waited are handed to
       it while someone is speaking (2026-11-19): only a paper plane on that light. Seen in
       a picture; whether that was the jump the author saw is read from the log.
@@ -387,6 +366,29 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] "Clear the chat" by voice (asked for and built 2026-11-19). First, once: in VS Code,
+      Ctrl+Shift+P, "Restart Extension Host", so that the extension 0.4.0 runs. Then hold
+      the talk key and say "clear the chat" to a session that is idle: its terminal should
+      show `/clear` and an empty conversation. Said to a session that is working, its light
+      should show the struck-out microphone and "Not cleared: it is still working".
+      The author cleared one the same night. Asked for then and built: once the chat is
+      really cleared, the "sent" notes (or "Chat cleared." with spoken feedback), and
+      nothing before; nothing within 10 s gives "Not cleared" and the low notes.
+      Tried 2026-11-20: "It seemed to have cleared the [chat]"; it then went to the bottom of
+      the bar, mended the same hour (a cleared session keeps its place, name, color and
+      voice; tests only). The first try was heard as "I'll clear this hat." and went to
+      the session as a prompt.
+      Open:
+      - does the speech model write the order cleanly enough (it has to be the whole of
+        what was said); other phrases go in `clear_words`, Italian ones too
+      - an order to a busy session waits for the end of its turn (built the same night,
+        tests only); words said to it afterwards, or a typed prompt, drop the clear
+        without a sound, which may be surprising
+      - one Ctrl+C is typed first, to empty a half-typed line; if you pressed Ctrl+C
+        yourself in that terminal a second before, the two together close the session
+      - VS Code only
+      After the mend, cleared twice more the same night, once heard as "clear the shot" and
+      still taken as the order; the session kept its place: "It seems to have worked well."
 - [x] Your own words' sign hidden by another session's line (2026-11-19, the author: "I
       just send an audio to session three and I immediately switch to session one, try
       sending an audio, and I don't see the icon for sending the audio. I don't see the
