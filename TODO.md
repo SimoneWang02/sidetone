@@ -24,7 +24,9 @@ these come before anything new.
 - [ ] A session's first spoken words before anything was typed to it (mended 2026-11-17:
       the first session after the hub had gone away had no listener until its first
       prompt; the author spoke to it twice and asked "why are you not receiving audio
-      inputs?"). Tests only. To try: close every session, wait for the hub to go
+      inputs?"). Tests only. 2026-11-20: a new session opened while the hub ran got a spoken
+      "Hello." before anything was typed and answered (sidetone 5); the case that was
+      broken, the hub gone first, still untried. To try: close every session, wait for the hub to go
       (`sidetone hub stop` does it at once), open one session and speak to it
       without typing.
 - [ ] "Release to send" staying on the light (the author, 2026-11-18: "it got stuck in
