@@ -53,9 +53,16 @@ these come before anything new.
       hotkey.
       On 2026-11-19 the author put it last of the things to try: "the settings are the
       last things to try because there are so many".
-      2026-11-20: going through it one section at a time, Voice first. Their idea on the
-      way in: a reset button at the end of each section; built ("Reset to defaults", a
-      second click within 4 s confirms; none for Voices). **Not seen by them yet.**
+      2026-11-20: going through it one section at a time. **Voice is done** (renamed Mute,
+      keys named in descriptions, title case, summary language as a dropdown of Match My
+      Language, English, Italian, Chinese, Say the Session Name as Always or Never, one
+      Volume 0 to 100, progress, the repeat choice and the feedback choice removed, most used
+      first). **Next: Talking**, then Overlay, Figures, Terminal, Keys, Voices (the author
+      stopped for the night: "We can continue tomorrow").
+      Built on the way, **not seen by them yet**: the Reset button under each section (a
+      second click within 4 s confirms; none for Voices), the window resized from its edges
+      and maximized by a button or a double click on its top, a dropdown that closes on a
+      second click.
 
 ## 2. To decide
 
