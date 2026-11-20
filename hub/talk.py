@@ -186,7 +186,7 @@ class Talk:
             elif question:
                 self._ask_aside(s, pending.text, question, pending.lang)
             else:
-                self._hand_over(s, pending.text)
+                self._hand_over(s, pending.text, pending.lang)
         self.publish()
 
     # --- clearing a conversation -------------------------------------------------------------
@@ -399,9 +399,10 @@ class Talk:
             bars += [[name, w] for name, w in (plan.get("models") or {}).items() if w and (which == "all" or near(w))]
         return [[name, round(w["used"]), "warn" if near(w) else ""] for name, w in bars]
 
-    def _hand_over(self, s, text: str) -> None:
+    def _hand_over(self, s, text: str, lang: str = "") -> None:
         """Words for a session go out: as the answer to the question it is asking, to its
-        listener, or into the hub to wait for the end of its reply. Call with the lock held."""
+        listener, or into the hub to wait for the end of its reply. `lang`: the language they
+        were heard in, which a spoken "Sent." is said in. Call with the lock held."""
         shown = max(2.5, self.cfg.unsend_seconds)  # what went out, for as long as it can be taken back
         self._unclear(s.id, "words came after it")  # they are for this conversation; a clear first would lose them
         self._talk("sent", s, text, seconds=shown)
@@ -409,7 +410,7 @@ class Talk:
         if asking:  # it is waiting on a question, so these words are the answer to it
             self._answer(asking, text, "voice", echo=False)
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] given as the answer to its question")
-            self._signal("sent", s, "Sent.")
+            self._signal("sent", s, "Sent.", lang)
         else:
             prompt = next((r for r in self.requests if r.session == s.id), None)
             if prompt and self.cfg.voice_at_prompt != "wait":
@@ -424,7 +425,7 @@ class Talk:
             if not listener:
                 self._talk("queued", s, text, seconds=max(3.5, shown))
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
-            self._signal("sent" if listener else "queued", s, "Sent." if listener else "Queued.")
+            self._signal("sent" if listener else "queued", s, "Sent." if listener else "Queued.", lang)
         if self.cfg.unsend_seconds > 0:
             self._sent = Sent(s.id, text, time.monotonic(), answer=bool(asking))
             done = threading.Timer(self.cfg.unsend_seconds + 0.05, self.publish)  # gives the cancel key back
@@ -474,7 +475,7 @@ class Talk:
                 log(self.cfg, "hub.log", f"side question [{s.id[:8]}] not answered after {took:.1f}s ({why[:200]}); "
                                          "the words go to the session instead")
                 if shown:
-                    self._hand_over(s, aside.text)
+                    self._hand_over(s, aside.text, aside.lang)
                 else:  # push-to-talk is showing something newer: hand them over without a sign
                     self._deliver(s, aside.text)
         self.publish()

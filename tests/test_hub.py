@@ -1103,6 +1103,21 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.sounds.played, ["sent", "queued", "failed"])
         self.assertEqual(set(self.spoken()), {"B talks for a while."})  # no "Sent." or "Queued." in words
 
+    def test_the_word_is_said_in_the_language_you_spoke(self):
+        """The author, 2026-11-20, with the feedback on Voice: "Can you do that in Chinese?"."""
+        hub = self.make(talk_feedback="voice")
+        hub.sounds = FakeSounds()
+        hub._voice_for = lambda s, lang: {"zh": "zf_xiaoxiao", "it": "if_sara"}.get(lang)
+        hub.listen("a")
+        hub.follow_up("你好", "a", delay=0, lang="zh")
+        self.assertTrue(wait_for(lambda: self.engine.spoken))
+        self.assertEqual(self.engine.spoken[-1], ("已发送。", "zf_xiaoxiao"))
+        hub.cfg.reply_language = "it"  # a summary language chosen: that one, whatever was spoken
+        hub.listen("a")
+        hub.follow_up("hello", "a", delay=0, lang="en")
+        self.assertTrue(wait_for(lambda: len(self.engine.spoken) == 2))
+        self.assertEqual(self.engine.spoken[-1], ("Inviato.", "if_sara"))
+
     def test_feedback_can_be_the_word_or_nothing_and_is_quiet_when_the_voice_is_off(self):
         hub = self.make(talk_feedback="voice")
         hub.sounds = FakeSounds()

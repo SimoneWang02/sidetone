@@ -792,15 +792,19 @@ class Hub(Permissions, Talk):
     def _muted(self) -> bool:
         return os.path.exists(self.cfg.mute_file)
 
-    def _signal(self, name: str, s=None, words: str = "") -> None:
+    def _signal(self, name: str, s=None, words: str = "", lang: str = "") -> None:
         """Answer something the user did by voice: with a sound, played at once beside whatever
-        is being spoken, or with `words` in the session's voice (see `Config.talk_feedback`)."""
+        is being spoken, or with `words` in the session's voice (see `Config.talk_feedback`),
+        in the language of the summaries or else of `lang`, the one the words were heard in,
+        where `base.FEEDBACK_WORDS` has them."""
         mode = self.cfg.talk_feedback
         if mode == "sound" and self.sounds:
             if not self._muted():
                 self.sounds.play(name)
         elif mode != "none" and s and words:
-            self._say(s, words, "allowed", "follow-up")
+            lang = base.fixed_language(self.cfg) or lang
+            said = base.FEEDBACK_WORDS.get(words, {}).get(lang, words)
+            self._say(s, said, "allowed", "follow-up", self._voice_for(s, lang) if said != words else None)
 
     def _say(self, s, text: str, kind: str, src: str, voice: str | None = None) -> None:
         if s.id in self._stopping and kind in ("done", "progress"):

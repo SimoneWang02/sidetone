@@ -101,6 +101,12 @@ LANGUAGE_NAMES = {"it": "Italian", "zh": "Chinese", "es": "Spanish", "fr": "Fren
                   "pt": "Portuguese", "ja": "Japanese", "hi": "Hindi"}
 
 
+# The hub's spoken answers to your words in the language you used (the author, 2026-11-20, with
+# "When Your Words Go Out" on Voice: "Can you do that in Chinese?"). Others stay English.
+FEEDBACK_WORDS = {"Sent.": {"it": "Inviato.", "zh": "已发送。"},
+                  "Queued.": {"it": "In attesa.", "zh": "排队中。"}}
+
+
 def fixed_language(cfg) -> str:
     """The language every spoken line is in, as a two-letter code, or "" when it follows the
     language you wrote or spoke in (`reply_language: spoken`). "english" is the name it had

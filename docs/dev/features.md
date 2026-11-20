@@ -1109,6 +1109,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `progress_after`, `progress_interval`, `Hub._maybe_say_progress`). It had never spoken in
   the author's use; heard in a made-up session, they said: "I don't like it much. I think
   you could just remove this setting." Task counts still show in the figures.
+  "Sent." and "Queued." in the language you spoke (2026-11-20, the author, with the feedback
+  on Voice: "Can you do that in Chinese?"): `base.FEEDBACK_WORDS` has Italian and Chinese,
+  said in the session's voice for that language; with a summary language chosen, that one.
+  The hub's other words stay English.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.
