@@ -1087,8 +1087,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   for the keyboard. They then saw it and tried the taskbar: "It works perfectly, thanks."
   A reset button under each section's card (2026-11-20, the author: "for each category I
   think it would be cool to have like a reset button at the end"; `settings.reset`,
-  `settings.default`, `SettingsWindow.ResetButton`). "Reset to defaults", faint while the
-  section's `changed` is false; the first click turns it into "Click again to reset" on the
+  `settings.default`, `SettingsWindow.ResetButton`). "Reset" (first "Reset to defaults"; the
+  author asked for one word, and it stays at the left, where Windows and macOS put "Restore
+  Defaults" in a dialog), faint while the
+  section's `changed` is false; the first click turns it into "Click Again to Reset" on the
   tool's blue for 4 s, the second sends the setting `reset` with the section's name, and the
   hub puts each setting that differs back through `apply`, so it acts at once and is written
   to config.json. A default is what a new install has: `Config`'s own, `overlay.DEFAULTS`,

@@ -1536,11 +1536,11 @@ namespace ClaudeSpeaks
         {
             bool asking = changed && confirming == section;
             var button = new Border { CornerRadius = new CornerRadius(7), Padding = new Thickness(13, 6, 13, 7), Margin = new Thickness(0, 14, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
-            button.Child = new TextBlock { Text = asking ? "Click again to reset" : "Reset to defaults", FontSize = 12, FontWeight = asking ? FontWeights.SemiBold : FontWeights.Normal, Foreground = changed ? (asking ? Brushes.White : Ui.Dim) : Ui.Faint };
+            button.Child = new TextBlock { Text = asking ? "Click Again to Reset" : "Reset", FontSize = 12, FontWeight = asking ? FontWeights.SemiBold : FontWeights.Normal, Foreground = changed ? (asking ? Brushes.White : Ui.Dim) : Ui.Faint };
             if (!changed)
             {
                 button.Background = Ui.Paint("#08FFFFFF");
-                button.ToolTip = "Nothing here differs from the defaults";
+                button.ToolTip = "Everything here is as it comes";
                 return button;
             }
             button.Cursor = Cursors.Hand;
