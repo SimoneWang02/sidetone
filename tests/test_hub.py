@@ -998,24 +998,6 @@ class SayingItAgain(HubCase):
         self.assertTrue(hub.repeat())
         self.assertEqual(self.spoken(), ["web. Page built."])
 
-    def test_progress_is_spoken_in_long_turns_but_not_often(self):
-        hub = self.make(progress_after=0, progress_interval=60)
-        hub.on_event(ev("UserPromptSubmit"))
-        for task in "123":
-            hub.on_event(ev("TaskCreated", task_id=task))
-        hub.on_event(ev("TaskCompleted", task_id="1"))
-        hub.on_event(ev("TaskCompleted", task_id="2"))  # within the interval: stays quiet
-        hub.on_event(ev("TaskCompleted", task_id="3"))  # all done: the final line will say so
-        self.assertEqual(self.spoken(), ["1 of 3 steps done"])
-
-    def test_no_progress_talk_in_short_turns_or_short_lists(self):
-        hub = self.make()  # default: only after 45 s of work
-        hub.on_event(ev("UserPromptSubmit"))
-        for task in "123":
-            hub.on_event(ev("TaskCreated", task_id=task))
-        hub.on_event(ev("TaskCompleted", task_id="1"))
-        self.assertEqual(self.spoken(), [])
-
 
 class FakeRecorder:
     recording = False

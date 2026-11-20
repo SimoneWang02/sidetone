@@ -371,9 +371,6 @@ class Config:
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
     config_path: str = ""  # the user's config.json; overlay placement chosen by dragging is saved there
     voices_dir: str = os.path.expanduser("~/.local/share/sidetone/voices")  # the user's own voices
-    progress: bool = True  # say "3 of 5 steps done" during long turns
-    progress_after: float = 45.0  # only in turns that have already run this many seconds
-    progress_interval: float = 60.0  # and at most this often per session
     overlay: dict = field(default_factory=lambda: {**overlay_mod.DEFAULTS, "hotkeys": dict(overlay_mod.DEFAULTS["hotkeys"])})
     # How each session's own terminal is marked (see terminal.py): tint, strength, background, pulse, title.
     terminal: dict = field(default_factory=lambda: dict(terminal_mod.DEFAULTS))
@@ -408,8 +405,7 @@ class Config:
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "whisper_language", "whisper_lean", "whisper_unload_minutes", "repeat", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
-                    "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir",
-                    "progress", "progress_after", "progress_interval"):
+                    "talk_feedback", "sound_volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])
         wanted = user.get("overlay") or {}

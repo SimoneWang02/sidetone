@@ -94,7 +94,7 @@ its own spoken line as the first line of its reply.
 - **How much is used.** Ask by voice ("what's my usage?") and the hub says how much of the
   plan's five hours and week is used and when they start again; the words go to no session.
   `sidetone usage` prints the same. A thin arc around each session's light shows how full its context is (`context_shown`: `arc`, `text`, `both`, `off`), and a card under the rows gives the figures of the session under the mouse: context, tokens of the reply, time and tasks.
-- **Say it again.** `Ctrl+Alt+R` repeats the last line of the session in focus. Long turns say "3 of 5 steps done" along the way.
+- **Say it again.** `Ctrl+Alt+R` repeats the last line of the session in focus.
 - **Your own voices.** Pick a voice per project, blend two into a new one, or load a Kokoro
   voice file.
 

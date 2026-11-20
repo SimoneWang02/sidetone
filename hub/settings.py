@@ -59,7 +59,6 @@ SECTIONS = [
          "options": [["spoken", "Match My Language"]] + [[code, base.LANGUAGE_NAMES.get(code, "English")] for code in SUMMARY_LANGUAGES]},
         choice("label", "Say the Project Name", "Say \"sidetone 2\" before each line, so you know who talks without looking.",
                ("always", "Always"), ("never", "Never")),
-        switch("progress", "Progress in Long Turns", "Say how many steps are done while a long turn runs."),
         choice("repeat", "The Repeat Key Says", "The last line of the session in focus, or the last line anyone said.",
                ("focus", "In focus"), ("last", "Anyone")),
         choice("talk_feedback", "When Your Words Go Out", "A short sound, a spoken word, or nothing.",

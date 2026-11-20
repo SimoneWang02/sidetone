@@ -105,7 +105,6 @@ class Hub(Permissions, Talk):
         self._aside_shown: Aside | None = None  # the one the overlay shows as being answered
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
         self._focus_lost: tuple[str, float] = ("", 0.0)  # the session a speaker last took the focus from, and when
-        self._progress_said: dict[str, float] = {}  # session id -> when it last announced progress
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
                                   on_change=self._speech_changed, on_done=self._log_speech,
@@ -269,7 +268,6 @@ class Hub(Permissions, Talk):
                 s.tasks.setdefault(ev.get("task_id", ""), False)
             elif event == "TaskCompleted":
                 s.tasks[ev.get("task_id", "")] = True
-                self._maybe_say_progress(s)
             elif event == "Notification":
                 if ev.get("notification_type") in NEEDS_INPUT:
                     waiting = [r for r in self.requests if r.session == sid and not r.confirmed]
@@ -583,15 +581,6 @@ class Hub(Permissions, Talk):
         self.speech.put(Utterance(text=entry["text"], voice=entry["voice"], session=entry["session"] if live else "",
                                   kind="notice", src=src, entry=entry,
                                   label=entry["spoken_name"] if not live else None))
-
-    def _maybe_say_progress(self, s) -> None:
-        """During a long turn, say how far its task list is, but not often."""
-        done, total, now = sum(s.tasks.values()), len(s.tasks), time.monotonic()
-        if (self.cfg.progress and total >= 3 and done < total and s.turn_started
-                and now - s.turn_started >= self.cfg.progress_after
-                and now - self._progress_said.get(s.id, 0) >= self.cfg.progress_interval):
-            self._progress_said[s.id] = now
-            self._say(s, f"{done} of {total} steps done", "progress", "progress")
 
     # --- voices ------------------------------------------------------------------------------
 

@@ -1101,6 +1101,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   again the select shouldn't it be closing"): the popup shut on the press, as for any click
   outside it, and the release opened it again; a release within 400 ms of it shutting now
   leaves it shut. Not tried by them yet.
+  Removed the same night: the spoken progress in long turns ("3 of 5 steps done" once a
+  task list had 3 or more steps, after 45 s of work, at most once a minute; `progress`,
+  `progress_after`, `progress_interval`, `Hub._maybe_say_progress`). It had never spoken in
+  the author's use; heard in a made-up session, they said: "I don't like it much. I think
+  you could just remove this setting." Task counts still show in the figures.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.
