@@ -553,9 +553,9 @@ class Hub(Permissions, Talk):
 
     def repeat(self) -> bool:
         """Say again the last line of the session in focus (the one the wheel or the last speaker
-        chose), or with `repeat: last` the last line anyone said."""
+        chose); with none in focus, the last line anyone said."""
         with self.lock:
-            s = self._target() if self.cfg.repeat != "last" else None
+            s = self._target()
             lines = [e for e in self.history if not s or e.get("session") == s.id]
             entry = lines[-1] if lines else None
             nothing = f"Nothing from {_spoken_name(s.name)} yet." if s else "Nothing to repeat."

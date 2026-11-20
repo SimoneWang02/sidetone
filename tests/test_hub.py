@@ -986,15 +986,10 @@ class SayingItAgain(HubCase):
         self.assertFalse(hub.repeat())
         self.assertEqual(self.spoken(), ["Nothing from docs yet."])
 
-    def test_repeat_can_be_set_to_the_last_line_anyone_said(self):
-        hub = self.two_sessions_spoke(repeat="last")
-        hub.focus(-1)
-        self.assertTrue(hub.repeat())
-        self.assertEqual(self.spoken(), ["Page built."])
-
     def test_a_replayed_line_of_a_session_that_left_names_it(self):
-        hub = self.two_sessions_spoke(repeat="last")
-        hub.on_event(ev("SessionEnd", sid="b", cwd="/w/web"))
+        hub = self.two_sessions_spoke()
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/api-server"))
+        hub.on_event(ev("SessionEnd", sid="b", cwd="/w/web"))  # none left in focus: the last line anyone said
         self.assertTrue(hub.repeat())
         self.assertEqual(self.spoken(), ["web. Page built."])
 

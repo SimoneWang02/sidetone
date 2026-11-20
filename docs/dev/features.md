@@ -729,7 +729,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `away-catch-up`.) `repeat()` says again the
   last line of the session in focus (the author, 2026-11-17, after trying the key: "it would be
   better to have it replay the selected session, also i noticed the detail box doesnt come
-  out"); `repeat: last` in the settings brings back the last line anyone said. A replayed line
+  out"); `repeat: last` brought back the last line anyone said, until the author had it removed on
+  2026-11-20 ("once a session starts talking, the focus automatically goes to that one ... it's
+  easier if ... that shortcut automatically repeats the last message from that session").
+  With no session in focus it says the last line anyone said. A replayed line
   is tied to its session (`Hub._replay`), so its bubble, voice bars and wave show as they did
   the first time; before, it belonged to no session and nothing showed. The overlay gets the newest lines with each
   `state`, up to four of each session, and shows them while the cursor rests on the list
@@ -1141,7 +1144,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   scripts over a socket and a hub process that is killed and restarted.
   Run: `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests`
 - Config (optional): `~/.config/sidetone/config.json` with `voices` (project name → voice),
-  `voice_pool`, `colors`, `label` (`always`/`never`, `never` by default; `auto`, said only with several sessions and no overlay, dropped 2026-11-20: "make it two choices ... I want to reduce [friction]"), `titles` (`ask`/`auto`), `repeat` (`focus`/`last`), `max_age`, `idle_exit`, `default_voice`, `speed`,
+  `voice_pool`, `colors`, `label` (`always`/`never`, `never` by default; `auto`, said only with several sessions and no overlay, dropped 2026-11-20: "make it two choices ... I want to reduce [friction]"), `titles` (`ask`/`auto`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
   `talk_tail`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
