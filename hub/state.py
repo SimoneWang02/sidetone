@@ -203,6 +203,7 @@ class Session:
     turn_took: float | None = None  # seconds its last finished turn ran
     turn_since: float = 0.0  # when that prompt came, as the history's lines are timed
     turn_tokens: int | None = None  # what its last turn used, once that has ended; None = not known, or in a turn
+    tally: object = None  # what the whole session has used so far (a usage.Tally); None = not read yet
     updated: float = field(default_factory=time.monotonic)
 
     def snapshot(self) -> dict:

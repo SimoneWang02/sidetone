@@ -389,18 +389,19 @@ class OverlayFeed(HubCase):
             json.dump({"type": "assistant", "isSidechain": False, "message": {"id": "a", "usage": {
                 "input_tokens": 2, "cache_creation_input_tokens": 149998, "cache_read_input_tokens": 470000, "output_tokens": 4000}}}, f)
         row = lambda: self.overlay.of("state")[-1]["sessions"][0]
+        hub.cfg.detail_metrics = ["context", "tokens", "time"]  # each turn's own, a choice
         hub.on_event(ev("UserPromptSubmit"))
-        self.assertEqual(row()["details"], [["Context", "", None, ""], ["Last reply", "", None, ""], ["This turn", "<1m", None, ""]],
+        self.assertEqual(row()["details"], [["Context", "", None, ""], ["Turn tokens", "", None, ""], ["Turn time", "<1m", None, ""]],
                          "what is not known keeps its place")
         hub.on_event(ev("TaskCreated", task_id="1"))
         hub.on_event(ev("TaskCreated", task_id="2"))
         hub.on_event(ev("TaskCompleted", task_id="1"))
         hub.on_event(ev("PostToolUse", transcript_path=record))
         self.assertEqual(row()["meta"], "<1m")
-        self.assertEqual(row()["details"], [["Context", "62%", 0.62, ""], ["This reply", "154k", None, ""], ["This turn", "<1m", None, ""]])
+        self.assertEqual(row()["details"], [["Context", "62%", 0.62, ""], ["Turn tokens", "154k", None, ""], ["Turn time", "<1m", None, ""]])
         hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
         self.assertEqual(row()["meta"], "")
-        self.assertEqual([d[:2] for d in row()["details"]], [["Context", "62%"], ["Last reply", "154k"], ["Last turn", "<1m"]])
+        self.assertEqual([d[:2] for d in row()["details"]], [["Context", "62%"], ["Turn tokens", "154k"], ["Turn time", "<1m"]])
         hub.cfg.overlay["context_warn"] = 60
         hub.cfg.row_metrics, hub.cfg.detail_metrics = ["tasks", "tokens"], ["waiting", "context"]  # a choice of one's own
         hub.publish()
@@ -408,6 +409,35 @@ class OverlayFeed(HubCase):
         hub.cfg.detail_metrics = []
         hub.publish()
         self.assertEqual(row()["details"], [])
+
+    def test_the_card_shows_what_the_whole_session_has_used_and_how_long_it_worked(self):
+        hub = self.make()
+        record = os.path.join(self.tmp, "record.jsonl")
+        at = lambda second: f"2026-11-20T06:{second // 60:02d}:{second % 60:02d}.000Z"
+        prompt = lambda second: json.dumps({"type": "user", "timestamp": at(second), "message": {"content": "Do it"}})
+        result = lambda second: json.dumps({"type": "user", "timestamp": at(second), "message": {"content": [{"type": "tool_result"}]}})
+        reply = lambda second, id, out: json.dumps({"type": "assistant", "timestamp": at(second), "message": {"id": id, "usage": {
+            "input_tokens": 2, "cache_creation_input_tokens": 998, "cache_read_input_tokens": 50000, "output_tokens": out}}})
+        helper = json.dumps({"type": "assistant", "isSidechain": True, "timestamp": at(500), "message": {"id": "h", "usage": {"output_tokens": 99999}}})
+        with open(record, "w") as f:  # a turn of two minutes, then ten minutes of the user away, then a turn of 90 s
+            f.write("\n".join([prompt(0), reply(60, "a", 1000), reply(60, "a", 1000), result(90), reply(120, "b", 2000),
+                               prompt(720), helper, reply(780, "c", 3000)]) + "\n" + reply(810, "c", 4000))  # its last line unfinished
+        figures = lambda: dict((d[0], d[1]) for d in self.overlay.of("state")[-1]["sessions"][0]["details"])
+        hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
+        self.assertEqual(figures(), {"Context": "5%", "Tokens": "9.0k", "Time": "3m"})  # 6,000 written, 1,000 read new by each of 3
+        with open(record, "a") as f:
+            f.write("\n" + result(840) + "\n")  # the rest of that line, then a step that ended 30 s after
+        hub.on_event(ev("Stop", transcript_path=record, last_assistant_message=tag("Done.")))
+        self.assertEqual(figures(), {"Context": "5%", "Tokens": "10k", "Time": "4m"}, "the rest is read on, each reply once")
+        hub.cfg.turn_tokens = "output"
+        hub.publish()
+        self.assertEqual(figures()["Tokens"], "7.0k")
+        # A new chat after /clear is another session, with a record of its own: it starts again.
+        fresh = os.path.join(self.tmp, "fresh.jsonl")
+        with open(fresh, "w") as f:
+            f.write(prompt(900).replace("2026-11-20", "2020-01-01") + "\n")  # long ago: the clock runs from the prompt
+        hub.on_event(ev("UserPromptSubmit", sid="s2", transcript_path=fresh))
+        self.assertEqual(self.overlay.of("state")[-1]["sessions"][1]["details"][1:], [["Tokens", "", None, ""], ["Time", "<1m", None, ""]])
 
     def test_a_row_says_what_the_turn_used_once_it_has_ended(self):
         hub = self.make()

@@ -9,6 +9,7 @@ the token what `/context` showed at the same moment.
 """
 from __future__ import annotations
 
+import datetime
 import glob
 import json
 import os
@@ -304,7 +305,78 @@ class Turn(NamedTuple):
     def tokens(self, how: str = "new") -> int:
         """One figure for it: new = everything but what was read again (the default; the rest
         grows with the length of the conversation, not with the request) | output | all."""
-        return self.output if how == "output" else self.output + self.fresh + (self.reused if how == "all" else 0)
+        return _figure(self.output, self.fresh, self.reused, how)
+
+
+def _figure(output: int, fresh: int, reused: int, how: str) -> int:
+    return output if how == "output" else output + fresh + (reused if how == "all" else 0)
+
+
+class Tally(NamedTuple):
+    """What a whole session has used so far, read from its record a piece at a time (see tally)."""
+    path: str = ""
+    at: int = 0           # how much of the record has been read: up to the end of its last whole line
+    output: int = 0       # as in Turn, over every reply
+    fresh: int = 0
+    reused: int = 0
+    seconds: float = 0.0  # time the model and its tools were at work
+    last: float | None = None  # when the last prompt, reply or tool result read was written (epoch seconds)
+    reply: str = ""       # the reply the read ended in: its lines can go on in the next piece
+    counts: tuple = (0, 0, 0)  # what that reply has been counted for so far
+
+    def tokens(self, how: str = "new") -> int:
+        return _figure(self.output, self.fresh, self.reused, how)
+
+
+def tally(path: str, was: Tally | None = None) -> Tally | None:
+    """What the session has used, `was` carried on with what was written to its record since;
+    None if the record cannot be read. Tokens as in turn(). The time at work is the time before
+    each reply and each tool result, counted from the line before it; the time before a prompt
+    is the user's, and is left out. So it holds what Claude was busy with, a wait on a
+    permission prompt included, and none of the time the session sat waiting for you. Helpers'
+    replies are left out, as in turn()."""
+    if not was or was.path != path:
+        was = Tally(path)
+    try:
+        with open(path, "rb") as f:
+            f.seek(was.at)
+            data = f.read()
+    except OSError:
+        return None
+    end = data.rfind(b"\n") + 1  # a line still being written is read next time
+    _, _, output, fresh, reused, seconds, last, reply, counts = was
+    for line in data[:end].decode("utf-8", "replace").splitlines():
+        if '"assistant"' not in line and '"user"' not in line:
+            continue
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(entry, dict) or entry.get("isSidechain") or entry.get("type") not in ("user", "assistant"):
+            continue
+        try:
+            when = datetime.datetime.fromisoformat(str(entry.get("timestamp"))).timestamp()
+        except ValueError:
+            continue
+        message = entry.get("message") if isinstance(entry.get("message"), dict) else {}
+        content = message.get("content")
+        work = entry["type"] == "assistant" or (
+            isinstance(content, list) and any(isinstance(p, dict) and p.get("type") == "tool_result" for p in content))
+        if work and last is not None and when > last:
+            seconds += when - last
+        last = when
+        if entry["type"] != "assistant" or not isinstance(message.get("usage"), dict):
+            continue
+        count = lambda key: message["usage"].get(key) if isinstance(message["usage"].get(key), int) else 0  # noqa: E731
+        seen = (count("output_tokens"), count("input_tokens") + count("cache_creation_input_tokens"), count("cache_read_input_tokens"))
+        key = str(message.get("id") or "")
+        if key and key == reply:  # another line of the same reply: only what it adds
+            new = tuple(map(max, seen, counts))
+            added, counts = tuple(n - o for n, o in zip(new, counts)), new
+        else:
+            added, reply, counts = seen, key, seen
+        output, fresh, reused = output + added[0], fresh + added[1], reused + added[2]
+    return Tally(path, was.at + end, output, fresh, reused, seconds, last, reply, counts)
 
 
 def turn(path: str, start: int | None = None, tail: int = 4_000_000) -> Turn | None:

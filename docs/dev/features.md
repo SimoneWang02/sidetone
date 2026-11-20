@@ -1084,6 +1084,23 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.
+- **The card's figures are the session's totals** (2026-11-20). The author found "This
+  reply" and "This turn" "not very intuitive"; "Tokens" and "Running" alone would read as
+  totals, "Turn tokens" and "Turn time" were offered, and the author chose to make them
+  totals instead, each turn's own figure staying at the end of its line in the history
+  (and the running turn's clock in the row). Their two choices: a /clear starts the totals
+  again, and the time counts only while Claude works. `detail_metrics` is now `context`,
+  `session_tokens` ("Tokens"), `session_time` ("Time"); `tokens` and `time`, each turn's
+  own, are still a choice and now say "Turn tokens" and "Turn time". Both come from the
+  session's record (`usage.tally`, `Hub._count_session`): read once from the top when the
+  hub first sees the session, so a hub restart loses nothing (0.4 s for the largest record
+  here, 77 MB), then from where it stopped at each prompt, step and end (0.1 ms). Tokens
+  count as `turn_tokens` says (`new` by default), each reply once, helpers left out. The
+  time is the gap before each reply and each tool result, so a wait on a permission prompt
+  counts and the time the session sat waiting for you does not; while a turn runs, the
+  time since the last line written (or since the prompt) is added, so it moves like the
+  row's clock. A /clear gives the chat a new id and record, so its totals start at zero
+  without anything done for it. Measured on this session: 85k tokens, 5 minutes at work.
 - `hub/demo.py`: three made-up sessions that go through every state (`sidetone demo`).
 - **Fallback**: every hook still works with no hub (`hooks/tts-lib.sh`, engine order macOS `say`,
   Kokoro, Piper, `spd-say`, `espeak-ng`). `display.sh` then leaves a marker so the Stop event

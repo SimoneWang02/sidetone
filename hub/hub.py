@@ -52,7 +52,8 @@ from talk import Talk  # noqa: E402
 
 
 # What a figure is called under the rows while it is not known (see Hub._figures).
-DETAIL_NAMES = {"context": "Context", "tokens": "Last reply", "time": "Last turn", "tasks": "Tasks", "waiting": "Waiting"}
+DETAIL_NAMES = {"context": "Context", "tokens": "Turn tokens", "time": "Turn time", "session_tokens": "Tokens",
+                "session_time": "Time", "tasks": "Tasks", "waiting": "Waiting"}
 
 
 class Hub(Permissions, Talk):
@@ -126,6 +127,7 @@ class Hub(Permissions, Talk):
                         s.turn_took = time.monotonic() - began  # how long the turn that just ended ran
             self._count_context(ev)
             self._count_turn(ev)
+            self._count_session(ev)
             self.publish()
 
     def _count_context(self, ev: dict) -> None:
@@ -182,9 +184,33 @@ class Hub(Permissions, Talk):
                     if said:
                         said[-1]["tokens"] = s.turn_tokens
         if again and ended:
-            timer = threading.Timer(base.RECOUNT, lambda: (self._count_turn(ev, again=False), self.publish()))
+            timer = threading.Timer(base.RECOUNT, lambda: (self._count_turn(ev, again=False), self._count_session(ev), self.publish()))
             timer.daemon = True
             timer.start()
+
+    def _count_session(self, ev: dict) -> None:
+        """What the whole session has used, in tokens and in time at work (see usage.tally): its
+        record read on from where the last count stopped, all of it once when the hub first
+        sees the session. After /clear the chat has a new id and record, so it starts again."""
+        path = ev.get("transcript_path")
+        if not path or ev.get("hook_event_name") not in ("SessionStart", "UserPromptSubmit", "PostToolUse", "Stop", "StopFailure"):
+            return
+        if not {"session_tokens", "session_time"} & set(list(self.cfg.detail_metrics) + list(self.cfg.row_metrics)):
+            return
+        with self.lock:
+            s = self.sessions.by_id.get(ev["session_id"])
+            was = s.tally if s else None
+        if not s:
+            return
+        try:
+            read = usage.tally(str(path), was)
+        except Exception:  # an odd record is no reason to lose the event
+            read = None
+        if read:
+            with self.lock:
+                s = self.sessions.by_id.get(ev["session_id"])
+                if s and s.tally is was:  # else another event counted it meanwhile, and the next goes on from there
+                    s.tally = read
 
     def _apply(self, ev: dict) -> None:
         sid, event = ev["session_id"], ev.get("hook_event_name", "")
@@ -710,9 +736,9 @@ class Hub(Permissions, Talk):
             found["tasks"] = (f"{done}/{of}", "Tasks", f"{done}/{of}", done / of, "")
         if working and s.turn_started:
             ran = _elapsed(time.monotonic() - s.turn_started)
-            found["time"] = (ran, "This turn", ran, None, "")
+            found["time"] = (ran, DETAIL_NAMES["time"], ran, None, "")
         elif s.turn_took is not None:
-            found["time"] = ("", "Last turn", _elapsed(s.turn_took), None, "")
+            found["time"] = ("", DETAIL_NAMES["time"], _elapsed(s.turn_took), None, "")
         if waiting:
             found["waiting"] = ("1 message waiting" if waiting == 1 else f"{waiting} messages waiting", "Waiting", str(waiting), None, "")
         if s.context is not None and context_mode(self.cfg) != "off":
@@ -722,7 +748,18 @@ class Hub(Permissions, Talk):
         if s.turn_tokens:
             used = usage.tokens_text(s.turn_tokens)
             found["tokens"] = ("" if working else f"{used} {self.cfg.turn_tokens_label}".strip(),
-                               "This reply" if working else "Last reply", used, None, "")
+                               DETAIL_NAMES["tokens"], used, None, "")
+        how, t = self.cfg.turn_tokens, s.tally
+        if t and how not in ("off", False, None) and t.tokens(how if isinstance(how, str) else "new"):
+            used = usage.tokens_text(t.tokens(how if isinstance(how, str) else "new"))
+            found["session_tokens"] = (used, DETAIL_NAMES["session_tokens"], used, None, "")
+        if t:
+            worked = t.seconds
+            if working and s.turn_started:  # and the time since the last line written, or since the prompt
+                began = time.time() - (time.monotonic() - s.turn_started)
+                worked += max(0.0, time.time() - max(t.last or 0.0, began))
+            if worked:
+                found["session_time"] = (_elapsed(worked), DETAIL_NAMES["session_time"], _elapsed(worked), None, "")
         return found
 
     def _waiting_count(self, sid: str) -> int:

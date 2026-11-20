@@ -294,10 +294,15 @@ class Config:
     # its name; [] = nothing. How that looks is the overlay's `details_style`. Both are
     # lists of: tasks (done/all of its task list), time (how long the turn has run, or the
     # last one ran), context, tokens (what the turn has used, or the last one did), waiting
-    # (messages of yours held for it). Tasks left the card's default on 2026-11-19 (the
-    # author: "I don't think it's useful ... narrow that row to just three columns").
+    # (messages of yours held for it), session_tokens and session_time (what the whole
+    # session has used, and how long Claude has been at work in it, since it began or was
+    # cleared). Tasks left the card's default on 2026-11-19 (the author: "I don't think it's
+    # useful ... narrow that row to just three columns"). The card shows the session's totals
+    # since 2026-11-20: "This reply" and "This turn" were "not very intuitive", and "Tokens"
+    # alone would read as a total, so the author made it one; what each turn used stays at
+    # the end of its line in the history, and the turn's own clock in the row.
     row_metrics: list = field(default_factory=lambda: ["time"])
-    detail_metrics: list = field(default_factory=lambda: ["context", "tokens", "time"])
+    detail_metrics: list = field(default_factory=lambda: ["context", "session_tokens", "session_time"])
     # What stands between the parts of a line the hub writes for the overlay (tasks and time
     # in a row, the keys under a request): "" = only a gap (the author, 2026-11-18: "don't
     # use the dots, the central dots. I don't like them") | a sign of your own, "\u00b7" for
