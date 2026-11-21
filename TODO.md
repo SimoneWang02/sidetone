@@ -108,7 +108,24 @@ these come before anything new.
 
 Questions for the author; nothing to build until they answer.
 
-Nothing open.
+From the bug pass of 2026-11-21 (found by reading; none seen to happen yet):
+
+- [ ] A Kokoro model that fails to load ends the speech thread when the hub starts, and the hooks
+      do not fall back to the system voice because the hub is up. What should happen: the hub
+      switching to Piper or espeak, or saying so and exiting?
+- [ ] Settings are not type-checked: a hand-edited value of the wrong type (`"context_warn": "80%"`)
+      makes every overlay update fail, and a `config.json` that is not valid JSON stops the hub
+      starting. Check each value against its default's type and fall back to the default, with a
+      line in `hub.log`?
+- [ ] One exception ends the overlay's refresh loop (`keep_current` in `hub.py`) or its message
+      reader (`Overlay._read`) for the rest of the hub's life. Catch, log and keep going?
+- [ ] Many `Config` fields have no line in `settings.SECTIONS` (`talk_feedback`, `aside_model`,
+      `max_age` and others). Deliberate, or should they get one?
+
+Small, to mend without asking: `Recorder.stop` never waits for `parec` (a finished one can stay in
+the process list and look like a recording to `pgrep -x parec`); `claude_sessions.read` throws if
+`statusUpdatedAt` is not a number; `install.sh` breaks on a checkout path with `&` or `|`;
+`sidetone say -v` and `follow-up -s` with nothing after the flag stop with "unbound variable".
 
 ## 3. Speech in the author's languages
 
