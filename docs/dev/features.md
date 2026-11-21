@@ -699,7 +699,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the room unchanged. Discord's Push to Mute on the talk key itself does not work either:
   the overlay keeps the talk key's press from other programs ("it's still green" with
   Ctrl+Alt+Space bound in Discord). Discord sees F24 alone: the overlay already sends Ctrl and
-  Alt up during a hold (`MaskKeys`). Whether Discord takes an injected key: not seen yet.
+  Alt up during a hold (`MaskKeys`). Discord takes the injected key, in its recorder and as a
+  keybind: tried by the author 2026-11-21, the ring stayed dark ("It's perfect, I think").
+  Their first recording came out as Ctrl + F24, which never matches during a hold (Ctrl is
+  masked); recorded with hands off the keyboard it is F24 alone.
 - The talk key reaches back (2026-11-17, `focus_reach_back`, 1 s): a session that starts to
   speak takes the focus, also in the split second before the talk key goes down, and the
   words then went to it instead of the session the author meant (three times that day; the

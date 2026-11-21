@@ -31,13 +31,6 @@ these come before anything new.
       are now what the whole session has used and how long Claude worked in it, since it began or
       was cleared; each turn's own tokens stay on its history line. Seen in a picture only.
       **Not seen by them on their own sessions yet.**
-- [ ] Discord muted while you talk (asked for and built 2026-11-20, `push_to_mute`, on, in the
-      settings window under Talking as "Mute Discord While Talking"). While the talk key is
-      held, Sidetone holds F24 down; Discord's Push to Mute bound to F24 mutes you. Muting
-      Discord's stream in Windows was tried first and did not work (the ring stayed green).
-      **To try by hand:** in Discord, Settings, Keybinds, Add a Keybind, Action Push to Mute,
-      Record Keybind, then run `sidetone discord-key`; with Discord's settings closed, hold the
-      talk key and speak: the green ring should stay dark.
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
       A first one built on the evening of 2026-11-18 and put on their screen:
@@ -379,6 +372,13 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] Discord muted while you talk (asked for and built 2026-11-20, `push_to_mute`, on, in the
+      settings window under Talking as "Mute Discord While Talking"). While the talk key is
+      held, Sidetone holds F24 down; Discord's Push to Mute bound to F24 mutes you. Muting
+      Discord's stream in Windows was tried first and did not work (the ring stayed green).
+      Tried by the author 2026-11-21 in Discord: the ring stayed dark ("It's perfect, I
+      think"). The first recording of the keybind came out as Ctrl + F24, because a key was
+      held while Discord recorded; with hands off the keyboard it took F24 alone.
 - [x] "Release to send" staying on the light (the author, 2026-11-18: "it got stuck in
       recording wtf"). Found and mended the same hour: a press of the talk key shorter
       than a third of a second left the sign up until the next hold, though nothing was

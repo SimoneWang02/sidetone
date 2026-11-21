@@ -68,7 +68,8 @@ its own spoken line as the first line of its reply.
   1. In Discord (the desktop app): User Settings, Keybinds, Add a Keybind, and choose the
      action Push to Mute.
   2. Click its keybind box to record, and run `sidetone discord-key`: it presses `F24` for you
-     after three seconds. Stop the recording and close Discord's settings (its keybinds are
+     after three seconds. Keep your hands off the keyboard meanwhile, so the box shows `F24`
+     alone (`Ctrl + F24` never matches). Stop the recording and close Discord's settings (its keybinds are
      off while that page is open).
   Push to Mute works when Discord is set to Voice Activity; with Push to Talk it sends nothing
   unless you hold its own key anyway. "Mute Discord While Talking" in the settings window
