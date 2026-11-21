@@ -60,6 +60,20 @@ its own spoken line as the first line of its reply.
   that already has them is told to ignore them (`unsend_seconds`; 0 turns it off). If you would rather check the text first, set
   `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
   `followup_confirm` to `true` (nothing is sent until you tap the talk key again).
+- **Not heard on a Discord call.** What you say to a session would also go to a call, and
+  Discord cannot see the talk key: Sidetone keeps it from every other program while you hold
+  it, so it does not type a space or pause a video in the window you are in. So while you
+  hold it, Sidetone also holds down `F24`, a key no keyboard has, and Discord's own
+  Push to Mute does the muting. Set it up once:
+  1. In Discord (the desktop app): User Settings, Keybinds, Add a Keybind, and choose the
+     action Push to Mute.
+  2. Click its keybind box to record, and run `sidetone discord-key`: it presses `F24` for you
+     after three seconds. Stop the recording and close Discord's settings (its keybinds are
+     off while that page is open).
+  Push to Mute works when Discord is set to Voice Activity; with Push to Talk it sends nothing
+  unless you hold its own key anyway. "Mute Discord While Talking" in the settings window
+  (`push_to_mute`) turns it off, and `push_to_mute_key` holds another key instead, for a
+  program with a push-to-mute key of its own.
 - **Side questions.** Words for a busy session normally wait until its reply is over. Start
   with "by the way" ("by the way, which file was that?") and they do not wait: a throwaway
   copy of that session answers within a few seconds from what the session already knows, in
@@ -165,6 +179,7 @@ sidetone follow-up [-s PROJECT] TEXT
 sidetone target [PROJECT]       who a spoken follow-up goes to
 sidetone repeat                 hear the focused session's last line again
 sidetone sound sent|queued|failed   hear the short sounds that answer push-to-talk
+sidetone discord-key            press F24 in 3 s, for Discord's Push to Mute keybind to record
 sidetone voices                 every voice, and which project has which
 sidetone languages en,it        the languages push-to-talk listens for (name only the ones you speak)
 sidetone voice PROJECT VOICE    give a project a voice
