@@ -15,6 +15,7 @@ import signal
 import sys
 import threading
 import time
+import traceback
 import zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # run with -I, so add our own dir
@@ -104,7 +105,7 @@ class Hub(Permissions, Talk):
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
                                   on_change=self._speech_changed, on_done=self._log_speech,
-                                  on_audio=self._voice_levels)
+                                  on_audio=self._voice_levels, on_load_failed=self._voice_failed)
 
     # --- hook events -------------------------------------------------------------------------
 
@@ -864,6 +865,14 @@ class Hub(Permissions, Talk):
             return ""
         return _spoken_name(s.name)
 
+    def _voice_failed(self, queue: SpeechQueue, error: Exception) -> None:
+        """The chosen voice failed to load (a damaged model file, no memory for it); a system
+        voice took over. Said once, so a quieter, plainer voice is not a mystery."""
+        name = type(queue.engine).__name__
+        log(self.cfg, "hub.log", f"the voice failed to load ({type(error).__name__}: {error}); using {name} instead")
+        queue.put(Utterance(text="My main voice failed to load. The reason is in the hub log.",
+                            voice=self.cfg.default_voice, kind="notice", src="hub"))
+
     def _log_speech(self, u: Utterance, label: str, waited: float, first: float | None, outcome: str) -> None:
         if u.entry is not None and outcome == "spoken" and first is not None:
             u.entry["heard"] = True
@@ -917,10 +926,18 @@ def main() -> int:
                 return
 
     def keep_current() -> None:  # elapsed times and Claude Code's session files change without any event
+        last = ""
         while True:
             time.sleep(1)
-            hub.reconcile()
-            hub.publish()
+            try:
+                hub.reconcile()
+                hub.publish()
+                last = ""
+            except Exception:  # noqa: BLE001  one bad second must not freeze the overlay for good
+                error = traceback.format_exc(limit=-3).strip()
+                if error != last:  # once, not every second
+                    log(cfg, "hub.log", f"updating the overlay failed: {error}")
+                last = error
 
     threading.Thread(target=exit_when_idle, daemon=True).start()
     threading.Thread(target=keep_current, daemon=True).start()

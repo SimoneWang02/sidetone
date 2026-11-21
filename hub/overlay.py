@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import threading
 import time
+import traceback
 from typing import Callable
 
 import stale
@@ -314,7 +315,11 @@ class Overlay:
                 self.config["mode"] = msg.get("mode", "dots")  # survives an overlay restart
             elif kind in ("error", "note"):
                 self.log(f"overlay: {msg.get('message')}")
-            self.on_message(msg)
+            try:
+                self.on_message(msg)
+            except Exception:  # noqa: BLE001  one message the hub could not act on must not end the
+                # reading, and every hotkey with it, for the rest of the hub's life
+                self.log(f"overlay message {kind} failed: {traceback.format_exc(limit=-3).strip()}")
         with self._lock:
             if self.proc is proc:
                 self.proc, self.ready = None, False

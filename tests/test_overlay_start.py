@@ -51,5 +51,23 @@ class StartingTheWindow(unittest.TestCase):
         self.assertIsNot(window.proc, first)
 
 
+
+class ReadingTheWindow(unittest.TestCase):
+    def test_a_message_the_hub_cannot_act_on_does_not_end_the_reading(self):
+        # Before, one error ended the reader for the rest of the hub's life, and every hotkey with it.
+        got, logged = [], []
+
+        def on_message(msg):
+            if msg["type"] == "talk_end":
+                raise OSError("recorder gone")
+            got.append(msg["type"])
+        window = overlay.Overlay("overlay.ps1", {}, on_message=on_message, log=logged.append)
+        proc = types.SimpleNamespace(stdout=iter(['{"type": "talk_end"}\n', '{"type": "allow"}\n']))
+        window._read(proc)
+        self.assertEqual(got, ["allow"])
+        self.assertTrue(any("talk_end failed" in line and "recorder gone" in line for line in logged), logged)
+
+
+
 if __name__ == "__main__":
     unittest.main()

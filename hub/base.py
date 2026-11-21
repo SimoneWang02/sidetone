@@ -11,6 +11,7 @@ import signal
 import subprocess
 import threading
 import time
+import dataclasses
 from dataclasses import dataclass, field
 
 import overlay as overlay_mod
@@ -436,6 +437,13 @@ class Config:
                 user = json.load(f)
         except FileNotFoundError:
             user = {}
+        except (OSError, ValueError) as e:  # a slip while editing it by hand: the defaults, not no hub at all
+            log(cfg, "hub.log", f"{path} cannot be read ({e}); using the default settings")
+            user = {}
+        if not isinstance(user, dict):
+            log(cfg, "hub.log", f"{path} is not a set of settings; using the default settings")
+            user = {}
+        user = cfg._checked(user, path)
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "whisper_language", "whisper_lean", "push_to_mute", "push_to_mute_key", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
@@ -451,6 +459,48 @@ class Config:
         if env.get("SIDETONE_TERMINAL") == "off":  # write to no terminal at all
             cfg.terminal.update(tint="off", pulse=False, title=False)
         return cfg
+
+    def _checked(self, user: dict, path: str) -> dict:
+        """`user` without the values of the wrong kind (a word where a number belongs:
+        "context_warn": "80%"), each named in hub.log, so its default stays. Before, one such
+        value made every overlay update fail."""
+        kinds = {f.name: f.type for f in dataclasses.fields(self)}
+        out = {}
+        for key, value in user.items():
+            if key in ("overlay", "terminal") and isinstance(value, dict):
+                defaults = overlay_mod.DEFAULTS if key == "overlay" else terminal_mod.DEFAULTS
+                value = {k: v for k, v in value.items() if self._fits_default(f"{key}.{k}", v, defaults.get(k), path)}
+                if key == "overlay" and "hotkeys" in user[key]:
+                    hotkeys = user[key]["hotkeys"]
+                    value["hotkeys"] = ({k: v for k, v in hotkeys.items() if self._fits_default(f"overlay.hotkeys.{k}", v, "", path)}
+                                        if isinstance(hotkeys, dict) else {})
+            elif key in kinds and not _fits(value, str(kinds[key])):
+                log(self, "hub.log", f"{path}: {key} = {json.dumps(value)} is not a {kinds[key]}; using the default")
+                continue
+            out[key] = value
+        return out
+
+    def _fits_default(self, name: str, value, default, path: str) -> bool:
+        """Whether `value` is of the kind of `default` (anything, when there is no default)."""
+        if default is None or _fits(value, type(default).__name__):
+            return True
+        log(self, "hub.log", f"{path}: {name} = {json.dumps(value)} is not a {type(default).__name__}; using the default")
+        return False
+
+
+def _fits(value, annotation: str) -> bool:
+    """Whether a value read from config.json is of a kind its annotation allows ("bool | str").
+    Whole and decimal numbers stand for each other; true and false are not numbers."""
+    for kind in (k.strip() for k in annotation.split("|")):
+        if kind in ("float", "int"):
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                return True
+        elif kind in ("str", "bool", "dict", "list"):
+            if isinstance(value, {"str": str, "bool": bool, "dict": dict, "list": list}[kind]):
+                return True
+        else:
+            return True  # a kind not checked here
+    return False
 
 
 

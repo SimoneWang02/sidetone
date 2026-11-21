@@ -43,6 +43,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   a zero-width space, measured), and its Chinese model for one it cannot spell. Before, that
   error ended the speech thread, and the hub said nothing more until it was restarted. Any
   other error from an engine is now logged in `voice.log` as `failed` and the queue goes on.
+  A voice that fails to load (a damaged model file, no memory for it) gives way to the first
+  system voice installed (`tts.fallback_engine`: say, spd-say, espeak-ng), which says once "My
+  main voice failed to load" and `hub.log` has the reason (2026-11-21, the author agreed). Before,
+  the speech thread ended at start, and the hooks did not fall back because the hub was up.
 - Replies are queued, not cut (the author, 2026-11-17: "could you queue all these responses
   instead of cutting?", after a reply was lost while they were talking). What happened: the
   reply arrived while the talk key was held, started on release, and three seconds later their
@@ -1074,7 +1078,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `settings.save_all`, one change at a time, which the overlay's place and the terminal's
   settings use too; since 2026-11-21 a `config.json` that is there but is not JSON, a slip
   while editing it by hand, is left as it is and `hub.log` says so: before, it was written
-  over with the one setting just chosen, and every other one in it was lost); then
+  over with the one setting just chosen, and every other one in it was lost. At start,
+  `Config._checked` leaves out each value of the wrong kind, a word where a number belongs,
+  checked against the field's annotation or, inside `overlay` and `terminal`, the default's
+  type; whole and decimal numbers stand for each other. Each is named in `hub.log` and its
+  default stays; a file that is not JSON gives the defaults. Before, one such value made every
+  overlay update fail, and a broken file stopped the hub starting. The author agreed, 2026-11-21); then
   the hub sends the sections again and the window draws what the hub has, so a choice
   that was refused does not look taken. A slider only sends where it is let go. Keys are
   paths: `speed`, `overlay.layout`, `terminal.tint`, `overlay.hotkeys.talk`, and two that

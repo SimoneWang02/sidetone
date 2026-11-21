@@ -326,6 +326,36 @@ class Chosen(SettingsCase):
         hub.place_overlay(False, corner="top-left", offset_x=20)
         self.assertEqual(self.saved(), {"overlay": {"corner": "top-left", "offset_x": 20}})
 
+    def test_a_value_of_the_wrong_kind_is_left_for_its_default(self):
+        # Edited by hand: a word where a number belongs made every overlay update fail.
+        home = tempfile.mkdtemp(prefix="cs-cfg-")
+        os.makedirs(os.path.join(home, "sidetone"))
+        with open(os.path.join(home, "sidetone", "config.json"), "w") as f:
+            json.dump({"usage_warn": "80%", "label": "always", "speed": 1, "followup_confirm": "ask",
+                       "overlay": {"opacity": "high", "offset_x": 20.5, "hotkeys": {"talk": 5, "repeat": "F9"}},
+                       "terminal": {"strength": 0.2, "pulse": "yes"}}, f)
+        with unittest.mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": home, "CS_STATE": home}):
+            cfg = Config.load()
+        self.assertEqual((cfg.usage_warn, cfg.label, cfg.speed, cfg.followup_confirm), (80.0, "always", 1, "ask"))
+        self.assertEqual((cfg.overlay["opacity"], cfg.overlay["offset_x"]), (overlay.DEFAULTS["opacity"], 20.5))
+        self.assertEqual((cfg.overlay["hotkeys"]["talk"], cfg.overlay["hotkeys"]["repeat"]), ("Ctrl+Alt+Space", "F9"))
+        self.assertEqual((cfg.terminal["strength"], cfg.terminal["pulse"]), (0.2, terminal.DEFAULTS["pulse"]))
+        with open(os.path.join(home, "hub.log")) as f:
+            logged = f.read()
+        for name in ("usage_warn", "overlay.opacity", "overlay.hotkeys.talk", "terminal.pulse"):
+            self.assertIn(name, logged)
+
+    def test_a_file_that_is_not_json_gives_the_defaults(self):
+        home = tempfile.mkdtemp(prefix="cs-cfg-")
+        os.makedirs(os.path.join(home, "sidetone"))
+        with open(os.path.join(home, "sidetone", "config.json"), "w") as f:
+            f.write('{"label": "always",')
+        with unittest.mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": home, "CS_STATE": home}):
+            cfg = Config.load()
+        self.assertEqual(cfg.label, "never")
+        with open(os.path.join(home, "hub.log")) as f:
+            self.assertIn("cannot be read", f.read())
+
     def test_what_cannot_be_is_refused_and_changes_nothing(self):
         hub = self.make()
         self.assertIn("one of", hub.set_setting("label", "loudly"))

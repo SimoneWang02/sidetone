@@ -167,6 +167,25 @@ class Queue(HubCase):
         with open(os.path.join(self.tmp, "voice.log")) as f:
             self.assertIn("failed", f.read())
 
+    def test_a_voice_that_fails_to_load_gives_way_to_a_system_voice(self):
+        class Broken(NullEngine):
+            def load(self):
+                raise RuntimeError("model file damaged")
+        system = NullEngine()
+        with unittest.mock.patch("tts.fallback_engine", return_value=system):
+            self.tmp = tempfile.mkdtemp(prefix="cs-test-")
+            self.engine = system
+            self.cfg = Config(run=self.tmp, state=self.tmp, engine="null", usage_shown=False, label="never",
+                              mute_file=os.path.join(self.tmp, "voice-off"),
+                              sessions_dir=os.path.join(self.tmp, "claude-sessions"))
+            self.hub = Hub(self.cfg, Broken())
+            self.addCleanup(self.hub.speech.close)
+            self.assertTrue(wait_for(lambda: self.hub.speech.engine is system, 3))
+        self.hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("Still heard.")))
+        self.assertEqual(self.spoken(), ["My main voice failed to load. The reason is in the hub log.", "Still heard."])
+        with open(os.path.join(self.tmp, "hub.log")) as f:
+            self.assertIn("model file damaged", f.read())
+
     def test_kokoro_leaves_out_a_part_with_nothing_to_say(self):
         # Kokoro raises ValueError for a part that gives no phonemes ("✓" after "Done.").
         import tts

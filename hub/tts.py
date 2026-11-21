@@ -468,6 +468,12 @@ def make_engine(name: str, kokoro_dir: str, speed: float, fallback_voice: str, c
     return NullEngine()
 
 
+def fallback_engine():
+    """The voice to fall back on when the chosen one fails to load: the first system voice
+    installed, or none."""
+    return make_engine("auto", "", 1.0, "")
+
+
 class SpeechQueue:
     """Speaks one utterance at a time, most urgent first.
 
@@ -482,9 +488,11 @@ class SpeechQueue:
                  label_for: Callable[[Utterance], str] = lambda u: "",
                  on_change: Callable[[Utterance | None], None] = lambda u: None,
                  on_done: Callable[..., None] = lambda *a: None,
-                 on_audio: Callable[..., None] = lambda *a: None):
+                 on_audio: Callable[..., None] = lambda *a: None,
+                 on_load_failed: Callable[..., None] = lambda queue, error: None):
         self.engine, self.max_age = engine, max_age
         self.label_for, self.on_change, self.on_done, self.on_audio = label_for, on_change, on_done, on_audio
+        self.on_load_failed = on_load_failed  # (queue, error): the engine failed to load and a system voice took over
         self.meter: Meter | None = None  # set by the hub when there is an overlay to draw the voice on
         self.queued: list[Utterance] = []
         self.current: Utterance | None = None
@@ -595,7 +603,12 @@ class SpeechQueue:
             }
 
     def _run(self) -> None:
-        self.engine.load()
+        try:
+            self.engine.load()
+        except Exception as e:  # noqa: BLE001  a damaged model, or no memory for it: speak with a
+            # system voice rather than not at all (the hooks do not fall back while the hub is up)
+            self.engine = fallback_engine()
+            self.on_load_failed(self, e)  # the queue itself: a failure at once comes before the hub has kept it
         while True:
             with self._cond:
                 self._cond.wait_for(lambda: (self.queued and not self._paused) or self._closed)
