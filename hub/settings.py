@@ -477,10 +477,11 @@ def _voices(hub) -> list:
     # One sentence for the page, not one per language: they said the same (the author,
     # 2026-11-21: "do they all have the same description beneath the language?").
     found = [{"kind": "intro", "key": "intro.voices", "name": "",
-              "help": "Each open session speaks in its own voice, so you know who is talking, and a project keeps its "
-                      "voice. A new one gets the first ticked voice not in use, so the order is for new projects. Excellent, Good, Okay and Basic say how clearly each speaks. "
-                      "Drag the dots to change the order; press play to hear one. Switch off a language you do not "
-                      "speak, and push-to-talk stops listening for it."}]
+              # Two sentences; it was five in one paragraph (the author, 2026-11-21: "it's so long and
+              # it's a single paragraph"). The rest is said where it applies: the switches, the dots
+              # and the play buttons say what they do under the mouse, and the quality words are plain.
+              "help": "Each session speaks in its own voice, so you know who is talking. "
+                      "New projects take the ticked voices in order, and keep the one they get."}]
     everyone = []
     speaking = spoken(hub)
     for lang in SUMMARY_LANGUAGES:
