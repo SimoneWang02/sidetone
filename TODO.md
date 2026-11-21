@@ -82,7 +82,9 @@ these come before anything new.
       beside a speaking session moves smoothly. Piper's "Faster" became the seconds each voice takes
       to make a sentence, timed on each computer by itself, with an i that explains it (seen
       in a picture only). Each language has a switch for whether you speak it, the same as
-      the languages push-to-talk listens for (seen in a picture only). The voices best first, on a new
+      the languages push-to-talk listens for (seen in a picture only). A project keeps its voice
+      when the order changes, in every language (Italian and Chinese were dealt out again; the
+      author, after swapping Heart and Bella: keep it simple); the order is for new projects. The voices best first, on a new
       install and in the author's own lists ("set my voices ... first the best one"): English
       by Kokoro's grade (the women first, as they are graded higher), Italian Sara, Nicola,
       then Paola, Chinese the four clearest measured instead of the four picked by ear. **Next: Talking**, then Overlay,

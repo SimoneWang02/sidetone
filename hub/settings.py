@@ -396,10 +396,10 @@ def set_in_use(hub, lang: str, voices: list) -> str | None:
     else:
         hub.cfg.language_voices[lang] = voices
         _save(hub.cfg, ["language_voices", lang], voices)
-        # Shared out again, so the order chosen holds at once: the first session gets the first.
-        chosen = getattr(hub, "_lang_voices", {})
-        for k in [k for k in chosen if k[0] == lang]:
-            del chosen[k]
+        # A session keeps its voice while it stays ticked, as English projects do; the order is
+        # for sessions that have none yet. It was shared out again at once, which English did
+        # not do (the author, 2026-11-21, after swapping Heart and Bella and asking whether they
+        # would now hear Bella: keep the voices, "too much logic" otherwise).
     return None
 
 
@@ -477,8 +477,8 @@ def _voices(hub) -> list:
     # One sentence for the page, not one per language: they said the same (the author,
     # 2026-11-21: "do they all have the same description beneath the language?").
     found = [{"kind": "intro", "key": "intro.voices", "name": "",
-              "help": "Each open session speaks in its own voice, so you know who is talking. A new session gets the "
-                      "first ticked voice not in use. Excellent, Good, Okay and Basic say how clearly each speaks. "
+              "help": "Each open session speaks in its own voice, so you know who is talking, and a project keeps its "
+                      "voice. A new one gets the first ticked voice not in use, so the order is for new projects. Excellent, Good, Okay and Basic say how clearly each speaks. "
                       "Drag the dots to change the order; press play to hear one. Switch off a language you do not "
                       "speak, and push-to-talk stops listening for it."}]
     everyone = []
