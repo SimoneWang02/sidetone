@@ -78,8 +78,11 @@ SECTIONS = [
     ]),
     ("Voices", []),  # filled in by `describe`: one line for each project, with the voices this machine has
     ("Talking", [
-        choice("followup_confirm", "Confirm Before Sending", "Your words wait on the light until you tap the talk key again. \"Acting alone\": only sessions that do things without asking first.",
-               (False, "Never"), ("auto", "Acting alone"), (True, "Always")),
+        # A switch; it had a third choice, "Acting alone" (`"auto"`: only sessions whose permission
+        # mode does not ask first), which the author found unclear and then took out (2026-11-21:
+        # "If we were to remove it, what do you think?"; time to take words back covers a misheard
+        # sentence). "auto" in config.json still works.
+        switch("followup_confirm", "Confirm Before Sending", "Your words wait on the light until you tap the talk key again."),
         number("followup_delay", "Time to Cancel Before Sending", "Your words show on the light this long before they go, and the cancel key stops them. 0 sends at once.", 0, 5, 0.5, "s"),
         number("unsend_seconds", "Time to Take Words Back", "How long after sending the cancel key still takes them back. 0 turns it off.", 0, 10, 0.5, "s"),
         choice("cancel_stops", "The Cancel Key Stops a Session", "With nothing else to cancel, it ends the turn of the session in focus.",

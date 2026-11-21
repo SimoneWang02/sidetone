@@ -589,7 +589,7 @@ def click(section, x, y, expect):
 
 clicks = [click("Overlay", 716, 117, ("overlay.layout", "island")),
           click("Figures", 690, 117, ("context_shown", "both")),
-          click("Talking", 648, 125, ("followup_confirm", "auto"))]
+          click("Talking", 735, 117, ("followup_confirm", True))]
 send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Speech", click=[46, 278])  # "Keys" at the left
 shot("settings-clicked-keys", 0.5)
 send(type="settings", open=True, quiet=True, sections=SETTINGS, click=[690, 230])  # the hotkey of "Keep the details out"

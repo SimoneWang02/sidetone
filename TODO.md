@@ -91,7 +91,9 @@ these come before anything new.
       the author by hand the same afternoon: dragging, unticking and ticking again, the language
       switches (Italian off, then Italian spoken came out as English, as it should), the gap
       under an open language ("That's perfect"). **Voices is done**; still to notice: the wave
-      beside a speaking session after the meter change. **Next: Talking**, then Overlay,
+      beside a speaking session after the meter change. **Talking, started 2026-11-21:**
+      Confirm Before Sending is a switch ("Acting alone" taken out). **Next: Talking** from Time
+      to Cancel Before Sending on, then Overlay,
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
