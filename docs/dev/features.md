@@ -38,6 +38,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `hub/tts.py`: Kokoro kept loaded, synthesized sentence by sentence into `paplay`. Queue rules:
   one line at a time; needs-you > failed > done; a session's newer line replaces its queued one;
   lines older than 60 s are dropped; a new **typed** prompt silences that session.
+  A part Kokoro cannot say is left out and the rest of the line is said (2026-11-21, found in
+  a bug pass): Kokoro raises `ValueError` for a sentence with no phonemes (`✓`, `-`, `` ` ``,
+  a zero-width space, measured), and its Chinese model for one it cannot spell. Before, that
+  error ended the speech thread, and the hub said nothing more until it was restarted. Any
+  other error from an engine is now logged in `voice.log` as `failed` and the queue goes on.
 - Replies are queued, not cut (the author, 2026-11-17: "could you queue all these responses
   instead of cutting?", after a reply was lost while they were talking). What happened: the
   reply arrived while the talk key was held, started on release, and three seconds later their

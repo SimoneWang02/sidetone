@@ -151,6 +151,42 @@ class Queue(HubCase):
             hub._say(hub.sessions.by_id["b"], "Sent.", "allowed", "follow-up")
         self.assertEqual(self.spoken(), ["A.", "Sent.", "B is done."])
 
+    def test_a_line_the_engine_cannot_say_does_not_end_all_speech(self):
+        hub = self.make(label="never")
+        say = self.engine.speak
+
+        def speak(parts, voice):
+            if "Broken." in parts:
+                raise ValueError("Nothing to synthesize")
+            return say(parts, voice)
+        self.engine.speak = speak
+        hub.on_display(ev("MessageDisplay", sid="a", cwd="/w/a", delta=tag("Broken.")))
+        self.assertTrue(hub.speech.wait_idle(5), "the speech thread died")
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("Still heard.")))
+        self.assertEqual(self.spoken(), ["Still heard."])
+        with open(os.path.join(self.tmp, "voice.log")) as f:
+            self.assertIn("failed", f.read())
+
+    def test_kokoro_leaves_out_a_part_with_nothing_to_say(self):
+        # Kokoro raises ValueError for a part that gives no phonemes ("✓" after "Done.").
+        import tts
+        engine = tts.KokoroEngine(self.make() and self.tmp, 1.0, "af_heart")
+        engine.voices = {"af_heart"}
+
+        def pcm(text, voice):
+            if text == "✓":
+                raise ValueError("Nothing to synthesize, '✓' produced no phonemes")
+            return text.encode()
+        engine._pcm = pcm
+        player = unittest.mock.MagicMock()
+        player.poll.return_value = 0
+        with unittest.mock.patch.object(tts.subprocess, "Popen", return_value=player):
+            first = engine.speak(["Done.", "✓", "Next."], "af_heart")
+        self.assertIsNotNone(first)
+        written = b"".join(c.args[0] for c in player.stdin.write.call_args_list)
+        self.assertIn(b"Done.", written)
+        self.assertIn(b"Next.", written)
+
     def test_muted_keeps_state_but_says_nothing(self):
         hub = self.make()
         open(self.cfg.mute_file, "w").close()

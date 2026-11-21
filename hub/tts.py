@@ -301,7 +301,13 @@ class KokoroEngine:
         )
         try:
             for i, part in enumerate(parts):
-                pcm = self._pcm(part, voice)
+                try:
+                    pcm = self._pcm(part, voice)
+                except Exception:  # noqa: BLE001
+                    # A part with nothing to say aloud: Kokoro raises ValueError for one that gives
+                    # no phonemes ("✓", "-", "`" after "Done."), and its Chinese model for one it
+                    # cannot spell. Left out; the rest of the line is still said.
+                    continue
                 if self._stop.is_set():
                     break
                 # Taken before the write: the player takes a sentence about as fast as it plays it,
@@ -615,14 +621,17 @@ class SpeechQueue:
             meter = self.meter
             if meter:
                 meter.start(lambda levels, step: self.on_audio(u, levels, step))
+            failed = False
             try:
                 first = self.engine.speak(parts, u.voice)
+            except Exception:  # noqa: BLE001  a line the engine cannot say must not end this thread, and all speech with it
+                first, failed = None, True
             finally:
                 if meter:
                     u.heard = meter.stop()
             with self._cond:
                 self.current = None
-                outcome = "cut" if self._stopped else "spoken"
+                outcome = "failed" if failed else "cut" if self._stopped else "spoken"
                 self._cond.notify_all()
             self.on_change(None)
             self.on_done(u, label, waited, first, outcome)
