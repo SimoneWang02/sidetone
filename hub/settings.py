@@ -85,7 +85,7 @@ SECTIONS = [
         switch("focus_on_prompt", "Typing Takes the Focus", "A session you type to is the one your next spoken words go to."),
         switch("whisper_lean", "Short Words in Your Last Language", "When it is unsure which of your languages a few words are in, it keeps to the one you last spoke."),
         switch("push_to_mute", "Mute Discord While Talking",
-               "Holds F24 down while you talk. In Discord's Keybinds, give Push to Mute that key: sidetone discord-key presses it for you."),
+               "Holds F24 down while you talk. In Discord's Keybinds, give Push to Mute that key: sidetone discord-key presses it for you. The steps are in the README, On a Discord call."),
         number("talk_tail", "Listen On After Release", "Keeps the end of your last word from being cut off.", 0, 1, 0.1, "s"),
     ]),
     ("Overlay", [

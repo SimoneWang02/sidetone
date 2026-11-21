@@ -60,21 +60,9 @@ its own spoken line as the first line of its reply.
   that already has them is told to ignore them (`unsend_seconds`; 0 turns it off). If you would rather check the text first, set
   `followup_delay` to a few seconds (`Ctrl+Alt+Backspace` takes it back in that time) or
   `followup_confirm` to `true` (nothing is sent until you tap the talk key again).
-- **Not heard on a Discord call.** What you say to a session would also go to a call, and
-  Discord cannot see the talk key: Sidetone keeps it from every other program while you hold
-  it, so it does not type a space or pause a video in the window you are in. So while you
-  hold it, Sidetone also holds down `F24`, a key no keyboard has, and Discord's own
-  Push to Mute does the muting. Set it up once:
-  1. In Discord (the desktop app): User Settings, Keybinds, Add a Keybind, and choose the
-     action Push to Mute.
-  2. Click its keybind box to record, and run `sidetone discord-key`: it presses `F24` for you
-     after three seconds. Keep your hands off the keyboard meanwhile, so the box shows `F24`
-     alone (`Ctrl + F24` never matches). Stop the recording and close Discord's settings (its keybinds are
-     off while that page is open).
-  Push to Mute works when Discord is set to Voice Activity; with Push to Talk it sends nothing
-  unless you hold its own key anyway. "Mute Discord While Talking" in the settings window
-  (`push_to_mute`) turns it off, and `push_to_mute_key` holds another key instead, for a
-  program with a push-to-mute key of its own.
+- **Not heard on a Discord call.** While you hold the talk key, Discord mutes you, and it
+  unmutes you when you let go. It takes one minute of setup in Discord: see
+  [On a Discord call](#on-a-discord-call).
 - **Side questions.** Words for a busy session normally wait until its reply is over. Start
   with "by the way" ("by the way, which file was that?") and they do not wait: a throwaway
   copy of that session answers within a few seconds from what the session already knows, in
@@ -258,6 +246,31 @@ mixed into; the default suits VS Code's dark theme, so set it if yours is light 
 shows that with `"terminal.integrated.tabs.title": "${sequence}"` in VS Code's settings, and
 Claude Code writes a title of its own unless `CLAUDE_CODE_DISABLE_TERMINAL_TITLE` is `1`, which
 `"env": {"CLAUDE_CODE_DISABLE_TERMINAL_TITLE": "1"}` in `~/.claude/settings.json` does for every session.
+
+### On a Discord call
+
+Without this, what you say to a session also goes to the people in your call. Sidetone cannot
+mute Discord from the outside (Windows ignores a mute set on another program's microphone), and
+Discord cannot see the talk key: Sidetone keeps that key from every other program while you hold
+it, so it does not type a space or pause a video in the window you are in. So Sidetone holds down
+a second key while you talk, `F24` (no keyboard has it, so nothing else reacts), and Discord's own
+**Push to Mute** does the muting. Set it up once, in the Discord desktop app:
+
+1. User Settings (the gear at the bottom left), then **Keybinds** under App Settings.
+2. **Add a Keybind**. A new row appears at the top of the list; click "Unassigned" under Action
+   and choose **Push to Mute**.
+3. Click the row's keybind box so it records, then run `sidetone discord-key`. It presses `F24`
+   for you after three seconds. Keep your hands off the keyboard until the box shows `F24`
+   alone: `Ctrl + F24` never matches.
+4. **Stop Recording**, and close Discord's settings: its keybinds are off while that page is open.
+
+To check: hold the talk key and speak while you watch your picture in a voice channel. The green
+ring around it stays dark.
+
+Push to Mute works when Discord is set to Voice Activity; with Push to Talk, Discord sends nothing
+unless you hold its own key anyway. "Mute Discord While Talking" under Talking in the settings
+window (`push_to_mute`) turns this off, and `push_to_mute_key` holds another key instead, for
+another program with a push-to-mute key of its own.
 
 ## How it works
 
