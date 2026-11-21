@@ -83,7 +83,9 @@ SECTIONS = [
         # "If we were to remove it, what do you think?"; time to take words back covers a misheard
         # sentence). "auto" in config.json still works.
         switch("followup_confirm", "Confirm Before Sending", "Your words wait on the light until you tap the talk key again."),
-        number("followup_delay", "Time to Cancel Before Sending", "Your words show on the light this long before they go, and the cancel key stops them. 0 sends at once.", 0, 5, 0.5, "s"),
+        # "Time to Cancel Before Sending" (followup_delay, 0 to 5 s) left the window on 2026-11-21,
+        # the author: "if it's unsure ... they could just toggle the confirmation before sending";
+        # confirming and taking words back cover it. It is still read from config.json.
         number("unsend_seconds", "Time to Take Words Back", "How long after sending the cancel key still takes them back. 0 turns it off.", 0, 10, 0.5, "s"),
         choice("cancel_stops", "The Cancel Key Stops a Session", "With nothing else to cancel, it ends the turn of the session in focus.",
                ("always", "Always"), ("sent", "After sending"), ("never", "Never")),

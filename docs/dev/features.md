@@ -361,7 +361,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   back on, and since 2026-11-19 both are in the settings window under Talking (their idea:
   "un'opzione nei settings per la gente che vuole la conferma"): "Confirm before sending"
   (Never, Acting alone = `"auto"`, Always; a switch since 2026-11-21, the author finding "Acting
-  alone" unclear and then taking it out, `"auto"` still read from config.json) and "Time to cancel before sending" (0 to 5 s). The hub hands it to that session's listener, shows "sent → name: text" for 2.5 s and
+  alone" unclear and then taking it out, `"auto"` still read from config.json) and "Time to cancel before sending" (0 to 5 s; out of the window on 2026-11-21, the author:
+  "if it's unsure ... they could just toggle the confirmation before sending"). The hub hands it to that session's listener, shows "sent → name: text" for 2.5 s and
   plays a short sound (see the next point). Target: the session that spoke last; a quick tap of the talk key picks the next one.
   A busy session gets the follow-up right after its current reply. With no listener yet, the
   text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
