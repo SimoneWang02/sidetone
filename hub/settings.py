@@ -90,8 +90,12 @@ SECTIONS = [
         # has the words the cancel key stops it anyway (`cancel_stops`), and words still waiting for
         # a busy session can now always be taken back (the author: "I would increase into
         # infinity"). It is still read from config.json.
-        choice("cancel_stops", "The Cancel Key Stops a Session", "With nothing else to cancel, it ends the turn of the session in focus.",
-               ("always", "Always"), ("sent", "After sending"), ("never", "Never")),
+        # "After sending" ("sent": only a session that just got your words) left the window with the
+        # time to take words back (the author, 2026-11-21: "after sending we just remove that
+        # feature now"); still read from config.json. Never: words it already has are only
+        # followed by a request to ignore them.
+        choice("cancel_stops", "The Cancel Key Stops a Session", "With nothing else to cancel, it stops the work of the session in focus. Never: it only cancels your words and the voice.",
+               ("always", "Always"), ("never", "Never")),
         choice("aside", "Side Questions", "Words that open with \"by the way\" are answered at once, and the session never sees them.",
                ("busy", "While it works"), ("always", "Always"), ("off", "Off")),
         choice("voice_at_prompt", "Speaking at a Permission Prompt", "Turn the request down and hand your words over, or keep them until it is answered.",

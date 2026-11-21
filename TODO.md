@@ -94,8 +94,8 @@ these come before anything new.
       beside a speaking session after the meter change. **Talking, started 2026-11-21:**
       Confirm Before Sending is a switch ("Acting alone" taken out); Time to Cancel Before
       Sending out of the window; Time to Take Words Back out too, waiting words can always be
-      taken back; the repeat key pressed again starts over. **Next: Talking** from The Cancel
-      Key Stops a Session on, then Overlay,
+      taken back; The Cancel Key Stops a Session down to Always and Never; the repeat key
+      pressed again starts over. **Next: Talking** from Side Questions on, then Overlay,
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
