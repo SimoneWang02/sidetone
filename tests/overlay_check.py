@@ -564,6 +564,10 @@ if not ONLY or "settings-voices-tall".startswith(ONLY) or ONLY.startswith("setti
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[732, 24])
     shot("settings-voices-tall", 0.7)
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[732, 24])
+    # English opened by a click on its heading, then closed again.
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[400, 142])
+    shot("settings-voices-open", 0.7)
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[400, 142])
 CHANGED = [{**s, "changed": s["name"] == "Speech"} for s in SETTINGS]  # one setting of Speech moved: its reset button lit
 send(type="settings", open=True, quiet=True, sections=CHANGED, section="Speech")
 shot("settings-voice-changed", 0.7)

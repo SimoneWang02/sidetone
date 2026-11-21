@@ -1530,6 +1530,7 @@ namespace ClaudeSpeaks
                 StackPanel lines = null;
                 string inGroup = "";
                 int hidden = 0, folded = 0;
+                bool shut = false;
                 // A card ends at a heading or at the end: with a line to unfold what it keeps folded.
                 Action endCard = delegate
                 {
@@ -1545,23 +1546,36 @@ namespace ClaudeSpeaks
                         more.MouseLeftButtonUp += delegate { if (open) unfolded.Remove(group); else unfolded.Add(group); Fill(); };
                         lines.Children.Add(more);
                     }
-                    list.Children.Add(new Border { CornerRadius = new CornerRadius(10), Background = Ui.Paint("#12FFFFFF"), Child = lines });
+                    list.Children.Add(new Border { CornerRadius = new CornerRadius(10), Background = Ui.Paint("#12FFFFFF"), Child = lines, Margin = new Thickness(0, 0, 0, 4) });
                     lines = null;
                 };
                 foreach (object i in items)
                 {
                     var item = (Dictionary<string, object>)i;
+                    if (Overlay.Str(item, "kind") == "intro")  // a sentence for the whole page, under its title
+                    {
+                        list.Children.Add(new TextBlock { Text = Overlay.Str(item, "help"), FontSize = 11.5, Foreground = Ui.Faint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(6, -6, 0, 14) });
+                        continue;
+                    }
                     if (Overlay.Str(item, "kind") == "heading")
                     {
                         endCard();
+                        inGroup = Overlay.Str(item, "key").Replace("heading.", "");
+                        hidden = folded = 0;
+                        shut = false;
+                        if (item.ContainsKey("fold") && Convert.ToBoolean(item["fold"], CultureInfo.InvariantCulture))
+                        {
+                            shut = !openGroups.Contains(inGroup);
+                            list.Children.Add(FoldHead(inGroup, Overlay.Str(item, "name"), Overlay.Str(item, "summary"), !shut));
+                            continue;
+                        }
                         bool first = list.Children.Count == 1;
                         list.Children.Add(new TextBlock { Text = Overlay.Str(item, "name"), FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(6, first ? 0 : 22, 0, 2) });
                         string about = Overlay.Str(item, "help");
                         if (about.Length > 0) list.Children.Add(new TextBlock { Text = about, FontSize = 11.5, Foreground = Ui.Faint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(6, 0, 0, 9) });
-                        inGroup = Overlay.Str(item, "key").Replace("heading.", "");
-                        hidden = folded = 0;
                         continue;
                     }
+                    if (shut) continue;  // under a closed heading
                     if (lines == null) lines = new StackPanel();
                     if (item.ContainsKey("more") && Convert.ToBoolean(item["more"], CultureInfo.InvariantCulture))
                     {
@@ -1616,6 +1630,32 @@ namespace ClaudeSpeaks
         static bool Folded(Dictionary<string, object> item)
         {
             return item.ContainsKey("more") && Convert.ToBoolean(item["more"], CultureInfo.InvariantCulture);
+        }
+
+        // Which headings that open and close are open: all closed at first, so every language
+        // can be seen at once (the author, 2026-11-21).
+        readonly HashSet<string> openGroups = new HashSet<string>();
+
+        // A heading that opens and closes the card under it: a chevron, its name, and at the
+        // right what it holds (the voices ticked), so a closed one still says it.
+        UIElement FoldHead(string group, string name, string summary, bool open)
+        {
+            var row = new Grid();
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var chevron = new System.Windows.Shapes.Path { Data = Geometry.Parse(open ? "M0,0 L4.5,4.5 L9,0" : "M0,0 L4.5,4.5 L0,9"), Stroke = Ui.Dim, StrokeThickness = 1.5, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, Width = 10, Height = 10, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, open ? 3 : 0, 12, 0) };
+            row.Children.Add(chevron);
+            var title = new TextBlock { Text = name, FontSize = 14, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(title, 1);
+            row.Children.Add(title);
+            var holds = new TextBlock { Text = summary, FontSize = 12, Foreground = Ui.Faint, TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 0, 0) };
+            Grid.SetColumn(holds, 2);
+            row.Children.Add(holds);
+            var head = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, open ? 6 : 8), Cursor = Cursors.Hand, Child = row };
+            Lit(head, open ? "#1AFFFFFF" : "#12FFFFFF", "#22FFFFFF");
+            head.MouseLeftButtonUp += delegate { if (open) openGroups.Remove(group); else openGroups.Add(group); Fill(); };
+            return head;
         }
 
         // A round button with a triangle: the voice says a sentence, and nothing is changed.

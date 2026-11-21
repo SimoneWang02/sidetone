@@ -1250,3 +1250,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   picked on 2026-11-19 (`settings.CHINESE_SHOWN`, from `tts.PREFERRED_VOICE`), any other ticked
   in `language_voices`, and Piper's Chinese voices if installed; the other 99 of the Chinese
   model and Kokoro 1.0's eight (espeak, graded D) are left out and still work by name.
+  Then "for each language making a drop-down list so I can quickly scroll between the
+  languages", and "do they all have the same description beneath the language?" (they did,
+  nearly). Each language is now a heading that opens and closes its card (`fold`; `FoldHead`
+  and `openGroups` in `Overlay.cs`, all closed when the window starts), with its ticked voices
+  named at the right ("Heart, Michael, Bella and 5 more"), and one sentence for the whole page
+  under its title (`kind: intro`). Pictures: `settings-voices-open.png` (English opened).

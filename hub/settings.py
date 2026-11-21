@@ -11,7 +11,8 @@ setting is one entry of SECTIONS:
     kind   choice (a few named values, drawn side by side) | switch | number | key (a hotkey)
            | pick (one of many, drawn as a list that drops down; "play": a ▶ that previews it)
            | voice (a voice of a language with a ▶ and a tick; "more": folded away until asked)
-           | heading (a title over the next card; the Voices section only)
+           | heading (a title over the next card; "fold": it opens and closes it, "summary" beside it)
+           | intro (a sentence under the section's title; the Voices section only)
     name, help   what the window writes: a few words, and one plain sentence under them
 
 A change takes effect at once and is written to config.json, so it is still there after a
@@ -289,15 +290,22 @@ def _voices(hub) -> list:
     if not known.get("choosable"):
         return []
     voices = catalog(hub)
-    found = []
+    # One sentence for the page, not one per language: they said the same (the author,
+    # 2026-11-21: "do they all have the same description beneath the language?").
+    found = [{"kind": "intro", "key": "intro.voices", "name": "",
+              "help": "Each session takes the next ticked voice of the language it speaks in, and a project keeps "
+                      "its English one from day to day. Drag the dots to change the order; the play button lets you hear one."}]
     for lang in SUMMARY_LANGUAGES:
         chosen = in_use(hub, lang)
         if not voices.get(lang):
             continue
+        # A heading that opens and closes its card (the author, 2026-11-21: "for each language
+        # making a drop-down list so I can quickly scroll between the languages"), with the
+        # ticked voices named beside it so a closed one still says what it holds.
+        names = [voice_label(v)[0] for v in chosen]
         found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
-                      "help": ("Sessions take the ticked voices in turn, and a project keeps its own from day to day. Drag to change the order."
-                               if lang == "en" else
-                               f"Summaries in {base.LANGUAGE_NAMES[lang]} are said in the ticked voices, one for each session in turn. Drag to change the order.")})
+                      "help": "", "fold": True,
+                      "summary": ", ".join(names[:3]) + (f" and {len(names) - 3} more" if len(names) > 3 else "")})
         for v in chosen + [v for v in voices[lang] if v not in chosen]:
             name, what = voice_label(v)
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
@@ -343,7 +351,7 @@ def default(key: str):
     project's voice is handed out from the pool)."""
     if key == "mute":
         return False
-    if key.startswith(("voice_in.", "voices_order.", "heading.")):
+    if key.startswith(("voice_in.", "voices_order.", "heading.", "intro.")):
         return None
     if key.startswith("overlay.hotkeys."):
         return overlay_mod.DEFAULTS["hotkeys"].get(key[16:], "")
@@ -382,7 +390,7 @@ def describe(hub) -> list:
         listed = _voices(hub) if name == "Voices" else section
         if listed:
             values = [{**item, "help": _with_keys(hub, item["help"]),
-                       "value": None if item["kind"] == "heading" else read(hub, item["key"])} for item in listed]
+                       "value": None if item["kind"] in ("heading", "intro") else read(hub, item["key"])} for item in listed]
             resettable = [i for i in values if default(i["key"]) is not None]
             sections.append({"name": name, "items": values, "resettable": bool(resettable),
                              "changed": any(not _same(i, i["value"], default(i["key"])) for i in resettable)})
