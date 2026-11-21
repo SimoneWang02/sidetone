@@ -24,6 +24,8 @@ import dataclasses
 import json
 import os
 import re
+import threading
+import time
 
 import base
 import overlay as overlay_mod
@@ -260,16 +262,88 @@ def voice_label(voice: str) -> tuple[str, str]:
     return voice, "Your own voice"
 
 
-# A word after a voice's description, and what it means when the mouse rests on it. "Faster" was
-# part of the description; the author, 2026-11-21: "make that title case and faster might not be
-# very explaining ... make it like an info icon on why that is faster". The times are PIPER_PEOPLE's.
-FASTER = ("Faster", "Spoken by Piper, a smaller voice program than Kokoro: a sentence is ready in about "
-                    "0.3 seconds instead of 0.5 to 0.8, so it starts sooner. It sounds less natural.")
+# After each voice's description, how long it takes to make a sentence, timed on this computer,
+# with an i that says so under the mouse. It was a "Faster" on Piper's voices alone; the author,
+# 2026-11-21: "faster might not mean a lot to people ... give the seconds for each model", and
+# "they're all evaluated on my PC, right? It could change on different devices": so each computer
+# times its own, once, without a sound, the first time the window lists a voice. Piper's lead is
+# 0.05 to 0.15 s in Italian and up to half a second in English (docs/dev/facts.md).
+TIMED = {"en": "I moved the tag down a pixel, so it now sits on the same line as the description.",
+         "it": "Ho spostato l'etichetta di un pixel, così ora sta sulla stessa riga della descrizione.",
+         "zh": "我把标签往下移了一个像素，现在它和描述在同一行上。"}
+TIME_HELP = ("How long this voice takes to get a sentence ready before it speaks, timed on this computer. "
+             "Lower starts talking sooner.")
+TIMES_FILE = "voice-times.json"
 
 
-def voice_tag(voice: str) -> tuple[str, str] | None:
-    """A word shown after a voice's description, with what it means; None for most voices."""
-    return FASTER if voice.startswith("piper:") else None
+def timing_group(voice: str) -> str:
+    """Voices that take the same time: all of Kokoro's for one accent are one model with another
+    style, as are those of its Chinese model; each of Piper's is a model of its own. Timed one by
+    one, Kokoro's English voices ranged from 0.50 to 0.71 s on the same sentence, which was noise."""
+    if voice.startswith("piper:"):
+        return voice
+    if voice.startswith("zh:"):
+        return "zh"
+    return "kokoro:" + tts.voice_lang(voice)
+
+
+def times(hub) -> dict:
+    """Seconds each `timing_group` took to make its language's TIMED sentence here."""
+    found = getattr(hub, "_voice_times", None)
+    if found is None:
+        try:
+            with open(os.path.join(hub.cfg.state, TIMES_FILE)) as f:
+                found = json.load(f)
+        except (OSError, ValueError):
+            found = {}
+        hub._voice_times = found = found if isinstance(found, dict) else {}
+    return found
+
+
+def time_voices(hub, voices: list) -> None:
+    """Times, in the background, the voices given whose group has no time yet: one voice of
+    each makes its sentence once to load what it needs, then five times, and the middle time is
+    kept. Not while a line is being spoken; the window is drawn again as each one is known."""
+    engine = hub.speech.engine
+    known = times(hub)
+    todo = {}
+    for v in voices:
+        if timing_group(v) not in known and hasattr(engine, "time") and engine.has(v):
+            todo.setdefault(timing_group(v), v)
+    if not todo or getattr(hub, "_timing", False):
+        return
+    hub._timing = True
+
+    def run():
+        try:
+            for group, v in todo.items():
+                while hub.speech.current is not None:
+                    time.sleep(0.5)
+                text = TIMED.get(voice_language(v), TIMED["en"])
+                try:
+                    engine.time(text, v)
+                    took = sorted(engine.time(text, v) for _ in range(5))
+                except Exception as e:  # a voice that cannot speak here shows no time
+                    base.log(hub.cfg, "hub.log", f"could not time the voice {v}: {e}")
+                    continue
+                known[group] = round(took[2], 2)
+                try:
+                    with open(os.path.join(hub.cfg.state, TIMES_FILE), "w") as f:
+                        json.dump(known, f, indent=1)
+                except OSError:
+                    pass
+                if getattr(hub, "_settings_open", False) and hub.overlay:
+                    hub.overlay.send({"type": "settings", "open": True, "title": NAME, "sections": describe(hub)})
+        finally:
+            hub._timing = False
+
+    threading.Thread(target=run, name="voice-times", daemon=True).start()
+
+
+def voice_tag(hub, voice: str) -> tuple[str, str] | None:
+    """What is shown after a voice's description, with what it means: its time, once known."""
+    took = times(hub).get(timing_group(voice))
+    return (f"{took:.1f} s", TIME_HELP) if isinstance(took, (int, float)) else None
 
 
 def voice_language(voice: str) -> str:
@@ -376,6 +450,7 @@ def _voices(hub) -> list:
               "help": "Each open session speaks in its own voice, so you know who is talking. A new session gets the "
                       "first ticked voice not in use. Excellent, Good, Okay and Basic say how clearly each speaks. "
                       "Drag the dots to change the order; press play to hear one."}]
+    everyone = []
     for lang in SUMMARY_LANGUAGES:
         chosen = in_use(hub, lang)
         if not voices.get(lang):
@@ -388,15 +463,17 @@ def _voices(hub) -> list:
         # said both, "4 of 12 ticked", which was "not very conventional"; "4 selected", as most
         # programs say it, was agreed the same day.
         shown = listed(lang, chosen, voices[lang])
+        everyone += shown
         found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
                       "help": "", "fold": True, "summary": f"{len(chosen)} selected"})
         for v in shown:
             name, what = voice_label(v)
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
                           "group": lang, "more": v not in chosen, "playing": getattr(hub, "_previewing", "") == v})
-            tag = voice_tag(v)
+            tag = voice_tag(hub, v)
             if tag:
                 found[-1].update(tag=tag[0], tag_help=tag[1])
+    time_voices(hub, everyone)
     return found
 
 

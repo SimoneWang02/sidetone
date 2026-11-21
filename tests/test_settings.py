@@ -105,6 +105,32 @@ class Offered(SettingsCase):
         hub.voices = lambda: {"choosable": False, "builtin": [], "custom": [], "pool": [], "projects": {}}
         self.assertNotIn("Voices", [s["name"] for s in settings.describe(hub)])  # an engine with one voice: nothing to choose
 
+    def test_each_voice_shows_the_seconds_it_takes_here(self):
+        import time
+        hub = self.make()
+        hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "if_sara"], "custom": [], "pool": ["af_heart"],
+                              "projects": {}, "piper": ["piper:it_IT-paola-medium"], "zh": []}
+        timed = []
+
+        def took(text, voice):
+            timed.append((voice, text))
+            return 0.3 if voice.startswith("piper:") else 0.52
+        hub.speech.engine.time, hub.speech.engine.has = took, lambda v: True
+        tags = lambda: {i["voice"]: i.get("tag") for s in settings.describe(hub) if s["name"] == "Voices" for i in s["items"] if i["kind"] == "voice"}
+        self.assertEqual(set(tags().values()), {None})  # not timed yet: no number
+        for _ in range(100):
+            if not getattr(hub, "_timing", False):
+                break
+            time.sleep(0.02)
+        self.assertEqual(tags(), {"af_heart": "0.5 s", "if_sara": "0.5 s", "piper:it_IT-paola-medium": "0.3 s"})
+        self.assertEqual(len(timed), 3 * 6)  # a voice of each group (Kokoro English, Kokoro Italian, Paola): once to load, five to time
+        self.assertIn(("if_sara", settings.TIMED["it"]), timed)  # the same sentence for a language's voices
+        with open(os.path.join(hub.cfg.state, settings.TIMES_FILE)) as f:
+            self.assertEqual(json.load(f)["kokoro:it"], 0.52)  # kept, so it is timed once
+        hub._voice_times = None
+        tags()
+        self.assertEqual(len(timed), 18)
+
     def test_each_language_has_its_voices_ticked_in_order(self):
         hub = self.make()
         hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "bm_fable", "if_sara", "im_nicola", "zf_xiaobei"],

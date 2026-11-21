@@ -125,6 +125,9 @@ class KokoroEngine:
         self.kokoro = None
         self._proc: subprocess.Popen | None = None
         self._stop = threading.Event()
+        # One sentence made at a time: the settings window times voices beside the speech queue
+        # (`settings.time_voices`), and espeak, which Kokoro reads through, is not for two at once.
+        self._making = threading.Lock()
 
     def load(self) -> None:
         from kokoro_onnx import Kokoro  # heavy import; done here so the socket is up first
@@ -247,6 +250,17 @@ class KokoroEngine:
         self._stop.clear()
 
     def _pcm(self, text: str, voice: str) -> bytes:
+        with self._making:
+            return self._make(text, voice)
+
+    def time(self, text: str, voice: str) -> float:
+        """Seconds this voice takes to make the sentence, not counting a wait for another one."""
+        with self._making:
+            started = time.monotonic()
+            self._make(text, voice)
+            return time.monotonic() - started
+
+    def _make(self, text: str, voice: str) -> bytes:
         import numpy as np
 
         if voice in self.piper:

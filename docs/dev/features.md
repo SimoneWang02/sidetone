@@ -1239,7 +1239,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   of the measured clarity, Good, Okay, Basic; Piper's Okay, and after it a small "Faster" with an i in a circle that says why when the mouse
   rests on it (`voice_tag`, `FASTER`; `Tag` in `Overlay.cs`; the author: "make that title case
   and faster might not be very explaining ... an info icon on why"; picture
-  `settings-voices-italian.png`). The page's sentence
+  `settings-voices-italian.png`). The same day the tag became seconds on every voice ("give the
+  seconds for each model"; "It could change on different devices, no?"): each computer times
+  its own, once and silently, the first time the window lists a voice (`time_voices`, kept in
+  `voice-times.json` in the state folder), one sentence a language (`TIMED`), the middle of five.
+  One time per `timing_group` (Kokoro per accent, its Chinese model, each Piper model): timed
+  voice by voice, Kokoro's English ones ranged 0.50 to 0.71 s on one sentence, which was noise.
+  The engine makes one sentence at a time (`KokoroEngine._making`), as espeak is not for two at
+  once. On the author's machine: Kokoro American 0.51, British 0.54, Italian 0.53, Paola 0.37,
+  the Chinese model 0.64. The page's sentence
   says what the words mean. "Fair" was first for Okay; the author: "what is fair though?". None is faster: every Kokoro voice is the same model. Projects keep the voices
   they had.
   Then: "keep some ... that are not so good but are faster ... for each language". Measured on

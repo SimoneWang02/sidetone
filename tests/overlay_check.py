@@ -534,6 +534,8 @@ class FakeHub:
     cfg = base.Config(run="", state="")
     lock = threading.Lock()
     sessions = type("Open", (), {"by_id": {n: type("S", (), {"name": n}) for n in ("sidetone", "api-server", "web-app")}})
+    speech = type("Queue", (), {"engine": None})  # nothing to time with: the times below stand in
+    _voice_times = {"kokoro:en-us": 0.51, "kokoro:en-gb": 0.54, "kokoro:it": 0.53, "piper:it_IT-paola-medium": 0.37, "zh": 0.64}
 
     def voices(self):
         kokoro = ("af_alloy af_aoede af_bella af_heart af_jessica af_kore af_nicole af_nova af_river af_sarah af_sky am_adam "

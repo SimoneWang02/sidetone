@@ -79,8 +79,9 @@ these come before anything new.
       scratch now that nothing else loads the processor. Noon: the scratches left
       were the loudness meter taking the speakers' buffer to 30 ms (measured); it now asks for
       the voice's. Previews heard by the author: "It's perfect". Still to see: whether the wave
-      beside a speaking session moves smoothly. Piper's "Faster" is now a tag with an i that
-      explains it under the mouse (seen in a picture only). The voices best first, on a new
+      beside a speaking session moves smoothly. Piper's "Faster" became the seconds each voice takes
+      to make a sentence, timed on each computer by itself, with an i that explains it (seen
+      in a picture only). The voices best first, on a new
       install and in the author's own lists ("set my voices ... first the best one"): English
       by Kokoro's grade (the women first, as they are graded higher), Italian Sara, Nicola,
       then Paola, Chinese the four clearest measured instead of the four picked by ear. **Next: Talking**, then Overlay,
