@@ -13,8 +13,11 @@ from dataclasses import dataclass, field
 # C), ordered so neighbours differ in accent and gender. Eight, not thirteen (the author,
 # 2026-11-21: "the English models are too many ... just keep the best ones"); the others graded
 # C or better are a tick away in the settings window.
+# Best first, by Kokoro's grade (settings.KOKORO_GRADES): the first sessions get the clearest
+# voices. It took women and men in turn before (the author, 2026-11-21: "set my voices ... first
+# the best one").
 VOICE_POOL = [
-    "af_heart", "am_michael", "af_bella", "bm_george", "af_nicole", "am_fenrir", "bf_emma", "am_puck",
+    "af_heart", "af_bella", "af_nicole", "bf_emma", "am_michael", "am_fenrir", "am_puck", "bm_george",
 ]
 
 # One color per session for its name in the overlay. Soft, easy to tell apart on dark glass,

@@ -262,10 +262,10 @@ class ReplyLanguage(HubCase):
         self.engine.has = lambda v: v in self.VOICES or v == "piper:it_IT-paola-medium"
         hub.on_display(ev("MessageDisplay", delta='<speak lang="it">Fatto.</speak>'))
         self.spoken()
-        self.assertEqual(self.engine.spoken[-1][1], "piper:it_IT-paola-medium")  # Paola, when installed
+        self.assertEqual(self.engine.spoken[-1][1], "if_sara")  # the first of the three, best first
         hub.on_display(ev("MessageDisplay", sid="b", cwd="/work/beta", delta='<speak lang="it">Anche io.</speak>'))
         self.spoken()
-        self.assertEqual(self.engine.spoken[-1][1], "if_sara")  # another session: the next of the three
+        self.assertEqual(self.engine.spoken[-1][1], "im_nicola")  # another session: the next of the three
         hub.cfg.language_voices = {"it": "im_nicola"}
         hub.on_display(ev("MessageDisplay", delta='<speak lang="it">Fatto di nuovo.</speak>'))
         self.spoken()
@@ -274,10 +274,10 @@ class ReplyLanguage(HubCase):
     def test_chinese_takes_the_chinese_model_and_falls_back_to_kokoros_own(self):
         hub = self.make()
         self.engine.voices |= {"zf_xiaoxiao", "zm_yunxi"}
-        self.engine.has = lambda v: v in self.engine.voices or v in ("zh:zf_001", "zh:zm_009")
+        self.engine.has = lambda v: v in self.engine.voices or v in ("zh:zf_049", "zh:zf_006")
         hub.on_display(ev("MessageDisplay", delta='<speak lang="zh">好了。</speak>'))
         self.spoken()
-        self.assertEqual(self.engine.spoken[-1][1], "zh:zf_001")
+        self.assertEqual(self.engine.spoken[-1][1], "zh:zf_049")
         self.engine.has = lambda v: v in self.engine.voices  # the Chinese model is not installed
         hub.on_display(ev("MessageDisplay", sid="b", cwd="/work/beta", delta='<speak lang="zh">好了。</speak>'))
         self.spoken()

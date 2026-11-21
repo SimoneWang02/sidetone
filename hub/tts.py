@@ -28,10 +28,13 @@ KOKORO_LANG = {"a": "en-us", "b": "en-gb", "e": "es", "f": "fr-fr", "h": "hi", "
 # (the first session gets the first). Those not installed are skipped; `language_voices` in
 # config.json gives a list of one's own. Italian: the three the author kept of seven heard
 # (2026-11-19), Piper's Paola, then Kokoro's Sara and Nicola.
-PREFERRED_VOICE = {"it": ["piper:it_IT-paola-medium", "if_sara", "im_nicola"],
-                   # Kokoro's Chinese model (v1.1-zh), the four the author picked of its 103
-                   # voices over Kokoro 1.0's and Qwen3's (2026-11-19), women and men in turn.
-                   "zh": ["zh:zf_001", "zh:zm_009", "zh:zf_002", "zh:zm_010"]}
+# Best first (the author, 2026-11-21: "set my voices ... first the best one"). Italian: Kokoro's
+# two (graded C) before Piper's Paola, which is quicker but less natural; Paola was first until
+# then. Chinese: Kokoro's Chinese model (v1.1-zh), the four clearest as measured
+# (settings.CHINESE_CLARITY), two women and two men; until then the four the author picked by
+# ear on 2026-11-19 (zf_001, zm_009, zf_002, zm_010), which ranked 33, 34, 88 and 98 of 100.
+PREFERRED_VOICE = {"it": ["if_sara", "im_nicola", "piper:it_IT-paola-medium"],
+                   "zh": ["zh:zf_049", "zh:zf_006", "zh:zm_056", "zh:zm_057"]}
 LANG_LETTER = {"en": "a", "es": "e", "fr": "f", "hi": "h", "it": "i", "ja": "j", "pt": "p", "zh": "z", "cmn": "z"}
 
 

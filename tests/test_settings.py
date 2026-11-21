@@ -113,7 +113,7 @@ class Offered(SettingsCase):
         self.assertEqual([i["name"] for i in voices if i["kind"] == "heading"], ["English", "Italian", "Chinese"])
         self.assertEqual([i["voice"] for i in voices if i.get("group") == "zh"], ["zh:zf_001"])  # not Kokoro 1.0's zf_xiaobei
         italian = [i["voice"] for i in voices if i.get("group") == "it" and i["value"]]
-        self.assertEqual(italian, ["piper:it_IT-paola-medium", "if_sara", "im_nicola"])  # tts.PREFERRED_VOICE until chosen
+        self.assertEqual(italian, ["if_sara", "im_nicola", "piper:it_IT-paola-medium"])  # tts.PREFERRED_VOICE until chosen
         self.assertIsNone(hub.set_setting("voices_order.it", ["if_sara", "piper:it_IT-paola-medium", "im_nicola"]))
         self.assertIsNone(hub.set_setting("voice_in.it.im_nicola", False))
         self.assertEqual(hub.cfg.language_voices["it"], ["if_sara", "piper:it_IT-paola-medium"])

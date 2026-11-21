@@ -80,7 +80,10 @@ these come before anything new.
       were the loudness meter taking the speakers' buffer to 30 ms (measured); it now asks for
       the voice's. Previews heard by the author: "It's perfect". Still to see: whether the wave
       beside a speaking session moves smoothly. Piper's "Faster" is now a tag with an i that
-      explains it under the mouse (seen in a picture only). **Next: Talking**, then Overlay,
+      explains it under the mouse (seen in a picture only). The voices best first, on a new
+      install and in the author's own lists ("set my voices ... first the best one"): English
+      by Kokoro's grade (the women first, as they are graded higher), Italian Sara, Nicola,
+      then Paola, Chinese the four clearest measured instead of the four picked by ear. **Next: Talking**, then Overlay,
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
