@@ -942,6 +942,17 @@ class SayingItAgain(HubCase):
         self.spoken()
         self.assertEqual(self.engine.spoken[-1], ("All done.", self.session()["voice"]))
 
+    def test_repeat_pressed_again_starts_over_at_once(self):
+        hub = self.make(duration=0.5)
+        hub.on_display(ev("MessageDisplay", delta=tag("All done.")))
+        time.sleep(0.1)  # the line is being heard
+        self.assertTrue(hub.repeat())  # the same line: cut and said again, not after itself
+        time.sleep(0.1)
+        self.assertTrue(hub.repeat())  # again, during the replay
+        time.sleep(0.1)
+        self.assertEqual(len(hub.speech.queued), 0)  # nothing waits behind it
+        self.assertEqual(hub.speech.current.src, "repeat")
+
     def test_repeat_stays_quiet_while_muted(self):
         hub = self.two_sessions_spoke()
         open(self.cfg.mute_file, "a").close()

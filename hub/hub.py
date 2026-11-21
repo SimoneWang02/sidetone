@@ -578,6 +578,14 @@ class Hub(Permissions, Talk):
         if self._muted():
             self.publish()
             return
+        # Pressed again while the line is heard, as a replay or the first time: it starts over at
+        # once instead of being queued behind itself (the author, 2026-11-21: "I didn't get the
+        # first part. I clicked it again ... and it cued the next replay. I think it should
+        # immediately restart"). As a voice's preview does (`drop_src`).
+        self.speech.drop_src(src)
+        now = self.speech.current
+        if now and now.text == entry["text"] and now.session == entry.get("session", ""):
+            self.speech.skip()
         self.speech.put(Utterance(text=entry["text"], voice=entry["voice"], session=entry["session"] if live else "",
                                   kind="notice", src=src, entry=entry,
                                   label=entry["spoken_name"] if not live else None))

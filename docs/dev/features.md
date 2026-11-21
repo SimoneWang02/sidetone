@@ -603,7 +603,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   laid over the card so nothing in it moves; `mute-icon.png`). And a fault they found:
   the repeat key spoke while muted. `_replay` (repeat) and `say` without a
   session went to the voice without asking; while muted a replayed line is now shown at
-  its light, and the hub's own words are left unsaid.
+  its light, and the hub's own words are left unsaid. 2026-11-21: the repeat key pressed again
+  while the line is heard (a replay, or the line the first time) starts it over at once; it was
+  queued behind itself ("I didn't get the first part ... it cued the next replay").
   The icon is drawn (`MutedSpeaker`), not the font's: at 14 px the font's speaker had a small
   cross at its side that could not be made out (the author: "not very clear because ... very
   small", wanting a slash over the speaker). A speaker with two waves and a slash across all
