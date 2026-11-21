@@ -1258,6 +1258,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   author found "might be misleading" as it counted only the ticked; now "4 of 12 ticked", the
   ticked out of all the card lists), and one sentence for the whole page
   under its title (`kind: intro`). Pictures: `settings-voices-open.png` (English opened).
+  A voice unticked while its language is open keeps its place, without its tick, until the
+  language or the window is closed, and only then goes under More Voices (the author,
+  2026-11-21: "whenever I untick a voice it immediately goes to like more voices"); ticked
+  again it goes back to that place, and it can be dragged with the ticked ones meanwhile
+  (`places`, `kept`, `Block`, `KeepPlaces`, `Tick` in `Overlay.cs`; the hub knows nothing of it).
   Then at most twelve voices a language (`MOST_VOICES`; "maximum 10 or 15"): the ticked in
   their order, then the best of the rest (`rank`), one's own voices always. The page's sentence
   now says the purpose first ("Each open session speaks in its own voice, so you know who is

@@ -1454,6 +1454,7 @@ namespace ClaudeSpeaks
         public void Hide()
         {
             if (capturing.Length > 0) StopTyping();
+            ForgetPlaces(null);
             if (Window.IsVisible) Window.Hide();
         }
 
@@ -1527,6 +1528,7 @@ namespace ClaudeSpeaks
                     if (!ticked.ContainsKey(group)) ticked[group] = new List<string>();
                     ticked[group].Add(Overlay.Str(item, "voice"));
                 }
+                items = KeepPlaces(items);
                 StackPanel lines = null;
                 string inGroup = "";
                 int hidden = 0, folded = 0;
@@ -1577,7 +1579,7 @@ namespace ClaudeSpeaks
                     }
                     if (shut) continue;  // under a closed heading
                     if (lines == null) lines = new StackPanel();
-                    if (item.ContainsKey("more") && Convert.ToBoolean(item["more"], CultureInfo.InvariantCulture))
+                    if (Folded(item) && !Kept(item))
                     {
                         folded++;
                         if (!unfolded.Contains(Overlay.Str(item, "group"))) { hidden++; continue; }
@@ -1632,6 +1634,85 @@ namespace ClaudeSpeaks
             return item.ContainsKey("more") && Convert.ToBoolean(item["more"], CultureInfo.InvariantCulture);
         }
 
+        // A voice unticked while its language is open stays where it was, without its tick, until
+        // the language or the window is closed; only then does it go under More Voices (the
+        // author, 2026-11-21: "whenever I untick a voice it immediately goes to like more
+        // voices"). `places` is, by language, the order of the voices at the top of its card (the
+        // ticked and those kept) since the first untick; `kept` the voices unticked meanwhile.
+        readonly Dictionary<string, List<string>> places = new Dictionary<string, List<string>>();
+        readonly HashSet<string> kept = new HashSet<string>();
+
+        bool Kept(Dictionary<string, object> item)
+        {
+            return kept.Contains(Overlay.Str(item, "group") + "/" + Overlay.Str(item, "voice"));
+        }
+
+        void ForgetPlaces(string group)
+        {
+            places.Remove(group);
+            kept.RemoveWhere(delegate(string k) { return group == null || k.StartsWith(group + "/", StringComparison.Ordinal); });
+            if (group == null) places.Clear();
+        }
+
+        // The voices at the top of a language's card, in the order shown: what a drag moves among.
+        List<string> Block(string group)
+        {
+            List<string> now, was;
+            if (!ticked.TryGetValue(group, out now)) now = new List<string>();
+            if (!places.TryGetValue(group, out was)) return new List<string>(now);
+            var block = new List<string>();
+            foreach (string v in was) if (now.Contains(v) || kept.Contains(group + "/" + v)) block.Add(v);
+            foreach (string v in now) if (!block.Contains(v)) block.Add(v);  // ticked from More Voices since
+            return block;
+        }
+
+        // The hub lists the ticked first and the rest after; a language with kept voices is put
+        // back in the order of its block, the others after it as the hub has them.
+        object[] KeepPlaces(object[] items)
+        {
+            if (places.Count == 0) return items;
+            var result = new List<object>();
+            int i = 0;
+            while (i < items.Length)
+            {
+                var item = (Dictionary<string, object>)items[i];
+                string group = Overlay.Str(item, "group");
+                if (Overlay.Str(item, "kind") != "voice" || !places.ContainsKey(group)) { result.Add(item); i++; continue; }
+                var run = new List<Dictionary<string, object>>();
+                while (i < items.Length && Overlay.Str((Dictionary<string, object>)items[i], "kind") == "voice" && Overlay.Str((Dictionary<string, object>)items[i], "group") == group)
+                    run.Add((Dictionary<string, object>)items[i++]);
+                foreach (string v in Block(group))
+                    foreach (var r in run) if (Overlay.Str(r, "voice") == v) result.Add(r);
+                List<string> block = Block(group);
+                foreach (var r in run) if (!block.Contains(Overlay.Str(r, "voice"))) result.Add(r);
+            }
+            return result.ToArray();
+        }
+
+        // A tick clicked. Unticked, the voice keeps its place; ticked again, it goes back to it.
+        void Tick(string key, string group, string voice, bool on)
+        {
+            string id = group + "/" + voice;
+            List<string> now;
+            if (on)
+            {
+                if (ticked.TryGetValue(group, out now) && now.Count > 1)  // the last one cannot go
+                {
+                    if (!places.ContainsKey(group)) places[group] = Block(group);
+                    kept.Add(id);
+                }
+                choose(key, false);
+                return;
+            }
+            if (!kept.Remove(id)) { choose(key, true); return; }
+            var order = new List<string>();
+            if (!ticked.TryGetValue(group, out now)) now = new List<string>();
+            foreach (string v in places[group])
+                if (v == voice || now.Contains(v)) order.Add(v);
+            foreach (string v in now) if (!order.Contains(v)) order.Add(v);
+            choose("voices_order." + group, order.ToArray());
+        }
+
         // Which headings that open and close are open: all closed at first, so every language
         // can be seen at once (the author, 2026-11-21).
         readonly HashSet<string> openGroups = new HashSet<string>();
@@ -1654,7 +1735,7 @@ namespace ClaudeSpeaks
             row.Children.Add(holds);
             var head = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, open ? 6 : 8), Cursor = Cursors.Hand, Child = row };
             Lit(head, open ? "#1AFFFFFF" : "#12FFFFFF", "#22FFFFFF");
-            head.MouseLeftButtonUp += delegate { if (open) openGroups.Remove(group); else openGroups.Add(group); Fill(); };
+            head.MouseLeftButtonUp += delegate { if (open) { openGroups.Remove(group); ForgetPlaces(group); } else openGroups.Add(group); Fill(); };
             return head;
         }
 
@@ -1696,12 +1777,12 @@ namespace ClaudeSpeaks
             grip.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e)
             {
                 e.Handled = true;
-                List<string> order;
-                if (!ticked.TryGetValue(group, out order) || order.Count < 2) return;
+                List<string> order = Block(group);
+                if (order.Count < 2) return;
                 rows.Clear();
                 foreach (UIElement child in card.Children)
                     if (child is Grid) rows.Add((FrameworkElement)child);
-                rows = rows.GetRange(0, Math.Min(order.Count, rows.Count));  // the ticked come first
+                rows = rows.GetRange(0, Math.Min(order.Count, rows.Count));  // the ticked (and the kept) come first
                 from = to = rows.IndexOf(line);
                 if (from < 0) return;
                 pitch = line.ActualHeight + line.Margin.Top + line.Margin.Bottom + 1;  // a line and the rule under it
@@ -1730,9 +1811,12 @@ namespace ClaudeSpeaks
                 foreach (FrameworkElement row in rows) row.RenderTransform = null;
                 Panel.SetZIndex(line, 0);
                 if (from < 0 || to == from) return;
-                var order = new List<string>(ticked[group]);
+                var order = Block(group);
                 order.Remove(voice);
                 order.Insert(to, voice);
+                if (places.ContainsKey(group)) places[group] = new List<string>(order);
+                var now = ticked[group];
+                order.RemoveAll(delegate(string v) { return !now.Contains(v); });  // the kept are not sent
                 ticked[group] = order;
                 choose("voices_order." + group, order.ToArray());
             };
@@ -1749,7 +1833,7 @@ namespace ClaudeSpeaks
             line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            if (kind == "voice" && !Folded(item))  // a ticked voice: dragged by its grip to another place
+            if (kind == "voice" && (!Folded(item) || Kept(item)))  // a ticked voice, or one just unticked: dragged by its grip
             {
                 line.ColumnDefinitions.Insert(0, new ColumnDefinition { Width = GridLength.Auto });
                 var grip = Grip();
@@ -1777,7 +1861,8 @@ namespace ClaudeSpeaks
             if (kind == "voice")
             {
                 bool on = ((Toggle)control).On;
-                control.MouseLeftButtonUp += delegate { choose(key, !on); };
+                string group = Overlay.Str(item, "group"), voice = Overlay.Str(item, "voice");
+                control.MouseLeftButtonUp += delegate { Tick(key, group, voice, on); };
             }
             string heard = kind == "voice" ? Overlay.Str(item, "voice") : item.ContainsKey("play") && Convert.ToBoolean(item["play"], CultureInfo.InvariantCulture) ? Convert.ToString(value, CultureInfo.InvariantCulture) : "";
             if (heard != null && heard.Length > 0)  // a voice: a button to hear it beside what sets it
