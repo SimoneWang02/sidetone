@@ -191,13 +191,15 @@ ENGLISH_GRADES = {"af_heart": "A", "af_bella": "A-", "af_nicole": "B-", "bf_emma
 
 
 def short_label(voice: str) -> str:
-    """For a dropdown: "Heart (American woman)", without the grade or the speed."""
+    """For a dropdown: "Heart (American woman)", without the quality or the speed."""
     name, what = voice_label(voice)
     return f"{name} ({what.split(',')[0]})"
 
 
 def voice_label(voice: str) -> tuple[str, str]:
-    """A voice's name as people read it, and what it is: ("Heart", "American woman, grade A")."""
+    """A voice's name as people read it, and what it is: ("Heart", "American woman, quality A").
+    Kokoro calls it a grade; "quality" is the author's word (2026-11-21: "quality is much more
+    intuitive")."""
     if voice.startswith("piper:"):  # piper:it_IT-paola-medium
         model = voice[6:].split("-")
         place = model[0].split("_")[-1] if model else ""
@@ -211,7 +213,7 @@ def voice_label(voice: str) -> tuple[str, str]:
         return voice[3:], "Chinese (Kokoro's Chinese model)"
     m = re.fullmatch(r"([a-z])([fm])_(\w+)", voice)
     if m and m.group(1) in ACCENTS:
-        grade = f", grade {ENGLISH_GRADES[voice]}" if voice in ENGLISH_GRADES else ""
+        grade = f", quality {ENGLISH_GRADES[voice]}" if voice in ENGLISH_GRADES else ""
         return m.group(3).replace("_", " ").title(), f"{ACCENTS[m.group(1)]} {'woman' if m.group(2) == 'f' else 'man'}{grade}"
     return voice, "Your own voice"
 
