@@ -89,6 +89,14 @@ class KokoroEngine:
 
     RATE = 24000
     GAP = b"\0" * int(RATE * 0.15) * 2  # silence between parts (16-bit mono)
+    # The way sounds.py plays its short sounds, which cured the same scratches there: a 150 ms
+    # buffer, and a little silence before and after, so WSL's link to Windows' speakers is awake
+    # when the voice starts and does not close on its last syllable. With a 50 ms buffer and no
+    # silence the author heard scratches at the start of a line through AirPods (2026-11-21); the
+    # same line with a larger buffer was clean ("only the first one has scratches").
+    LATENCY_MS = 150
+    LEAD = b"\0" * int(RATE * 0.1) * 2
+    TAIL = b"\0" * int(RATE * 0.3) * 2
 
     STYLE_SHAPE = (510, 1, 256)  # how Kokoro stores one voice
 
@@ -269,7 +277,7 @@ class KokoroEngine:
         proc = self._proc = subprocess.Popen(
             # A small buffer: by default the player waits for more audio before it starts, which
             # delayed a labelled line by about 0.3 s (measured on the speakers' output).
-            ["paplay", "--raw", f"--rate={self.RATE}", "--format=s16le", "--channels=1", "--latency-msec=50",
+            ["paplay", "--raw", f"--rate={self.RATE}", "--format=s16le", "--channels=1", f"--latency-msec={self.LATENCY_MS}",
              f"--volume={round(65536 * max(0.0, min(1.0, self.volume)))}"],
             stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
@@ -281,10 +289,12 @@ class KokoroEngine:
                 # Taken before the write: the player takes a sentence about as fast as it plays it,
                 # so the write of a long one only returns seconds after its sound has started.
                 ready = time.monotonic() - started
-                proc.stdin.write(self.GAP + pcm if i else pcm)
+                proc.stdin.write(self.GAP + pcm if i else self.LEAD + pcm)
                 proc.stdin.flush()
                 if first is None:
                     first = ready
+            if first is not None:
+                proc.stdin.write(self.TAIL)
             proc.stdin.close()
             proc.wait()
         except OSError:  # the player was killed by stop()
