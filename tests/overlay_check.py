@@ -531,7 +531,7 @@ import settings as settings_mod  # noqa: E402
 
 
 class FakeHub:
-    cfg = base.Config(run="", state="")
+    cfg = base.Config(run="", state="", whisper_language="en,it")  # Chinese switched off
     lock = threading.Lock()
     sessions = type("Open", (), {"by_id": {n: type("S", (), {"name": n}) for n in ("sidetone", "api-server", "web-app")}})
     speech = type("Queue", (), {"engine": None})  # nothing to time with: the times below stand in

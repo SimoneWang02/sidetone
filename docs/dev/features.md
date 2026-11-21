@@ -1247,7 +1247,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   voice by voice, Kokoro's English ones ranged 0.50 to 0.71 s on one sentence, which was noise.
   The engine makes one sentence at a time (`KokoroEngine._making`), as espeak is not for two at
   once. On the author's machine: Kokoro American 0.51, British 0.54, Italian 0.53, Paola 0.37,
-  the Chinese model 0.64. The page's sentence
+  the Chinese model 0.64. Then a switch on each language's heading for whether you speak it
+  (`spoken`, `set_spoken`, key `speak.<lang>`; the author: "if someone speaks only English,
+  they should be able to disable the other languages ... the fewer the languages to detect, the
+  less ambiguous the words are"): it is `whisper_language`, the same as install.sh's question and
+  `sidetone languages`, saved with `stt.save_languages` and taken up at once
+  (`reload_languages`; English alone gets the English-only model). Off, the heading is dim, does
+  not open and lists no voices; the last language on cannot go off; languages the window does
+  not list (Spanish, say) are kept. Lines in a language that is off still use its voices.
+  Picture: `settings-voices-italian.png` (Chinese off). The page's sentence
   says what the words mean. "Fair" was first for Okay; the author: "what is fair though?". None is faster: every Kokoro voice is the same model. Projects keep the voices
   they had.
   Then: "keep some ... that are not so good but are faster ... for each language". Measured on

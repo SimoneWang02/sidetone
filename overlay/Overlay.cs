@@ -1567,8 +1567,10 @@ namespace ClaudeSpeaks
                         shut = false;
                         if (item.ContainsKey("fold") && Convert.ToBoolean(item["fold"], CultureInfo.InvariantCulture))
                         {
-                            shut = !openGroups.Contains(inGroup);
-                            list.Children.Add(FoldHead(inGroup, Overlay.Str(item, "name"), Overlay.Str(item, "summary"), !shut));
+                            bool spoken = !item.ContainsKey("spoken") || Convert.ToBoolean(item["spoken"], CultureInfo.InvariantCulture);
+                            shut = !spoken || !openGroups.Contains(inGroup);
+                            list.Children.Add(FoldHead(inGroup, Overlay.Str(item, "name"), Overlay.Str(item, "summary"), !shut,
+                                Overlay.Str(item, "speak"), spoken, item.ContainsKey("last") && Convert.ToBoolean(item["last"], CultureInfo.InvariantCulture)));
                             continue;
                         }
                         bool first = list.Children.Count == 1;
@@ -1719,12 +1721,16 @@ namespace ClaudeSpeaks
 
         // A heading that opens and closes the card under it: a chevron, its name, and at the
         // right while it is closed what it holds ("4 selected"); open, the card below says it.
-        UIElement FoldHead(string group, string name, string summary, bool open)
+        // With `speak`, a switch at the far right for whether you speak the language (the author,
+        // 2026-11-21: "if someone speaks only English, they should be able to disable the other
+        // languages"): off, the heading is dim and does not open; the last one on cannot go off.
+        UIElement FoldHead(string group, string name, string summary, bool open, string speak, bool spoken, bool last)
         {
             var row = new Grid();
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var chevron = new System.Windows.Shapes.Path { Data = Geometry.Parse(open ? "M0,0 L4.5,4.5 L9,0" : "M0,0 L4.5,4.5 L0,9"), Stroke = Ui.Dim, StrokeThickness = 1.5, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, Width = 10, Height = 10, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, open ? 3 : 0, 12, 0) };
             row.Children.Add(chevron);
             var title = new TextBlock { Text = name, FontSize = 14, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
@@ -1734,6 +1740,24 @@ namespace ClaudeSpeaks
             Grid.SetColumn(holds, 2);
             row.Children.Add(holds);
             var head = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, open ? 6 : 8), Cursor = Cursors.Hand, Child = row };
+            if (speak.Length > 0)
+            {
+                var toggle = new Toggle(spoken) { Margin = new Thickness(16, -2, -2, -2),  // -2: in line with the voices' switches below (measured)
+                    Opacity = last ? 0.45 : 1,
+                    ToolTip = last ? "Push-to-talk needs at least one language" : spoken ? "You speak it: push-to-talk listens for it" : "Turn on if you speak it" };
+                ToolTipService.SetShowOnDisabled(toggle, true);
+                toggle.MouseLeftButtonUp += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; if (!last) choose(speak, !spoken); };
+                toggle.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; };
+                Grid.SetColumn(toggle, 3);
+                row.Children.Add(toggle);
+            }
+            if (!spoken)  // not spoken: dim, and nothing to open
+            {
+                chevron.Opacity = title.Opacity = 0.4;
+                head.Cursor = Cursors.Arrow;
+                head.Background = Ui.Paint("#0AFFFFFF");
+                return head;
+            }
             Lit(head, open ? "#1AFFFFFF" : "#12FFFFFF", "#22FFFFFF");
             head.MouseLeftButtonUp += delegate { if (open) { openGroups.Remove(group); ForgetPlaces(group); } else openGroups.Add(group); Fill(); };
             return head;

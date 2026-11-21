@@ -29,6 +29,7 @@ import time
 
 import base
 import overlay as overlay_mod
+import stt
 import terminal as terminal_mod
 import tts
 
@@ -434,6 +435,35 @@ def listed(lang: str, chosen: list, have: list) -> list:
     return chosen + rest + own
 
 
+def spoken(hub) -> list:
+    """The languages you speak, of those the window lists: what push-to-talk listens for
+    (`whisper_language`, asked by install.sh and `sidetone languages`). "auto" is all of them."""
+    named = stt.codes(hub.cfg.whisper_language)
+    return [lang for lang in SUMMARY_LANGUAGES if not named or lang in named]
+
+
+def set_spoken(hub, lang: str, on: bool) -> str | None:
+    """A language's switch on the Voices page: the languages push-to-talk listens for, with
+    this one added or taken out; others named in config.json (Spanish, say) are kept. Returns
+    what is wrong, or None. The author, 2026-11-21: "if someone speaks only English, they should
+    be able to disable the other languages ... the fewer the languages to detect, the less
+    ambiguous the words are"."""
+    if lang not in SUMMARY_LANGUAGES:
+        return f"no language {lang} here"
+    named = stt.codes(hub.cfg.whisper_language) or list(SUMMARY_LANGUAGES)
+    wanted = [c for c in named if c != lang] + ([lang] if on else [])
+    wanted = [c for c in SUMMARY_LANGUAGES if c in wanted] + [c for c in wanted if c not in SUMMARY_LANGUAGES]
+    if not wanted:
+        return "keep at least one language"
+    try:
+        stt.save_languages(hub.cfg.config_path, wanted)
+    except (OSError, ValueError) as e:
+        return str(e)
+    hub.reload_languages()
+    base.log(hub.cfg, "hub.log", f"setting speak.{lang} = {json.dumps(on)}")
+    return None
+
+
 def _voices(hub) -> list:
     """The Voices section: for each language the voices its lines are said in, ticked and in
     order; sessions take them in turn. There was a part for each open project's own voice
@@ -449,11 +479,20 @@ def _voices(hub) -> list:
     found = [{"kind": "intro", "key": "intro.voices", "name": "",
               "help": "Each open session speaks in its own voice, so you know who is talking. A new session gets the "
                       "first ticked voice not in use. Excellent, Good, Okay and Basic say how clearly each speaks. "
-                      "Drag the dots to change the order; press play to hear one."}]
+                      "Drag the dots to change the order; press play to hear one. Switch off a language you do not "
+                      "speak, and push-to-talk stops listening for it."}]
     everyone = []
+    speaking = spoken(hub)
     for lang in SUMMARY_LANGUAGES:
         chosen = in_use(hub, lang)
         if not voices.get(lang):
+            continue
+        # Each language's heading has a switch for whether you speak it (`spoken`); one that is
+        # off lists no voices and stays closed.
+        if lang not in speaking:
+            found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
+                          "help": "", "fold": True, "summary": "", "speak": f"speak.{lang}", "spoken": False,
+                          "last": False})
             continue
         # A heading that opens and closes its card (the author, 2026-11-21: "for each language
         # making a drop-down list so I can quickly scroll between the languages"), with how many
@@ -465,7 +504,8 @@ def _voices(hub) -> list:
         shown = listed(lang, chosen, voices[lang])
         everyone += shown
         found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
-                      "help": "", "fold": True, "summary": f"{len(chosen)} selected"})
+                      "help": "", "fold": True, "summary": f"{len(chosen)} selected", "speak": f"speak.{lang}",
+                      "spoken": True, "last": len(speaking) == 1})
         for v in shown:
             name, what = voice_label(v)
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
@@ -515,7 +555,7 @@ def default(key: str):
     project's voice is handed out from the pool)."""
     if key == "mute":
         return False
-    if key.startswith(("voice_in.", "voices_order.", "heading.", "intro.")):
+    if key.startswith(("voice_in.", "voices_order.", "heading.", "intro.", "speak.")):
         return None
     if key.startswith("overlay.hotkeys."):
         return overlay_mod.DEFAULTS["hotkeys"].get(key[16:], "")
@@ -632,6 +672,8 @@ def _save(cfg, path: list, value) -> None:
 
 def apply(hub, key: str, value) -> str | None:
     """Change a setting: at once, and remembered. Returns what is wrong with it, or None."""
+    if key.startswith("speak."):  # the switch on a language's heading: whether you speak it
+        return set_spoken(hub, key[6:], bool(value))
     if key.startswith("voices_order."):  # a voice dragged to another place in its language's list
         error = set_in_use(hub, key[13:], [str(v) for v in value] if isinstance(value, list) else [])
         if not error:

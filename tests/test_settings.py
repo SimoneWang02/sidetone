@@ -107,7 +107,7 @@ class Offered(SettingsCase):
 
     def test_each_voice_shows_the_seconds_it_takes_here(self):
         import time
-        hub = self.make()
+        hub = self.make(whisper_language="en,it")
         hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "if_sara"], "custom": [], "pool": ["af_heart"],
                               "projects": {}, "piper": ["piper:it_IT-paola-medium"], "zh": []}
         timed = []
@@ -131,8 +131,30 @@ class Offered(SettingsCase):
         tags()
         self.assertEqual(len(timed), 18)
 
+    def test_a_language_you_do_not_speak_is_switched_off(self):
+        hub = self.make(whisper_language="en,it,zh", whisper_model="small")
+        hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "if_sara"], "custom": [], "pool": ["af_heart"],
+                              "projects": {}, "piper": [], "zh": ["zh:zf_049"]}
+        heads = lambda: {i["key"]: (i["spoken"], i["last"]) for s in settings.describe(hub) if s["name"] == "Voices" for i in s["items"] if i["kind"] == "heading"}
+        listed = lambda: [i.get("group") for s in settings.describe(hub) if s["name"] == "Voices" for i in s["items"] if i["kind"] == "voice"]
+        self.assertEqual(heads(), {"heading.en": (True, False), "heading.it": (True, False), "heading.zh": (True, False)})
+        self.assertIsNone(hub.set_setting("speak.zh", False))
+        self.assertEqual(self.saved()["whisper_language"], "en,it")  # push-to-talk listens for the others only
+        self.assertEqual(hub.cfg.whisper_language, "en,it")  # at once
+        self.assertEqual(heads()["heading.zh"], (False, False))
+        self.assertNotIn("zh", listed())  # no voices to choose for it
+        self.assertIsNone(hub.set_setting("speak.it", False))
+        self.assertEqual((hub.cfg.whisper_model, hub.cfg.whisper_language), ("small.en", "en"))  # English alone: its own model
+        self.assertEqual(heads()["heading.en"], (True, True))  # the last one on
+        self.assertEqual(hub.set_setting("speak.en", False), "keep at least one language")
+        self.assertIsNone(hub.set_setting("speak.zh", True))
+        self.assertEqual(hub.cfg.whisper_language, "en,zh")
+        hub.cfg.whisper_language = "en,es"  # a language the window does not list is kept
+        self.assertIsNone(hub.set_setting("speak.it", True))
+        self.assertEqual(hub.cfg.whisper_language, "en,it,es")
+
     def test_each_language_has_its_voices_ticked_in_order(self):
-        hub = self.make()
+        hub = self.make(whisper_language="auto")
         hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "bm_fable", "if_sara", "im_nicola", "zf_xiaobei"],
                               "custom": [], "pool": ["af_heart"], "projects": {}, "piper": ["piper:it_IT-paola-medium"], "zh": ["zh:zf_001"]}
         voices = next(s for s in settings.describe(hub) if s["name"] == "Voices")["items"]
