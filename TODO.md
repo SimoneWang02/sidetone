@@ -31,6 +31,12 @@ these come before anything new.
       are now what the whole session has used and how long Claude worked in it, since it began or
       was cleared; each turn's own tokens stay on its history line. Seen in a picture only.
       **Not seen by them on their own sessions yet.**
+- [ ] Discord muted while you talk (asked for and built 2026-11-20, `mute_others`, on, in the
+      settings window under Talking as "Mute Other Apps While Talking"). While the talk key is
+      held, Windows mutes Discord's microphone stream, and gives it back after. Checked from
+      WSL only: Windows accepted the mute and unmute of Discord's stream. **To try by hand:**
+      in a call (or Discord's own microphone test), hold the talk key and speak; the others
+      should hear nothing, and the words should still reach the session.
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
       A first one built on the evening of 2026-11-18 and put on their screen:

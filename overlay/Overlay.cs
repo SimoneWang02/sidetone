@@ -3,8 +3,8 @@
 // appears while a session talks. The bar can be dragged with the mouse. It only draws what the
 // hub tells it to and reports hotkeys.
 // Protocol: one JSON object per line.
-// In on stdin: config, state, flash, wave, request, banner, keys, mode, move, peek, settings, bounds, quit.
-// Out on stdout: ready, hotkey, mode, moved, setting, settings, bounds, error.
+// In on stdin: config, state, flash, wave, request, banner, keys, mode, move, peek, settings, mute_apps, bounds, quit.
+// Out on stdout: ready, hotkey, mode, moved, setting, settings, muted_app, bounds, error.
 // Built with the C# compiler that ships with Windows (csc.exe of .NET Framework 4) or, failing
 // that, by Windows PowerShell 5.1 (Add-Type). Both stop at C# 5, and the file is kept ASCII.
 using System;
@@ -1909,6 +1909,114 @@ namespace ClaudeSpeaks
         }
     }
 
+    // Other programs' microphones, muted while the talk key is held so a call (Discord) does not
+    // hear what is said to a session. Windows keeps a stream per program on each microphone
+    // (an audio session), and each has its own mute, apart from the device's and the program's
+    // own. WSL's recording is a stream of msrdc, so it keeps hearing. Only streams that were not
+    // muted already are muted, and only those are given back.
+    static class AppMute
+    {
+        [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class DeviceEnumerator { }
+        [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IMMDeviceEnumerator { [PreserveSig] int EnumAudioEndpoints(int flow, int mask, out IMMDeviceCollection devices); }
+        [ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IMMDeviceCollection
+        {
+            [PreserveSig] int GetCount(out int count);
+            [PreserveSig] int Item(int index, out IMMDevice device);
+        }
+        [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IMMDevice { [PreserveSig] int Activate(ref Guid iid, int context, IntPtr parameters, [MarshalAs(UnmanagedType.IUnknown)] out object found); }
+        [ComImport, Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IAudioSessionManager2
+        {
+            [PreserveSig] int GetAudioSessionControl(IntPtr a, int b, out IntPtr c);
+            [PreserveSig] int GetSimpleAudioVolume(IntPtr a, int b, out IntPtr c);
+            [PreserveSig] int GetSessionEnumerator(out IAudioSessionEnumerator sessions);
+        }
+        [ComImport, Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IAudioSessionEnumerator
+        {
+            [PreserveSig] int GetCount(out int count);
+            [PreserveSig] int GetSession(int index, [MarshalAs(UnmanagedType.IUnknown)] out object session);
+        }
+        [ComImport, Guid("bfb7ff88-7239-4fc9-8fa2-07c950be9c6d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IAudioSessionControl2
+        {
+            [PreserveSig] int GetState(out int state);
+            [PreserveSig] int GetDisplayName(out IntPtr name);
+            [PreserveSig] int SetDisplayName(IntPtr a, IntPtr b);
+            [PreserveSig] int GetIconPath(out IntPtr path);
+            [PreserveSig] int SetIconPath(IntPtr a, IntPtr b);
+            [PreserveSig] int GetGroupingParam(out Guid group);
+            [PreserveSig] int SetGroupingParam(IntPtr a, IntPtr b);
+            [PreserveSig] int RegisterAudioSessionNotification(IntPtr a);
+            [PreserveSig] int UnregisterAudioSessionNotification(IntPtr a);
+            [PreserveSig] int GetSessionIdentifier(out IntPtr id);
+            [PreserveSig] int GetSessionInstanceIdentifier(out IntPtr id);
+            [PreserveSig] int GetProcessId(out int pid);
+        }
+        [ComImport, Guid("87CE5498-68D6-44E5-9215-6DA47EF883D8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface ISimpleAudioVolume
+        {
+            [PreserveSig] int SetMasterVolume(float level, ref Guid context);
+            [PreserveSig] int GetMasterVolume(out float level);
+            [PreserveSig] int SetMute(int mute, ref Guid context);
+            [PreserveSig] int GetMute(out int mute);
+        }
+
+        static readonly List<object> muted = new List<object>();  // the streams muted here, to give back
+
+        // Mutes the streams of these programs (names without ".exe") on every microphone, and
+        // returns their names. A program not running, or not using a microphone, is skipped.
+        public static List<string> Mute(ICollection<string> apps)
+        {
+            var names = new List<string>();
+            Guid iid = typeof(IAudioSessionManager2).GUID, none = Guid.Empty;
+            var devices = (IMMDeviceEnumerator)new DeviceEnumerator();
+            IMMDeviceCollection all;
+            if (devices.EnumAudioEndpoints(1, 1, out all) != 0) return names;  // capture, active
+            int count;
+            all.GetCount(out count);
+            for (int i = 0; i < count; i++)
+            {
+                IMMDevice device;
+                object found;
+                IAudioSessionEnumerator sessions;
+                int n;
+                if (all.Item(i, out device) != 0 || device.Activate(ref iid, 23, IntPtr.Zero, out found) != 0) continue;
+                if (((IAudioSessionManager2)found).GetSessionEnumerator(out sessions) != 0) continue;
+                sessions.GetCount(out n);
+                for (int j = 0; j < n; j++)
+                {
+                    object session;
+                    int pid, already;
+                    if (sessions.GetSession(j, out session) != 0 || ((IAudioSessionControl2)session).GetProcessId(out pid) != 0 || pid == 0) continue;
+                    string name;
+                    try { name = Process.GetProcessById(pid).ProcessName; }
+                    catch (ArgumentException) { continue; }  // gone meanwhile
+                    bool wanted = false;
+                    foreach (string app in apps) if (string.Equals(app, name, StringComparison.OrdinalIgnoreCase)) wanted = true;
+                    var volume = (ISimpleAudioVolume)session;
+                    if (!wanted || volume.GetMute(out already) != 0 || already != 0) continue;
+                    if (volume.SetMute(1, ref none) != 0) continue;
+                    muted.Add(session);
+                    if (!names.Contains(name)) names.Add(name);
+                }
+            }
+            return names;
+        }
+
+        public static void Restore()
+        {
+            Guid none = Guid.Empty;
+            foreach (object session in muted)
+                try { ((ISimpleAudioVolume)session).SetMute(0, ref none); }
+                catch (COMException) { }  // the program has ended
+            muted.Clear();
+        }
+    }
+
     public class Overlay
     {
         const int WM_HOTKEY = 0x0312;
@@ -2207,6 +2315,7 @@ namespace ClaudeSpeaks
             reader.Start();
             overlay.Send("ready", null, null);
             app.Run();
+            AppMute.Restore();  // the hub is gone: no microphone stays muted by us
         }
 
         // --- input from the hub -------------------------------------------------------------------
@@ -2400,6 +2509,15 @@ namespace ClaudeSpeaks
                 case "logo":  // the tool's mark, written to a file as a picture
                     try { Logo.Save(Str(msg, "path"), (int)Num(msg, "size", 256), msg.ContainsKey("tile") && Convert.ToBoolean(msg["tile"])); Send("logo", "saved", Str(msg, "path")); }
                     catch (Exception e) { Error("logo not saved: " + e.Message); }
+                    break;
+                case "mute_apps":  // other programs' microphones while you talk; an empty list gives them back
+                    var apps = new List<string>();
+                    if (msg.ContainsKey("apps") && msg["apps"] is object[])
+                        foreach (object app in (object[])msg["apps"]) apps.Add(Convert.ToString(app));
+                    AppMute.Restore();
+                    if (apps.Count > 0)
+                        try { foreach (string name in AppMute.Mute(apps)) Send("muted_app", "name", name); }
+                        catch (Exception e) { Error("could not mute other programs: " + e.Message); }
                     break;
                 case "bounds":
                     ReportBounds();
