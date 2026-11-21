@@ -1771,17 +1771,18 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.collect(again), hub_module.TAKE_BACK)
         self.assertEqual(self.talks()[-1][:2], ("failed", "a"))
 
-    def test_words_can_only_be_taken_back_for_a_few_seconds(self):
-        hub = self.make(unsend_seconds=0.2, cancel_stops="sent")  # or the key would stay, to stop the session
+    def test_words_waiting_for_a_busy_session_can_always_be_taken_back(self):
+        hub = self.make(unsend_seconds=0.2)
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="go"))
         hub.talk_target = "a"
         hub.talk_start()
         hub.talk_end()
         self.assertTrue(wait_for(lambda: hub.followups.get("a") == ["also add a test"]))
-        self.assertTrue(wait_for(lambda: "cancel" not in self.overlay.of("keys")[-1]["live"]),
-                        "the cancel key was not given back")
+        time.sleep(0.4)  # long past unsend_seconds
+        self.assertIn("cancel", self.overlay.of("keys")[-1]["live"])
         hub.cancel()
-        self.assertEqual(hub.followups, {"a": ["also add a test"]})
+        self.assertEqual(hub.followups, {})  # taken back, not left to go out after the session was stopped
+        self.assertEqual(self.talks()[-1][:3], ("failed", "a", "Taken back"))
 
     def test_speaking_again_ends_the_time_to_take_words_back(self):
         hub = self.make()

@@ -478,7 +478,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (`usage.say(read, "it")`, times on a 24-hour clock, `clock24`) with the Italian voice.
   Not tried by voice yet.
 - Taking words back after they went out (2026-11-17, `Hub._take_back`, `unsend_seconds`, 4;
-  0 = off). The author wanted an easier way to cancel; offered a spoken ending ("never mind")
+  0 = off). Since 2026-11-21 words still waiting in the hub for a busy session can be taken
+  back however long they have waited (`_unsendable`), and the time is out of the window: the
+  author, "what is the purpose of increasing that timer ... I would increase into infinity";
+  once a session has the words the cancel key stops it anyway (`cancel_stops`), and after the
+  time it used to stop the session's work while the waiting words still went to it. The author wanted an easier way to cancel; offered a spoken ending ("never mind")
   and an unsend key, they pointed out that the spoken one could throw away a message they
   meant ("maybe I don't want to cancel it even though I say never mind") and chose the key:
   "I like the backspace". For that long after "sent", the cancel key acts on the words that

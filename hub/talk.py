@@ -429,8 +429,8 @@ class Talk:
                 self._talk("queued", s, text, seconds=max(3.5, shown))
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] {'sent' if listener else 'waiting for the session to stop'}")
             self._signal("sent" if listener else "queued", s, "Sent." if listener else "Queued.", lang)
+        self._sent = Sent(s.id, text, time.monotonic(), answer=bool(asking))
         if self.cfg.unsend_seconds > 0:
-            self._sent = Sent(s.id, text, time.monotonic(), answer=bool(asking))
             done = threading.Timer(self.cfg.unsend_seconds + 0.05, self.publish)  # gives the cancel key back
             done.daemon = True
             done.start()
@@ -566,9 +566,17 @@ class Talk:
         return bool(listener)
 
     def _unsendable(self) -> Sent | None:
-        """The follow-up the cancel key would take back right now, if any."""
+        """The follow-up the cancel key would take back right now, if any: one still waiting in
+        the hub for a busy session, however long ago it went (the author, 2026-11-21, on a time
+        limit: "I would increase into infinity"; after it, the cancel key stopped the session's
+        work while the words still went to it later), or one the session got in the last
+        `unsend_seconds`, which is then stopped (it would be anyway, by `cancel_stops`)."""
         sent = self._sent
-        return sent if sent and time.monotonic() - sent.at < self.cfg.unsend_seconds else None
+        if not sent:
+            return None
+        if time.monotonic() - sent.at < self.cfg.unsend_seconds:
+            return sent
+        return sent if not sent.answer and sent.text in self.followups.get(sent.session, []) else None
 
     def _take_back(self) -> bool:
         """The cancel key shortly after sending: words still waiting in the hub are removed;

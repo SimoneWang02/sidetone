@@ -181,8 +181,8 @@ class Chosen(SettingsCase):
         for value in (True, False):
             self.assertIsNone(hub.set_setting("followup_confirm", value), value)
             self.assertIs(hub.cfg.followup_confirm, value)
-        self.assertIsNone(hub.set_setting("unsend_seconds", 1.3))
-        self.assertEqual(hub.cfg.unsend_seconds, 1.5)  # to the slider's step
+        self.assertIsNone(hub.set_setting("talk_tail", 0.33))
+        self.assertEqual(hub.cfg.talk_tail, 0.3)  # to the slider's step
 
     def test_one_volume_for_the_voice_and_the_sounds(self):
         """The author, 2026-11-20: "do one thing for both so it's more consistent"."""
@@ -200,9 +200,9 @@ class Chosen(SettingsCase):
         self.assertEqual(self.saved(), {"label": "always"})
         self.assertIsNone(hub.set_setting("speed", 1.33))  # to the nearest step
         self.assertEqual((hub.cfg.speed, self.engine.speed), (1.35, 1.35))
-        self.assertIsNone(hub.set_setting("unsend_seconds", 99))  # no further than it goes
-        self.assertEqual(hub.cfg.unsend_seconds, 10)
-        self.assertEqual(self.saved(), {"label": "always", "speed": 1.35, "unsend_seconds": 10})
+        self.assertIsNone(hub.set_setting("talk_tail", 99))  # no further than it goes
+        self.assertEqual(hub.cfg.talk_tail, 1)
+        self.assertEqual(self.saved(), {"label": "always", "speed": 1.35, "talk_tail": 1})
 
     def test_every_setting_has_a_default_it_can_take(self):
         hub = self.make()
@@ -235,7 +235,7 @@ class Chosen(SettingsCase):
         mute = settings.items(hub)["mute"]
         described = {i["key"]: i for s in settings.describe(hub) for i in s["items"]}
         self.assertEqual(described["mute"]["help"], "No voice for any session. The mute key (Ctrl+Alt+M) does the same.")
-        self.assertIn("the cancel key (Ctrl+Alt+Backspace)", described["unsend_seconds"]["help"])
+        self.assertIn("the talk key (Ctrl+Alt+Space)", described["followup_confirm"]["help"])
         self.assertEqual(mute["help"], "No voice for any session. The mute key does the same.")  # SECTIONS itself unchanged
         hub.set_setting("overlay.hotkeys.mute", "")
         described = {i["key"]: i for s in settings.describe(hub) for i in s["items"]}

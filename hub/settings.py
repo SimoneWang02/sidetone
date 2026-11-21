@@ -86,10 +86,10 @@ SECTIONS = [
         # "Time to Cancel Before Sending" (followup_delay, 0 to 5 s) left the window on 2026-11-21,
         # the author: "if it's unsure ... they could just toggle the confirmation before sending";
         # confirming and taking words back cover it. It is still read from config.json.
-        # Words go out at once, so this costs nothing until it is used (the author, 2026-11-21: "It's
-        # like saying in reverse. Or don't do it"). What "back" means was not said before.
-        number("unsend_seconds", "Time to Take Words Back", "How long after sending the cancel key can still take your words back. "
-               "A session that has not read them yet never gets them; one that has is stopped. 0 turns it off.", 0, 10, 0.5, "s"),
+        # "Time to Take Words Back" (unsend_seconds) left the window on 2026-11-21: once a session
+        # has the words the cancel key stops it anyway (`cancel_stops`), and words still waiting for
+        # a busy session can now always be taken back (the author: "I would increase into
+        # infinity"). It is still read from config.json.
         choice("cancel_stops", "The Cancel Key Stops a Session", "With nothing else to cancel, it ends the turn of the session in focus.",
                ("always", "Always"), ("sent", "After sending"), ("never", "Never")),
         choice("aside", "Side Questions", "Words that open with \"by the way\" are answered at once, and the session never sees them.",
