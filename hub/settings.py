@@ -350,10 +350,13 @@ def _voices(hub) -> list:
         # A heading that opens and closes its card (the author, 2026-11-21: "for each language
         # making a drop-down list so I can quickly scroll between the languages"), with how many
         # voices are ticked beside it. It named them first ("Heart, Michael, Bella and 5 more");
-        # the author did not like it much, and a count was agreed.
+        # the author did not like it much, and a count was agreed. "8 voices" read as all it holds
+        # while it counted only the ticked (the author, 2026-11-21: "might be misleading"), so it
+        # says both: "4 of 12 ticked".
+        shown = listed(lang, chosen, voices[lang])
         found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
-                      "help": "", "fold": True, "summary": f"{len(chosen)} voice{'s' if len(chosen) != 1 else ''}"})
-        for v in listed(lang, chosen, voices[lang]):
+                      "help": "", "fold": True, "summary": f"{len(chosen)} of {len(shown)} ticked"})
+        for v in shown:
             name, what = voice_label(v)
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
                           "group": lang, "more": v not in chosen, "playing": getattr(hub, "_previewing", "") == v})

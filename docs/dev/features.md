@@ -1254,7 +1254,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   languages", and "do they all have the same description beneath the language?" (they did,
   nearly). Each language is now a heading that opens and closes its card (`fold`; `FoldHead`
   and `openGroups` in `Overlay.cs`, all closed when the window starts), with its ticked voices
-  named at the right ("Heart, Michael, Bella and 5 more"), and one sentence for the whole page
+  named at the right ("Heart, Michael, Bella and 5 more"; then a count, "8 voices", which the
+  author found "might be misleading" as it counted only the ticked; now "4 of 12 ticked", the
+  ticked out of all the card lists), and one sentence for the whole page
   under its title (`kind: intro`). Pictures: `settings-voices-open.png` (English opened).
   Then at most twelve voices a language (`MOST_VOICES`; "maximum 10 or 15"): the ticked in
   their order, then the best of the rest (`rank`), one's own voices always. The page's sentence
