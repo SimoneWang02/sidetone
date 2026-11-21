@@ -352,10 +352,11 @@ def _voices(hub) -> list:
         # voices are ticked beside it. It named them first ("Heart, Michael, Bella and 5 more");
         # the author did not like it much, and a count was agreed. "8 voices" read as all it holds
         # while it counted only the ticked (the author, 2026-11-21: "might be misleading"), so it
-        # says both: "4 of 12 ticked".
+        # said both, "4 of 12 ticked", which was "not very conventional"; "4 selected", as most
+        # programs say it, was agreed the same day.
         shown = listed(lang, chosen, voices[lang])
         found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
-                      "help": "", "fold": True, "summary": f"{len(chosen)} of {len(shown)} ticked"})
+                      "help": "", "fold": True, "summary": f"{len(chosen)} selected"})
         for v in shown:
             name, what = voice_label(v)
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,

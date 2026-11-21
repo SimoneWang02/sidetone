@@ -1256,7 +1256,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   and `openGroups` in `Overlay.cs`, all closed when the window starts), with its ticked voices
   named at the right ("Heart, Michael, Bella and 5 more"; then a count, "8 voices", which the
   author found "might be misleading" as it counted only the ticked; now "4 of 12 ticked", the
-  ticked out of all the card lists), and one sentence for the whole page
+  ticked out of all the card lists, then "not very conventional", so "4 selected"), and one sentence for the whole page
   under its title (`kind: intro`). Pictures: `settings-voices-open.png` (English opened).
   A voice unticked while its language is open keeps its place, without its tick, until the
   language or the window is closed, and only then goes under More Voices (the author,

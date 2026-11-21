@@ -1718,7 +1718,7 @@ namespace ClaudeSpeaks
         readonly HashSet<string> openGroups = new HashSet<string>();
 
         // A heading that opens and closes the card under it: a chevron, its name, and at the
-        // right while it is closed what it holds ("4 of 12 ticked"); open, the card below says it.
+        // right while it is closed what it holds ("4 selected"); open, the card below says it.
         UIElement FoldHead(string group, string name, string summary, bool open)
         {
             var row = new Grid();
