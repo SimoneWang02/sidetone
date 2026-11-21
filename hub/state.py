@@ -8,10 +8,13 @@ import time
 import zlib
 from dataclasses import dataclass, field
 
-# Kokoro's clearer English voices, ordered so neighbours differ in accent and gender.
+# Kokoro's clearest English voices, by the grades Kokoro gives them (VOICES.md of
+# hexgrad/Kokoro-82M: Heart A, Bella A-, Nicole and Emma B-, Michael, Fenrir and Puck C+, George
+# C), ordered so neighbours differ in accent and gender. Eight, not thirteen (the author,
+# 2026-11-21: "the English models are too many ... just keep the best ones"); the others graded
+# C or better are a tick away in the settings window.
 VOICE_POOL = [
-    "af_heart", "bm_george", "am_michael", "bf_emma", "af_bella", "am_fenrir", "bm_fable",
-    "af_nicole", "am_puck", "bf_isabella", "af_kore", "af_sarah", "af_aoede",
+    "af_heart", "am_michael", "af_bella", "bm_george", "af_nicole", "am_fenrir", "bf_emma", "am_puck",
 ]
 
 # One color per session for its name in the overlay. Soft, easy to tell apart on dark glass,

@@ -176,10 +176,23 @@ VOICE_LANG = {"a": "en", "b": "en", "i": "it", "z": "zh"}  # the letters of the 
 SAMPLES = {"en": "Hello, this is how I sound.", "it": "Ciao, questa \u00e8 la mia voce.",
            "zh": "\u4f60\u597d\uff0c\u8fd9\u662f\u6211\u7684\u58f0\u97f3\u3002"}
 PIPER_PLACES = {"US": "American", "GB": "British", "IT": "Italian", "CN": "Chinese"}
+# Kokoro's own grades for its English voices graded C or better (VOICES.md of hexgrad/Kokoro-82M,
+# read 2026-11-21). The rest, graded D or F, are left out of the window (the author: "just keep
+# the best ones ... the most clear"); they still work by name in config.json. All of Kokoro's
+# voices are one model, so none is faster than another.
+ENGLISH_GRADES = {"af_heart": "A", "af_bella": "A-", "af_nicole": "B-", "bf_emma": "B-", "af_aoede": "C+",
+                  "af_kore": "C+", "af_sarah": "C+", "am_fenrir": "C+", "am_michael": "C+", "am_puck": "C+",
+                  "af_alloy": "C", "af_nova": "C", "bf_isabella": "C", "bm_fable": "C", "bm_george": "C"}
+
+
+def short_label(voice: str) -> str:
+    """For a dropdown: "Heart (American woman)", without the grade."""
+    name, what = voice_label(voice)
+    return f"{name} ({what.split(', grade')[0]})"
 
 
 def voice_label(voice: str) -> tuple[str, str]:
-    """A voice's name as people read it, and what it is: ("Heart", "American woman")."""
+    """A voice's name as people read it, and what it is: ("Heart", "American woman, grade A")."""
     if voice.startswith("piper:"):  # piper:it_IT-paola-medium
         model = voice[6:].split("-")
         place = model[0].split("_")[-1] if model else ""
@@ -192,7 +205,8 @@ def voice_label(voice: str) -> tuple[str, str]:
         return voice[3:], "Chinese (Kokoro's Chinese model)"
     m = re.fullmatch(r"([a-z])([fm])_(\w+)", voice)
     if m and m.group(1) in ACCENTS:
-        return m.group(3).replace("_", " ").title(), f"{ACCENTS[m.group(1)]} {'woman' if m.group(2) == 'f' else 'man'}"
+        grade = f", grade {ENGLISH_GRADES[voice]}" if voice in ENGLISH_GRADES else ""
+        return m.group(3).replace("_", " ").title(), f"{ACCENTS[m.group(1)]} {'woman' if m.group(2) == 'f' else 'man'}{grade}"
     return voice, "Your own voice"
 
 
@@ -212,8 +226,11 @@ def catalog(hub) -> dict:
     names = set(known.get("builtin", [])) | set(known.get("custom", [])) | set(known.get("piper", [])) | set(known.get("zh", []))
     found = {lang: [] for lang in SUMMARY_LANGUAGES}
     for v in sorted(names):
-        if voice_language(v) in found:
-            found[voice_language(v)].append(v)
+        lang = voice_language(v)
+        if lang == "en" and (re.fullmatch(r"[ab][fm]_\w+", v) and v not in ENGLISH_GRADES or v.startswith("piper:")):
+            continue  # graded D or F by Kokoro, or Piper's, kept for when Kokoro is missing
+        if lang in found:
+            found[lang].append(v)
     return found
 
 
@@ -266,19 +283,21 @@ def _voices(hub) -> list:
             here.setdefault(x.name, x)
     voices = catalog(hub)
     english = in_use(hub, "en")
-    options = [[v, "{} ({})".format(*voice_label(v))] for v in english + [v for v in voices["en"] if v not in english]]
+    options = [[v, short_label(v)] for v in english + [v for v in voices["en"] if v not in english]]
     found = [{"kind": "heading", "key": "heading.sessions", "name": "Sessions",
               "help": "The voice of each session open now, by its folder's name. It says your English summaries."}]
     for project in sorted(known["projects"]):
         if project not in here:
             continue
+        mine = known["projects"][project]
+        listed = options if any(o[0] == mine for o in options) else options + [[mine, short_label(mine)]]
         other = []
         for lang in SUMMARY_LANGUAGES[1:]:
             v = hub._voice_for(here[project], lang) if hasattr(hub, "_voice_for") else None
             if v:
                 other.append(f"In {base.LANGUAGE_NAMES[lang]}: {voice_label(v)[0]}.")
         found.append({"key": f"voice_of.{project}", "kind": "pick", "name": project, "play": True,
-                      "help": " ".join(other), "options": options})
+                      "help": " ".join(other), "options": listed})
     for lang in SUMMARY_LANGUAGES:
         chosen = in_use(hub, lang)
         if not voices.get(lang):

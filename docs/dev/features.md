@@ -1226,3 +1226,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   even when that voice is no longer in the pool (`Sessions._voice_for`): before, a voice
   chosen by hand outside the pool was replaced at its next start. Pictures:
   `settings-voices.png`, `settings-voices-tall.png`.
+  The same morning, "the English models are too many ... just keep the best ones, the fastest
+  ones, the most clear": the pool is now eight (`state.VOICE_POOL`: Heart, Michael, Bella,
+  George, Nicole, Fenrir, Emma, Puck) by Kokoro's own grades (VOICES.md of
+  hexgrad/Kokoro-82M, `settings.ENGLISH_GRADES`), and the window leaves out the English
+  voices graded D or F and Piper's English (kept for when Kokoro is missing); the other seven
+  graded C or better wait under More Voices. Each card line says the grade ("American woman,
+  grade A"). None is faster: every Kokoro voice is the same model. Projects keep the voices
+  they had.
