@@ -17,7 +17,7 @@ import stt
 import terminal as terminal_mod
 from tts import Utterance
 from base import (interrupts, ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
-                  SAFE_ID, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
+                  SAFE_ID, STEER, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
                   session_model, spoken_answer)
 
 CLEAR_BUSY = "it is still working"  # why a clear cannot be typed yet, and waits
@@ -563,7 +563,77 @@ class Talk:
             listener.wake.set()
         else:
             self._waiting.add(s.id)
+            self._leave_for_step(s.id)
         return bool(listener)
+
+    # --- words for a busy session's next step ------------------------------------------------
+
+    def _steer_file(self, sid: str) -> str:
+        return os.path.join(self.cfg.run, "steer", sid)
+
+    def _clear_steer(self) -> None:
+        try:
+            for name in os.listdir(os.path.join(self.cfg.run, "steer")):
+                os.unlink(os.path.join(self.cfg.run, "steer", name))
+        except OSError:
+            pass
+
+    def _leave_for_step(self, sid: str) -> None:
+        """Put the words waiting for a busy session where its hook (hooks/stop.sh) finds them
+        after the step it is on: Claude reads them then, within the same reply, instead of at
+        its end (the author, 2026-11-21, on correcting a session while it works: "instead of
+        queuing audios, I'm putting more info into the request"). They stay in followups until
+        the hook has taken them, so the cancel key can still take them back. Call with the lock
+        held."""
+        self._sync_steer(sid)
+        texts = [t for t in self.followups.get(sid, []) if t != TAKE_BACK]
+        if not texts or self.cfg.followup_when != "step":
+            return
+        path = self._steer_file(sid)
+        try:
+            os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+            with os.fdopen(os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+                f.write(STEER.format(text=" ".join(texts)))
+            os.replace(path + ".tmp", path)
+        except OSError as e:
+            log(self.cfg, "hub.log", f"could not leave words for [{sid[:8]}]'s next step: {e}")
+            return
+        self._steering[sid] = texts
+
+    def _sync_steer(self, sid: str) -> bool:
+        """Take back the words left for a session's next step, if its hook has not taken them.
+        True: they were still there (the file is gone now, the words stay in followups). False:
+        the session has them, so they leave followups. Call with the lock held."""
+        given = self._steering.pop(sid, None)
+        if not given:
+            return True
+        path = self._steer_file(sid)
+        claimed = os.path.join(os.path.dirname(path), f".{sid}.hub")  # the hook takes it the same way
+        try:
+            os.rename(path, claimed)
+            os.unlink(claimed)
+            return True
+        except OSError:
+            pass
+        waiting = self.followups.get(sid, [])
+        for text in given:
+            if text in waiting:
+                waiting.remove(text)
+        if not waiting:
+            self.followups.pop(sid, None)
+            self._waiting.discard(sid)
+        self._keep_followups()
+        log(self.cfg, "hub.log", f"follow-up [{sid[:8]}] read by the session after a step")
+        return False
+
+    def _steered(self, sid: str) -> None:
+        """A step of a session that had words left for it: if its hook took them, show it."""
+        if sid in self._steering and not os.path.exists(self._steer_file(sid)):
+            given = " ".join(self._steering.get(sid, []))
+            if not self._sync_steer(sid):
+                s = self.sessions.by_id.get(sid)
+                if s and not (self._talking or self._transcribing or self._pending):
+                    self._talk("sent", s, given, seconds=2.5, quiet=True)
 
     def _unsendable(self) -> Sent | None:
         """The follow-up the cancel key would take back right now, if any: one still waiting in
@@ -586,6 +656,7 @@ class Talk:
         s = self.sessions.by_id.get(sent.session) if sent else None
         if not s:
             return False
+        self._sync_steer(s.id)  # left for its next step: back in the hub's hands, or already read
         waiting = self.followups.get(s.id, [])
         after = f"{time.monotonic() - sent.at:.1f} s after it went out"  # the log's own times are whole seconds
         if not sent.answer and sent.text in waiting:
@@ -594,6 +665,7 @@ class Talk:
                 self.followups.pop(s.id, None)
                 self._waiting.discard(s.id)
             self._keep_followups()
+            self._leave_for_step(s.id)  # what else was waiting goes back for its next step
             self._talk("failed", s, "Taken back", seconds=2)
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, before the session got it")
         elif interrupts(self.cfg) and self._stop_turn(s):
@@ -820,6 +892,7 @@ class Talk:
             if listener.released or self.listeners.get(listener.session) is not listener:
                 return None
             del self.listeners[listener.session]
+            self._sync_steer(listener.session)  # read after a step already: not again
             text = " ".join(self.followups.pop(listener.session, [])) or None
             self._keep_followups()
             waited = listener.session in self._waiting

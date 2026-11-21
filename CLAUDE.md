@@ -74,7 +74,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 | Stop | `hooks/speak.sh` | Tells the hub the turn ended; the hub speaks the line only if streaming missed it |
 | Notification (`permission_prompt`, `elicitation_dialog`) | `hooks/notify.sh` | Hub marks the session "needs you" and says "I need your input" |
 | PermissionRequest | `hooks/permission.sh` | Holds a request open on the hub until the prompt is answered. Prints the hub's allow/deny, or nothing if it was answered in the terminal |
-| PreToolUse, PostToolUse | `hooks/stop.sh` | Ends the turn when the hub was asked to stop this session (a file named after it in `$CS_RUN/stop`). About 2.5 ms when nobody asked |
+| PreToolUse, PostToolUse | `hooks/stop.sh` | Ends the turn when the hub was asked to stop this session (a file named after it in `$CS_RUN/stop`). After a step, hands Claude the words spoken to it while it works (`$CS_RUN/steer`). About 2.5 ms when nobody asked |
 | Stop, SessionStart, UserPromptSubmit (`asyncRewake`) | `hooks/listen.sh` | Background listener: waits on the hub for a spoken follow-up for this session, prints it for Claude and exits 2, which wakes the session |
 | SessionStart, SessionEnd, UserPromptSubmit, PreToolUse, PostToolUse(Failure), TaskCreated, TaskCompleted, StopFailure | `hooks/report.sh` (async) | Forwards the payload so the hub knows what each session is doing. `--start` also starts the hub |
 

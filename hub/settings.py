@@ -83,6 +83,11 @@ SECTIONS = [
         # "If we were to remove it, what do you think?"; time to take words back covers a misheard
         # sentence). "auto" in config.json still works.
         switch("followup_confirm", "Confirm Before Sending", "Your words wait on the light until you tap the talk key again."),
+        # The author, 2026-11-21, after hearing that Claude Code hands a message typed while it works
+        # to Claude after its current step: "instead of queuing audios, I'm putting more info into
+        # the request ... Yes".
+        choice("followup_when", "A Busy Session Hears You", "While it works, Claude reads your words after the step it is on, as a message typed in its terminal, or only when its reply is done.",
+               ("step", "At Its Next Step"), ("end", "When It Finishes")),
         # "Time to Cancel Before Sending" (followup_delay, 0 to 5 s) left the window on 2026-11-21,
         # the author: "if it's unsure ... they could just toggle the confirmation before sending";
         # confirming and taking words back cover it. It is still read from config.json.

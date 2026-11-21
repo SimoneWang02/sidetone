@@ -364,7 +364,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   alone" unclear and then taking it out, `"auto"` still read from config.json) and "Time to cancel before sending" (0 to 5 s; out of the window on 2026-11-21, the author:
   "if it's unsure ... they could just toggle the confirmation before sending"). The hub hands it to that session's listener, shows "sent → name: text" for 2.5 s and
   plays a short sound (see the next point). Target: the session that spoke last; a quick tap of the talk key picks the next one.
-  A busy session gets the follow-up right after its current reply. With no listener yet, the
+  A busy session gets the follow-up right after its current reply. Since 2026-11-21 it gets it
+  after the step it is on (`followup_when`, "step"; "A Busy Session Hears You" under Talking):
+  the hub leaves the words in `$CS_RUN/steer/<session>` (`_leave_for_step`, worded as `STEER`),
+  and `hooks/stop.sh` at the next PostToolUse takes the file by renaming it and gives it to
+  Claude as `additionalContext`, which Claude reads within the same turn (tried with a haiku
+  session and a hook of its own: told mid-turn to end with a word, it did). The words stay in
+  followups until taken, so the cancel key can still take them back (`_sync_steer` claims the
+  file back the same way, by renaming); the hub learns they were taken from report.sh's copy of
+  the step (`_steered`) or at the end of the reply, and a reply with no further step gets them
+  at its end as before. Why: Claude Code itself passes a message typed while it works "as soon
+  as those tool calls finish, within the same turn" (its docs, found by a research agent the
+  same day), while spoken words waited for the whole reply; the author: "instead of queuing
+  audios, I'm putting more info into the request". The research also found accidental
+  interrupts a top complaint, so this steers without interrupting. With no listener yet, the
   text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
 - The cancel key stops a turn (2026-11-17, `Hub._stop_turn`, `hooks/stop.sh`, `cancel_stops`).
   The author, having learned that taking words back from a session that already has them

@@ -2762,6 +2762,56 @@ class ThroughTheHooks(HubCase):
     def test_socket_is_private(self):
         self.assertEqual(os.stat(self.cfg.sock).st_mode & 0o077, 0)
 
+    def test_words_for_a_busy_session_are_read_after_its_next_step(self):
+        hub = self.hub
+        hub.on_event(ev("UserPromptSubmit", prompt="go"))  # s1 is working
+        step = ev("PostToolUse", tool_name="Edit", tool_input={"file_path": "a.py"})
+        self.assertEqual(self.hook("stop.sh", step).stdout, "")  # nothing for it
+        with hub.lock:
+            self.assertFalse(hub._deliver(hub.sessions.by_id["s1"], "use tabs, not spaces"))
+        self.assertEqual(self.hook("stop.sh", ev("PostToolUse", sid="s2")).stdout, "", "not another session's")
+        self.assertEqual(self.hook("stop.sh", ev("PreToolUse")).stdout, "", "not before a step")
+        told = json.loads(self.hook("stop.sh", step).stdout)["hookSpecificOutput"]
+        self.assertEqual(told["hookEventName"], "PostToolUse")
+        self.assertIn('"use tabs, not spaces"', told["additionalContext"])
+        self.assertEqual(self.hook("stop.sh", step).stdout, "")  # once
+        hub.on_event(step)  # report.sh's copy of the step: the hub sees they were taken
+        self.assertEqual(hub.followups, {})
+        self.assertNotIn("s1", hub._waiting)  # the mark for waiting words leaves its light
+        listener = hub.listen("s1")
+        hub.on_event(ev("Stop"))
+        self.assertIsNone(hub.collect(listener))  # not again at the end of the reply
+
+    def test_words_left_for_a_step_can_still_be_taken_back(self):
+        hub = self.hub
+        hub.on_event(ev("UserPromptSubmit", prompt="go"))
+        with hub.lock:
+            s = hub.sessions.by_id["s1"]
+            hub._deliver(s, "first")
+            hub._deliver(s, "use tabs")
+            hub._sent = base.Sent("s1", "use tabs", time.monotonic())
+            self.assertTrue(hub._take_back())
+        self.assertEqual(hub.followups, {"s1": ["first"]})
+        told = json.loads(self.hook("stop.sh", ev("PostToolUse")).stdout)["hookSpecificOutput"]["additionalContext"]
+        self.assertIn('"first"', told)
+        self.assertNotIn("use tabs", told)
+
+    def test_words_wait_for_the_end_of_the_reply_when_chosen_or_with_no_step(self):
+        hub = self.hub
+        hub.cfg.followup_when = "end"
+        hub.on_event(ev("UserPromptSubmit", prompt="go"))
+        with hub.lock:
+            hub._deliver(hub.sessions.by_id["s1"], "use tabs")
+        self.assertEqual(self.hook("stop.sh", ev("PostToolUse")).stdout, "")
+        hub.cfg.followup_when = "step"
+        with hub.lock:
+            hub._deliver(hub.sessions.by_id["s1"], "and four of them")
+        listener = hub.listen("s1")
+        hub.on_event(ev("Stop"))  # the reply ended before another step
+        hub.reconcile()
+        self.assertEqual(hub.collect(listener), "use tabs and four of them")
+        self.assertEqual(self.hook("stop.sh", ev("PostToolUse")).stdout, "")  # taken back for the listener
+
     def test_stop_hook_ends_the_turn_of_the_session_that_was_asked_to_stop(self):
         hub = self.hub
         hub.on_event(ev("UserPromptSubmit", prompt="go"))

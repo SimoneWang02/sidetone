@@ -79,6 +79,11 @@ class Hub(Permissions, Talk):
         # Sessions whose words could not be handed over yet (busy, or no listener): their light
         # carries a mark until they are.
         self._waiting: set[str] = set(self.followups)
+        # session id -> the words of followups left in $CS_RUN/steer for its next step (see
+        # `_leave_for_step`); a hub before this one may have left some there, which it is taking
+        # over in followups, so they go.
+        self._steering: dict[str, list[str]] = {}
+        self._clear_steer()
         self._stopping: dict[str, Stopping] = {}  # sessions asked to end their turn, until they have
         self._clear_stops()  # what a hub before this one asked for is not wanted any more
         self.talk_target: str | None = None  # session a spoken follow-up goes to
@@ -118,6 +123,9 @@ class Hub(Permissions, Talk):
             with self.lock:
                 s = self.sessions.by_id.get(ev["session_id"])
                 began = s.turn_started if s else None
+            if ev.get("hook_event_name") in ("PreToolUse", "PostToolUse") and ev["session_id"] in self._steering:
+                with self.lock:
+                    self._steered(ev["session_id"])
             self._apply(ev)
             if began and ev.get("hook_event_name") in ("Stop", "StopFailure"):
                 with self.lock:
@@ -303,6 +311,7 @@ class Hub(Permissions, Talk):
     def _forget(self, sid: str, why: str) -> None:
         self._settle(sid, why)
         self._release(sid)
+        self._sync_steer(sid)
         self.followups.pop(sid, None)
         self._waiting.discard(sid)
         self._unstop(sid)

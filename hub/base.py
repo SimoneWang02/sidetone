@@ -67,6 +67,9 @@ class Sent:
 
 # What a session is told when words it already has are taken back. It reaches Claude through
 # the listener like spoken words, so it is written as the user would say it.
+# How words left for a session's next step are put to it (hooks/stop.sh hands this over).
+STEER = ("The user said this by voice while you were working (push-to-talk, transcribed by a local speech model, "
+         "so a word may be slightly off): \"{text}\" Take it into account from your next step on.")
 TAKE_BACK = ("Ignore the last thing I said by voice: it was misheard or sent by mistake, and I took it back. "
              "Stop acting on it. If you already changed something because of it, tell me what in one line, "
              "and do not undo it unless I ask.")
@@ -345,6 +348,12 @@ class Config:
     # extension, Escape is typed into that terminal, which ends the turn in the same moment.
     # False: only by the hook, at the session's next step (which is also what happens anywhere else).
     stop_at_once: bool = True
+    # Words spoken to a session that is busy working: "step" = left where its PostToolUse hook
+    # (hooks/stop.sh) finds them, so Claude reads them after the step it is on and goes on with
+    # them in mind, as Claude Code does with a message typed while it works | "end" = they wait
+    # for the end of its reply (all there was before 2026-11-21). Either way, a reply with no
+    # further step gets them at its end.
+    followup_when: str = "step"
     # Words spoken to a session that waits at a permission prompt: "details" = they are neither
     # a yes nor a no but more to go on: the request is turned down for now, the turn is ended
     # and the words are the session's next message, so it goes on from them (the terminal's
@@ -428,7 +437,7 @@ class Config:
         except FileNotFoundError:
             user = {}
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "whisper_language", "whisper_lean", "push_to_mute", "push_to_mute_key", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
