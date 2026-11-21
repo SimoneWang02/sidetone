@@ -87,7 +87,11 @@ these come before anything new.
       author, after swapping Heart and Bella: keep it simple); the order is for new projects. The voices best first, on a new
       install and in the author's own lists ("set my voices ... first the best one"): English
       by Kokoro's grade (the women first, as they are graded higher), Italian Sara, Nicola,
-      then Paola, Chinese the four clearest measured instead of the four picked by ear. **Next: Talking**, then Overlay,
+      then Paola, Chinese the four clearest measured instead of the four picked by ear. Tried by
+      the author by hand the same afternoon: dragging, unticking and ticking again, the language
+      switches (Italian off, then Italian spoken came out as English, as it should), the gap
+      under an open language ("That's perfect"). **Voices is done**; still to notice: the wave
+      beside a speaking session after the meter change. **Next: Talking**, then Overlay,
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
