@@ -53,7 +53,7 @@ class Talk:
                 self._cancel_pending()
                 self._talk("listening", s)
         self.speech.pause()
-        self._mute_others(True)  # first, so the call hears none of the first word
+        self._push_to_mute(True)  # first, so the call hears none of the first word
         self.recorder.start()
         if self.transcriber:  # load the model while the user is still speaking
             threading.Thread(target=self.transcriber.load, daemon=True).start()
@@ -84,7 +84,7 @@ class Talk:
             self._transcribing, self._heard = False, None
             raise
         finally:
-            self._mute_others(False)
+            self._push_to_mute(False)
         # A line cut by the key is said again, unless you held the key to answer that very session.
         self.speech.resume(answering=said_to.id if said_to else "")
         if tap and confirming:
@@ -782,7 +782,7 @@ class Talk:
                     log(self.cfg, "hub.log", f"stop [{s.id[:8]}] asked for with the cancel key")
         if talking:
             self.recorder.stop()
-            self._mute_others(False)
+            self._push_to_mute(False)
             self.speech.resume()
         elif not (had_pending or took_back or hearing or stopped or dropped):
             self.speech.skip()
@@ -955,13 +955,12 @@ class Talk:
             self.overlay.send({"type": "talk", "state": state, "name": s.name if s else "", "text": text,
                                "hint": hint, "seconds": seconds, **({"quiet": True} if quiet else {})} if state else {"type": "talk"})
 
-    def _mute_others(self, on: bool) -> None:
-        """Mute the microphone streams of the programs in `mute_others_apps` (Discord) while you
-        talk, and give them back. The overlay does it, as it runs on Windows; it unmutes only
-        what it muted, and everything still muted when it ends."""
-        apps = list(self.cfg.mute_others_apps) if on and self.cfg.mute_others else []
-        if self.overlay and (apps or not on):
-            self.overlay.send({"type": "mute_apps", "apps": apps})
+    def _push_to_mute(self, on: bool) -> None:
+        """Hold `push_to_mute_key` down while you talk, and let it go: Discord's Push to Mute,
+        bound to that key, keeps the call from hearing you. The overlay presses it, on Windows."""
+        key = self.cfg.push_to_mute_key if on and self.cfg.push_to_mute else ""
+        if self.overlay and (key or not on):
+            self.overlay.send({"type": "hold_key", "key": key})
 
     def _mic_heard(self, chunk: bytes) -> None:
         """A moment of the microphone while the talk key is held: the overlay shows it as a wave."""

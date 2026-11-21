@@ -84,8 +84,8 @@ SECTIONS = [
         switch("clear_by_voice", "Clear the Chat by Voice", "Say \"clear the chat\" and the editor types /clear for a session at its prompt."),
         switch("focus_on_prompt", "Typing Takes the Focus", "A session you type to is the one your next spoken words go to."),
         switch("whisper_lean", "Short Words in Your Last Language", "When it is unsure which of your languages a few words are in, it keeps to the one you last spoke."),
-        switch("mute_others", "Mute Other Apps While Talking",
-               "Discord does not hear what you say to a session. More apps in config.json, mute_others_apps."),
+        switch("push_to_mute", "Mute Discord While Talking",
+               "Holds F24 down while you talk. In Discord's Keybinds, give Push to Mute that key: sidetone discord-key presses it for you."),
         number("talk_tail", "Listen On After Release", "Keeps the end of your last word from being cut off.", 0, 1, 0.1, "s"),
     ]),
     ("Overlay", [

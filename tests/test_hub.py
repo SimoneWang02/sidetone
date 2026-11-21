@@ -1067,21 +1067,21 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.collect(listener), "also add a test")
         self.assertEqual(self.spoken(), ["A is done.", "Sent."])
 
-    def test_other_programs_microphones_are_muted_while_you_talk(self):
+    def test_a_push_to_mute_key_is_held_while_you_talk(self):
         hub = self.make()
         hub.talk_start()
-        self.assertEqual(self.overlay.of("mute_apps"), [{"type": "mute_apps", "apps": ["Discord", "DiscordPTB", "DiscordCanary"]}])
+        self.assertEqual(self.overlay.of("hold_key"), [{"type": "hold_key", "key": "F24"}])
         hub.talk_end()
-        self.assertEqual(self.overlay.of("mute_apps")[-1], {"type": "mute_apps", "apps": []})
+        self.assertEqual(self.overlay.of("hold_key")[-1], {"type": "hold_key", "key": ""})
         hub.talk_start()
-        hub.cancel()  # a recording dropped gives them back too
-        self.assertEqual(self.overlay.of("mute_apps")[-1], {"type": "mute_apps", "apps": []})
+        hub.cancel()  # a recording dropped lets it go too
+        self.assertEqual(self.overlay.of("hold_key")[-1], {"type": "hold_key", "key": ""})
 
-    def test_muting_other_programs_can_be_turned_off(self):
-        hub = self.make(mute_others=False)
+    def test_the_push_to_mute_key_can_be_turned_off(self):
+        hub = self.make(push_to_mute=False)
         hub.talk_start()
         hub.talk_end()
-        self.assertEqual(self.overlay.of("mute_apps"), [{"type": "mute_apps", "apps": []}])
+        self.assertEqual(self.overlay.of("hold_key"), [{"type": "hold_key", "key": ""}])
 
     def test_a_line_cut_by_the_talk_key_is_said_again_unless_you_were_answering_it(self):
         hub = self.make(duration=0.3, focus_reach_back=0)  # the key is pressed 50 ms into a line here, and means that line

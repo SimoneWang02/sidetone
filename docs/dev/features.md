@@ -682,23 +682,24 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the bar. Holding the same keys for 0.2 s also brings the panel out while they are held (the
   author: "ctrl+alt should open the details"), except during push-to-talk, which shows in its
   bubble. AltGr (right Alt, which Windows reports as Ctrl+Alt) is ignored for both.
-- Other programs' microphones muted while you talk (2026-11-20, `mute_others`, true;
-  `mute_others_apps`, `["Discord", "DiscordPTB", "DiscordCanary"]`; `Talk._mute_others`,
-  `AppMute` in `Overlay.cs`). The author, by voice: "is it possible that when talking I don't
-  speak to Discord?", then "yes and make it a setting". Windows keeps one stream per program
-  on each microphone (an audio session, `IAudioSessionManager2` on every active capture
-  endpoint), each with a mute of its own (`ISimpleAudioVolume`), apart from the device's mute
-  and the program's own mute button, which does not change. The hub sends `mute_apps` with
-  the names just before the recorder starts, and an empty list once the recording ends (after
-  `talk_tail`) or is dropped with the cancel key; the overlay mutes the matching streams that
-  were not muted already, gives back only those, and gives them back when it exits. WSL's own
-  recording is a stream of `msrdc` (WSLg), so it keeps hearing. Measured on the author's
-  machine with Discord running: its stream was there (pid of `Discord`, active), and muting
-  and unmuting it was accepted (`GetMute` read back 1, then 0). A game with voice chat has a
-  stream too (`deadlock` was one), which can go in the list. Whether the call really hears
-  silence: not heard yet. A program that opens its microphone during a hold is not muted.
-  Discord's own "Push to Mute" on the same key does not work for this: the overlay keeps
-  the talk key from other programs while it is held.
+- Discord muted while you talk (2026-11-20, `push_to_mute`, true; `push_to_mute_key`, `F24`;
+  `Talk._push_to_mute`, `HoldKey` in `Overlay.cs`, `sidetone discord-key`). The author, by
+  voice: "is it possible that when talking I don't speak to Discord?", then "yes and make it a
+  setting". The hub sends `hold_key` with the key just before the recorder starts and `""`
+  once the recording ends (after `talk_tail`) or is dropped; the overlay presses the key down
+  (`keybd_event`, marked as its own so its hook lets it through) and lets it go, and lets it
+  go when it exits. In Discord's Keybinds, Push to Mute is given that key: Discord itself
+  mutes you while it is held (Push to Mute works in Voice Activity mode; with Push to Talk
+  Discord sends nothing anyway). F24 because no keyboard has it, so nothing else reacts;
+  `sidetone discord-key` presses it after 3 s so Discord's keybind recorder can take it.
+  Tried first and dropped the same night: muting Discord's own microphone stream in Windows
+  (`IAudioSessionManager2` on the capture endpoints, `ISimpleAudioVolume.SetMute`). Windows
+  accepts it (`GetMute` reads 1) but does not apply it to a capture stream: the author still
+  saw Discord's green ring, and WSL's own stream (`msrdc`) muted the same way still recorded
+  the room unchanged. Discord's Push to Mute on the talk key itself does not work either:
+  the overlay keeps the talk key's press from other programs ("it's still green" with
+  Ctrl+Alt+Space bound in Discord). Discord sees F24 alone: the overlay already sends Ctrl and
+  Alt up during a hold (`MaskKeys`). Whether Discord takes an injected key: not seen yet.
 - The talk key reaches back (2026-11-17, `focus_reach_back`, 1 s): a session that starts to
   speak takes the focus, also in the split second before the talk key goes down, and the
   words then went to it instead of the session the author meant (three times that day; the
@@ -1190,7 +1191,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`always`/`never`, `never` by default; `auto`, said only with several sessions and no overlay, dropped 2026-11-20: "make it two choices ... I want to reduce [friction]"), `titles` (`ask`/`auto`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `mute_others`, `mute_others_apps`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `SIDETONE_OVERLAY=off` disables the overlay.
 - `~/.local/state/sidetone/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).

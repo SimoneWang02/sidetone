@@ -102,6 +102,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._reply({"ok": hub.talk_start()})
             hub.talk_end() if action == "stop" else hub.cancel()
             self._reply({"ok": True})
+        elif self.path == "/press":  # the push-to-mute key pressed once, for Discord to record (sidetone discord-key)
+            key = str(body.get("key") or hub.cfg.push_to_mute_key)
+            if not hub.overlay:
+                return self._reply({"pressed": False})
+            hub.overlay.send({"type": "hold_key", "key": key})
+            threading.Timer(0.3, hub.overlay.send, args=({"type": "hold_key", "key": ""},)).start()
+            self._reply({"pressed": True, "key": key})
         elif self.path == "/sound":  # to hear what a sound is like
             self._reply({"played": bool(hub.sounds and hub.sounds.play(str(body.get("name", ""))))})
         elif self.path == "/answer":
