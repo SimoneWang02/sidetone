@@ -278,7 +278,9 @@ def set_in_use(hub, lang: str, voices: list) -> str | None:
 def preview(hub, voice: str) -> None:
     """A voice says a sentence in its language, and nothing is changed (the ▶ in the window)."""
     if voice and hasattr(hub.speech.engine, "has") and hub.speech.engine.has(voice):
-        hub.say(SAMPLES.get(voice_language(voice), SAMPLES["en"]), voice=voice)
+        hub.speech.drop_src("preview")  # pressed again, or another one: the last press is heard
+        hub.speech.put(tts.Utterance(text=SAMPLES.get(voice_language(voice), SAMPLES["en"]), voice=voice,
+                                     kind="notice", src="preview"))
 
 
 # At most this many voices for a language in the window (the author, 2026-11-21: "for each

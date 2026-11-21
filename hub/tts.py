@@ -93,8 +93,9 @@ class KokoroEngine:
     # buffer, and a little silence before and after, so WSL's link to Windows' speakers is awake
     # when the voice starts and does not close on its last syllable. With a 50 ms buffer and no
     # silence the author heard scratches at the start of a line through AirPods (2026-11-21); the
-    # same line with a larger buffer was clean ("only the first one has scratches").
-    LATENCY_MS = 150
+    # same line with a larger buffer was clean ("only the first one has scratches"). 150 ms, as
+    # the sounds have, still left "a bit of scratches"; 300 ms.
+    LATENCY_MS = 300
     LEAD = b"\0" * int(RATE * 0.1) * 2
     TAIL = b"\0" * int(RATE * 0.3) * 2
 
@@ -507,6 +508,14 @@ class SpeechQueue:
                     q.created += quiet
             self._paused = False
             self._cond.notify_all()
+
+    def drop_src(self, src: str) -> None:
+        """Forget the lines from one place (`src`), the one being spoken too: a preview pressed
+        again starts over instead of waiting behind the first (the author, 2026-11-21)."""
+        with self._cond:
+            self.queued = [q for q in self.queued if q.src != src]
+            if self.current and self.current.src == src:
+                self._stop()
 
     def skip(self) -> None:
         """Cut the line being spoken; queued lines follow as usual."""

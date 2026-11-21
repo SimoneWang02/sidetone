@@ -481,5 +481,6 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
 - Scratches at the start of spoken lines through AirPods (2026-11-21): the voice was played with a
   50 ms buffer and no silence around it. The same line played with 50 ms, then with paplay's
   own buffer: "only the first one has scratches". Speech now plays as the short sounds do
-  (`KokoroEngine.LATENCY_MS` 150, `LEAD` 0.1 s, `TAIL` 0.3 s of silence; see `sounds.py`).
+  (`KokoroEngine.LATENCY_MS`, `LEAD` 0.1 s, `TAIL` 0.3 s of silence; see `sounds.py`). 150 ms
+  still left "a bit of scratches"; now 300 ms.
   Not caused by a busy processor: still heard with the other jobs paused.

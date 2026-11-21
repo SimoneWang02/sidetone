@@ -1262,3 +1262,5 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   talking"), after the author did not follow "the next ticked voice ... a project keeps its
   English one from day to day". A closed language says how many voices are ticked ("8
   voices"), not their names, and nothing while open (the names: "I don't like it much").
+  A ▶ pressed again, or another ▶, cuts the preview playing and plays the new one
+  (`SpeechQueue.drop_src("preview")`); they queued up before ("I hear the preview twice").

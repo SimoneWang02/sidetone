@@ -293,9 +293,15 @@ class Chosen(SettingsCase):
         self.engine.has = lambda voice: True  # an engine with voices to choose from
         before = list(hub.cfg.voice_pool)
         self.assertIsNone(hub.set_setting("play", "bm_fable"))
+        self.assertTrue(hub.speech.wait_idle(5))
         self.assertIsNone(hub.set_setting("play", "if_sara"))
         self.assertTrue(hub.speech.wait_idle(5))
         self.assertEqual(self.engine.spoken, [("Hello, this is how I sound.", "bm_fable"), ("Ciao, questa \u00e8 la mia voce.", "if_sara")])
+        hub.speech.pause()  # held, so the presses wait: a second one takes the place of the first
+        hub.set_setting("play", "bm_fable")
+        hub.set_setting("play", "if_sara")
+        self.assertEqual([u.voice for u in hub.speech.waiting()], ["if_sara"])
+        hub.speech.resume()
         self.assertEqual(hub.cfg.voice_pool, before)
         self.assertFalse(os.path.exists(self.cfg.config_path))
 
