@@ -251,7 +251,7 @@ case ${1:-} in
         dir=$(mktemp -d) || exit 1
         python3 "$CS_ROOT/vscode/pack.py" "$dir/sidetone.vsix" >/dev/null && code --install-extension "$dir/sidetone.vsix" --force
         status=$?; rm -rf "$dir"
-        [ $status -eq 0 ] && echo "Go to another terminal in VS Code: the session running there gets the focus. The cancel key now stops a session at once, and "clear the chat" said to an idle session types /clear. If this was an update, restart VS Code's extensions once (Ctrl+Shift+P, Restart Extension Host)." || exit $status ;;
+        [ $status -eq 0 ] && echo "Go to another terminal in VS Code: the session running there gets the focus. The cancel key now stops a session at once, and \"clear the chat\" said to an idle session types /clear. If this was an update, restart VS Code's extensions once (Ctrl+Shift+P, Restart Extension Host)." || exit $status ;;
       uninstall) code --uninstall-extension sidetone.sidetone ;;
       *) usage; exit 2 ;;
     esac
