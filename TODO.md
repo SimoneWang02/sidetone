@@ -108,24 +108,7 @@ these come before anything new.
 
 Questions for the author; nothing to build until they answer.
 
-From the bug pass of 2026-11-21 (found by reading; none seen to happen yet):
-
-- [ ] A Kokoro model that fails to load ends the speech thread when the hub starts, and the hooks
-      do not fall back to the system voice because the hub is up. What should happen: the hub
-      switching to Piper or espeak, or saying so and exiting?
-- [ ] Settings are not type-checked: a hand-edited value of the wrong type (`"context_warn": "80%"`)
-      makes every overlay update fail, and a `config.json` that is not valid JSON stops the hub
-      starting. Check each value against its default's type and fall back to the default, with a
-      line in `hub.log`?
-- [ ] One exception ends the overlay's refresh loop (`keep_current` in `hub.py`) or its message
-      reader (`Overlay._read`) for the rest of the hub's life. Catch, log and keep going?
-- [ ] Many `Config` fields have no line in `settings.SECTIONS` (`talk_feedback`, `aside_model`,
-      `max_age` and others). Deliberate, or should they get one?
-
-Small, to mend without asking: `Recorder.stop` never waits for `parec` (a finished one can stay in
-the process list and look like a recording to `pgrep -x parec`); `claude_sessions.read` throws if
-`statusUpdatedAt` is not a number; `install.sh` breaks on a checkout path with `&` or `|`;
-`sidetone say -v` and `follow-up -s` with nothing after the flag stop with "unbound variable".
+Nothing open.
 
 ## 3. Speech in the author's languages
 
@@ -917,6 +900,14 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Rough edges mended
 
+- [x] A bug pass, 2026-11-21 (an agent read the code, then the author chose what to do with what
+      it found). A sentence Kokoro cannot say no longer ends all speech; a `config.json` that is
+      not JSON is no longer written over, and gives the defaults at start; a value of the wrong
+      kind gives its default; a voice that fails to load gives way to a system voice;
+      one error no longer ends the overlay's update loop or its message reader; `install.sh`
+      no longer doubles hooks written as `$HOME/...` and takes a path with `&` or `|`; `parec`
+      is waited for when push-to-talk stops; `sidetone say -v` and `follow-up -s` with nothing
+      after them print the usage. Not yet heard or seen by the author in use.
 - [x] A hub restart still forgets a few things. Names, colors, voices, titles, the order in
       the bar and the focus are kept since 2026-11-17 (`sessions.json`), and since later
       that day the last 40 lines the sessions said (the author pressed repeat after a

@@ -82,7 +82,8 @@ mkdir -p "$(dirname "$SETTINGS")"
 [ -s "$SETTINGS" ] || echo '{}' > "$SETTINGS"
 backup=$SETTINGS.bak-sidetone-$(date +%Y%m%d-%H%M%S)
 cp -p "$SETTINGS" "$backup"
-sed "s|\$HOME/personal/sidetone|$ROOT|g" "$ROOT/hooks/settings-snippet.json" |
+jq --arg root "$ROOT" 'walk(if type == "string" then split("$HOME/personal/sidetone") | join($root) else . end)' \
+  "$ROOT/hooks/settings-snippet.json" |  # not sed: a path with & or | in it stays as it is
   jq --arg ours "$ROOT/hooks/" --arg home_form "\$HOME${ROOT#"$HOME"}/hooks/" --slurpfile current "$backup" '
     .hooks as $new
     | ($current[0].hooks // {}) as $old

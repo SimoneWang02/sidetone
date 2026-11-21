@@ -80,6 +80,13 @@ class Recorder:
         proc.terminate()
         if self._reader:
             self._reader.join(2)
+        try:  # reaped, so a finished parec does not stay in the process list looking like a recording
+            proc.wait(2)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+        if proc.stdout:
+            proc.stdout.close()
         return b"".join(self._chunks)
 
 

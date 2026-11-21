@@ -81,7 +81,7 @@ case ${1:-} in
     ;;
   say)
     shift; voice=
-    [ "${1:-}" = -v ] && { voice=$2; shift 2; }
+    [ "${1:-}" = -v ] && { [ $# -ge 2 ] || { usage; exit 2; }; voice=$2; shift 2; }
     [ $# -gt 0 ] || { usage; exit 2; }
     hub_get /health >/dev/null 2>&1 || { hub_start && hub_wait || exit 1; }
     # Run by a Claude Code session, the line is that session's: its voice, its bubble and wave.
@@ -128,7 +128,7 @@ case ${1:-} in
     ;;
   follow-up)
     shift; project=
-    [ "${1:-}" = -s ] && { project=$2; shift 2; }
+    [ "${1:-}" = -s ] && { [ $# -ge 2 ] || { usage; exit 2; }; project=$2; shift 2; }
     [ $# -gt 0 ] || { usage; exit 2; }
     queued=$(jq -nc --arg t "$*" --arg p "$project" '{text: $t} + (if $p == "" then {} else {session: $p} end)' |
       hub_post /follow-up | jq -r .queued)

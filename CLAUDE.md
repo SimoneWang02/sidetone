@@ -41,6 +41,9 @@ the author's asking, and the rest was moved unchanged:
 - New looks and behaviours come as settings with sensible defaults, not replacements: people who
   download it should be able to customize as much as possible. A new setting gets a line in
   `settings.SECTIONS` so the settings window has it (a test checks it is a real setting).
+  Left out, and only in `config.json`: paths and the hub's own internals, values another command
+  sets (`whisper_model` from `sidetone languages`), and lines the author took out of the window
+  (a comment in `SECTIONS` says when and why). Agreed 2026-11-21.
 - Default hotkeys must not clash with popular programs' own keys; a key another program holds is
   shared through the keyboard hook (`share_taken_keys`).
 - The hooks and the hub change together (a hub from before a tag change may not speak the line).
