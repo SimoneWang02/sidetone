@@ -541,7 +541,7 @@ class FakeHub:
                   "bm_daniel bm_fable bm_george bm_lewis if_sara im_nicola zf_xiaobei zf_xiaoni zm_yunjian").split()
         return {"choosable": True, "builtin": kokoro, "custom": ["my_mix"], "pool": list(state.VOICE_POOL),
                 "piper": ["piper:en_US-lessac-medium", "piper:it_IT-paola-medium"],
-                "zh": [f"zh:z{k}_{n:03d}" for k, n in (("f", 1), ("f", 2), ("f", 3), ("m", 9), ("m", 10), ("m", 11))],
+                "zh": [f"zh:z{k}_{n:03d}" for k, n in (("f", 49), ("f", 6), ("m", 56), ("m", 57), ("f", 1), ("m", 9))],
                 "projects": {"sidetone": "af_heart", "api-server": "bm_fable", "web-app": "af_bella"}}
 
     def _voice_for(self, s, lang):  # what the hub would give: the first of the language's voices

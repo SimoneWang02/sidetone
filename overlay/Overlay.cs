@@ -1835,6 +1835,9 @@ namespace ClaudeSpeaks
             var tip = new ToolTip { Content = new TextBlock { Text = meaning, TextWrapping = TextWrapping.Wrap, MaxWidth = 280 } };
             var pill = new Border { CornerRadius = new CornerRadius(5), Padding = new Thickness(6, 1, 5, 2), Margin = new Thickness(8, 0, 0, 0), Background = Ui.Paint("#1AFFFFFF"), Child = inside, Cursor = Cursors.Help, ToolTip = tip, VerticalAlignment = VerticalAlignment.Center };
             ToolTipService.SetInitialShowDelay(pill, 150);
+            // Down a pixel: centered, its word sat 1 px above the description's line (measured in a
+            // picture; the author, 2026-11-21: "the text is not very centered with the rest").
+            pill.RenderTransform = new TranslateTransform(0, 1);
             return pill;
         }
 
