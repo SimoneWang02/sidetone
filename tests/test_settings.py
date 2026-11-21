@@ -100,7 +100,7 @@ class Offered(SettingsCase):
         self.assertFalse([i for i in voices if i["key"].startswith("voice_of.")])  # no part for each project
         self.assertEqual([i["name"] for i in voices if i["kind"] == "heading"], ["English"])
         english = [(i["voice"], i["value"], i["more"], i["help"]) for i in voices if i["kind"] == "voice"]
-        self.assertEqual(english, [("bm_fable", True, False, "British man, Fair"), ("af_heart", True, False, "American woman, Excellent"),
+        self.assertEqual(english, [("bm_fable", True, False, "British man, Okay"), ("af_heart", True, False, "American woman, Excellent"),
                                    ("mine", False, True, "Your own voice")])  # Spanish is not offered
         hub.voices = lambda: {"choosable": False, "builtin": [], "custom": [], "pool": [], "projects": {}}
         self.assertNotIn("Voices", [s["name"] for s in settings.describe(hub)])  # an engine with one voice: nothing to choose

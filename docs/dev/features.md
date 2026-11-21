@@ -1235,9 +1235,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   quality A", first written "grade A"; the author: "quality is much more intuitive"). Then one
   word for every language (`quality`, `QUALITY_WORDS`; the author: "in English, I see quality A,
   B, C+ ... in Chinese, I see clarity, X out of Y. Can you make a standard?"): Kokoro's A and A-
-  Excellent, the Bs Good, the Cs Fair (Italian's two voices are graded C too); Chinese by thirds
-  of the measured clarity, Good, Fair, Basic; Piper's Fair, with ", faster". The page's sentence
-  says what the words mean. None is faster: every Kokoro voice is the same model. Projects keep the voices
+  Excellent, the Bs Good, the Cs Okay (Italian's two voices are graded C too); Chinese by thirds
+  of the measured clarity, Good, Okay, Basic; Piper's Okay, with ", faster". The page's sentence
+  says what the words mean. "Fair" was first for Okay; the author: "what is fair though?". None is faster: every Kokoro voice is the same model. Projects keep the voices
   they had.
   Then: "keep some ... that are not so good but are faster ... for each language". Measured on
   this machine (a sentence of about 4 s, the live hub running beside): Piper 0.29 s (Lessac)

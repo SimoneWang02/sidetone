@@ -218,22 +218,22 @@ KOKORO_GRADES = {"af_heart": "A", "af_bella": "A-", "af_nicole": "B-", "bf_emma"
                   "if_sara": "C", "im_nicola": "C"}  # Kokoro's two Italian voices, graded C there too
 # One word for how good a voice is, the same in every language (the author, 2026-11-21: "in
 # English, I see quality A, B, C+ ... in Chinese, I see clarity, X out of Y. Can you make a
-# standard?"). Kokoro's letters: A and A- Excellent, the Bs Good, the Cs Fair. Chinese, from the
-# measured clarity (CHINESE_CLARITY): the first third Good, the second Fair, the last Basic; under
+# standard?"). Kokoro's letters: A and A- Excellent, the Bs Good, the Cs Okay. Chinese, from the
+# measured clarity (CHINESE_CLARITY): the first third Good, the second Okay, the last Basic; under
 # Chinese the word is that measure, not a grade of Kokoro's. Piper's voices are less clear (the
-# author) and have no grade: Fair.
-QUALITY_WORDS = {"A": "Excellent", "B": "Good", "C": "Fair"}
+# author) and have no grade: Okay. "Fair" was first; the author asked "what is fair though?".
+QUALITY_WORDS = {"A": "Excellent", "B": "Good", "C": "Okay"}
 
 
 def quality(voice: str) -> str:
     """How good a voice sounds, in one word, or "" when nothing is known."""
     if voice in KOKORO_GRADES:
-        return QUALITY_WORDS.get(KOKORO_GRADES[voice][0], "Fair")
+        return QUALITY_WORDS.get(KOKORO_GRADES[voice][0], "Okay")
     if voice in CHINESE_CLARITY:
         third = CHINESE_CLARITY.index(voice) * 3 // len(CHINESE_CLARITY)
-        return ("Good", "Fair", "Basic")[third]
+        return ("Good", "Okay", "Basic")[third]
     if voice.startswith("piper:"):
-        return "Fair"
+        return "Okay"
     return ""
 
 
@@ -362,7 +362,7 @@ def _voices(hub) -> list:
     # 2026-11-21: "do they all have the same description beneath the language?").
     found = [{"kind": "intro", "key": "intro.voices", "name": "",
               "help": "Each open session speaks in its own voice, so you know who is talking. A new session gets the "
-                      "first ticked voice not in use. Excellent, Good, Fair and Basic say how clearly each speaks. "
+                      "first ticked voice not in use. Excellent, Good, Okay and Basic say how clearly each speaks. "
                       "Drag the dots to change the order; press play to hear one."}]
     for lang in SUMMARY_LANGUAGES:
         chosen = in_use(hub, lang)
