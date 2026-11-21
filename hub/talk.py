@@ -16,7 +16,7 @@ import usage
 import stt
 import terminal as terminal_mod
 from tts import Utterance
-from base import (interrupts, ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
+from base import (interrupts, ASIDE_ASK, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
                   SAFE_ID, STEER, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
                   session_model, spoken_answer)
 

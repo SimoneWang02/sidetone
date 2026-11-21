@@ -8,34 +8,25 @@ speak. The client side is hooks/lib.sh.
 from __future__ import annotations
 
 import fcntl
-import glob
 import json
 import os
 import re
-import select
-import shutil
 import signal
-import socket
-import socketserver
-import subprocess
 import sys
 import threading
 import time
 import zlib
-from dataclasses import dataclass, field
-from http.server import BaseHTTPRequestHandler
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # run with -I, so add our own dir
 import collections  # noqa: E402
 
 import claude_sessions  # noqa: E402
-import demo  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
 import sounds as sounds_mod  # noqa: E402
 import stale  # noqa: E402
 import stt  # noqa: E402
 import terminal as terminal_mod  # noqa: E402
-from state import (COLORS, FORGET_AFTER, VOICE_POOL, Sessions, describe, permission_summary, short_title,  # noqa: E402
+from state import (FORGET_AFTER, Sessions, describe, short_title,  # noqa: E402
                    lang_from_message, speech_from_message, split_display, title_from_message)
 from tts import LANG_LETTER, PREFERRED_VOICE, Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
 
