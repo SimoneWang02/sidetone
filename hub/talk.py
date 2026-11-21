@@ -16,7 +16,7 @@ import usage
 import stt
 import terminal as terminal_mod
 from tts import Utterance
-from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
+from base import (interrupts, ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
                   SAFE_ID, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
                   session_model, spoken_answer)
 
@@ -596,7 +596,7 @@ class Talk:
             self._keep_followups()
             self._talk("failed", s, "Taken back", seconds=2)
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, before the session got it")
-        elif self.cfg.cancel_stops != "never" and self._stop_turn(s):
+        elif interrupts(self.cfg) and self._stop_turn(s):
             self._talk("stopped", s, "Taken back: stopping it", seconds=3)
             log(self.cfg, "hub.log", f"follow-up [{s.id[:8]}] taken back {after}, when the session had it: its turn is being stopped")
         else:
@@ -745,7 +745,7 @@ class Talk:
     def _stoppable(self):
         """The session whose turn the cancel key would end when there is nothing else for it
         to cancel: the one in focus, while it works."""
-        s = self._target() if self.cfg.cancel_stops == "always" else None
+        s = self._target() if interrupts(self.cfg) and self.cfg.cancel_stops != "sent" else None
         return s if s and s.state == "working" and s.id not in self._stopping else None
 
     def _expire(self, pending: Pending) -> None:

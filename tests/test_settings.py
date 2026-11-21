@@ -176,6 +176,15 @@ class Offered(SettingsCase):
 
 
 class Chosen(SettingsCase):
+    def test_the_cancel_key_interrupting_claude_is_on_or_off(self):
+        hub = self.make(cancel_stops="never")  # a word from before the switch
+        read = lambda: {i["key"]: i["value"] for s in settings.describe(hub) for i in s["items"]}["cancel_stops"]
+        self.assertIs(read(), False)
+        self.assertIsNone(hub.set_setting("cancel_stops", True))
+        self.assertIs(read(), True)
+        hub.cfg.cancel_stops = "sent"
+        self.assertIs(read(), True)
+
     def test_confirming_before_sending_is_on_or_off(self):
         hub = self.make()
         for value in (True, False):

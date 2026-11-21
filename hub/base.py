@@ -247,11 +247,12 @@ class Config:
     followup_delay: float = 0.0  # seconds a transcript is shown (and can be cancelled) before it is sent; 0 = at once
     talk_tail: float = 0.4  # seconds to keep recording after the talk key is released
     unsend_seconds: float = 4.0  # how long after sending the cancel key still takes the words back; 0 = never
-    # What the cancel key stops besides a recording and a line being spoken: "always" = words
-    # just taken back from a session that already has them end its turn, and with nothing else
-    # to cancel the key ends the turn of the session in focus | "sent" = only the first |
-    # "never" = neither; a session that already has the words is told to ignore them
-    cancel_stops: str = "always"
+    # Whether the cancel key interrupts Claude, as Ctrl+C once does: words taken back from a
+    # session that already has them end its turn, and with nothing else to cancel the key ends
+    # the turn of the session in focus. False: neither; a session that already has the words is
+    # told to ignore them. It was "always", "sent" (only the first) or "never", which are still
+    # read: "sent" counts as on (see `interrupts`).
+    cancel_stops: bool | str = True
     # Asking for the plan's usage by voice ("what's my usage", "how much of the five hours have
     # I used"): the hub answers aloud, the five-hour window first, and the words do not go to
     # a session. False: such words are a session's like any others.
@@ -604,6 +605,11 @@ def _elapsed(seconds: float) -> str:
     if minutes < 1:
         return "<1m"
     return f"{minutes}m" if minutes < 60 else f"{minutes // 60}h{minutes % 60:02d}"
+
+
+def interrupts(cfg: Config) -> bool:
+    """Whether the cancel key may interrupt a session (`Config.cancel_stops`, old words too)."""
+    return cfg.cancel_stops not in (False, "never", "false", "off")
 
 
 def log(cfg: Config, name: str, line: str) -> None:

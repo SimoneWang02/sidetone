@@ -90,12 +90,12 @@ SECTIONS = [
         # has the words the cancel key stops it anyway (`cancel_stops`), and words still waiting for
         # a busy session can now always be taken back (the author: "I would increase into
         # infinity"). It is still read from config.json.
-        # "After sending" ("sent": only a session that just got your words) left the window with the
-        # time to take words back (the author, 2026-11-21: "after sending we just remove that
-        # feature now"); still read from config.json. Never: words it already has are only
-        # followed by a request to ignore them.
-        choice("cancel_stops", "The Cancel Key Stops a Session", "With nothing else to cancel, it stops the work of the session in focus. Never: it only cancels your words and the voice.",
-               ("always", "Always"), ("never", "Never")),
+        # A switch named for what it does, Ctrl+C's interrupt (the author, 2026-11-21: "I still don't
+        # get it", then "by escape you mean control C ... If it's conventional, yes"). It was "The
+        # Cancel Key Stops a Session": Always, After sending (left with the time to take words
+        # back) and Never.
+        switch("cancel_stops", "Cancel Key Interrupts Claude", "Like Ctrl+C in its terminal: when there is nothing else to cancel, "
+               "the cancel key interrupts the session in focus. It stays open."),
         choice("aside", "Side Questions", "Words that open with \"by the way\" are answered at once, and the session never sees them.",
                ("busy", "While it works"), ("always", "Always"), ("off", "Off")),
         choice("voice_at_prompt", "Speaking at a Permission Prompt", "Turn the request down and hand your words over, or keep them until it is answered.",
@@ -553,6 +553,8 @@ def read(hub, key: str):
         return cfg.terminal.get(key[9:])
     if key == "context_shown":
         return base.context_mode(cfg)
+    if key == "cancel_stops":  # on or off; "always", "sent" and "never" from before
+        return base.interrupts(cfg)
     if key == "label":
         return "always" if cfg.label == "always" else "never"  # "auto" is gone
     if key == "reply_language":
