@@ -1236,7 +1236,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   word for every language (`quality`, `QUALITY_WORDS`; the author: "in English, I see quality A,
   B, C+ ... in Chinese, I see clarity, X out of Y. Can you make a standard?"): Kokoro's A and A-
   Excellent, the Bs Good, the Cs Okay (Italian's two voices are graded C too); Chinese by thirds
-  of the measured clarity, Good, Okay, Basic; Piper's Okay, with ", faster". The page's sentence
+  of the measured clarity, Good, Okay, Basic; Piper's Okay, and after it a small "Faster" with an i in a circle that says why when the mouse
+  rests on it (`voice_tag`, `FASTER`; `Tag` in `Overlay.cs`; the author: "make that title case
+  and faster might not be very explaining ... an info icon on why"; picture
+  `settings-voices-italian.png`). The page's sentence
   says what the words mean. "Fair" was first for Okay; the author: "what is fair though?". None is faster: every Kokoro voice is the same model. Projects keep the voices
   they had.
   Then: "keep some ... that are not so good but are faster ... for each language". Measured on

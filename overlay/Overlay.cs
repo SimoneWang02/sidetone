@@ -1647,11 +1647,11 @@ namespace ClaudeSpeaks
             return kept.Contains(Overlay.Str(item, "group") + "/" + Overlay.Str(item, "voice"));
         }
 
-        void ForgetPlaces(string group)
+        void ForgetPlaces(string group)  // null: every language
         {
+            if (group == null) { places.Clear(); kept.Clear(); return; }
             places.Remove(group);
-            kept.RemoveWhere(delegate(string k) { return group == null || k.StartsWith(group + "/", StringComparison.Ordinal); });
-            if (group == null) places.Clear();
+            kept.RemoveWhere(delegate(string k) { return k.StartsWith(group + "/", StringComparison.Ordinal); });
         }
 
         // The voices at the top of a language's card, in the order shown: what a drag moves among.
@@ -1822,6 +1822,22 @@ namespace ClaudeSpeaks
             };
         }
 
+        // A small rounded word with an i in a circle, which says what it means when the mouse rests
+        // on it ("Faster" after Piper's voices; the author, 2026-11-21: "an info icon on why").
+        static Border Tag(string word, string meaning)
+        {
+            var inside = new StackPanel { Orientation = Orientation.Horizontal };
+            inside.Children.Add(new TextBlock { Text = word, FontSize = 10.5, Foreground = Ui.Dim, VerticalAlignment = VerticalAlignment.Center });
+            var info = new Grid { Width = 11, Height = 11, Margin = new Thickness(5, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+            info.Children.Add(new System.Windows.Shapes.Ellipse { Stroke = Ui.Dim, StrokeThickness = 1 });
+            info.Children.Add(new TextBlock { Text = "i", FontSize = 8, FontWeight = FontWeights.SemiBold, Foreground = Ui.Dim, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, 1) });
+            inside.Children.Add(info);
+            var tip = new ToolTip { Content = new TextBlock { Text = meaning, TextWrapping = TextWrapping.Wrap, MaxWidth = 280 } };
+            var pill = new Border { CornerRadius = new CornerRadius(5), Padding = new Thickness(6, 1, 5, 2), Margin = new Thickness(8, 0, 0, 0), Background = Ui.Paint("#1AFFFFFF"), Child = inside, Cursor = Cursors.Help, ToolTip = tip, VerticalAlignment = VerticalAlignment.Center };
+            ToolTipService.SetInitialShowDelay(pill, 150);
+            return pill;
+        }
+
         // One setting: its name and a sentence about it at the left, what sets it at the right.
         UIElement Line(Dictionary<string, object> item, StackPanel card)
         {
@@ -1843,7 +1859,15 @@ namespace ClaudeSpeaks
             }
             words.Children.Add(new TextBlock { Text = Overlay.Str(item, "name"), FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis });
             if (typing) help = "Press the new keys. Esc keeps the old ones, Delete leaves it without a key.";
-            if (help.Length > 0) words.Children.Add(new TextBlock { Text = help, FontSize = 11.5, Foreground = typing ? Ui.Dim : Ui.Faint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) });
+            string tag = Overlay.Str(item, "tag");
+            if (tag.Length > 0)  // a voice's description with a word after it that explains itself under the mouse
+            {
+                var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 0) };
+                if (help.Length > 0) row.Children.Add(new TextBlock { Text = help, FontSize = 11.5, Foreground = Ui.Faint, VerticalAlignment = VerticalAlignment.Center });
+                row.Children.Add(Tag(tag, Overlay.Str(item, "tag_help")));
+                words.Children.Add(row);
+            }
+            else if (help.Length > 0) words.Children.Add(new TextBlock { Text = help, FontSize = 11.5, Foreground = typing ? Ui.Dim : Ui.Faint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) });
             line.Children.Add(words);
 
             FrameworkElement control;

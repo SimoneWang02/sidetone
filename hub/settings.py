@@ -248,7 +248,7 @@ def voice_label(voice: str) -> tuple[str, str]:
         place = model[0].split("_")[-1] if model else ""
         who = model[1] if len(model) > 1 else voice[6:]
         kind = " ".join(w for w in (PIPER_PLACES.get(place, ""), PIPER_PEOPLE.get(who, "")) if w)
-        return who.replace("_", " ").title(), f"{kind or 'Piper'}{word}, faster"
+        return who.replace("_", " ").title(), f"{kind or 'Piper'}{word}"
     if voice.startswith("zh:"):  # zh:zf_001, Kokoro's Chinese model, whose voices are numbered
         m = re.fullmatch(r"z([fm])_(\d+)", voice[3:])
         if m:
@@ -258,6 +258,18 @@ def voice_label(voice: str) -> tuple[str, str]:
     if m and m.group(1) in ACCENTS:
         return m.group(3).replace("_", " ").title(), f"{ACCENTS[m.group(1)]} {'woman' if m.group(2) == 'f' else 'man'}{word}"
     return voice, "Your own voice"
+
+
+# A word after a voice's description, and what it means when the mouse rests on it. "Faster" was
+# part of the description; the author, 2026-11-21: "make that title case and faster might not be
+# very explaining ... make it like an info icon on why that is faster". The times are PIPER_PEOPLE's.
+FASTER = ("Faster", "Spoken by Piper, a smaller voice program than Kokoro: a sentence is ready in about "
+                    "0.3 seconds instead of 0.5 to 0.8, so it starts sooner. It sounds less natural.")
+
+
+def voice_tag(voice: str) -> tuple[str, str] | None:
+    """A word shown after a voice's description, with what it means; None for most voices."""
+    return FASTER if voice.startswith("piper:") else None
 
 
 def voice_language(voice: str) -> str:
@@ -382,6 +394,9 @@ def _voices(hub) -> list:
             name, what = voice_label(v)
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
                           "group": lang, "more": v not in chosen, "playing": getattr(hub, "_previewing", "") == v})
+            tag = voice_tag(v)
+            if tag:
+                found[-1].update(tag=tag[0], tag_help=tag[1])
     return found
 
 

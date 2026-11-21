@@ -568,6 +568,10 @@ if not ONLY or "settings-voices-tall".startswith(ONLY) or ONLY.startswith("setti
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[400, 142])
     shot("settings-voices-open", 0.7)
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[400, 142])
+    # Italian opened: Piper's voice with its "Faster" tag.
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[400, 208])
+    shot("settings-voices-italian", 0.7)
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[400, 208])
 CHANGED = [{**s, "changed": s["name"] == "Speech"} for s in SETTINGS]  # one setting of Speech moved: its reset button lit
 send(type="settings", open=True, quiet=True, sections=CHANGED, section="Speech")
 shot("settings-voice-changed", 0.7)
