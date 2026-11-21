@@ -1264,3 +1264,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   voices"), not their names, and nothing while open (the names: "I don't like it much").
   A ▶ pressed again, or another ▶, cuts the preview playing and plays the new one
   (`SpeechQueue.drop_src("preview")`); they queued up before ("I hear the preview twice").
+  The Chinese order (`settings.CHINESE_CLARITY`, 2026-11-21): each of the Chinese model's 100
+  Chinese voices said five work sentences, faster-whisper "small" (told to write simplified
+  characters) wrote them down, and they are ordered by the share of characters it got wrong,
+  then by how sure it was. 7 to 15 % wrong, mostly homophones (登录 heard as 登陆) and numbers;
+  best zf_049, zf_006, zm_056, zm_057, zm_030. The four the author picked rank 33 (zm_009),
+  34 (zm_010), 88 (zf_001) and 98 (zf_002): the measure is about being understood, not taste.
+  The line says it: "Chinese woman, clarity 1 of 100". The window lists the four ticked and
+  the eight clearest. A first run read 30 % wrong for zf_001: Whisper wrote traditional
+  characters until told otherwise (`initial_prompt`).
+  The ▶ shows a square while its preview plays, and a click on it stops it
+  (`stop_preview`; `Hub._previewing` sends the window again when a preview starts or ends).
+  The author asked for it ("then there's the square to stop it"), and said "yeah" to it.

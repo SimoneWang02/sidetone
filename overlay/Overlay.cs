@@ -1658,14 +1658,17 @@ namespace ClaudeSpeaks
             return head;
         }
 
-        // A round button with a triangle: the voice says a sentence, and nothing is changed.
-        Border PlayButton(string voice)
+        // A round button with a triangle: the voice says a sentence, and nothing is changed. While
+        // that sentence plays it shows a square, and a click on it stops it (the author,
+        // 2026-11-21: "click it, the preview goes, and then there's the square to stop it").
+        Border PlayButton(string voice, bool playing)
         {
-            var sign = new System.Windows.Shapes.Path { Data = Geometry.Parse("M0,0 L7,4.5 L0,9 Z"), Fill = Ui.Dim, Width = 7, Height = 9, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(2, 0, 0, 0) };
-            var button = new Border { Width = 28, Height = 28, CornerRadius = new CornerRadius(14), Cursor = Cursors.Hand, Child = sign, ToolTip = "Hear It" };
-            Lit(button, "#17FFFFFF", "#2EFFFFFF");
+            var sign = new System.Windows.Shapes.Path { Data = Geometry.Parse(playing ? "M0,0 L8,0 L8,8 L0,8 Z" : "M0,0 L7,4.5 L0,9 Z"), Fill = playing ? Brushes.White : Ui.Dim, Width = playing ? 8 : 7, Height = playing ? 8 : 9, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(playing ? 0 : 2, 0, 0, 0) };
+            var button = new Border { Width = 28, Height = 28, CornerRadius = new CornerRadius(14), Cursor = Cursors.Hand, Child = sign, ToolTip = playing ? "Stop" : "Hear It" };
+            if (playing) button.Background = Ui.Alpha(Accent, 0.85);
+            else Lit(button, "#17FFFFFF", "#2EFFFFFF");
             button.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; };
-            button.MouseLeftButtonUp += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; choose("play", voice); };
+            button.MouseLeftButtonUp += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; choose(playing ? "stop_preview" : "play", voice); };
             return button;
         }
 
@@ -1780,7 +1783,7 @@ namespace ClaudeSpeaks
             if (heard != null && heard.Length > 0)  // a voice: a button to hear it beside what sets it
             {
                 var both = new StackPanel { Orientation = Orientation.Horizontal };
-                var play = PlayButton(heard);
+                var play = PlayButton(heard, item.ContainsKey("playing") && Convert.ToBoolean(item["playing"], CultureInfo.InvariantCulture));
                 play.Margin = new Thickness(0, 0, 10, 0);
                 if (kind == "pick") control.Width = 214;  // one width for every session's voice, so the buttons line up
                 both.Children.Add(play);

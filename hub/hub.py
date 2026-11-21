@@ -779,6 +779,13 @@ class Hub(Permissions, Talk):
 
     def _speech_changed(self, u: Utterance | None) -> None:
         """A line starts or ends: show it while it is heard, and mark which session is speaking."""
+        # A voice's preview in the settings window: its ▶ shows a square to stop it while it plays.
+        previewing = u.voice if u and u.src == "preview" else ""
+        if previewing != getattr(self, "_previewing", ""):
+            self._previewing = previewing
+            if getattr(self, "_settings_open", False) and self.overlay:
+                import settings as settings_mod
+                self.overlay.send({"type": "settings", "open": True, "title": settings_mod.NAME, "sections": settings_mod.describe(self)})
         if u and u.session:
             with self.lock:
                 s = self.sessions.by_id.get(u.session)

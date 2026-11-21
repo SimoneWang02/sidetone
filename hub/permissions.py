@@ -302,6 +302,9 @@ class Permissions:
         if key == "play":  # the ▶ beside a voice: heard, nothing changed
             settings_mod.preview(self, str(value or ""))
             return None
+        if key == "stop_preview":  # the square that stands in for the ▶ while it plays
+            self.speech.drop_src("preview")
+            return None
         error = settings_mod.reset(self, value) if key == "reset" else settings_mod.apply(self, key, value)
         if error:
             log(self.cfg, "hub.log", f"setting not changed: {error}")

@@ -181,8 +181,28 @@ PIPER_PLACES = {"US": "American", "GB": "British", "IT": "Italian", "CN": "Chine
 # Chinese: Kokoro's Chinese model has 100 Chinese voices and Kokoro 1.0 eight more (read through
 # espeak, graded D by Kokoro, left out). The author: "for Chinese there are too many", then "can
 # you rank them in a sort of way? Four are too [few]". Ranked by how well a speech model
-# understands them (see docs/dev/features.md), clearest first.
-CHINESE_CLARITY: list = []
+# understands them (see docs/dev/features.md), clearest first: each said five sentences, which
+# faster-whisper "small" wrote down; fewest wrong characters, then the surest transcript.
+# Measured 2026-11-21. The differences are small (7 to 15 % of characters wrong, most of it
+# homophones and numbers), so it orders the list, it does not judge taste: the four the author
+# picked rank 33, 34, 88 and 98.
+CHINESE_CLARITY = [
+    "zh:zf_049", "zh:zf_006", "zh:zm_056", "zh:zm_057", "zh:zm_030", "zh:zf_023", "zh:zm_061",
+    "zh:zf_094", "zh:zm_062", "zh:zf_092", "zh:zf_059", "zh:zm_097", "zh:zm_013", "zh:zm_033",
+    "zh:zm_029", "zh:zf_078", "zh:zm_096", "zh:zm_082", "zh:zm_045", "zh:zm_050", "zh:zm_089",
+    "zh:zm_091", "zh:zm_053", "zh:zm_080", "zh:zm_058", "zh:zm_055", "zh:zm_014", "zh:zf_040",
+    "zh:zf_073", "zh:zf_028", "zh:zf_087", "zh:zf_088", "zh:zm_009", "zh:zm_010", "zh:zf_017",
+    "zh:zm_011", "zh:zf_093", "zh:zm_081", "zh:zf_084", "zh:zf_032", "zh:zf_076", "zh:zf_071",
+    "zh:zf_060", "zh:zf_019", "zh:zm_037", "zh:zf_077", "zh:zm_041", "zh:zm_020", "zh:zm_031",
+    "zh:zf_074", "zh:zm_015", "zh:zm_025", "zh:zf_085", "zh:zf_072", "zh:zm_012", "zh:zf_046",
+    "zh:zm_069", "zh:zm_095", "zh:zf_083", "zh:zf_026", "zh:zf_039", "zh:zm_066", "zh:zf_079",
+    "zh:zm_054", "zh:zm_065", "zh:zm_064", "zh:zm_063", "zh:zm_068", "zh:zm_035", "zh:zm_052",
+    "zh:zm_100", "zh:zm_016", "zh:zf_038", "zh:zf_043", "zh:zf_024", "zh:zf_042", "zh:zf_004",
+    "zh:zf_047", "zh:zf_099", "zh:zf_070", "zh:zm_034", "zh:zf_086", "zh:zf_021", "zh:zf_075",
+    "zh:zf_090", "zh:zf_036", "zh:zf_022", "zh:zf_001", "zh:zf_027", "zh:zm_098", "zh:zf_067",
+    "zh:zf_003", "zh:zf_044", "zh:zf_051", "zh:zf_018", "zh:zf_048", "zh:zf_005", "zh:zf_002",
+    "zh:zf_007", "zh:zf_008",
+]
 # Piper's voices are quicker to make than Kokoro's and less clear (the author, 2026-11-21: "keep
 # some ... that are not so good but are faster"). Measured 2026-11-21 on the author's machine,
 # a sentence of about 4 s: Piper 0.29 s (Lessac) and 0.34 s (Paola), Kokoro 0.47 to 0.82 s
@@ -210,7 +230,8 @@ def voice_label(voice: str) -> tuple[str, str]:
     if voice.startswith("zh:"):  # zh:zf_001, Kokoro's Chinese model, whose voices are numbered
         m = re.fullmatch(r"z([fm])_(\d+)", voice[3:])
         if m:
-            return f"{'Woman' if m.group(1) == 'f' else 'Man'} {int(m.group(2))}", "Chinese (Kokoro's Chinese model)"
+            place = f", clarity {CHINESE_CLARITY.index(voice) + 1} of {len(CHINESE_CLARITY)}" if voice in CHINESE_CLARITY else ""
+            return f"{'Woman' if m.group(1) == 'f' else 'Man'} {int(m.group(2))}", f"Chinese {'woman' if m.group(1) == 'f' else 'man'}{place}"
         return voice[3:], "Chinese (Kokoro's Chinese model)"
     m = re.fullmatch(r"([a-z])([fm])_(\w+)", voice)
     if m and m.group(1) in ACCENTS:
@@ -335,7 +356,7 @@ def _voices(hub) -> list:
         for v in listed(lang, chosen, voices[lang]):
             name, what = voice_label(v)
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
-                          "group": lang, "more": v not in chosen})
+                          "group": lang, "more": v not in chosen, "playing": getattr(hub, "_previewing", "") == v})
     return found
 
 
