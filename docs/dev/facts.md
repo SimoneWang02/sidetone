@@ -484,6 +484,14 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   (`KokoroEngine.LATENCY_MS`, `LEAD` 0.1 s, `TAIL` 0.3 s of silence; see `sounds.py`). 150 ms
   still left "a bit of scratches"; now 300 ms.
   Not caused by a busy processor: still heard with the other jobs paused.
+  The scratches that were left came from the loudness meter (2026-11-21): PulseAudio runs a sink
+  with the smallest buffer any of its streams asks for, and a recorder of the sink's monitor
+  counts. WSL's RDPSink gives at most 130 ms whatever the player asks (`pactl list sinks`:
+  "configured 130000 usec" with `--latency-msec=300`); the meter's `parec` at 30 ms took it to
+  "configured 30000 usec". The same line through paplay alone, and through Windows' own player,
+  had no scratches for the author; the preview, with the meter, did. At 130 ms or more the
+  meter leaves the sink at 130 (measured at 100: 100). Its recording then comes in bursts:
+  four 40 ms pieces at once every 170 ms (at 30 ms: one or two every 50 to 60 ms).
 
 - Words spoken after a Ctrl+C waited about five minutes (2026-11-21, "waiting for the session to
   stop" until the next reply ended). The hub had been restarted a minute before. Tried again

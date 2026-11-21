@@ -371,6 +371,14 @@ class Meter:
 
     RATE = 8000
     STEP = 0.04  # seconds per loudness value
+    # The recorder's buffer, as large as the voice's. PulseAudio runs the speakers with the
+    # smallest buffer any of their streams asks for, a recorder of their monitor included: at 30 ms
+    # the meter took the speakers from 130 ms (the most WSL's link gives) to 30, and the voice
+    # scratched through AirPods while the player alone was clean (the author, 2026-11-21: "I
+    # still hear scratches ... whenever I hear a preview"; `pactl list sinks`, "configured
+    # 30000 usec" with the meter, 130000 without). The recording then comes in bursts of about
+    # 170 ms, sent to the overlay together, which spaces them out.
+    LATENCY_MS = KokoroEngine.LATENCY_MS
 
     def __init__(self, device: str = "@DEFAULT_MONITOR@"):
         self.device = device
@@ -389,7 +397,7 @@ class Meter:
         try:
             proc = self._proc = subprocess.Popen(
                 ["parec", f"--device={self.device}", "--raw", f"--rate={self.RATE}", "--format=s16le", "--channels=1",
-                 "--latency-msec=30"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                 f"--latency-msec={self.LATENCY_MS}"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         except OSError:
             return
         threading.Thread(target=self._listen, args=(proc, on_levels), name="meter", daemon=True).start()
@@ -410,14 +418,20 @@ class Meter:
 
     def _listen(self, proc: subprocess.Popen, on_levels: Callable[[list[float], float], None]) -> None:
         size = int(self.RATE * self.STEP) * 2
+        fd, kept = proc.stdout.fileno(), b""
         while True:
-            chunk = proc.stdout.read(size)
-            if len(chunk) < size or self._proc is not proc:
+            data = os.read(fd, 65536)  # whatever has come: a burst at a time
+            if not data or self._proc is not proc:
                 return
-            level = self.level(chunk)
-            if level and self._heard is None:
+            kept += data
+            levels = []
+            while len(kept) >= size:
+                levels.append(self.level(kept[:size]))
+                kept = kept[size:]
+            if any(levels) and self._heard is None:
                 self._heard = time.monotonic() - self._started
-            on_levels([level], self.STEP)
+            if levels:
+                on_levels(levels, self.STEP)
 
 
 def make_engine(name: str, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = ""):
