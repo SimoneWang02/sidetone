@@ -176,19 +176,24 @@ VOICE_LANG = {"a": "en", "b": "en", "i": "it", "z": "zh"}  # the letters of the 
 SAMPLES = {"en": "Hello, this is how I sound.", "it": "Ciao, questa \u00e8 la mia voce.",
            "zh": "\u4f60\u597d\uff0c\u8fd9\u662f\u6211\u7684\u58f0\u97f3\u3002"}
 PIPER_PLACES = {"US": "American", "GB": "British", "IT": "Italian", "CN": "Chinese"}
+# Piper's voices are quicker to make than Kokoro's and less clear (the author, 2026-11-21: "keep
+# some ... that are not so good but are faster"). Measured 2026-11-21 on the author's machine,
+# a sentence of about 4 s: Piper 0.29 s (Lessac) and 0.34 s (Paola), Kokoro 0.47 to 0.82 s
+# (its English, Italian and Chinese voices alike, and the Chinese model 0.47 s).
+PIPER_PEOPLE = {"lessac": "woman", "paola": "woman", "amy": "woman", "ryan": "man", "riccardo": "man", "huayan": "woman"}
 # Kokoro's own grades for its English voices graded C or better (VOICES.md of hexgrad/Kokoro-82M,
 # read 2026-11-21). The rest, graded D or F, are left out of the window (the author: "just keep
 # the best ones ... the most clear"); they still work by name in config.json. All of Kokoro's
-# voices are one model, so none is faster than another.
+# voices are one model, so none is faster than another; Piper's are (PIPER_PEOPLE).
 ENGLISH_GRADES = {"af_heart": "A", "af_bella": "A-", "af_nicole": "B-", "bf_emma": "B-", "af_aoede": "C+",
                   "af_kore": "C+", "af_sarah": "C+", "am_fenrir": "C+", "am_michael": "C+", "am_puck": "C+",
                   "af_alloy": "C", "af_nova": "C", "bf_isabella": "C", "bm_fable": "C", "bm_george": "C"}
 
 
 def short_label(voice: str) -> str:
-    """For a dropdown: "Heart (American woman)", without the grade."""
+    """For a dropdown: "Heart (American woman)", without the grade or the speed."""
     name, what = voice_label(voice)
-    return f"{name} ({what.split(', grade')[0]})"
+    return f"{name} ({what.split(',')[0]})"
 
 
 def voice_label(voice: str) -> tuple[str, str]:
@@ -196,8 +201,9 @@ def voice_label(voice: str) -> tuple[str, str]:
     if voice.startswith("piper:"):  # piper:it_IT-paola-medium
         model = voice[6:].split("-")
         place = model[0].split("_")[-1] if model else ""
-        return (model[1].replace("_", " ").title() if len(model) > 1 else voice[6:]), \
-            " ".join(w for w in (PIPER_PLACES.get(place, ""), "(Piper)") if w)
+        who = model[1] if len(model) > 1 else voice[6:]
+        kind = " ".join(w for w in (PIPER_PLACES.get(place, ""), PIPER_PEOPLE.get(who, "")) if w)
+        return who.replace("_", " ").title(), f"{kind or 'Piper'}, faster (Piper)"
     if voice.startswith("zh:"):  # zh:zf_001, Kokoro's Chinese model, whose voices are numbered
         m = re.fullmatch(r"z([fm])_(\d+)", voice[3:])
         if m:
@@ -227,8 +233,8 @@ def catalog(hub) -> dict:
     found = {lang: [] for lang in SUMMARY_LANGUAGES}
     for v in sorted(names):
         lang = voice_language(v)
-        if lang == "en" and (re.fullmatch(r"[ab][fm]_\w+", v) and v not in ENGLISH_GRADES or v.startswith("piper:")):
-            continue  # graded D or F by Kokoro, or Piper's, kept for when Kokoro is missing
+        if lang == "en" and re.fullmatch(r"[ab][fm]_\w+", v) and v not in ENGLISH_GRADES:
+            continue  # graded D or F by Kokoro
         if lang in found:
             found[lang].append(v)
     return found

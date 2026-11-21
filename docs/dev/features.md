@@ -1234,3 +1234,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   graded C or better wait under More Voices. Each card line says the grade ("American woman,
   grade A"). None is faster: every Kokoro voice is the same model. Projects keep the voices
   they had.
+  Then: "keep some ... that are not so good but are faster ... for each language". Measured on
+  this machine (a sentence of about 4 s, the live hub running beside): Piper 0.29 s (Lessac)
+  and 0.34 s (Paola), Kokoro 0.47 to 0.82 s for its English, Italian and Chinese voices alike,
+  the Chinese model 0.47 s. So the faster ones are Piper's: its English Lessac is back under
+  More Voices, and a Piper voice says "faster (Piper)" ("American woman, faster (Piper)").
+  Chinese has no Piper voice installed (Piper has `zh_CN-huayan`).
