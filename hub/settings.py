@@ -178,10 +178,11 @@ VOICE_LANG = {"a": "en", "b": "en", "i": "it", "z": "zh"}  # the letters of the 
 SAMPLES = {"en": "Hello, this is how I sound.", "it": "Ciao, questa \u00e8 la mia voce.",
            "zh": "\u4f60\u597d\uff0c\u8fd9\u662f\u6211\u7684\u58f0\u97f3\u3002"}
 PIPER_PLACES = {"US": "American", "GB": "British", "IT": "Italian", "CN": "Chinese"}
-# Chinese: Kokoro's Chinese model has 103 voices and Kokoro 1.0 eight more (read through espeak,
-# graded D by Kokoro). The window lists the four the author picked on 2026-11-19 and Piper's
-# Chinese voices, not the other 107 (the author, 2026-11-21: "for Chinese there are too many").
-CHINESE_SHOWN = set(tts.PREFERRED_VOICE["zh"])
+# Chinese: Kokoro's Chinese model has 100 Chinese voices and Kokoro 1.0 eight more (read through
+# espeak, graded D by Kokoro, left out). The author: "for Chinese there are too many", then "can
+# you rank them in a sort of way? Four are too [few]". Ranked by how well a speech model
+# understands them (see docs/dev/features.md), clearest first.
+CHINESE_CLARITY: list = []
 # Piper's voices are quicker to make than Kokoro's and less clear (the author, 2026-11-21: "keep
 # some ... that are not so good but are faster"). Measured 2026-11-21 on the author's machine,
 # a sentence of about 4 s: Piper 0.29 s (Lessac) and 0.34 s (Paola), Kokoro 0.47 to 0.82 s
@@ -237,8 +238,8 @@ def catalog(hub) -> dict:
         lang = voice_language(v)
         if lang == "en" and re.fullmatch(r"[ab][fm]_\w+", v) and v not in ENGLISH_GRADES:
             continue  # graded D or F by Kokoro
-        if lang == "zh" and v not in CHINESE_SHOWN and not v.startswith("piper:") and v not in hub.cfg.language_voices.get("zh", []):
-            continue  # 111 is too many (the author, 2026-11-21); the rest still work by name
+        if lang == "zh" and re.fullmatch(r"z[fm]_\w+", v):
+            continue  # Kokoro 1.0's Chinese, through espeak, graded D; the Chinese model is better
         if lang in found:
             found[lang].append(v)
     return found
@@ -280,6 +281,30 @@ def preview(hub, voice: str) -> None:
         hub.say(SAMPLES.get(voice_language(voice), SAMPLES["en"]), voice=voice)
 
 
+# At most this many voices for a language in the window (the author, 2026-11-21: "for each
+# language we can keep maximum 10 or 15"): the ticked ones, then the best of the rest.
+MOST_VOICES = 12
+
+
+def rank(voice: str) -> tuple:
+    """Best first: Kokoro's grade for English, the measured clarity for Chinese, then Piper's
+    faster voices, then the rest by name."""
+    if voice in ENGLISH_GRADES:
+        return (0, list(ENGLISH_GRADES).index(voice), voice)
+    if voice in CHINESE_CLARITY:
+        return (0, CHINESE_CLARITY.index(voice), voice)
+    return (1 if voice.startswith("piper:") else 2, 0, voice)
+
+
+def listed(lang: str, chosen: list, have: list) -> list:
+    """A language's voices as the window lists them: the ticked in their order, then the best
+    of the rest up to MOST_VOICES; one's own voices always."""
+    rest = sorted((v for v in have if v not in chosen), key=rank)
+    own = [v for v in rest if voice_label(v)[1] == "Your own voice"]
+    rest = [v for v in rest if v not in own][:max(0, MOST_VOICES - len(chosen))]
+    return chosen + rest + own
+
+
 def _voices(hub) -> list:
     """The Voices section: for each language the voices its lines are said in, ticked and in
     order; sessions take them in turn. There was a part for each open project's own voice
@@ -293,20 +318,19 @@ def _voices(hub) -> list:
     # One sentence for the page, not one per language: they said the same (the author,
     # 2026-11-21: "do they all have the same description beneath the language?").
     found = [{"kind": "intro", "key": "intro.voices", "name": "",
-              "help": "Each session takes the next ticked voice of the language it speaks in, and a project keeps "
-                      "its English one from day to day. Drag the dots to change the order; the play button lets you hear one."}]
+              "help": "Each open session speaks in its own voice, so you know who is talking. A new session gets the "
+                      "first ticked voice not in use. Drag the dots to change the order; press play to hear one."}]
     for lang in SUMMARY_LANGUAGES:
         chosen = in_use(hub, lang)
         if not voices.get(lang):
             continue
         # A heading that opens and closes its card (the author, 2026-11-21: "for each language
-        # making a drop-down list so I can quickly scroll between the languages"), with the
-        # ticked voices named beside it so a closed one still says what it holds.
-        names = [voice_label(v)[0] for v in chosen]
+        # making a drop-down list so I can quickly scroll between the languages"), with how many
+        # voices are ticked beside it. It named them first ("Heart, Michael, Bella and 5 more");
+        # the author did not like it much, and a count was agreed.
         found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
-                      "help": "", "fold": True,
-                      "summary": ", ".join(names[:3]) + (f" and {len(names) - 3} more" if len(names) > 3 else "")})
-        for v in chosen + [v for v in voices[lang] if v not in chosen]:
+                      "help": "", "fold": True, "summary": f"{len(chosen)} voice{'s' if len(chosen) != 1 else ''}"})
+        for v in listed(lang, chosen, voices[lang]):
             name, what = voice_label(v)
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
                           "group": lang, "more": v not in chosen})

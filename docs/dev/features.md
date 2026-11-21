@@ -1256,3 +1256,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   and `openGroups` in `Overlay.cs`, all closed when the window starts), with its ticked voices
   named at the right ("Heart, Michael, Bella and 5 more"), and one sentence for the whole page
   under its title (`kind: intro`). Pictures: `settings-voices-open.png` (English opened).
+  Then at most twelve voices a language (`MOST_VOICES`; "maximum 10 or 15"): the ticked in
+  their order, then the best of the rest (`rank`), one's own voices always. The page's sentence
+  now says the purpose first ("Each open session speaks in its own voice, so you know who is
+  talking"), after the author did not follow "the next ticked voice ... a project keeps its
+  English one from day to day". A closed language says how many voices are ticked ("8
+  voices"), not their names, and nothing while open (the names: "I don't like it much").

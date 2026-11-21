@@ -1637,7 +1637,7 @@ namespace ClaudeSpeaks
         readonly HashSet<string> openGroups = new HashSet<string>();
 
         // A heading that opens and closes the card under it: a chevron, its name, and at the
-        // right what it holds (the voices ticked), so a closed one still says it.
+        // right while it is closed what it holds ("8 voices"); open, the card below says it.
         UIElement FoldHead(string group, string name, string summary, bool open)
         {
             var row = new Grid();
@@ -1649,7 +1649,7 @@ namespace ClaudeSpeaks
             var title = new TextBlock { Text = name, FontSize = 14, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center };
             Grid.SetColumn(title, 1);
             row.Children.Add(title);
-            var holds = new TextBlock { Text = summary, FontSize = 12, Foreground = Ui.Faint, TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 0, 0) };
+            var holds = new TextBlock { Text = summary, Visibility = open ? Visibility.Collapsed : Visibility.Visible, FontSize = 12, Foreground = Ui.Faint, TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 0, 0) };
             Grid.SetColumn(holds, 2);
             row.Children.Add(holds);
             var head = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, open ? 6 : 8), Cursor = Cursors.Hand, Child = row };
