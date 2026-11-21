@@ -499,3 +499,12 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   the words were "queued" and went out 10 s later (`reconcile` saw the session file go idle),
   and the session answered. So the delay came with the restart, a fault of working on the
   tool; no code for it.
+
+- Time to make one sentence, per voice program (2026-11-21, the author's machine, the hub
+  running beside it; median of 4, a short sentence of about 9 words and a long one of about 17):
+  Kokoro Heart 0.39 and 0.74 s, Piper Lessac 0.26 and 0.27, Kokoro Sara 0.35 and 0.51, Piper
+  Paola 0.30 and 0.36, Kokoro's Chinese model (zf_049) 0.49 and 0.61. Piper's lead grows with
+  the sentence: in Italian it is 0.05 to 0.15 s, in English up to half a second. A first run of
+  Heart's short sentence took 0.85 s, so single numbers are noisy. From `voice.log`
+  (`first_audio`, previews only, the same sentence each): Kokoro English 377 ms (34), Italian
+  236 ms (3), Chinese model 339 ms (5), Piper 296 ms (2).
