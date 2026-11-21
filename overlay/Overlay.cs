@@ -1532,7 +1532,7 @@ namespace ClaudeSpeaks
                 StackPanel lines = null;
                 string inGroup = "";
                 int hidden = 0, folded = 0;
-                bool shut = false;
+                bool shut = false, folding = false;
                 // A card ends at a heading or at the end: with a line to unfold what it keeps folded.
                 Action endCard = delegate
                 {
@@ -1548,7 +1548,9 @@ namespace ClaudeSpeaks
                         more.MouseLeftButtonUp += delegate { if (open) unfolded.Remove(group); else unfolded.Add(group); Fill(); };
                         lines.Children.Add(more);
                     }
-                    list.Children.Add(new Border { CornerRadius = new CornerRadius(10), Background = Ui.Paint("#12FFFFFF"), Child = lines, Margin = new Thickness(0, 0, 0, 4) });
+                    list.Children.Add(new Border { CornerRadius = new CornerRadius(10), Background = Ui.Paint("#12FFFFFF"), Child = lines, Margin = new Thickness(0, 0, 0, folding ? 8 : 4) });
+                    // 8 under an open language's card, as under a closed heading: with 4 the gap to the
+                    // next language was half the others (the author, 2026-11-21: "not very coherent").
                     lines = null;
                 };
                 foreach (object i in items)
@@ -1565,6 +1567,7 @@ namespace ClaudeSpeaks
                         inGroup = Overlay.Str(item, "key").Replace("heading.", "");
                         hidden = folded = 0;
                         shut = false;
+                        folding = item.ContainsKey("fold") && Convert.ToBoolean(item["fold"], CultureInfo.InvariantCulture);
                         if (item.ContainsKey("fold") && Convert.ToBoolean(item["fold"], CultureInfo.InvariantCulture))
                         {
                             bool spoken = !item.ContainsKey("spoken") || Convert.ToBoolean(item["spoken"], CultureInfo.InvariantCulture);
