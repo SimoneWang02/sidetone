@@ -72,7 +72,7 @@ these come before anything new.
       the purpose first, at most twelve voices a language, Chinese ordered by measured clarity
       (the author's four ticked, the eight clearest under More Voices), Piper's voices marked
       faster, "quality A" instead of "grade A", a ▶ pressed again starts over, and a stop
-      square while a preview plays. 2026-11-21 noon: the count reads "4 selected" (agreed after "4 of 12 ticked" was "not very conventional") and an unticked voice stays in place until its language is closed (built, not tried). Speech now plays with a 300 ms buffer and silence around
+      square while a preview plays. 2026-11-21 noon: the count reads "4 selected" (agreed after "4 of 12 ticked" was "not very conventional") every voice described alike ("American woman, Excellent", "Chinese woman, Good", "Italian woman, Fair, faster"), and an unticked voice stays in place until its language is closed (built, not tried). Speech now plays with a 300 ms buffer and silence around
       it (scratches through AirPods; "still a bit" at 150 ms, and Fenrir and Michael scratched
       while the processor was loaded by the Chinese ranking). **For the author to try**: the
       stop square, dragging, ticking, More Voices, and whether Fenrir and Michael still

@@ -1232,7 +1232,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   hexgrad/Kokoro-82M, `settings.ENGLISH_GRADES`), and the window leaves out the English
   voices graded D or F and Piper's English (kept for when Kokoro is missing); the other seven
   graded C or better wait under More Voices. Each card line says the grade ("American woman,
-  quality A", first written "grade A"; the author: "quality is much more intuitive"). None is faster: every Kokoro voice is the same model. Projects keep the voices
+  quality A", first written "grade A"; the author: "quality is much more intuitive"). Then one
+  word for every language (`quality`, `QUALITY_WORDS`; the author: "in English, I see quality A,
+  B, C+ ... in Chinese, I see clarity, X out of Y. Can you make a standard?"): Kokoro's A and A-
+  Excellent, the Bs Good, the Cs Fair (Italian's two voices are graded C too); Chinese by thirds
+  of the measured clarity, Good, Fair, Basic; Piper's Fair, with ", faster". The page's sentence
+  says what the words mean. None is faster: every Kokoro voice is the same model. Projects keep the voices
   they had.
   Then: "keep some ... that are not so good but are faster ... for each language". Measured on
   this machine (a sentence of about 4 s, the live hub running beside): Piper 0.29 s (Lessac)
