@@ -1070,7 +1070,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   or `min`/`max`/`step`/`unit`); a click sends `setting` with `key` and `value`;
   `settings.apply` checks it against what is offered, sets it at once (the overlay's own
   through `place_overlay`, the terminal's through `set_terminal`, the rest on `cfg`, with
-  the voice's speed handed to the engine), writes it to `config.json` and logs it; then
+  the voice's speed handed to the engine), writes it to `config.json` and logs it (through
+  `settings.save_all`, one change at a time, which the overlay's place and the terminal's
+  settings use too; since 2026-11-21 a `config.json` that is there but is not JSON, a slip
+  while editing it by hand, is left as it is and `hub.log` says so: before, it was written
+  over with the one setting just chosen, and every other one in it was lost); then
   the hub sends the sections again and the window draws what the hub has, so a choice
   that was refused does not look taken. A slider only sends where it is let go. Keys are
   paths: `speed`, `overlay.layout`, `terminal.tint`, `overlay.hotkeys.talk`, and two that

@@ -4,7 +4,6 @@ the keys or by voice. A part of the hub (see hub.py), which is the only thing th
 from __future__ import annotations
 
 import json
-import os
 import time
 
 import base
@@ -194,20 +193,7 @@ class Permissions:
 
     def _save_settings(self, section: str, changes: dict) -> None:
         """Write settings chosen while running into that section of the user's config.json."""
-        if not self.cfg.config_path:
-            return
-        try:
-            with open(self.cfg.config_path) as f:
-                saved = json.load(f)
-        except (OSError, ValueError):
-            saved = {}
-        saved.setdefault(section, {}).update(changes)
-        try:
-            os.makedirs(os.path.dirname(self.cfg.config_path), exist_ok=True)
-            with open(self.cfg.config_path, "w") as f:
-                json.dump(saved, f, indent=2)
-        except OSError as e:
-            log(self.cfg, "hub.log", f"could not save the {section} settings: {e}")
+        settings_mod.save_all(self.cfg, [([section, key], value) for key, value in changes.items()])
 
     def reload_languages(self) -> dict:
         """Take up the languages chosen with `sidetone languages` (written to config.json)

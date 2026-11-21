@@ -307,6 +307,25 @@ class Chosen(SettingsCase):
         for item in top:
             self.assertEqual(getattr(fresh, item["key"]), getattr(hub.cfg, item["key"]), item["key"])
 
+    def test_a_file_that_cannot_be_read_is_not_written_over(self):
+        # A slip while editing config.json by hand: the next choice in the window, or the
+        # overlay dragged, wrote a file of that one setting, and every other one was lost.
+        hub = self.make()
+        os.makedirs(os.path.dirname(self.cfg.config_path))
+        broken = '{"label": "always", "speed": 1.3,\n "voices": {"api": "am_michael"}\n'  # the closing brace left out
+        with open(self.cfg.config_path, "w") as f:
+            f.write(broken)
+        self.assertIsNone(hub.set_setting("usage_models", "all"))  # taken at once, only not kept
+        hub.place_overlay(False, corner="top-left")
+        hub.set_terminal(tint="all")
+        with open(self.cfg.config_path) as f:
+            self.assertEqual(f.read(), broken)
+        with open(os.path.join(self.tmp, "hub.log")) as f:
+            self.assertIn("cannot be read", f.read())
+        os.remove(self.cfg.config_path)  # and with no file at all, one is made
+        hub.place_overlay(False, corner="top-left", offset_x=20)
+        self.assertEqual(self.saved(), {"overlay": {"corner": "top-left", "offset_x": 20}})
+
     def test_what_cannot_be_is_refused_and_changes_nothing(self):
         hub = self.make()
         self.assertIn("one of", hub.set_setting("label", "loudly"))

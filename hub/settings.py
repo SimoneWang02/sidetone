@@ -667,27 +667,46 @@ def _fit(item: dict, value):
     return "+".join(parts)
 
 
+_saving = threading.Lock()  # one change at a time: each reads the file, adds to it and writes it back
+
+
 def _save(cfg, path: list, value) -> None:
     """Write one value into the user's config.json at `path`, keeping everything else in it."""
-    if not cfg.config_path:
+    save_all(cfg, [(path, value)])
+
+
+def save_all(cfg, changes: list) -> None:
+    """Write values into the user's config.json, each (path, value) as in `_save`, keeping
+    everything else in it. A file that is there but cannot be read as settings (a slip while
+    editing it by hand) is left as it is: written over, every other setting in it was lost."""
+    if not cfg.config_path or not changes:
         return
-    try:
-        with open(cfg.config_path) as f:
-            saved = json.load(f)
-    except (OSError, ValueError):
-        saved = {}
-    at = saved
-    for name in path[:-1]:
-        if not isinstance(at.get(name), dict):
-            at[name] = {}
-        at = at[name]
-    at[path[-1]] = value
-    try:
-        os.makedirs(os.path.dirname(cfg.config_path), exist_ok=True)
-        with open(cfg.config_path, "w") as f:
-            json.dump(saved, f, indent=2)
-    except OSError as e:
-        base.log(cfg, "hub.log", f"could not save the setting {'.'.join(path)}: {e}")
+    named = ", ".join(".".join(map(str, path)) for path, _ in changes)
+    with _saving:
+        try:
+            with open(cfg.config_path) as f:
+                saved = json.load(f)
+        except FileNotFoundError:
+            saved = {}
+        except (OSError, ValueError) as e:
+            base.log(cfg, "hub.log", f"could not save the setting {named}: {cfg.config_path} cannot be read ({e}); left as it is")
+            return
+        if not isinstance(saved, dict):
+            base.log(cfg, "hub.log", f"could not save the setting {named}: {cfg.config_path} is not a set of settings; left as it is")
+            return
+        for path, value in changes:
+            at = saved
+            for name in path[:-1]:
+                if not isinstance(at.get(name), dict):
+                    at[name] = {}
+                at = at[name]
+            at[path[-1]] = value
+        try:
+            os.makedirs(os.path.dirname(cfg.config_path), exist_ok=True)
+            with open(cfg.config_path, "w") as f:
+                json.dump(saved, f, indent=2)
+        except OSError as e:
+            base.log(cfg, "hub.log", f"could not save the setting {named}: {e}")
 
 
 def apply(hub, key: str, value) -> str | None:
