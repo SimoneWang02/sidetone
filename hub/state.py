@@ -403,9 +403,9 @@ class Sessions:
         if name in self.pinned:
             return self.pinned[name]
         live = {s.voice for s in self.by_id.values()} | {k["voice"] for k in self.kept.values()}
-        # Its voice from before, even one no longer in the pool: chosen by hand, or taken out
-        # of the pool only so that new projects do not get it.
-        if self.remembered.get(name) and self.remembered[name] not in live:
+        # Its voice from before, while that voice is still ticked (in the pool). A voice given
+        # by hand is pinned instead (`Hub.set_voice`).
+        if self.remembered.get(name) in self.pool and self.remembered[name] not in live:
             return self.remembered[name]
         order = list(self.pool)  # in the pool's order, which the settings window lets you change
         taken = live | set(self.remembered.values())

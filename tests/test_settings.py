@@ -97,20 +97,20 @@ class Offered(SettingsCase):
         hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "bm_fable", "ef_dora"], "custom": ["mine"],
                               "pool": ["bm_fable", "af_heart"], "projects": {"web": "af_heart", "api": "mine", "closed-long-ago": "af_heart"}}
         voices = next(s for s in settings.describe(hub) if s["name"] == "Voices")["items"]
-        sessions = [i for i in voices if i["key"].startswith("voice_of.")]
-        self.assertEqual([(i["key"], i["value"]) for i in sessions], [("voice_of.api", "mine"), ("voice_of.web", "af_heart")])
-        self.assertEqual([o[0] for o in sessions[0]["options"]], ["bm_fable", "af_heart", "mine"])  # the pool first; Spanish is not offered
-        self.assertEqual(sessions[1]["options"][1], ["af_heart", "Heart (American woman)"])
-        self.assertEqual([i["name"] for i in voices if i["kind"] == "heading"], ["Sessions", "English"])
-        english = [(i["voice"], i["value"], i["more"]) for i in voices if i["kind"] == "voice"]
-        self.assertEqual(english, [("bm_fable", True, False), ("af_heart", True, False), ("mine", False, True)])
+        self.assertFalse([i for i in voices if i["key"].startswith("voice_of.")])  # no part for each project
+        self.assertEqual([i["name"] for i in voices if i["kind"] == "heading"], ["English"])
+        english = [(i["voice"], i["value"], i["more"], i["help"]) for i in voices if i["kind"] == "voice"]
+        self.assertEqual(english, [("bm_fable", True, False, "British man, quality C"), ("af_heart", True, False, "American woman, quality A"),
+                                   ("mine", False, True, "Your own voice")])  # Spanish is not offered
+        hub.voices = lambda: {"choosable": False, "builtin": [], "custom": [], "pool": [], "projects": {}}
+        self.assertNotIn("Voices", [s["name"] for s in settings.describe(hub)])  # an engine with one voice: nothing to choose
 
     def test_each_language_has_its_voices_ticked_in_order(self):
         hub = self.make()
         hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "bm_fable", "if_sara", "im_nicola", "zf_xiaobei"],
                               "custom": [], "pool": ["af_heart"], "projects": {}, "piper": ["piper:it_IT-paola-medium"], "zh": ["zh:zf_001"]}
         voices = next(s for s in settings.describe(hub) if s["name"] == "Voices")["items"]
-        self.assertEqual([i["name"] for i in voices if i["kind"] == "heading"], ["Sessions", "English", "Italian", "Chinese"])
+        self.assertEqual([i["name"] for i in voices if i["kind"] == "heading"], ["English", "Italian", "Chinese"])
         italian = [i["voice"] for i in voices if i.get("group") == "it" and i["value"]]
         self.assertEqual(italian, ["piper:it_IT-paola-medium", "if_sara", "im_nicola"])  # tts.PREFERRED_VOICE until chosen
         self.assertIsNone(hub.set_setting("voices_order.it", ["if_sara", "piper:it_IT-paola-medium", "im_nicola"]))
@@ -160,7 +160,7 @@ class Chosen(SettingsCase):
     def test_every_setting_has_a_default_it_can_take(self):
         hub = self.make()
         for key, item in settings.items(hub).items():
-            if not key.startswith("voice_of."):
+            if not key.startswith("voice_in."):
                 self.assertEqual(settings._fit(item, settings.default(key)), settings.default(key), key)
 
     def test_a_section_is_reset_to_what_a_new_install_has(self):
@@ -219,7 +219,7 @@ class Chosen(SettingsCase):
 
     def test_the_voices_have_no_reset(self):
         hub = self.make()
-        with unittest.mock.patch.object(settings, "_voices", lambda hub: [{"key": "voice_of.web", "kind": "pick", "name": "web", "help": "", "options": [["af_heart", "af_heart"]]}]):
+        with unittest.mock.patch.object(settings, "_voices", lambda hub: [{"key": "voice_in.en.af_heart", "kind": "voice", "name": "Heart", "help": "", "voice": "af_heart", "group": "en", "more": False}]):
             voices = next(s for s in settings.describe(hub) if s["name"] == "Voices")
         self.assertFalse(voices["resettable"])
 
@@ -287,18 +287,16 @@ class Chosen(SettingsCase):
         self.assertEqual((hub.cfg.terminal["strength"], hub.terminals.settings["strength"]), (0.2, 0.2))
         self.assertEqual(self.saved(), {"terminal": {"strength": 0.2}})
 
-    def test_a_project_gets_the_voice_picked_for_it_and_says_so_in_it(self):
+    def test_the_play_button_lets_a_voice_be_heard_and_changes_nothing(self):
         hub = self.make()
-        hub.on_event({"hook_event_name": "SessionStart", "session_id": "a", "cwd": "/w/web"})
-        hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "bm_fable"], "custom": [], "pool": ["af_heart", "bm_fable"],
-                              "projects": {"web": "af_heart"}}
-        given = []
-        hub.set_voice = lambda project, voice: given.append((project, voice))
-        self.assertIsNone(hub.set_setting("voice_of.web", "bm_fable"))
-        self.assertEqual(given, [("web", "bm_fable")])
+        self.engine.has = lambda voice: True  # an engine with voices to choose from
+        before = list(hub.cfg.voice_pool)
+        self.assertIsNone(hub.set_setting("play", "bm_fable"))
+        self.assertIsNone(hub.set_setting("play", "if_sara"))
         self.assertTrue(hub.speech.wait_idle(5))
-        self.assertEqual(self.engine.spoken, [("This is my voice.", "bm_fable")])
-        self.assertIn("one of", hub.set_setting("voice_of.web", "nobody"))
+        self.assertEqual(self.engine.spoken, [("Hello, this is how I sound.", "bm_fable"), ("Ciao, questa \u00e8 la mia voce.", "if_sara")])
+        self.assertEqual(hub.cfg.voice_pool, before)
+        self.assertFalse(os.path.exists(self.cfg.config_path))
 
 
 class Shown(SettingsCase):

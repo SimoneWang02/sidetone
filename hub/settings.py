@@ -6,7 +6,8 @@ setting is one entry of SECTIONS:
 
     key    where it lives: "speed" (the top of config.json), "overlay.layout", "terminal.tint",
            "overlay.hotkeys.talk", and two that are not in that file: "mute" (the voice off for
-           every session, which is the file ~/.claude/voice-off) and "voice_of.<project>"
+           every session, which is the file ~/.claude/voice-off) and "voice_in.<language>.<voice>"
+           (whether that language's sessions take that voice; see `_voices`)
     kind   choice (a few named values, drawn side by side) | switch | number | key (a hotkey)
            | pick (one of many, drawn as a list that drops down; "play": a ▶ that previews it)
            | voice (a voice of a language with a ▶ and a tick; "more": folded away until asked)
@@ -190,12 +191,6 @@ ENGLISH_GRADES = {"af_heart": "A", "af_bella": "A-", "af_nicole": "B-", "bf_emma
                   "af_alloy": "C", "af_nova": "C", "bf_isabella": "C", "bm_fable": "C", "bm_george": "C"}
 
 
-def short_label(voice: str) -> str:
-    """For a dropdown: "Heart (American woman)", without the quality or the speed."""
-    name, what = voice_label(voice)
-    return f"{name} ({what.split(',')[0]})"
-
-
 def voice_label(voice: str) -> tuple[str, str]:
     """A voice's name as people read it, and what it is: ("Heart", "American woman, quality A").
     Kokoro calls it a grade; "quality" is the author's word (2026-11-21: "quality is much more
@@ -279,41 +274,24 @@ def preview(hub, voice: str) -> None:
 
 
 def _voices(hub) -> list:
-    """The Voices section: each open project's voice, then for each language the voices its
-    lines are said in. Not every project that ever had one: that list only grows, and a
-    project that is not open can be given its voice when it is."""
+    """The Voices section: for each language the voices its lines are said in, ticked and in
+    order; sessions take them in turn. There was a part for each open project's own voice
+    above them, taken out the same day (the author, 2026-11-21: "what is the point of it ...
+    each language has its order ... three, they can do one, two, three, one, two, three");
+    a project is still given a voice by hand with `sidetone voice PROJECT VOICE`."""
     known = hub.voices()
     if not known.get("choosable"):
         return []
-    with hub.lock:
-        here = {}
-        for x in hub.sessions.by_id.values():
-            here.setdefault(x.name, x)
     voices = catalog(hub)
-    english = in_use(hub, "en")
-    options = [[v, short_label(v)] for v in english + [v for v in voices["en"] if v not in english]]
-    found = [{"kind": "heading", "key": "heading.sessions", "name": "Sessions",
-              "help": "The voice of each session open now, by its folder's name. It says your English summaries."}]
-    for project in sorted(known["projects"]):
-        if project not in here:
-            continue
-        mine = known["projects"][project]
-        listed = options if any(o[0] == mine for o in options) else options + [[mine, short_label(mine)]]
-        other = []
-        for lang in SUMMARY_LANGUAGES[1:]:
-            v = hub._voice_for(here[project], lang) if hasattr(hub, "_voice_for") else None
-            if v:
-                other.append(f"In {base.LANGUAGE_NAMES[lang]}: {voice_label(v)[0]}.")
-        found.append({"key": f"voice_of.{project}", "kind": "pick", "name": project, "play": True,
-                      "help": " ".join(other), "options": listed})
+    found = []
     for lang in SUMMARY_LANGUAGES:
         chosen = in_use(hub, lang)
         if not voices.get(lang):
             continue
         found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
-                      "help": ("New projects get the first ticked voice no open session has. Drag to change the order."
+                      "help": ("Sessions take the ticked voices in turn, and a project keeps its own from day to day. Drag to change the order."
                                if lang == "en" else
-                               f"Summaries in {base.LANGUAGE_NAMES[lang]} are said in the ticked voices, the first session's in the first. Drag to change the order.")})
+                               f"Summaries in {base.LANGUAGE_NAMES[lang]} are said in the ticked voices, one for each session in turn. Drag to change the order.")})
         for v in chosen + [v for v in voices[lang] if v not in chosen]:
             name, what = voice_label(v)
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
@@ -333,8 +311,6 @@ def read(hub, key: str):
     cfg = hub.cfg
     if key == "mute":
         return os.path.exists(cfg.mute_file)
-    if key.startswith("voice_of."):
-        return hub.voices()["projects"].get(key[9:], "")
     if key.startswith("voice_in."):  # voice_in.it.if_sara: whether Italian lines may be said in it
         lang, voice = key[9:].split(".", 1)
         return voice in in_use(hub, lang)
@@ -361,7 +337,7 @@ def default(key: str):
     project's voice is handed out from the pool)."""
     if key == "mute":
         return False
-    if key.startswith(("voice_of.", "voice_in.", "voices_order.", "heading.")):
+    if key.startswith(("voice_in.", "voices_order.", "heading.")):
         return None
     if key.startswith("overlay.hotkeys."):
         return overlay_mod.DEFAULTS["hotkeys"].get(key[16:], "")
@@ -502,12 +478,6 @@ def apply(hub, key: str, value) -> str | None:
             os.makedirs(os.path.dirname(cfg.mute_file), exist_ok=True)
             open(cfg.mute_file, "a").close()
             hub.speech.stop_all()
-        hub.publish()
-    elif key.startswith("voice_of."):
-        error = hub.set_voice(key[9:], value)
-        if error:
-            return error
-        hub.say("This is my voice.", voice=value)  # so the choice can be heard
         hub.publish()
     elif key.startswith("voice_in."):
         lang, voice = key[9:].split(".", 1)

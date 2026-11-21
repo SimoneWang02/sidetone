@@ -603,7 +603,12 @@ class Hub(Permissions, Talk):
         if not engine.has(voice):
             return f"no voice called {voice}; see: sidetone voices"
         with self.lock:
+            # Given by hand (`sidetone voice PROJECT VOICE`): pinned, so it stays even when the
+            # voice is not ticked in the settings window, and kept in config.json's "voices".
+            self.sessions.pinned[project] = voice
             self.sessions.set_voice(project, voice)
+        import settings as settings_mod
+        settings_mod._save(self.cfg, ["voices", project], voice)
         return None
 
     def add_voice(self, name: str, path: str | None = None, mix: dict | None = None) -> str | None:

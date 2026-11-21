@@ -1240,3 +1240,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the Chinese model 0.47 s. So the faster ones are Piper's: its English Lessac is back under
   More Voices, and a Piper voice says "faster (Piper)" ("American woman, faster (Piper)").
   Chinese has no Piper voice installed (Piper has `zh_CN-huayan`).
+  Then the Sessions part came out (the author: "what is the point of it ... each language has
+  its order ... if it has two, maybe they can alternate. Three, they can do one, two, three,
+  one, two, three"): the page is the three language cards. A voice unticked is no longer
+  given, also to a project that had it (`Sessions._voice_for` keeps a project's voice only
+  while it is in the pool, as before); a voice given by hand with `sidetone voice PROJECT
+  VOICE` is pinned instead (`Hub.set_voice` writes it to config.json's `voices`).
