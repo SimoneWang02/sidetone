@@ -591,6 +591,8 @@ class Hub(Permissions, Talk):
             open_now = {s.name: s.voice for s in self.sessions.by_id.values()}
         return {"choosable": hasattr(engine, "custom"), "builtin": sorted(getattr(engine, "voices", [])),
                 "custom": sorted(getattr(engine, "custom", {})), "pool": list(self.cfg.voice_pool),
+                "piper": sorted(getattr(engine, "piper", {})),
+                "zh": sorted("zh:" + v for v in (engine.zh_voices() if hasattr(engine, "zh_voices") else ())),
                 "projects": {**projects, **open_now}}
 
     def set_voice(self, project: str, voice: str) -> str | None:

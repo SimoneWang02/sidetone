@@ -1126,6 +1126,7 @@ namespace ClaudeSpeaks
     class Toggle : FrameworkElement
     {
         readonly bool on;
+        public bool On { get { return on; } }
 
         public Toggle(bool on)
         {
@@ -1298,7 +1299,11 @@ namespace ClaudeSpeaks
             root.Children.Add(main);
 
             list.MaxWidth = ListMost;
-            list.HorizontalAlignment = HorizontalAlignment.Center;
+            // Stretched, so every section is as wide as the window lets it be (up to ListMost, then
+            // in the middle), whether its lines are long or short: Voices, with short lines, stood
+            // narrow in the middle (the author, 2026-11-21: "they should take up the spaces like
+            // the rest of the setting pages").
+            list.HorizontalAlignment = HorizontalAlignment.Stretch;
             var frame = new Grid();
             frame.Children.Add(root);
             AddGrips(frame);
@@ -1511,16 +1516,62 @@ namespace ClaudeSpeaks
                 if (!on) continue;
 
                 list.Children.Add(new TextBlock { Text = name, FontSize = 19, FontWeight = FontWeights.SemiBold, Margin = new Thickness(6, 0, 0, 12) });
-                var card = new Border { CornerRadius = new CornerRadius(10), Background = Ui.Paint("#12FFFFFF") };
-                var lines = new StackPanel();
-                card.Child = lines;
                 object[] items = section.ContainsKey("items") && section["items"] is object[] ? (object[])section["items"] : new object[0];
+                // The voices of each language that are ticked, in their order: what a drag reorders.
+                ticked.Clear();
                 foreach (object i in items)
                 {
-                    if (lines.Children.Count > 0) lines.Children.Add(new Border { Height = 1, Background = Ui.Paint("#14FFFFFF"), Margin = new Thickness(16, 0, 0, 0) });
-                    lines.Children.Add(Line((Dictionary<string, object>)i));
+                    var item = (Dictionary<string, object>)i;
+                    if (Overlay.Str(item, "kind") != "voice" || Folded(item)) continue;
+                    string group = Overlay.Str(item, "group");
+                    if (!ticked.ContainsKey(group)) ticked[group] = new List<string>();
+                    ticked[group].Add(Overlay.Str(item, "voice"));
                 }
-                list.Children.Add(card);
+                StackPanel lines = null;
+                string inGroup = "";
+                int hidden = 0, folded = 0;
+                // A card ends at a heading or at the end: with a line to unfold what it keeps folded.
+                Action endCard = delegate
+                {
+                    if (lines == null) return;
+                    string group = inGroup;
+                    if (folded > 0)
+                    {
+                        bool open = hidden == 0;
+                        if (lines.Children.Count > 0) lines.Children.Add(new Border { Height = 1, Background = Ui.Paint("#14FFFFFF"), Margin = new Thickness(16, 0, 0, 0) });
+                        var more = new Border { Padding = new Thickness(16, 9, 14, 10), Cursor = Cursors.Hand, CornerRadius = new CornerRadius(0, 0, 10, 10) };
+                        more.Child = new TextBlock { Text = open ? "Fewer Voices" : "More Voices (" + hidden + ")", FontSize = 12, Foreground = Ui.Dim };
+                        Lit(more, "#00FFFFFF", "#0FFFFFFF");
+                        more.MouseLeftButtonUp += delegate { if (open) unfolded.Remove(group); else unfolded.Add(group); Fill(); };
+                        lines.Children.Add(more);
+                    }
+                    list.Children.Add(new Border { CornerRadius = new CornerRadius(10), Background = Ui.Paint("#12FFFFFF"), Child = lines });
+                    lines = null;
+                };
+                foreach (object i in items)
+                {
+                    var item = (Dictionary<string, object>)i;
+                    if (Overlay.Str(item, "kind") == "heading")
+                    {
+                        endCard();
+                        bool first = list.Children.Count == 1;
+                        list.Children.Add(new TextBlock { Text = Overlay.Str(item, "name"), FontSize = 14, FontWeight = FontWeights.SemiBold, Margin = new Thickness(6, first ? 0 : 22, 0, 2) });
+                        string about = Overlay.Str(item, "help");
+                        if (about.Length > 0) list.Children.Add(new TextBlock { Text = about, FontSize = 11.5, Foreground = Ui.Faint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(6, 0, 0, 9) });
+                        inGroup = Overlay.Str(item, "key").Replace("heading.", "");
+                        hidden = folded = 0;
+                        continue;
+                    }
+                    if (lines == null) lines = new StackPanel();
+                    if (item.ContainsKey("more") && Convert.ToBoolean(item["more"], CultureInfo.InvariantCulture))
+                    {
+                        folded++;
+                        if (!unfolded.Contains(Overlay.Str(item, "group"))) { hidden++; continue; }
+                    }
+                    if (lines.Children.Count > 0) lines.Children.Add(new Border { Height = 1, Background = Ui.Paint("#14FFFFFF"), Margin = new Thickness(16, 0, 0, 0) });
+                    lines.Children.Add(Line(item, lines));
+                }
+                endCard();
                 if (section.ContainsKey("resettable") && Convert.ToBoolean(section["resettable"], CultureInfo.InvariantCulture))
                     list.Children.Add(ResetButton(name, section.ContainsKey("changed") && Convert.ToBoolean(section["changed"], CultureInfo.InvariantCulture)));
             }
@@ -1558,8 +1609,94 @@ namespace ClaudeSpeaks
             return button;
         }
 
+        // Voices: which groups show what they keep folded, and the ticked voices of each in order.
+        readonly HashSet<string> unfolded = new HashSet<string>();
+        readonly Dictionary<string, List<string>> ticked = new Dictionary<string, List<string>>();
+
+        static bool Folded(Dictionary<string, object> item)
+        {
+            return item.ContainsKey("more") && Convert.ToBoolean(item["more"], CultureInfo.InvariantCulture);
+        }
+
+        // A round button with a triangle: the voice says a sentence, and nothing is changed.
+        Border PlayButton(string voice)
+        {
+            var sign = new System.Windows.Shapes.Path { Data = Geometry.Parse("M0,0 L7,4.5 L0,9 Z"), Fill = Ui.Dim, Width = 7, Height = 9, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(2, 0, 0, 0) };
+            var button = new Border { Width = 28, Height = 28, CornerRadius = new CornerRadius(14), Cursor = Cursors.Hand, Child = sign, ToolTip = "Hear It" };
+            Lit(button, "#17FFFFFF", "#2EFFFFFF");
+            button.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; };
+            button.MouseLeftButtonUp += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; choose("play", voice); };
+            return button;
+        }
+
+        // Six dots at the left of a ticked voice, where it is held to be dragged.
+        static Border Grip()
+        {
+            var dots = new Canvas { Width = 8, Height = 12 };
+            for (int r = 0; r < 3; r++)
+                for (int c = 0; c < 2; c++)
+                {
+                    var dot = new System.Windows.Shapes.Ellipse { Width = 2.6, Height = 2.6, Fill = Ui.Faint };
+                    Canvas.SetLeft(dot, c * 5); Canvas.SetTop(dot, r * 4.6);
+                    dots.Children.Add(dot);
+                }
+            return new Border { Background = Brushes.Transparent, Padding = new Thickness(0, 6, 12, 6), Cursor = Cursors.SizeNS, VerticalAlignment = VerticalAlignment.Center, Child = dots, ToolTip = "Drag to Change the Order" };
+        }
+
+        // A ticked voice dragged up or down among the ticked voices of its language: the others
+        // make room as it passes, and where it is let go is its new place, sent to the hub.
+        void Drag(Border grip, Grid line, StackPanel card, string group, string voice)
+        {
+            double startY = 0, pitch = 0;
+            int from = -1, to = -1;
+            var rows = new List<FrameworkElement>();
+            grip.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e)
+            {
+                e.Handled = true;
+                List<string> order;
+                if (!ticked.TryGetValue(group, out order) || order.Count < 2) return;
+                rows.Clear();
+                foreach (UIElement child in card.Children)
+                    if (child is Grid) rows.Add((FrameworkElement)child);
+                rows = rows.GetRange(0, Math.Min(order.Count, rows.Count));  // the ticked come first
+                from = to = rows.IndexOf(line);
+                if (from < 0) return;
+                pitch = line.ActualHeight + line.Margin.Top + line.Margin.Bottom + 1;  // a line and the rule under it
+                startY = e.GetPosition(card).Y;
+                Panel.SetZIndex(line, 5);
+                grip.CaptureMouse();
+            };
+            grip.MouseMove += delegate(object sender, MouseEventArgs e)
+            {
+                if (!grip.IsMouseCaptured || from < 0) return;
+                double dy = e.GetPosition(card).Y - startY;
+                dy = Math.Max(-from * pitch, Math.Min((rows.Count - 1 - from) * pitch, dy));
+                line.RenderTransform = new TranslateTransform(0, dy);
+                to = Math.Max(0, Math.Min(rows.Count - 1, from + (int)Math.Round(dy / pitch)));
+                for (int k = 0; k < rows.Count; k++)
+                {
+                    if (k == from) continue;
+                    double shift = from < to && k > from && k <= to ? -pitch : from > to && k < from && k >= to ? pitch : 0;
+                    rows[k].RenderTransform = new TranslateTransform(0, shift);
+                }
+            };
+            grip.MouseLeftButtonUp += delegate
+            {
+                if (!grip.IsMouseCaptured) return;
+                grip.ReleaseMouseCapture();
+                foreach (FrameworkElement row in rows) row.RenderTransform = null;
+                Panel.SetZIndex(line, 0);
+                if (from < 0 || to == from) return;
+                var order = new List<string>(ticked[group]);
+                order.Remove(voice);
+                order.Insert(to, voice);
+                ticked[group] = order;
+                choose("voices_order." + group, order.ToArray());
+            };
+        }
+
         // One setting: its name and a sentence about it at the left, what sets it at the right.
-        UIElement Line(Dictionary<string, object> item)
+        UIElement Line(Dictionary<string, object> item, StackPanel card)
         {
             string key = Overlay.Str(item, "key"), kind = Overlay.Str(item, "kind"), help = Overlay.Str(item, "help");
             object value = item.ContainsKey("value") ? item["value"] : null;
@@ -1569,6 +1706,14 @@ namespace ClaudeSpeaks
             line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+            if (kind == "voice" && !Folded(item))  // a ticked voice: dragged by its grip to another place
+            {
+                line.ColumnDefinitions.Insert(0, new ColumnDefinition { Width = GridLength.Auto });
+                var grip = Grip();
+                line.Children.Add(grip);
+                Grid.SetColumn(words, 1);
+                Drag(grip, line, card, Overlay.Str(item, "group"), Overlay.Str(item, "voice"));
+            }
             words.Children.Add(new TextBlock { Text = Overlay.Str(item, "name"), FontSize = 13, TextTrimming = TextTrimming.CharacterEllipsis });
             if (typing) help = "Press the new keys. Esc keeps the old ones, Delete leaves it without a key.";
             if (help.Length > 0) words.Children.Add(new TextBlock { Text = help, FontSize = 11.5, Foreground = typing ? Ui.Dim : Ui.Faint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 2, 0, 0) });
@@ -1584,10 +1729,28 @@ namespace ClaudeSpeaks
             else if (kind == "number") control = Number(key, item, value);
             else if (kind == "key") control = KeyBox(key, Convert.ToString(value, CultureInfo.InvariantCulture) ?? "", typing);
             else if (kind == "pick") control = Pick(key, options, value);
+            else if (kind == "voice") control = new Toggle(value != null && Convert.ToBoolean(value, CultureInfo.InvariantCulture));
             else control = Segments(key, options, value);
+            if (kind == "voice")
+            {
+                bool on = ((Toggle)control).On;
+                control.MouseLeftButtonUp += delegate { choose(key, !on); };
+            }
+            string heard = kind == "voice" ? Overlay.Str(item, "voice") : item.ContainsKey("play") && Convert.ToBoolean(item["play"], CultureInfo.InvariantCulture) ? Convert.ToString(value, CultureInfo.InvariantCulture) : "";
+            if (heard != null && heard.Length > 0)  // a voice: a button to hear it beside what sets it
+            {
+                var both = new StackPanel { Orientation = Orientation.Horizontal };
+                var play = PlayButton(heard);
+                play.Margin = new Thickness(0, 0, 10, 0);
+                if (kind == "pick") control.Width = 214;  // one width for every session's voice, so the buttons line up
+                both.Children.Add(play);
+                both.Children.Add(control);
+                control.VerticalAlignment = VerticalAlignment.Center;
+                control = both;
+            }
             control.Margin = new Thickness(18, 0, 0, 0);
             control.VerticalAlignment = VerticalAlignment.Center;
-            Grid.SetColumn(control, 1);
+            Grid.SetColumn(control, line.ColumnDefinitions.Count - 1);
             line.Children.Add(control);
             return line;
         }

@@ -8,7 +8,9 @@ setting is one entry of SECTIONS:
            "overlay.hotkeys.talk", and two that are not in that file: "mute" (the voice off for
            every session, which is the file ~/.claude/voice-off) and "voice_of.<project>"
     kind   choice (a few named values, drawn side by side) | switch | number | key (a hotkey)
-           | pick (one of many, drawn as a list that drops down)
+           | pick (one of many, drawn as a list that drops down; "play": a ▶ that previews it)
+           | voice (a voice of a language with a ▶ and a tick; "more": folded away until asked)
+           | heading (a title over the next card; the Voices section only)
     name, help   what the window writes: a few words, and one plain sentence under them
 
 A change takes effect at once and is written to config.json, so it is still there after a
@@ -24,6 +26,7 @@ import re
 import base
 import overlay as overlay_mod
 import terminal as terminal_mod
+import tts
 
 
 def choice(key: str, name: str, help: str, *options) -> dict:
@@ -51,7 +54,7 @@ SUMMARY_LANGUAGES = ["en", "it", "zh"]
 SECTIONS = [
     # Most used first (the author, 2026-11-20: "most use should be on top"): what you reach for
     # every day, then what is set once.
-    ("Voice", [
+    ("Speech", [
         # Was "Voice", "Speak a short summary of each reply.": the author took it for short or long
         # answers (2026-11-20: "it sounds like it's more like a mute or not").
         switch("mute", "Mute", "No voice for any session. The mute key does the same."),
@@ -166,20 +169,129 @@ KEY_PARTS = {"ctrl", "alt", "shift", "win"}
 NAME = "Sidetone"  # what the window calls the tool, beside its mark
 
 
+# Kokoro names its voices by language and kind: af_heart is an American woman called Heart.
+ACCENTS = {"a": "American", "b": "British", "e": "Spanish", "f": "French", "h": "Hindi", "i": "Italian",
+           "j": "Japanese", "p": "Brazilian", "z": "Chinese"}
+VOICE_LANG = {"a": "en", "b": "en", "i": "it", "z": "zh"}  # the letters of the languages offered here
+SAMPLES = {"en": "Hello, this is how I sound.", "it": "Ciao, questa \u00e8 la mia voce.",
+           "zh": "\u4f60\u597d\uff0c\u8fd9\u662f\u6211\u7684\u58f0\u97f3\u3002"}
+PIPER_PLACES = {"US": "American", "GB": "British", "IT": "Italian", "CN": "Chinese"}
+
+
+def voice_label(voice: str) -> tuple[str, str]:
+    """A voice's name as people read it, and what it is: ("Heart", "American woman")."""
+    if voice.startswith("piper:"):  # piper:it_IT-paola-medium
+        model = voice[6:].split("-")
+        place = model[0].split("_")[-1] if model else ""
+        return (model[1].replace("_", " ").title() if len(model) > 1 else voice[6:]), \
+            " ".join(w for w in (PIPER_PLACES.get(place, ""), "(Piper)") if w)
+    if voice.startswith("zh:"):  # zh:zf_001, Kokoro's Chinese model, whose voices are numbered
+        m = re.fullmatch(r"z([fm])_(\d+)", voice[3:])
+        if m:
+            return f"{'Woman' if m.group(1) == 'f' else 'Man'} {int(m.group(2))}", "Chinese (Kokoro's Chinese model)"
+        return voice[3:], "Chinese (Kokoro's Chinese model)"
+    m = re.fullmatch(r"([a-z])([fm])_(\w+)", voice)
+    if m and m.group(1) in ACCENTS:
+        return m.group(3).replace("_", " ").title(), f"{ACCENTS[m.group(1)]} {'woman' if m.group(2) == 'f' else 'man'}"
+    return voice, "Your own voice"
+
+
+def voice_language(voice: str) -> str:
+    """The language a voice speaks: "en", "it", "zh", or "" for one not offered here."""
+    if voice.startswith("zh:"):
+        return "zh"
+    if voice.startswith("piper:"):
+        return voice[6:8]
+    m = re.fullmatch(r"([a-z])[fm]_\w+", voice)
+    return VOICE_LANG.get(m.group(1), "") if m else "en"  # one's own voices speak English
+
+
+def catalog(hub) -> dict:
+    """Every voice this machine has, by the language it speaks (`SUMMARY_LANGUAGES` only)."""
+    known = hub.voices()
+    names = set(known.get("builtin", [])) | set(known.get("custom", [])) | set(known.get("piper", [])) | set(known.get("zh", []))
+    found = {lang: [] for lang in SUMMARY_LANGUAGES}
+    for v in sorted(names):
+        if voice_language(v) in found:
+            found[voice_language(v)].append(v)
+    return found
+
+
+def in_use(hub, lang: str) -> list:
+    """The voices a language's sessions take in turn: for English the pool new projects get
+    theirs from, for another language `language_voices` or else `tts.PREFERRED_VOICE`."""
+    have = set(catalog(hub).get(lang, []))
+    if lang == "en":
+        return [v for v in hub.voices().get("pool", hub.cfg.voice_pool) if v in have]
+    wanted = hub.cfg.language_voices.get(lang) or tts.PREFERRED_VOICE.get(lang) or []
+    return [v for v in ([wanted] if isinstance(wanted, str) else wanted) if v in have]
+
+
+def set_in_use(hub, lang: str, voices: list) -> str | None:
+    """Which voices a language uses, in their order. Returns what is wrong, or None."""
+    have = set(catalog(hub).get(lang, []))
+    if not voices:
+        return "keep at least one voice for each language"
+    if any(v not in have for v in voices):
+        return "no such voice for " + base.LANGUAGE_NAMES.get(lang, "English")
+    if lang == "en":
+        hub.cfg.voice_pool[:] = voices  # in place: the sessions hold this same list
+        _save(hub.cfg, ["voice_pool"], voices)
+    else:
+        hub.cfg.language_voices[lang] = voices
+        _save(hub.cfg, ["language_voices", lang], voices)
+        # Shared out again, so the order chosen holds at once: the first session gets the first.
+        chosen = getattr(hub, "_lang_voices", {})
+        for k in [k for k in chosen if k[0] == lang]:
+            del chosen[k]
+    return None
+
+
+def preview(hub, voice: str) -> None:
+    """A voice says a sentence in its language, and nothing is changed (the ▶ in the window)."""
+    if voice and hasattr(hub.speech.engine, "has") and hub.speech.engine.has(voice):
+        hub.say(SAMPLES.get(voice_language(voice), SAMPLES["en"]), voice=voice)
+
+
 def _voices(hub) -> list:
-    """One line for each project that has a session open: its voice, out of those this machine
-    has. Not every project that ever had one: that list only grows, and a project that is not
-    open can be given its voice when it is."""
+    """The Voices section: each open project's voice, then for each language the voices its
+    lines are said in. Not every project that ever had one: that list only grows, and a
+    project that is not open can be given its voice when it is."""
     known = hub.voices()
     if not known.get("choosable"):
         return []
     with hub.lock:
-        here = {s.name for s in hub.sessions.by_id.values()}
-    names = sorted(set(known["builtin"]) | set(known["custom"]))
-    pool = [v for v in known["pool"] if v in names]
-    options = [[v, v] for v in pool + [v for v in names if v not in pool]]  # the clearer ones first
-    return [{"key": f"voice_of.{project}", "kind": "pick", "name": project, "help": "", "options": options}
-            for project in sorted(known["projects"]) if project in here]
+        here = {}
+        for x in hub.sessions.by_id.values():
+            here.setdefault(x.name, x)
+    voices = catalog(hub)
+    english = in_use(hub, "en")
+    options = [[v, "{} ({})".format(*voice_label(v))] for v in english + [v for v in voices["en"] if v not in english]]
+    found = [{"kind": "heading", "key": "heading.sessions", "name": "Sessions",
+              "help": "The voice of each session open now, by its folder's name. It says your English summaries."}]
+    for project in sorted(known["projects"]):
+        if project not in here:
+            continue
+        other = []
+        for lang in SUMMARY_LANGUAGES[1:]:
+            v = hub._voice_for(here[project], lang) if hasattr(hub, "_voice_for") else None
+            if v:
+                other.append(f"In {base.LANGUAGE_NAMES[lang]}: {voice_label(v)[0]}.")
+        found.append({"key": f"voice_of.{project}", "kind": "pick", "name": project, "play": True,
+                      "help": " ".join(other), "options": options})
+    for lang in SUMMARY_LANGUAGES:
+        chosen = in_use(hub, lang)
+        if not voices.get(lang):
+            continue
+        found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
+                      "help": ("New projects get the first ticked voice no open session has. Drag to change the order."
+                               if lang == "en" else
+                               f"Summaries in {base.LANGUAGE_NAMES[lang]} are said in the ticked voices, the first session's in the first. Drag to change the order.")})
+        for v in chosen + [v for v in voices[lang] if v not in chosen]:
+            name, what = voice_label(v)
+            found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
+                          "group": lang, "more": v not in chosen})
+    return found
 
 
 def items(hub) -> dict:
@@ -196,6 +308,9 @@ def read(hub, key: str):
         return os.path.exists(cfg.mute_file)
     if key.startswith("voice_of."):
         return hub.voices()["projects"].get(key[9:], "")
+    if key.startswith("voice_in."):  # voice_in.it.if_sara: whether Italian lines may be said in it
+        lang, voice = key[9:].split(".", 1)
+        return voice in in_use(hub, lang)
     if key.startswith("overlay.hotkeys."):
         return cfg.overlay.get("hotkeys", {}).get(key[16:], "")
     if key.startswith("overlay."):
@@ -219,7 +334,7 @@ def default(key: str):
     project's voice is handed out from the pool)."""
     if key == "mute":
         return False
-    if key.startswith("voice_of."):
+    if key.startswith(("voice_of.", "voice_in.", "voices_order.", "heading.")):
         return None
     if key.startswith("overlay.hotkeys."):
         return overlay_mod.DEFAULTS["hotkeys"].get(key[16:], "")
@@ -257,7 +372,8 @@ def describe(hub) -> list:
     for name, section in SECTIONS:
         listed = _voices(hub) if name == "Voices" else section
         if listed:
-            values = [{**item, "help": _with_keys(hub, item["help"]), "value": read(hub, item["key"])} for item in listed]
+            values = [{**item, "help": _with_keys(hub, item["help"]),
+                       "value": None if item["kind"] == "heading" else read(hub, item["key"])} for item in listed]
             resettable = [i for i in values if default(i["key"]) is not None]
             sections.append({"name": name, "items": values, "resettable": bool(resettable),
                              "changed": any(not _same(i, i["value"], default(i["key"])) for i in resettable)})
@@ -289,7 +405,7 @@ def _fit(item: dict, value):
             if value == allowed or str(value) == str(allowed):
                 return allowed
         raise ValueError(f"{item['key']} is one of: " + ", ".join(str(o[0]) for o in item["options"]))
-    if kind == "switch":
+    if kind in ("switch", "voice"):
         if isinstance(value, str):
             if value.lower() not in ("true", "false", "on", "off"):
                 raise ValueError(f"{item['key']} is on or off")
@@ -335,6 +451,12 @@ def _save(cfg, path: list, value) -> None:
 
 def apply(hub, key: str, value) -> str | None:
     """Change a setting: at once, and remembered. Returns what is wrong with it, or None."""
+    if key.startswith("voices_order."):  # a voice dragged to another place in its language's list
+        error = set_in_use(hub, key[13:], [str(v) for v in value] if isinstance(value, list) else [])
+        if not error:
+            base.log(hub.cfg, "hub.log", f"setting {key} = {json.dumps(value)}")
+            hub.publish()
+        return error
     item = items(hub).get(key)
     if not item:
         return f"no setting called {key}"
@@ -359,6 +481,13 @@ def apply(hub, key: str, value) -> str | None:
         if error:
             return error
         hub.say("This is my voice.", voice=value)  # so the choice can be heard
+        hub.publish()
+    elif key.startswith("voice_in."):
+        lang, voice = key[9:].split(".", 1)
+        now = in_use(hub, lang)
+        error = set_in_use(hub, lang, now + [voice] if value and voice not in now else [v for v in now if v != voice or value])
+        if error:
+            return error
         hub.publish()
     elif key.startswith("overlay.hotkeys."):
         cfg.overlay.setdefault("hotkeys", {})[key[16:]] = value

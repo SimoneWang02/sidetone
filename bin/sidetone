@@ -30,7 +30,7 @@ Usage: sidetone <command>
   settings [close]           open the settings window (or close it)
   settings list              every setting and what it is now
   settings KEY VALUE         change one setting at once, e.g.  settings overlay.layout island
-  settings reset SECTION     put one section of the window back as a new install has it, e.g.  settings reset Voice
+  settings reset SECTION     put one section of the window back as a new install has it, e.g.  settings reset Speech
   overlay dots|list|toggle|restart   switch the on-screen overlay's view, or restart it
   overlay layout NAME|next   how sessions are shown: bar or island
   overlay move               make the overlay easy to find and drag (you can drag it any time)

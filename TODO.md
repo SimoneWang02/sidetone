@@ -59,6 +59,15 @@ these come before anything new.
       Volume 0 to 100, progress, the repeat choice and the feedback choice removed, most used
       first). **Next: Talking**, then Overlay, Figures, Terminal, Keys, Voices (the author
       stopped for the night: "We can continue tomorrow").
+      2026-11-21: Voices taken first. The author: "Voice" and "Voices" too alike, only the
+      open sessions, no label, no preview, narrow in the middle, and a voice per language.
+      Agreed and built: Voice renamed **Speech**; the page as wide as the others; Sessions
+      (each open project's English voice, a ▶ to hear it, its Italian and Chinese voices
+      named under it), then English, Italian and Chinese, each a card of its voices with
+      readable names ("Heart, American woman"), a ▶ and a tick; sessions take the ticked
+      voices in their order (dragged by the dots at the left); unticked ones folded under
+      "More Voices". A project's voice chosen by hand is kept even when it is not ticked.
+      Seen in pictures only: **for the author to try** (▶, ticks, dragging, More Voices).
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
       and maximized by a button or a double click on its top, a dropdown that closes on a

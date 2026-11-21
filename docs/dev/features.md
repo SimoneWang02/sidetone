@@ -1202,3 +1202,27 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - Runtime files live outside the repo: `~/.local/state/sidetone/` (`voice.log` contains
   spoken summaries, `hub.log`, `.state/`, `.tts.pid`).
 - `hooks/settings-snippet.json`: the `hooks` block as registered in settings.json.
+
+- The Voices page of the settings window (2026-11-21; `settings._voices`, `catalog`, `in_use`,
+  `set_in_use`, `preview`, `voice_label`; `Folded`, `PlayButton`, `Grip`, `Drag` in
+  `Overlay.cs`). The author: "there's a menu voice ... and another one which is labeled
+  voices. Maybe these two are too similar", the page "shows only the current sessions ...
+  there's no label, there's no preview ... these layout are also centered", and "for each
+  language to associate the models". Agreed: the Voice section is now **Speech**; the list
+  of settings is stretched (up to `ListMost`), so a section of short lines is as wide as the
+  others. The page is headed parts (`kind: heading`): Sessions, one dropdown per open project
+  (its English voice, offered English voices only, the ticked ones first) with a ▶ and its
+  Italian and Chinese voices under it; then one card per language of `SUMMARY_LANGUAGES`
+  with every voice this machine has that speaks it (Kokoro's by their first letter, Piper's
+  by their model name, `zh:` the Chinese model's, one's own voices as English), each a
+  `kind: voice` line: a readable name (`voice_label`: "Heart", "American woman"; the Chinese
+  model's numbered voices "Woman 1"), a ▶ (`play`: the voice says `SAMPLES[lang]`, nothing
+  changes) and a tick. Ticked voices are, for English, `voice_pool` (new projects get the
+  first one no open session has; now in the pool's order, it was from a place picked by the
+  project's name), and for Italian and Chinese `language_voices[lang]`, which `_voice_for`
+  shares out in order (changing it hands them out again at once). The ticked come first in
+  their order and are dragged by six dots at the left (`voices_order.<lang>`); the others
+  wait under "More Voices (N)". At least one stays ticked. A project keeps the voice it had
+  even when that voice is no longer in the pool (`Sessions._voice_for`): before, a voice
+  chosen by hand outside the pool was replaced at its next start. Pictures:
+  `settings-voices.png`, `settings-voices-tall.png`.

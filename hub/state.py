@@ -400,10 +400,11 @@ class Sessions:
         if name in self.pinned:
             return self.pinned[name]
         live = {s.voice for s in self.by_id.values()} | {k["voice"] for k in self.kept.values()}
-        if self.remembered.get(name) in self.pool and self.remembered[name] not in live:
+        # Its voice from before, even one no longer in the pool: chosen by hand, or taken out
+        # of the pool only so that new projects do not get it.
+        if self.remembered.get(name) and self.remembered[name] not in live:
             return self.remembered[name]
-        start = zlib.crc32(name.encode()) % len(self.pool)
-        order = [self.pool[(start + i) % len(self.pool)] for i in range(len(self.pool))]
+        order = list(self.pool)  # in the pool's order, which the settings window lets you change
         taken = live | set(self.remembered.values())
         voice = next((v for v in order if v not in taken), None) or next((v for v in order if v not in live), order[0])
         if name not in self.remembered:  # a second session of the same project borrows, it does not rename

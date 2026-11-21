@@ -536,8 +536,16 @@ class FakeHub:
     sessions = type("Open", (), {"by_id": {n: type("S", (), {"name": n}) for n in ("sidetone", "api-server", "web-app")}})
 
     def voices(self):
-        return {"choosable": True, "builtin": sorted(state.VOICE_POOL) + ["if_sara", "im_nicola"], "custom": ["my_mix"],
-                "pool": list(state.VOICE_POOL), "projects": {"sidetone": "af_heart", "api-server": "bm_fable", "web-app": "af_bella"}}
+        kokoro = ("af_alloy af_aoede af_bella af_heart af_jessica af_kore af_nicole af_nova af_river af_sarah af_sky am_adam "
+                  "am_echo am_eric am_fenrir am_liam am_michael am_onyx am_puck am_santa bf_alice bf_emma bf_isabella bf_lily "
+                  "bm_daniel bm_fable bm_george bm_lewis if_sara im_nicola zf_xiaobei zf_xiaoni zm_yunjian").split()
+        return {"choosable": True, "builtin": kokoro, "custom": ["my_mix"], "pool": list(state.VOICE_POOL),
+                "piper": ["piper:en_US-lessac-medium", "piper:it_IT-paola-medium"],
+                "zh": [f"zh:z{k}_{n:03d}" for k, n in (("f", 1), ("f", 2), ("f", 3), ("m", 9), ("m", 10), ("m", 11))],
+                "projects": {"sidetone": "af_heart", "api-server": "bm_fable", "web-app": "af_bella"}}
+
+    def _voice_for(self, s, lang):  # what the hub would give: the first of the language's voices
+        return settings_mod.in_use(self, lang)[0]
 
 
 SETTINGS = settings_mod.describe(FakeHub())
@@ -551,8 +559,13 @@ if not ONLY or "settings".startswith(ONLY) or "logo".startswith(ONLY):
 for section in SETTINGS:
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section=section["name"])
     shot("settings-" + section["name"].lower(), 0.7)
-CHANGED = [{**s, "changed": s["name"] == "Voice"} for s in SETTINGS]  # one setting of Voice moved: its reset button lit
-send(type="settings", open=True, quiet=True, sections=CHANGED, section="Voice")
+# Voices at the height of the screen, with Chinese unfolded: the window maximized by its button.
+if not ONLY or "settings-voices-tall".startswith(ONLY) or ONLY.startswith("settings-voices"):
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[732, 24])
+    shot("settings-voices-tall", 0.7)
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[732, 24])
+CHANGED = [{**s, "changed": s["name"] == "Speech"} for s in SETTINGS]  # one setting of Speech moved: its reset button lit
+send(type="settings", open=True, quiet=True, sections=CHANGED, section="Speech")
 shot("settings-voice-changed", 0.7)
 # What is drawn answers to a click: one on a choice, a switch, a section at the left, a
 # hotkey. The places are read off the pictures above (the window's own units, from its corner).
@@ -567,7 +580,7 @@ def click(section, x, y, expect):
 clicks = [click("Overlay", 716, 117, ("overlay.layout", "island")),
           click("Figures", 690, 117, ("context_shown", "both")),
           click("Talking", 648, 125, ("followup_confirm", "auto"))]
-send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voice", click=[46, 278])  # "Keys" at the left
+send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Speech", click=[46, 278])  # "Keys" at the left
 shot("settings-clicked-keys", 0.5)
 send(type="settings", open=True, quiet=True, sections=SETTINGS, click=[690, 230])  # the hotkey of "Keep the details out"
 shot("settings-typing-key", 0.5)

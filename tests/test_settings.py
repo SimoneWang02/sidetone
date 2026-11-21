@@ -94,11 +94,34 @@ class Offered(SettingsCase):
         hub = self.make()
         for sid, folder in (("a", "/w/web"), ("b", "/w/api")):
             hub.on_event({"hook_event_name": "SessionStart", "session_id": sid, "cwd": folder})
-        hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "bm_fable", "zz_other"], "custom": ["mine"],
+        hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "bm_fable", "ef_dora"], "custom": ["mine"],
                               "pool": ["bm_fable", "af_heart"], "projects": {"web": "af_heart", "api": "mine", "closed-long-ago": "af_heart"}}
         voices = next(s for s in settings.describe(hub) if s["name"] == "Voices")["items"]
-        self.assertEqual([(i["key"], i["value"]) for i in voices], [("voice_of.api", "mine"), ("voice_of.web", "af_heart")])
-        self.assertEqual([o[0] for o in voices[0]["options"]], ["bm_fable", "af_heart", "mine", "zz_other"])  # the pool first
+        sessions = [i for i in voices if i["key"].startswith("voice_of.")]
+        self.assertEqual([(i["key"], i["value"]) for i in sessions], [("voice_of.api", "mine"), ("voice_of.web", "af_heart")])
+        self.assertEqual([o[0] for o in sessions[0]["options"]], ["bm_fable", "af_heart", "mine"])  # the pool first; Spanish is not offered
+        self.assertEqual(sessions[1]["options"][1], ["af_heart", "Heart (American woman)"])
+        self.assertEqual([i["name"] for i in voices if i["kind"] == "heading"], ["Sessions", "English"])
+        english = [(i["voice"], i["value"], i["more"]) for i in voices if i["kind"] == "voice"]
+        self.assertEqual(english, [("bm_fable", True, False), ("af_heart", True, False), ("mine", False, True)])
+
+    def test_each_language_has_its_voices_ticked_in_order(self):
+        hub = self.make()
+        hub.voices = lambda: {"choosable": True, "builtin": ["af_heart", "bm_fable", "if_sara", "im_nicola", "zf_xiaobei"],
+                              "custom": [], "pool": ["af_heart"], "projects": {}, "piper": ["piper:it_IT-paola-medium"], "zh": ["zh:zf_001"]}
+        voices = next(s for s in settings.describe(hub) if s["name"] == "Voices")["items"]
+        self.assertEqual([i["name"] for i in voices if i["kind"] == "heading"], ["Sessions", "English", "Italian", "Chinese"])
+        italian = [i["voice"] for i in voices if i.get("group") == "it" and i["value"]]
+        self.assertEqual(italian, ["piper:it_IT-paola-medium", "if_sara", "im_nicola"])  # tts.PREFERRED_VOICE until chosen
+        self.assertIsNone(hub.set_setting("voices_order.it", ["if_sara", "piper:it_IT-paola-medium", "im_nicola"]))
+        self.assertIsNone(hub.set_setting("voice_in.it.im_nicola", False))
+        self.assertEqual(hub.cfg.language_voices["it"], ["if_sara", "piper:it_IT-paola-medium"])
+        self.assertIsNone(hub.set_setting("voice_in.en.bm_fable", True))
+        self.assertEqual(hub.cfg.voice_pool, ["af_heart", "bm_fable"])
+        self.assertIsNotNone(hub.set_setting("voices_order.zh", []))  # never none at all
+        self.assertIsNotNone(hub.set_setting("voice_in.en.nobody", True))
+        self.assertEqual(self.saved(), {"language_voices": {"it": ["if_sara", "piper:it_IT-paola-medium"]}, "voice_pool": ["af_heart", "bm_fable"]})
+
         hub.voices = lambda: {"choosable": False, "builtin": [], "custom": [], "pool": [], "projects": {}}
         self.assertNotIn("Voices", [s["name"] for s in settings.describe(hub)])  # an engine with one voice: nothing to choose
 
@@ -146,13 +169,13 @@ class Chosen(SettingsCase):
         open(self.cfg.mute_file, "a").close()
         for key, value in (("speed", 1.4), ("label", "always"), ("overlay.layout", "island"), ("history_time", True)):
             self.assertIsNone(hub.set_setting(key, value))
-        voice = next(s for s in settings.describe(hub) if s["name"] == "Voice")
+        voice = next(s for s in settings.describe(hub) if s["name"] == "Speech")
         self.assertTrue(voice["resettable"] and voice["changed"])
-        self.assertIsNone(hub.set_setting("reset", "Voice"))
+        self.assertIsNone(hub.set_setting("reset", "Speech"))
         self.assertEqual((hub.cfg.speed, self.engine.speed, hub.cfg.label), (Config.speed, Config.speed, Config.label))
         self.assertFalse(os.path.exists(self.cfg.mute_file))  # the voice is on again
         self.assertEqual((hub.cfg.overlay["layout"], hub.cfg.history_time), ("island", True))  # other sections stay
-        voice = next(s for s in settings.describe(hub) if s["name"] == "Voice")
+        voice = next(s for s in settings.describe(hub) if s["name"] == "Speech")
         self.assertFalse(voice["changed"])
         self.assertEqual(self.saved()["speed"], Config.speed)  # what the next hub starts with
         self.assertIsNone(hub.set_setting("reset", "overlay"))  # any case, as from the command line
@@ -284,7 +307,7 @@ class Shown(SettingsCase):
         hub.on_overlay({"type": "hotkey", "name": "settings"})
         opened = self.window.of("settings")[-1]
         self.assertTrue(opened["open"] and opened["toggle"])
-        self.assertEqual([s["name"] for s in opened["sections"]], ["Voice", "Talking", "Overlay", "Figures", "Terminal", "Keys"])
+        self.assertEqual([s["name"] for s in opened["sections"]], ["Speech", "Talking", "Overlay", "Figures", "Terminal", "Keys"])
         hub.on_overlay({"type": "settings", "open": False})  # it was in front, so the window shut and said so
         self.assertFalse(hub._settings_open)
         hub.on_overlay({"type": "hotkey", "name": "settings"})  # behind another program it would only come forward
