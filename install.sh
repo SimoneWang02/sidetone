@@ -76,16 +76,18 @@ if [ $hooks_only = 0 ] && [ $models = 1 ] && command -v parec >/dev/null; then
 fi
 
 # Add our hooks next to whatever is already registered. An entry of ours from an earlier
-# install (any command under this checkout's hooks/) is replaced, so paths stay current.
+# install (any command under this checkout's hooks/) is replaced, so paths stay current; so is
+# one written as "$HOME/..." (hooks/settings-snippet.json pasted by hand), as uninstall.sh does.
 mkdir -p "$(dirname "$SETTINGS")"
 [ -s "$SETTINGS" ] || echo '{}' > "$SETTINGS"
 backup=$SETTINGS.bak-sidetone-$(date +%Y%m%d-%H%M%S)
 cp -p "$SETTINGS" "$backup"
 sed "s|\$HOME/personal/sidetone|$ROOT|g" "$ROOT/hooks/settings-snippet.json" |
-  jq --arg ours "$ROOT/hooks/" --slurpfile current "$backup" '
+  jq --arg ours "$ROOT/hooks/" --arg home_form "\$HOME${ROOT#"$HOME"}/hooks/" --slurpfile current "$backup" '
     .hooks as $new
     | ($current[0].hooks // {}) as $old
-    | def without_ours: map(.hooks |= map(select((.command // "") | startswith($ours) | not)) | select(.hooks | length > 0));
+    | def ours: (.command // "") as $c | ($c | startswith($ours)) or ($c | startswith($home_form));
+      def without_ours: map(.hooks |= map(select(ours | not)) | select(.hooks | length > 0));
       $current[0] + {hooks: (reduce (($old | keys) + ($new | keys) | unique)[] as $event ({};
         .[$event] = (($old[$event] // []) | without_ours) + ($new[$event] // [])))}' > "$SETTINGS.tmp"
 jq -e . "$SETTINGS.tmp" >/dev/null

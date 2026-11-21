@@ -8,6 +8,7 @@ import json
 import os
 import pty
 import select
+import shutil
 import subprocess
 import tempfile
 import time
@@ -130,6 +131,25 @@ class Installing(unittest.TestCase):
         self.assertEqual(gone.returncode, 0, gone.stderr)
         with open(self.settings) as f:
             self.assertEqual(json.load(f), {"model": "opus", "hooks": own})
+
+    def test_hooks_written_with_home_are_replaced_not_doubled(self):
+        # The snippet as it is, pasted by hand: its commands start with "$HOME/...", as the
+        # author's own settings do. uninstall.sh knew that form; install.sh did not, and added
+        # every hook a second time beside it, so each one ran twice.
+        checkout = os.path.join(self.tmp, "personal", "sidetone")
+        shutil.copytree(ROOT, checkout, ignore=shutil.ignore_patterns(".git", "__pycache__", "tests", "docs", "assets"))
+        with open(os.path.join(checkout, "hooks", "settings-snippet.json")) as f:
+            snippet = json.load(f)
+        os.makedirs(os.path.dirname(self.settings))
+        with open(self.settings, "w") as f:
+            json.dump({"model": "opus", **snippet}, f)
+        done = subprocess.run([os.path.join(checkout, "install.sh"), "--hooks-only"], env=self.env,
+                              stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        for event, groups in self.hooks().items():
+            commands = [hook["command"] for group in groups for hook in group["hooks"]]
+            wanted = [hook["command"].replace("$HOME", self.tmp) for group in snippet["hooks"][event] for hook in group["hooks"]]
+            self.assertEqual(commands, wanted, event)
 
     def test_with_only_our_hooks_nothing_of_them_is_left(self):
         self.assertEqual(self.run_it("install.sh", "--hooks-only").returncode, 0)
