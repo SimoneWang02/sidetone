@@ -1246,3 +1246,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   given, also to a project that had it (`Sessions._voice_for` keeps a project's voice only
   while it is in the pool, as before); a voice given by hand with `sidetone voice PROJECT
   VOICE` is pinned instead (`Hub.set_voice` writes it to config.json's `voices`).
+  Then "for Chinese there are too many models": the Chinese card lists only the four the author
+  picked on 2026-11-19 (`settings.CHINESE_SHOWN`, from `tts.PREFERRED_VOICE`), any other ticked
+  in `language_voices`, and Piper's Chinese voices if installed; the other 99 of the Chinese
+  model and Kokoro 1.0's eight (espeak, graded D) are left out and still work by name.

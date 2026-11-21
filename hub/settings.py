@@ -177,6 +177,10 @@ VOICE_LANG = {"a": "en", "b": "en", "i": "it", "z": "zh"}  # the letters of the 
 SAMPLES = {"en": "Hello, this is how I sound.", "it": "Ciao, questa \u00e8 la mia voce.",
            "zh": "\u4f60\u597d\uff0c\u8fd9\u662f\u6211\u7684\u58f0\u97f3\u3002"}
 PIPER_PLACES = {"US": "American", "GB": "British", "IT": "Italian", "CN": "Chinese"}
+# Chinese: Kokoro's Chinese model has 103 voices and Kokoro 1.0 eight more (read through espeak,
+# graded D by Kokoro). The window lists the four the author picked on 2026-11-19 and Piper's
+# Chinese voices, not the other 107 (the author, 2026-11-21: "for Chinese there are too many").
+CHINESE_SHOWN = set(tts.PREFERRED_VOICE["zh"])
 # Piper's voices are quicker to make than Kokoro's and less clear (the author, 2026-11-21: "keep
 # some ... that are not so good but are faster"). Measured 2026-11-21 on the author's machine,
 # a sentence of about 4 s: Piper 0.29 s (Lessac) and 0.34 s (Paola), Kokoro 0.47 to 0.82 s
@@ -232,6 +236,8 @@ def catalog(hub) -> dict:
         lang = voice_language(v)
         if lang == "en" and re.fullmatch(r"[ab][fm]_\w+", v) and v not in ENGLISH_GRADES:
             continue  # graded D or F by Kokoro
+        if lang == "zh" and v not in CHINESE_SHOWN and not v.startswith("piper:") and v not in hub.cfg.language_voices.get("zh", []):
+            continue  # 111 is too many (the author, 2026-11-21); the rest still work by name
         if lang in found:
             found[lang].append(v)
     return found
