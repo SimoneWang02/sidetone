@@ -67,7 +67,17 @@ these come before anything new.
       (dragged by the dots at the left); unticked ones folded under "More Voices". English
       down to the eight clearest by Kokoro's grades, Piper's voices marked faster. A part
       with each open session's voice came out the same morning ("what is the point of it").
-      Seen in pictures only: **for the author to try** (▶, ticks, dragging, More Voices).
+      Later the same night, agreed with the author: each language a row that opens and
+      closes (all closed at first, "8 voices" beside it), one sentence for the page that says
+      the purpose first, at most twelve voices a language, Chinese ordered by measured clarity
+      (the author's four ticked, the eight clearest under More Voices), Piper's voices marked
+      faster, "quality A" instead of "grade A", a ▶ pressed again starts over, and a stop
+      square while a preview plays. Speech now plays with a 300 ms buffer and silence around
+      it (scratches through AirPods; "still a bit" at 150 ms, and Fenrir and Michael scratched
+      while the processor was loaded by the Chinese ranking). **For the author to try**: the
+      stop square, dragging, ticking, More Voices, and whether Fenrir and Michael still
+      scratch now that nothing else loads the processor. **Next: Talking**, then Overlay,
+      Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
       and maximized by a button or a double click on its top, a dropdown that closes on a

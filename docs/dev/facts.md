@@ -484,3 +484,10 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   (`KokoroEngine.LATENCY_MS`, `LEAD` 0.1 s, `TAIL` 0.3 s of silence; see `sounds.py`). 150 ms
   still left "a bit of scratches"; now 300 ms.
   Not caused by a busy processor: still heard with the other jobs paused.
+
+- Words spoken after a Ctrl+C waited about five minutes (2026-11-21, "waiting for the session to
+  stop" until the next reply ended). The hub had been restarted a minute before. Tried again
+  with a throwaway session on the live hooks: interrupted mid-command with Esc, then spoken to;
+  the words were "queued" and went out 10 s later (`reconcile` saw the session file go idle),
+  and the session answered. So the delay came with the restart, a fault of working on the
+  tool; no code for it.
