@@ -279,28 +279,16 @@ class Chosen(SettingsCase):
             voices = next(s for s in settings.describe(hub) if s["name"] == "Voices")
         self.assertFalse(voices["resettable"])
 
-    def test_show_tokens_is_a_switch_over_the_count(self):
-        hub = self.make()
-        self.assertIs(settings.read(hub, "turn_tokens"), True)  # "new" on a new install
-        self.assertIsNone(hub.set_setting("turn_tokens", False))
-        self.assertEqual(hub.cfg.turn_tokens, "off")
-        self.assertIsNone(hub.set_setting("turn_tokens", True))
-        self.assertEqual(hub.cfg.turn_tokens, "new")
-        hub.cfg.turn_tokens = "all"  # from config.json: on keeps it
-        self.assertIs(settings.read(hub, "turn_tokens"), True)
-        self.assertIsNone(hub.set_setting("turn_tokens", True))
-        self.assertEqual(hub.cfg.turn_tokens, "all")
-
     def test_what_is_kept_is_what_a_new_hub_starts_with(self):
         hub = self.make()
-        for key, value in (("label", "always"), ("usage_models", "near"), ("turn_tokens", False),
+        for key, value in (("label", "always"), ("usage_models", "near"), ("history_time", True),
                            ("overlay.usage_layout", "line"), ("overlay.hotkeys.repeat", "Ctrl+Shift+R"), ("terminal.tint", "all")):
             self.assertIsNone(hub.set_setting(key, value), key)
         home = os.path.dirname(os.path.dirname(self.cfg.config_path))
         os.rename(os.path.dirname(self.cfg.config_path), os.path.join(home, "sidetone"))
         with unittest.mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": home}):
             fresh = Config.load()
-        self.assertEqual((fresh.label, fresh.usage_models, fresh.turn_tokens), ("always", "near", "off"))
+        self.assertEqual((fresh.label, fresh.usage_models, fresh.history_time), ("always", "near", True))
         self.assertEqual((fresh.overlay["usage_layout"], fresh.overlay["hotkeys"]["repeat"], fresh.terminal["tint"]),
                          ("line", "Ctrl+Shift+R", "all"))
         self.assertEqual(fresh.overlay["hotkeys"]["talk"], "Ctrl+Alt+Space")  # the keys not touched are as they were

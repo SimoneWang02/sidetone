@@ -185,11 +185,9 @@ SECTIONS = [
     ("Figures", [
         # "Context" (context_shown: arc, text, both, off) left the window on 2026-11-22, the
         # author: "remove these settings because arc is by default". Still read from config.json.
-        # "Tokens of a Reply" (turn_tokens: new, output, all, off) became this switch on 2026-11-22:
-        # the author asked where the figures show, the name was about one reply while it counts
-        # them all. On is "new" (or what config.json says); output and all only from there.
-        switch("turn_tokens", "Show Tokens", "Total Tokens in the details, and what each turn used in the history."),
-        switch("turn_tokens_history", "Tokens in the History", "Each line of the history ends in what its turn used."),
+        # "Tokens of a Reply" (turn_tokens: new, output, all, off) and "Tokens in the History"
+        # (turn_tokens_history) left the window on 2026-11-22, the author: "who doesn't want to
+        # see tokens?" Tokens are always shown; both still read from config.json.
         switch("history_time", "Time in the History", "How long ago each line was said."),
         switch("history_missed", "Mark Lines Not Heard", "A white dot on lines that were cut off or never said."),
         choice("overlay.details_style", "Figures Drawn As", "A tile each, or one line of text.",
@@ -615,8 +613,8 @@ def read(hub, key: str):
     if key == "reply_language":
         return base.fixed_language(cfg) or "spoken"
     value = getattr(cfg, key)
-    if key == "turn_tokens":  # a switch over new, output, all and off
-        return value not in ("off", False, None)
+    if key == "turn_tokens" and isinstance(value, bool):  # from when it was on or off
+        return "new" if value else "off"
     return value
 
 
@@ -625,8 +623,6 @@ def default(key: str):
     project's voice is handed out from the pool)."""
     if key == "mute":
         return False
-    if key == "turn_tokens":  # "new" in Config, on in the window
-        return True
     if key.startswith(("voice_in.", "voices_order.", "heading.", "intro.", "speak.")):
         return None
     if key.startswith("overlay.hotkeys."):
@@ -809,8 +805,6 @@ def apply(hub, key: str, value) -> str | None:
     elif key.startswith("terminal."):
         hub.set_terminal(**{key[9:]: value})
     else:
-        if key == "turn_tokens":  # kept a count: on leaves output or all as they are
-            value = (cfg.turn_tokens if isinstance(cfg.turn_tokens, str) and cfg.turn_tokens != "off" else "new") if value else "off"
         setattr(cfg, key, value)
         if key == "speed" and hasattr(hub.speech.engine, "speed"):
             hub.speech.engine.speed = value
