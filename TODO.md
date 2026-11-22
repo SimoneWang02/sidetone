@@ -35,23 +35,6 @@ Nothing open.
 What gets in the way every day: words heard in the wrong language, lines read by the wrong
 voice, and the wait for the transcript.
 
-- [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
-      soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
-      too short to tell the language and English wins. Perhaps lean to the language of the
-      session's last line, or of the user's last longer recording.
-      Again 2026-11-19 14:53 with `en,it,zh`: a 2.4 s clip came back as Chinese, "是很多的"
-      ("it's a lot"), and took 2.9 s to write where 0.8 s is usual; what was said is not known.
-      Again 15:04: a 1.9 s clip (peak 1.00) came back as "对了" ("right") in 1.7 s, after a
-      question that wanted a yes; perhaps "do it" or "did it", not known.
-      Again 15:24, the other way: a 2.6 s clip, surely "quant'è il contesto al momento?"
-      just after the Italian context question was built, came back as English "How much
-      did you count this moment?", so the hub did not answer it and the session got it.
-      Again 15:34: 2.3 s, surely "quanto ho usato?", came back as English "One dosa,
-      what the?" and took 2.7 s. Four short clips out of four in the wrong language today.
-      Built the same day on their word (`whisper_lean`, see `docs/dev/features.md`): an
-      unsure short clip keeps to the language last heard for sure. Fixes Italian after
-      Italian on the test clips; a switch to a short, unsure Italian clip right after
-      English can still go wrong. **Not tried by them yet.**
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a
@@ -978,6 +961,28 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
+      soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
+      too short to tell the language and English wins. Perhaps lean to the language of the
+      session's last line, or of the user's last longer recording.
+      Again 2026-11-19 14:53 with `en,it,zh`: a 2.4 s clip came back as Chinese, "是很多的"
+      ("it's a lot"), and took 2.9 s to write where 0.8 s is usual; what was said is not known.
+      Again 15:04: a 1.9 s clip (peak 1.00) came back as "对了" ("right") in 1.7 s, after a
+      question that wanted a yes; perhaps "do it" or "did it", not known.
+      Again 15:24, the other way: a 2.6 s clip, surely "quant'è il contesto al momento?"
+      just after the Italian context question was built, came back as English "How much
+      did you count this moment?", so the hub did not answer it and the session got it.
+      Again 15:34: 2.3 s, surely "quanto ho usato?", came back as English "One dosa,
+      what the?" and took 2.7 s. Four short clips out of four in the wrong language today.
+      Built the same day on their word (`whisper_lean`, see `docs/dev/features.md`): an
+      unsure short clip keeps to the language last heard for sure. Fixes Italian after
+      Italian on the test clips; a switch to a short, unsure Italian clip right after
+      English can still go wrong. **Not tried by them yet.**
+      Measured again 2026-11-22 with `large-v3-turbo` on the card (`docs/dev/facts.md`): most
+      short Italian now right after Italian; a lone "Sì." still often "See you". A rule that
+      turns "See you" from a very short clip back into "Sì" was offered and left out (the
+      author: "I don't think it's good"; Claude agreed: a patch for one word). Claude is told a
+      word may be off, and "sì, vai" comes through.
 - [x] The full transcript and the full message in the overlay (the author, by voice,
       2026-11-19: "I want to be able to see the full transcript and the full message in the
       overlay"). Today the bubble and the rows cut long text (`overlay.row_lines`, 1 to 3
