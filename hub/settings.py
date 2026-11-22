@@ -78,54 +78,60 @@ SECTIONS = [
     ]),
     ("Voices", []),  # filled in by `describe`: one line for each project, with the voices this machine has
     ("Talking", [
+        # Most important first, names and words polished, 2026-11-21 (the author: "polish all the
+        # settings in talking ... the title, descriptions, and reorganize them based on the most
+        # important first").
+        # The author, 2026-11-21, after hearing that Claude Code hands a message typed while it works
+        # to Claude after its current step: "instead of queuing audios, I'm putting more info into
+        # the request ... Yes". Was "A Busy Session Hears You".
+        choice("followup_when", "Talking to a Busy Session", "Your words reach a session that is working after the step it is on, "
+               "as typed ones do, or only once its reply ends.",
+               ("step", "After Its Current Step"), ("end", "When Its Reply Ends")),
+        # A switch; "Always" (even an idle session never sees them) left the window on 2026-11-21,
+        # the author: "isn't it better to have only always and never ... on and off?". On is
+        # "While it works"; "always" in config.json still works.
+        switch("aside", "Side Questions", "Start with \"by the way\" while a session works: the answer is spoken at once, "
+               "and the session neither sees the question nor changes course."),
         # A switch; it had a third choice, "Acting alone" (`"auto"`: only sessions whose permission
         # mode does not ask first), which the author found unclear and then took out (2026-11-21:
         # "If we were to remove it, what do you think?"; time to take words back covers a misheard
         # sentence). "auto" in config.json still works.
         switch("followup_confirm", "Confirm Before Sending", "Your words wait on the light until you tap the talk key again."),
-        # The author, 2026-11-21, after hearing that Claude Code hands a message typed while it works
-        # to Claude after its current step: "instead of queuing audios, I'm putting more info into
-        # the request ... Yes".
-        choice("followup_when", "A Busy Session Hears You", "While it works, Claude reads your words after the step it is on, as a message typed in its terminal, or only when its reply is done.",
-               ("step", "At Its Next Step"), ("end", "When It Finishes")),
-        # "Time to Cancel Before Sending" (followup_delay, 0 to 5 s) left the window on 2026-11-21,
-        # the author: "if it's unsure ... they could just toggle the confirmation before sending";
-        # confirming and taking words back cover it. It is still read from config.json.
-        # "Time to Take Words Back" (unsend_seconds) left the window on 2026-11-21: once a session
-        # has the words the cancel key stops it anyway (`cancel_stops`), and words still waiting for
-        # a busy session can now always be taken back (the author: "I would increase into
-        # infinity"). It is still read from config.json.
         # A switch named for what it does, Ctrl+C's interrupt (the author, 2026-11-21: "I still don't
         # get it", then "by escape you mean control C ... If it's conventional, yes"). It was "The
         # Cancel Key Stops a Session": Always, After sending (left with the time to take words
         # back) and Never.
-        switch("cancel_stops", "Cancel Key Interrupts Claude", "Like Ctrl+C in its terminal: when there is nothing else to cancel, "
-               "the cancel key interrupts the session in focus. It stays open."),
-        # A switch; "Always" (even an idle session never sees them) left the window on 2026-11-21,
-        # the author: "isn't it better to have only always and never ... on and off?". On is
-        # "While it works"; "always" in config.json still works.
-        switch("aside", "Side Questions", "Start with \"by the way\" while a session works, and it is answered aloud at once "
-               "without the session seeing it or changing course. An idle session simply gets your words."),
-        # "Speaking at a Permission Prompt" (voice_at_prompt: deny and explain, or wait) left the
-        # window on 2026-11-21: a bare yes or no now answers (`spoken_verdict`), and other words are
-        # more to go on, which is what they nearly always mean. "wait" in config.json still works.
-        # "Usage by Voice" (usage_by_voice) left the window on 2026-11-21, the author: "I don't think
-        # it's needed anymore since we already put it visually the usage bar". Asking still works,
-        # and it is still read from config.json.
-        switch("clear_by_voice", "Clear the Chat by Voice", "Say \"clear the chat\" and the editor types /clear for a session at its prompt."),
-        # "Typing Takes the Focus" (focus_on_prompt) left the window on 2026-11-21: in VS Code the
-        # focus has already followed the terminal by the time you type, so it only adds anything for
-        # terminals the extension cannot see; the author: "just remove it". Still on, and still read
-        # from config.json.
-        # "Short Words in Your Last Language" (whisper_lean) left the window on 2026-11-21, the
-        # author: "should we remove this setting? ... by default that is true". It matters only
-        # with two or more languages on. Still on, and still read from config.json.
-        # "Mute Discord While Talking" (push_to_mute) left the window on 2026-11-21, the author: "I
-        # don't think we should have this setting on our side". Holding F24 does nothing until
-        # Discord is given it, and no keyboard has it, so there is nothing to turn off; Discord's
-        # own keybind on the talk key itself does not work (the overlay keeps that key from other
-        # programs). Still on, still read from config.json; the setup is in the README.
-        number("talk_tail", "Listen On After Release", "Keeps the end of your last word from being cut off.", 0, 1, 0.1, "s"),
+        switch("cancel_stops", "Cancel Key Interrupts Claude", "Like Ctrl+C: with nothing else to cancel, the cancel key stops "
+               "the work of the session in focus. The session stays open."),
+        switch("clear_by_voice", "Clear the Chat by Voice", "Say \"clear the chat\" and /clear is typed into that session's terminal "
+               "once it is at its prompt. Needs the VS Code extension."),
+        # Discord's own name for it is "Push to Talk Release Delay" (the author, 2026-11-21: "Is this
+        # conventional?"). Was "Listen On After Release".
+        number("talk_tail", "Release Delay", "After you let go of the talk key, it keeps listening this long, "
+               "so your last word is not cut off.", 0, 1, 0.1, "s"),
+        # Out of the window, all on 2026-11-21, and all still read from config.json:
+        # "Time to Cancel Before Sending" (followup_delay, 0 to 5 s), the author: "if it's unsure ...
+        # they could just toggle the confirmation before sending"; confirming and taking words back
+        # cover it.
+        # "Time to Take Words Back" (unsend_seconds): once a session has the words the cancel key
+        # stops it anyway (`cancel_stops`), and words still waiting for a busy session can now always
+        # be taken back (the author: "I would increase into infinity").
+        # "Speaking at a Permission Prompt" (voice_at_prompt: deny and explain, or wait): a bare yes
+        # or no now answers (`spoken_verdict`), and other words are more to go on, which is what they
+        # nearly always mean.
+        # "Usage by Voice" (usage_by_voice), the author: "I don't think it's needed anymore since we
+        # already put it visually the usage bar". Asking still works.
+        # "Typing Takes the Focus" (focus_on_prompt), still on: in VS Code the focus has already
+        # followed the terminal by the time you type, so it only adds anything for terminals the
+        # extension cannot see; the author: "just remove it".
+        # "Short Words in Your Last Language" (whisper_lean), still on, the author: "should we
+        # remove this setting? ... by default that is true". It matters only with two or more
+        # languages on.
+        # "Mute Discord While Talking" (push_to_mute), still on, the author: "I don't think we should
+        # have this setting on our side". Holding F24 does nothing until Discord is given it, and no
+        # keyboard has it, so there is nothing to turn off; Discord's own keybind on the talk key
+        # itself does not work (the overlay keeps that key from other programs). The setup is in the
+        # README.
     ]),
     ("Overlay", [
         choice("overlay.layout", "Layout", "A bar of lights at the side, or an island at the top.",

@@ -107,7 +107,9 @@ these come before anything new.
       window (always on), Short Words in Your Last Language too, and Mute Discord While Talking
       (always on; binding the talk key itself in Discord does not work). The README's list of
       what it does still names settings that left the window (`unsend_seconds`, `followup_delay`):
-      for the documentation step. Listen On After Release kept. **Talking is done.** **Next:
+      for the documentation step. Listen On After Release kept, renamed Release Delay (Discord's
+      word). The page ordered most important first, names and descriptions polished (seen in a
+      picture). **Talking is done.** **Next:
       Overlay**, then
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
