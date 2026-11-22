@@ -136,6 +136,9 @@ Roughly easiest first, the larger ones after.
       Host). The keystrokes measured in tmux; the editor's part (split, typing, closing) not
       seen working yet. Tried by the author the same hour: the new terminal opened beside and its
       session took the focus (log); they ended this session by mistake with the end key.
+      Again 2026-11-22 17:04, on purpose: opened beside, focus moved to "sidetone 2"; it showed
+      the history of an earlier "sidetone 2" (mended the same hour: lines of an ended session
+      leave once its name is taken again).
 - [ ] One conversation open in two terminals (resumed in a second one; the author, 2026-11-22:
       "two terminals that are pointing into the same session. If I close one, I close ... the one
       in the overlay"): closing one now keeps it, and its terminal becomes the one left
@@ -978,6 +981,11 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] Push-to-talk goes to the session in focus when the key comes up, not when it went down
+      (asked 2026-11-22: "should the audio be sent to the initial target session or the final
+      ... What's more convenient [or] conventional?"). Claude advised keeping it: scrolling
+      while talking is a deliberate change of addressee, as a chat sends to the one open at
+      send time; another session speaking cannot take the focus meanwhile. The author: "Alright".
 - [x] More for the VS Code extension, now that it exists: color the tab itself in the
       session's color. (Bringing the terminal of the session in focus to the front is
       done, see the jump key above; the hub can ask the extension since 0.2.0.)
