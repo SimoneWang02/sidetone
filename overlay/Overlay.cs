@@ -605,6 +605,19 @@ namespace ClaudeSpeaks
             IsHitTestVisible = false;
         }
 
+        // The mark's color as a brush, for the time that takes its place.
+        public static Brush Ink(string kind)
+        {
+            switch (kind)
+            {
+                case "done": return Ui.Alpha(Ui.Tint("done"), 1);
+                case "failed": return Ui.Alpha(Ui.Tint("failed"), 1);
+                case "needs_you": return Ui.Alpha(Ui.Amber, 1);
+                case "progress": return Ui.Alpha(Ui.Tint("working"), 1);
+                default: return Ui.Faint;
+            }
+        }
+
         protected override void OnRender(DrawingContext dc)
         {
             switch (kind)
@@ -3364,12 +3377,25 @@ namespace ClaudeSpeaks
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "used" });
-                string said = Str(h, "ago"), used = Str(h, "tokens");
-                var ago = new TextBlock { Text = said, FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(0, 0, said.Length > 0 ? 8 : 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
-                line.Children.Add(ago);
-                var mark = new EndMark(Str(h, "kind"), h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"]));
-                Grid.SetColumn(mark, 1);
-                line.Children.Add(mark);
+                string said = Str(h, "ago"), used = Str(h, "tokens"), kind = Str(h, "kind");
+                bool missed = h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"]);
+                if (said.Length > 0)
+                {
+                    // With the time shown, the time takes the mark's place, in the mark's color
+                    // (the author, 2026-11-22: "replacing the tick icons with the time"); a line
+                    // never heard to its end keeps its white dot, after the time (its room kept on
+                    // every line, so the times stay lined up).
+                    var ago = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 8, 0), HorizontalAlignment = HorizontalAlignment.Right };
+                    ago.Children.Add(new TextBlock { Text = said, FontSize = 12, Foreground = EndMark.Ink(kind) });
+                    ago.Children.Add(new Border { Width = 4, Height = 4, CornerRadius = new CornerRadius(2), Background = missed ? Brushes.White : Brushes.Transparent, Margin = new Thickness(2, 3, 0, 0), VerticalAlignment = VerticalAlignment.Top });
+                    line.Children.Add(ago);
+                }
+                else
+                {
+                    var mark = new EndMark(kind, missed);
+                    Grid.SetColumn(mark, 1);
+                    line.Children.Add(mark);
+                }
                 var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
                 if (named) words.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
                 words.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Alpha(Colors.White, n == 0 ? 0.94 : n == 1 ? 0.76 : n == 2 ? 0.64 : 0.55) });
