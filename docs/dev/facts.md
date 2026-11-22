@@ -502,6 +502,15 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   onnxruntime-gpu replaces onnxruntime (same module name; 433 MB) and needs, besides cuBLAS
   and cuDNN, NVIDIA's cudart 12, curand 10, cufft 11 and nvrtc 12 (`ldd` of
   `libonnxruntime_providers_cuda.so`); loaded by full path first, like Whisper's.
+- Short answers on the RTX 5070 (2026-11-22): 43 clips said by the voices (10 Italian answers
+  by Paola, Sara and Nicola; 5 English by two voices; 3 Chinese by Xiaoxiao), through the hub's
+  `Transcriber` with `en,it,zh` and leaning on. `large-v3-turbo` on the card, after Italian:
+  4 in the wrong language (two "Sì." of three, both Chinese one-character answers), 0.14 s
+  each; after English: 12 ("Sì." as "See you", "Ok, continua." as "Ok, continue.", "Fallo."
+  as English). `small` on the processor: 5 after Italian (all three "Sì.", and "Yes." taken
+  for Italian), 15 after English, 0.70 s each. So the larger model fixes "Procedi" and most
+  short Italian after Italian, but one syllable stays too short for either, and a short
+  Italian answer right after English is still mostly heard as English.
 - From the talk key to the reply's first sound (2026-11-22, the author's last 12 spoken
   messages to one session, both models on the RTX 5070): release delay 0.4 s (`talk_tail`);
   transcription 0.14 to 0.5 s; from the transcript (the kept recording's time, in ms) to Claude
