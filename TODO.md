@@ -166,6 +166,18 @@ Roughly easiest first, the larger ones after.
       in the overlay"): closing one now keeps it, and its terminal becomes the one left
       (`Session.pids`). Still one row for both, since they are one conversation. **Not tried
       by the author.**
+- [x] Bug hunt, 2026-11-22 (the author: "do many combination of things that could happen"), in a
+      lab: real haiku sessions in tmux, hooked to a silent hub of their own (no overlay), driven by
+      a script. Fine: /clear keeps the row; two sessions in one folder; a conversation resumed in a
+      second terminal, either one closed; a terminal killed outright (row gone in 1 s); Ctrl+C
+      twice; /resume to another conversation inside a session; the hub restarted mid-turn (and
+      words reaching an idle session once its listener is back, 5 s); a terminal closed during a
+      permission prompt; Esc mid-turn (idle in 3 s); words to a busy session (read after its next
+      step); the cancel key (turn ended 3.6 s after). Fixed: a conversation cleared in one of two
+      terminals dropped the other (came back renamed, its reply not spoken); a background
+      subagent's permission prompt was dropped when the main turn ended. Learned: Claude Code
+      shows a background subagent's dialog only once the hook returns, so the hub can answer it
+      only in its first 9 s (docs/dev/facts.md).
 
 ### Larger extras
 
