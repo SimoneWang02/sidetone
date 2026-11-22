@@ -114,7 +114,8 @@ these come before anything new.
       It by the Details, What Opens the Details and the four signs of a muted voice out of the
       window; Opacity at Rest out of the window, its default now 100% (seen at 50%: "standard is
       100%"). Glass is a slider, 0 % plain to 100 % clearest, 50 % the look it had (**not yet
-      judged by the author**). **Next: Overlay** from Glass on, then
+      judged by the author**). Lines Per Session at 3 moves the lights as a sentence grows; every
+      row kept as tall as three lines was tried and not liked ("I don't like it"), and reverted. **Next: Overlay** from Glass on, then
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
