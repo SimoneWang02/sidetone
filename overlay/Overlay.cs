@@ -2440,7 +2440,7 @@ namespace ClaudeSpeaks
         int historyTicks = 3;  // looks of 30 ms the mouse rests on the details before the history shows (`history_after`)
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
-        string mode = "dots", restMode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
+        string mode = "dots", outMode = "list", corner = "top-right", glass = "blur", bubbleShows = "";
         double offsetX = 12, offsetY = 96, idleOpacity = 1.0, listOpacity = 1.0, lastFade = -1;
         double lastFrame, openedAt, bubbleAt, passUntil;
         int grabX, grabY;  // where on the bar the mouse took hold
@@ -4323,10 +4323,15 @@ namespace ClaudeSpeaks
 
         void SetMode(string wanted)
         {
-            // "focus" (Selected Only) is like "dots" with the session in focus kept in the bubble;
-            // the details key goes from either to "list" and back to the one it came from.
-            if (mode != "list") restMode = mode;
-            mode = wanted == "toggle" ? (mode == "list" ? restMode : "list") : (wanted == "list" || wanted == "focus" ? wanted : "dots");
+            // The details key goes from details out ("list", or "focus": Selected Only) to the lights
+            // alone and back to the one it came from (the author, 2026-11-22, on Selected Only: "if I
+            // do Ctrl+Alt+L I should be able to see only the bar").
+            if (wanted == "toggle")
+            {
+                if (Listed) { outMode = mode; mode = "dots"; }
+                else mode = outMode;
+            }
+            else mode = wanted == "list" || wanted == "focus" ? wanted : "dots";
             Ui.OnlyFocus = mode == "focus";
             if (mode != "list") peek = false;
             Render();

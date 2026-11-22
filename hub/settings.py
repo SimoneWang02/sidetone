@@ -205,7 +205,7 @@ SECTIONS = [
                "When another program already has one of these keys, it still works here too, and both act on it."),
         hotkey("talk", "Talk", "Hold it and speak."),
         hotkey("cancel", "Cancel or Stop", "Drop a recording, take words back, cut a line, or stop a turn."),
-        hotkey("toggle", "Details", "Always out, or only on hover."),  # was "Keep the Details Out"; named as the Details setting calls it
+        hotkey("toggle", "Details", "Shows the details, or the lights alone, and back."),  # was "Keep the Details Out"; named as the Details setting calls it
         hotkey("mute", "Mute", "Turns the voice off for every session, and on again."),
         hotkey("repeat", "Say It Again"),
         hotkey("layout", "Switch Layout"),
