@@ -138,7 +138,8 @@ these come before anything new.
       holds, "now" or "14m", and times past an hour as "2h", past a day as "3d" ("I want it to
       be ... consistent"); a little more room between the history's lines, 4 px above and below
       each instead of 2, so a sentence's two lines stay apart from the next one ("very dense";
-      one line each was tried and not kept: "I still prefer two lines"); without it the marks stay (seen in a picture, **not yet seen live**). **Next in it:
+      one line each was tried and not kept: "I still prefer two lines"); the panel and the bubble
+      380 px wide instead of 340 (tried live: "I think it's good"); without it the marks stay (seen in a picture, **not yet seen live**). **Next in it:
       Mark Lines Not Heard**, then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges

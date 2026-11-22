@@ -2288,7 +2288,7 @@ namespace ClaudeSpeaks
         const int WH_KEYBOARD_LL = 13, WM_KEYDOWN = 0x0100, WM_SYSKEYDOWN = 0x0104, WM_KEYUP = 0x0101, WM_SYSKEYUP = 0x0105;
         const int WH_MOUSE_LL = 14, WM_MOUSEWHEEL = 0x020A, VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B, VK_RWIN = 0x5C, VK_RMENU = 0xA5;
         const int VK_LSHIFT = 0xA0, VK_RSHIFT = 0xA1, VK_LCONTROL = 0xA2, VK_RCONTROL = 0xA3, VK_LMENU = 0xA4;
-        const double PanelWidth = 340, BubbleWidth = 340, Gap = 6, Wide = PanelWidth - 32;
+        const double PanelWidth = 380, BubbleWidth = 380, Gap = 6, Wide = PanelWidth - 32;  // 380 since 2026-11-22 (340 before; the author: "increase the overall width", "I think it's good")
 
         [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
         [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr hwnd, int id);
