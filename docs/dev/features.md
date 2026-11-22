@@ -355,6 +355,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   output, so it is in step with the sound for every engine. Without `parec` the row says
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
+- The details as a zoom of three views (2026-11-22, `overlay.mode`: `dots` Bar Only, `list` All
+  Sessions, `focus` Selected Session; `Listed`, `Chosen`, `Ui.OnlyFocus` in `Overlay.cs`): the
+  details key goes through them in that order and round again. All Sessions keeps every row to
+  one line; Selected Session shows the card and only the row of the card's session (the mouse or
+  the focus, whichever moved last), its sentence in full (up to ten lines), the other rows left
+  out and the lights at their own spacing. Lines Per Session left the window. The author: "first
+  only bar, second one row per each detail box, third only one detail box with all the rows of
+  the summary". Tried and not liked the same night: rows that grow with a long sentence (they
+  push the lights apart), every row as tall as three lines, the chosen session in a bubble, the
+  other rows kept as empty places, and a long sentence floating over the rows below as a card.
+  Picture `focus-only.png`.
 - How see-through the glass is (2026-11-21, `overlay.glass_clear`, 50; `Ui.GlassClear`,
   `Ui.GlassFill`): one slider from 0 to 100 % instead of Blur or Plain (`overlay.glass`, still
   read; "none" stays plain). 0 is plain dark glass with no blur (a tint of 92 %); above it the

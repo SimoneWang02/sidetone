@@ -120,9 +120,11 @@ these come before anything new.
       Only (the card and the chosen session's row alone): built, tried by the author, and taken
       back at their word ("let's reverse it as it was before"). Lines Per Session stays, 1 to 3.
       A long sentence floating over the rows below, as a card, was tried too and not liked.
-      Agreed next: the details key as a zoom of three views (lights only; every session on one
-      line; the card and the chosen session alone, its sentence in full). **Next: Overlay** from Glass on, then
-      Figures, Terminal, Keys.
+      Then built (2026-11-22): the details key as a zoom of three views, Bar Only, All Sessions
+      (one line each), Selected Session (the card and that session alone, its sentence in full);
+      Details offers the same three, Lines Per Session left the window (seen in a picture; **not
+      yet tried by the author**). **Next: Overlay** from History Shows on, then Figures, Terminal,
+      Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
       and maximized by a button or a double click on its top, a dropdown that closes on a

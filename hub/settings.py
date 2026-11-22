@@ -142,8 +142,11 @@ SECTIONS = [
                ("bar", "Bar"), ("island", "Island")),
         # The key named and the choices short (the author, 2026-11-21: "the same thing, the shortcut.
         # And maybe shorten the answers"); they were "Under the mouse" and "Always out".
-        choice("overlay.mode", "Details", "Names, titles and figures beside the lights. The details key switches them.",
-               ("list", "Always"), ("dots", "On Hover")),
+        # Three views, the details key going through them in this order (the author, 2026-11-22:
+        # "first only bar, second one row per each detail box, third only one detail box with all
+        # the rows of the summary"); it was Always (list) or On Hover (dots).
+        choice("overlay.mode", "Details", "What the overlay shows beside the lights. The details key goes through them.",
+               ("dots", "Bar Only"), ("list", "All Sessions"), ("focus", "Selected Session")),
         # "Details Changing Size" (overlay.resize: quick, instant) left the window on 2026-11-21, the
         # author: "the animation is pretty standard". Still read from config.json.
         # "Move It by the Details" (overlay.panel_drag) left the window on 2026-11-21, the author:
@@ -164,8 +167,10 @@ SECTIONS = [
         # "Glass Effect", the author's name for it the same day: 0 % then reads as no effect.
         number("overlay.glass_clear", "Glass Effect", "How much of what is behind shows through, blurred. "
                "0 is plain dark glass.", 0, 100, 5, "%"),
-        choice("overlay.row_lines", "Lines Per Session", "How many lines a sentence may take in the details.",
-               (1, "1"), (2, "2"), (3, "3")),
+        # "Lines Per Session" (overlay.row_lines) left the window on 2026-11-22: All Sessions keeps
+        # to one line so nothing shifts, and Selected Session shows the sentence in full. Rows that
+        # grew pushed the lights apart; rows kept tall, a bubble, and a card floating over the rows
+        # below were tried and not liked. Still read from config.json.
         choice("overlay.history", "History Shows", "The lines of the session you are on, or of all of them.",
                ("session", "One session"), ("all", "All")),
         choice("overlay.talk_text", "\"Release to Send\"", "How those words move while you hold the talk key.",
@@ -203,7 +208,7 @@ SECTIONS = [
                "When another program already has one of these keys, it still works here too, and both act on it."),
         hotkey("talk", "Talk", "Hold it and speak."),
         hotkey("cancel", "Cancel or Stop", "Drop a recording, take words back, cut a line, or stop a turn."),
-        hotkey("toggle", "Details", "Always out, or only on hover."),  # was "Keep the Details Out"; named as the Details setting calls it
+        hotkey("toggle", "Details", "Bar only, all sessions, the selected session, and round again."),  # was "Keep the Details Out"; named as the Details setting calls it
         hotkey("mute", "Mute", "Turns the voice off for every session, and on again."),
         hotkey("repeat", "Say It Again"),
         hotkey("layout", "Switch Layout"),

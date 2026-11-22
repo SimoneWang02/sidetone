@@ -616,6 +616,13 @@ send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history=
 send(type="peek", on=True, over="web-app")
 shot("list-history-all")  # every session's lines mixed: under the card, with their names
 send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history="session", **HERE)
+# Details "Selected Session": the card and only the row of the session it is about, its sentence
+# in full; the other rows left out.
+send(type="peek", on=False)
+send(type="config", opaque=True, still=True, mode="focus", hotkeys=KEYS, **HERE)
+say(6)
+shot("focus-only", 1.2)
+send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, **HERE)
 send(type="peek", on=False)
 send(type="mode", mode="dots")
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, monitor=1, corner="bottom-left", offset_x=30, offset_y=30)
