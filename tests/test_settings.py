@@ -388,9 +388,11 @@ class Chosen(SettingsCase):
 
     def test_a_terminal_setting_reaches_the_terminals(self):
         hub = self.make()
-        self.assertIsNone(hub.set_setting("terminal.strength", 0.2))
-        self.assertEqual((hub.cfg.terminal["strength"], hub.terminals.settings["strength"]), (0.2, 0.2))
-        self.assertEqual(self.saved(), {"terminal": {"strength": 0.2}})
+        self.assertIsNone(hub.set_setting("terminal.strength", 50))  # percent in the window
+        self.assertEqual((hub.cfg.terminal["strength"], hub.terminals.settings["strength"]), (0.15, 0.15))
+        self.assertEqual(self.saved(), {"terminal": {"strength": 0.15}})
+        self.assertEqual(settings.read(hub, "terminal.strength"), 50)
+        self.assertEqual(settings.default("terminal.strength"), 27)  # 0.08 of the color
 
     def test_the_play_button_lets_a_voice_be_heard_and_changes_nothing(self):
         hub = self.make()

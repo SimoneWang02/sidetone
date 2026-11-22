@@ -143,7 +143,10 @@ these come before anything new.
       stays off on a new install (the author). Mark Lines Not Heard, Figures Drawn As (tiles stay) and
       Bars Under the Figures out of the window, then Usage Bars and A Model's Own Week; the two
       left (Time in the History, Plan Usage) moved to the end of Overlay and the Figures page
-      gone (the author: "moving them into overlays instead?"). **Figures is done. Next: Terminal**, then Terminal, Keys.
+      gone (the author: "moving them into overlays instead?"). **Figures is done.** **Terminal, under way 2026-11-22:** Tint Strength in percent, 0 to 100
+      (100 % is 0.3 of the color, the old top; "a percentage from 0 to 100"; seen in a picture).
+      The flash when the focus moves stays its own switch, apart from Tint (the author saw it
+      flash with Tint off). **Next in it: Flash When the Focus Moves**, then Keys., then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
       and maximized by a button or a double click on its top, a dropdown that closes on a

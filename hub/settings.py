@@ -206,7 +206,9 @@ SECTIONS = [
     ("Terminal", [
         choice("terminal.tint", "Tint", "Whose terminal wears a little of its session's color.",
                ("focus", "In focus"), ("all", "All"), ("off", "Off")),
-        number("terminal.strength", "Tint Strength", "How much of the color goes into the background.", 0.0, 0.3, 0.01),
+        # Tint Strength in percent (the author, 2026-11-22: "a percentage from 0 to 100"): 100 %
+        # is the strongest the window offers, 0.3 of the color in config.json (see STRENGTH_TOP).
+        number("terminal.strength", "Tint Strength", "How much of the color goes into the background.", 0, 100, 1, "%"),
         switch("terminal.pulse", "Flash When the Focus Moves", "The terminal lights up for a moment when you move the focus to it."),
         switch("terminal.follow", "Focus Follows the Terminal", "Going to a terminal in the editor selects its session."),
         switch("terminal.jump", "Terminal Follows the Focus", "Moving the focus with the arrows or the wheel brings that session's terminal to the front in the editor."),
@@ -603,6 +605,8 @@ def read(hub, key: str):
         return cfg.overlay.get("hotkeys", {}).get(key[16:], "")
     if key.startswith("overlay."):
         return cfg.overlay.get(key[8:])
+    if key == "terminal.strength":
+        return _percent(cfg.terminal.get("strength"))
     if key.startswith("terminal."):
         return cfg.terminal.get(key[9:])
     if key == "context_shown":
@@ -621,6 +625,17 @@ def read(hub, key: str):
     return value
 
 
+STRENGTH_TOP = 0.3  # the tint at 100 % in the window: the share of the color mixed into the background
+
+
+def _percent(strength) -> int:
+    """A tint's share of the color as the window shows it, 0 to 100 %."""
+    try:
+        return max(0, min(100, round(float(strength) / STRENGTH_TOP * 100)))
+    except (TypeError, ValueError):
+        return _percent(terminal_mod.DEFAULTS["strength"])
+
+
 def default(key: str):
     """What a setting is on a new install; None for one that has no single default (a
     project's voice is handed out from the pool)."""
@@ -632,6 +647,8 @@ def default(key: str):
         return overlay_mod.DEFAULTS["hotkeys"].get(key[16:], "")
     if key.startswith("overlay."):
         return overlay_mod.DEFAULTS.get(key[8:])
+    if key == "terminal.strength":
+        return _percent(terminal_mod.DEFAULTS["strength"])
     if key.startswith("terminal."):
         return terminal_mod.DEFAULTS.get(key[9:])
     found = {f.name: f for f in dataclasses.fields(base.Config)}[key]
@@ -805,6 +822,8 @@ def apply(hub, key: str, value) -> str | None:
     elif key.startswith("overlay."):
         hub.place_overlay(**{key[8:]: value})
         hub.publish()
+    elif key == "terminal.strength":  # percent in the window, a share of the color in config.json
+        hub.set_terminal(strength=round(value * STRENGTH_TOP / 100, 4))
     elif key.startswith("terminal."):
         hub.set_terminal(**{key[9:]: value})
     else:
