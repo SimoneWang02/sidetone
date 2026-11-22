@@ -112,7 +112,8 @@ class Hub(Permissions, Talk):
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
                                   on_change=self._speech_changed, on_done=self._log_speech,
-                                  on_audio=self._voice_levels, on_load_failed=self._voice_failed)
+                                  on_audio=self._voice_levels, on_load_failed=self._voice_failed,
+                                  on_loaded=self._voice_loaded)
 
     # --- hook events -------------------------------------------------------------------------
 
@@ -923,6 +924,13 @@ class Hub(Permissions, Talk):
             return ""
         return _spoken_name(s.name)
 
+    def _voice_loaded(self, engine) -> None:
+        """Say in the log where the voice is made (`voice_device`), and why not on the card when it was wanted."""
+        running = getattr(engine, "running", "")
+        if running:
+            why = getattr(engine, "why_not_gpu", "")
+            log(self.cfg, "hub.log", f"the voice is made on {running}" + (f" (not the graphics card: {why})" if why else ""))
+
     def _voice_failed(self, queue: SpeechQueue, error: Exception) -> None:
         """The chosen voice failed to load (a damaged model file, no memory for it); a system
         voice took over. Said once, so a quieter, plainer voice is not a mystery."""
@@ -953,7 +961,7 @@ def main() -> int:
     except OSError:
         return 0  # another hub already owns the socket
 
-    hub = Hub(cfg, make_engine(cfg.engine, cfg.kokoro_dir, cfg.speed, cfg.default_voice, cfg.voices_dir))
+    hub = Hub(cfg, make_engine(cfg.engine, cfg.kokoro_dir, cfg.speed, cfg.default_voice, cfg.voices_dir, cfg.voice_device))
     if cfg.overlay.get("enabled") and overlay_mod.Overlay.available():
         script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "overlay", "overlay.ps1")
         hub.overlay = overlay_mod.Overlay(script, cfg.overlay, on_message=hub.on_overlay,

@@ -77,6 +77,8 @@ SECTIONS = [
          "options": [["spoken", "Match My Language"]] + [[code, base.LANGUAGE_NAMES.get(code, "English")] for code in SUMMARY_LANGUAGES]},
         choice("label", "Say the Session Name", "Its name as the overlay shows it, from its folder, said before each of its lines so you know who talks without looking.",
                ("always", "Always"), ("never", "Never")),
+        choice("voice_device", "Voice Made On", "Where the voice is made. The graphics card (NVIDIA) starts each line "
+               "sooner; Automatic uses it when there is one.", ("auto", "Automatic"), ("cpu", "Processor"), ("gpu", "Graphics Card")),
         # "When Your Words Go Out" (talk_feedback: sound, voice, nothing) left the window on
         # 2026-11-20, the author: "I think the sound is kind of necessary ... only to sound". It is
         # still read from config.json.
@@ -858,6 +860,11 @@ def apply(hub, key: str, value) -> str | None:
             hub.speech.engine.speed = value
         if key == "volume":
             base.set_volume(hub)
+        if key == "voice_device" and hasattr(hub.speech.engine, "set_device"):
+            def move(engine=hub.speech.engine):
+                engine.set_device(value)
+                hub._voice_loaded(engine)
+            threading.Thread(target=move, daemon=True).start()  # about a second; the window does not wait
         if key == "whisper_device" and getattr(hub, "transcriber", None):
             hub.transcriber.device = value
             hub.transcriber.unload()  # loaded again where it now belongs, on the next press of the talk key

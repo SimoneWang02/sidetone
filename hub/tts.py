@@ -105,8 +105,14 @@ class KokoroEngine:
     STYLE_SHAPE = (510, 1, 256)  # how Kokoro stores one voice
 
     def __init__(self, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = "",
-                 piper_dir: str = os.path.expanduser("~/.local/share/piper")):
+                 piper_dir: str = os.path.expanduser("~/.local/share/piper"), device: str = "cpu"):
         self.dir, self.speed, self.fallback_voice = kokoro_dir, speed, fallback_voice
+        # Where Kokoro runs: "cpu", "gpu", or "auto" (the graphics card when onnxruntime-gpu and
+        # NVIDIA's libraries are there). The first sentence of a line took 0.78 s on the processor
+        # and 0.12 s on the RTX 5070 (docs/dev/facts.md). Piper's voices stay on the processor.
+        self.device = device
+        self.running = ""  # "the graphics card" or "the processor"
+        self.why_not_gpu = ""  # why it is on the processor although the card was wanted
         self.volume = 1.0  # 0 to 1 of the system's volume (`Config.volume`)
         self.custom_dir = custom_dir  # the user's own voices, one .npy file each
         self.custom: dict = {}
@@ -129,10 +135,55 @@ class KokoroEngine:
         # (`settings.time_voices`), and espeak, which Kokoro reads through, is not for two at once.
         self._making = threading.Lock()
 
-    def load(self) -> None:
-        from kokoro_onnx import Kokoro  # heavy import; done here so the socket is up first
+    def _session(self, path: str):
+        """An onnxruntime session for the model at `path`, on the graphics card when wanted and
+        possible, else on the processor (`why_not_gpu` says why)."""
+        import onnxruntime as rt
 
-        self.kokoro = Kokoro(f"{self.dir}/kokoro-v1.0.onnx", f"{self.dir}/voices-v1.0.bin")
+        # Warnings only for us, not for the user: on the card it warns at every load about the
+        # copies it adds, and at every line about a ScatterND it cannot check.
+        rt.set_default_logger_severity(3)
+        options = rt.SessionOptions()
+        options.log_severity_level = 3
+        if self.device in ("gpu", "auto"):
+            import gpu
+
+            why = ("" if "CUDAExecutionProvider" in rt.get_available_providers()
+                   else "onnxruntime-gpu is not installed") or gpu.load(gpu.VOICE_PARTS)
+            if not why:
+                try:
+                    session = rt.InferenceSession(path, sess_options=options,
+                                                  providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+                    if session.get_providers()[0] == "CUDAExecutionProvider":
+                        self.why_not_gpu, self.running = "", "the graphics card"
+                        return session
+                    why = "the card's provider did not start"
+                except Exception as e:  # out of memory, a driver too old for the libraries
+                    why = f"{type(e).__name__}: {e}"
+            self.why_not_gpu = why
+        else:
+            self.why_not_gpu = ""
+        self.running = "the processor"
+        return rt.InferenceSession(path, sess_options=options, providers=["CPUExecutionProvider"])
+
+    def _main_model(self):
+        from kokoro_onnx import Kokoro
+
+        return Kokoro.from_session(self._session(f"{self.dir}/kokoro-v1.0.onnx"), f"{self.dir}/voices-v1.0.bin")
+
+    def set_device(self, device: str) -> None:
+        """Move Kokoro to the processor or the graphics card; the Chinese model follows on its next line."""
+        self.device = device
+        model = self._main_model()
+        with self._making:
+            self.kokoro = model
+        with self._zh_lock:
+            self.zh = None
+        self._pcm("Ready.", self.fallback_voice)
+
+    def load(self) -> None:
+        # heavy import, done here so the socket is up first
+        self.kokoro = self._main_model()
         self.voices = set(self.kokoro.get_voices())
         self.reload_custom()
         self.reload_piper()
@@ -223,8 +274,9 @@ class KokoroEngine:
             # them it writes "❓" and they are left out (the author heard them missing).
             english = Tokenizer()
             self._zh_g2p = zh.ZHG2P(version="1.1", en_callable=lambda words: english.phonemize(words, "en-us"))
-            self.zh = Kokoro(*(os.path.join(self.dir, f) for f in self.ZH_FILES[:2]),
-                             vocab_config=os.path.join(self.dir, self.ZH_FILES[2]))
+            self.zh = Kokoro.from_session(self._session(os.path.join(self.dir, self.ZH_FILES[0])),
+                                          os.path.join(self.dir, self.ZH_FILES[1]),
+                                          vocab_config=os.path.join(self.dir, self.ZH_FILES[2]))
 
     def style(self, voice: str):
         return self.custom[voice] if voice in self.custom else self.kokoro.get_voice_style(voice)
@@ -457,11 +509,11 @@ class Meter:
                 on_levels(levels, self.STEP)
 
 
-def make_engine(name: str, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = ""):
+def make_engine(name: str, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = "", device: str = "cpu"):
     """`name` is kokoro, null, one of CommandEngine.COMMANDS, or auto (the best one installed)."""
     kokoro = os.path.isfile(f"{kokoro_dir}/kokoro-v1.0.onnx") and importlib.util.find_spec("kokoro_onnx")
     if name in ("kokoro", "auto") and kokoro and shutil.which("paplay"):
-        return KokoroEngine(kokoro_dir, speed, fallback_voice, custom_dir)
+        return KokoroEngine(kokoro_dir, speed, fallback_voice, custom_dir, device=device)
     for command, build in CommandEngine.COMMANDS.items():
         if name in (command, "auto", "kokoro") and shutil.which(command):
             return CommandEngine(build)
@@ -489,10 +541,12 @@ class SpeechQueue:
                  on_change: Callable[[Utterance | None], None] = lambda u: None,
                  on_done: Callable[..., None] = lambda *a: None,
                  on_audio: Callable[..., None] = lambda *a: None,
-                 on_load_failed: Callable[..., None] = lambda queue, error: None):
+                 on_load_failed: Callable[..., None] = lambda queue, error: None,
+                 on_loaded: Callable[..., None] = lambda engine: None):
         self.engine, self.max_age = engine, max_age
         self.label_for, self.on_change, self.on_done, self.on_audio = label_for, on_change, on_done, on_audio
         self.on_load_failed = on_load_failed  # (queue, error): the engine failed to load and a system voice took over
+        self.on_loaded = on_loaded  # (engine): it loaded, for the log to say where it runs
         self.meter: Meter | None = None  # set by the hub when there is an overlay to draw the voice on
         self.queued: list[Utterance] = []
         self.current: Utterance | None = None
@@ -605,6 +659,7 @@ class SpeechQueue:
     def _run(self) -> None:
         try:
             self.engine.load()
+            self.on_loaded(self.engine)
         except Exception as e:  # noqa: BLE001  a damaged model, or no memory for it: speak with a
             # system voice rather than not at all (the hooks do not fall back while the hub is up)
             self.engine = fallback_engine()

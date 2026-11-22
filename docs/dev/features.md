@@ -163,6 +163,25 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   once each time it changes; `list.jsonl` names the model each recording was heard with.
   Choosing it in the window unloads the model, which loads where it now belongs at the next
   press of the talk key.
+- The voice on the graphics card (2026-11-22, `voice_device`: auto, cpu, gpu, "Voice Made On"
+  in the Speech section). The author asked what else could cut the time from talking to
+  hearing ("parlare, ricezione, processare ... sono il core"); of the steps, the start of
+  the voice was the largest left in our hands (`first_audio` 0.55 to 1.5 s), and they said
+  "Yes, proceed". Measured: the first sentence of a line 0.78 s on the processor, 0.12 s on
+  the card (`docs/dev/facts.md`). `KokoroEngine._session` makes each onnxruntime session (the
+  main model and the Chinese one) with the CUDA provider when onnxruntime-gpu is installed and
+  NVIDIA's libraries load (`gpu.load(gpu.VOICE_PARTS)`), checks that the card's provider
+  really started, and otherwise uses the processor, keeping why in `why_not_gpu`; `hub.log`
+  says "the voice is made on the graphics card" (or the processor, and why) after each load.
+  Piper's voices stay on the processor (their own program). The window's choice moves it at
+  once (`set_device`, about a second, in a thread). `hub/gpu.py` holds what Whisper and the
+  voice share: the packages, pinned, and loading the libraries by full path. onnxruntime-gpu
+  1.26.0 is its last release for CUDA 12 (1.27 on link `libcudart.so.13`); it is the same
+  module as onnxruntime, which kokoro-onnx and faster-whisper pull in again at every install,
+  so `install.sh` uninstalls that one and reinstalls onnxruntime-gpu only
+  (`--reinstall-package`), tried in a scratch venv. faster-whisper's silence filter asks for
+  the processor itself, so it is unchanged. Loading on the card takes longer at the hub's
+  start (6.8 s with the Chinese model, in the background).
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
   was active in the last 15 min and no overlay is on screen (the author, 2026-11-17: "i dont
   think it's necessary to say the project folder whenever it speaks"; the bubble and the voice

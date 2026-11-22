@@ -28,55 +28,25 @@ LANGUAGES = frozenset("""
 """.split())
 
 
-# NVIDIA's libraries that faster-whisper (ctranslate2) needs on the graphics card, cuBLAS 12 and
-# cuDNN 9, from their pip packages in the hub's environment (install.sh asks for them where it
-# finds an NVIDIA card). ctranslate2 opens them by name only when a model goes on the card, so
-# loading them first by their full path, shared, is enough; no LD_LIBRARY_PATH.
-GPU_PACKAGES = ("nvidia-cublas-cu12==12.8.4.1", "nvidia-cudnn-cu12==9.10.2.21")
-_gpu_libs: list = []
-
-
 def gpu_libraries(roots=None) -> list:
-    """The .so files of NVIDIA's pip packages under `roots` (the `nvidia` package folders)."""
-    if roots is None:
-        spec = importlib.util.find_spec("nvidia")
-        roots = list(spec.submodule_search_locations or []) if spec else []
-    found = []
-    for root in roots:
-        for part in ("cublas", "cudnn"):
-            folder = os.path.join(root, part, "lib")
-            if os.path.isdir(folder):
-                found += sorted(os.path.join(folder, f) for f in os.listdir(folder) if ".so" in f)
-    return found
+    """The .so files of NVIDIA's packages Whisper needs on the graphics card (see gpu.py; imported
+    here, not at the top, since `sidetone languages` runs this file on its own)."""
+    import gpu
+
+    return gpu.libraries(gpu.WHISPER_PARTS, roots)
 
 
 def gpu_ready(roots=None) -> str:
     """"" when Whisper can run on the graphics card here, else why not."""
-    import ctypes
-
     try:
         import ctranslate2
         if ctranslate2.get_cuda_device_count() < 1:
             return "no NVIDIA graphics card found"
     except Exception as e:
         return f"ctranslate2: {e}"
-    if _gpu_libs:
-        return ""
-    files = gpu_libraries(roots)
-    if not any("cublas" in f for f in files) or not any("cudnn" in f for f in files):
-        return "NVIDIA's cuBLAS and cuDNN are not installed (" + " ".join(GPU_PACKAGES) + ")"
-    left = files
-    while left:  # one library needs another: load what can be, again, until nothing more can
-        failed = []
-        for f in left:
-            try:
-                _gpu_libs.append(ctypes.CDLL(f, mode=ctypes.RTLD_GLOBAL))
-            except OSError:
-                failed.append(f)
-        if len(failed) == len(left):
-            return "could not load " + os.path.basename(failed[0])
-        left = failed
-    return ""
+    import gpu
+
+    return gpu.load(gpu.WHISPER_PARTS, roots)
 
 
 def loudness(pcm: bytes) -> float:

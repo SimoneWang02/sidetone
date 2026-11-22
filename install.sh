@@ -4,7 +4,7 @@
 # Re-running is safe. Options: --no-models (skip downloads), --hooks-only (only settings.json),
 # --languages CODES (what you will speak to it, for example en,it; without it the script asks once),
 # --vscode or --no-vscode (the VS Code extension; without either the script asks once),
-# --gpu or --no-gpu (push-to-talk on an NVIDIA graphics card; asked once where one is found).
+# --gpu or --no-gpu (push-to-talk and the voice on an NVIDIA graphics card; asked once where one is found).
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 KOKORO_DIR=${KOKORO_DIR:-$HOME/.local/share/kokoro}
@@ -78,10 +78,11 @@ if [ $hooks_only = 0 ] && [ $models = 1 ] && command -v parec >/dev/null; then
     echo "Note: that did not work now; it will be fetched at the first push-to-talk instead."
 fi
 
-# Push-to-talk on an NVIDIA graphics card: a larger model that gets more words right, as fast
-# as the small one on the processor (whisper_device "auto" uses it once this is installed).
-# It needs NVIDIA's cuBLAS and cuDNN in the environment, about 1.8 GB, and the model, 1.6 GB,
-# so it is asked, and only where a card is found; with nobody to ask it is left out.
+# Push-to-talk and the voice on an NVIDIA graphics card: a larger speech model that gets more
+# words right, as fast as the small one on the processor, and each spoken line starting sooner
+# (whisper_device and voice_device "auto" use the card once this is installed). It needs
+# NVIDIA's CUDA libraries and onnxruntime-gpu in the environment, about 2.9 GB, and the model,
+# 1.6 GB, so it is asked, and only where a card is found; with nobody to ask it is left out.
 if [ $hooks_only = 0 ] && [ $gpu != no ] && command -v parec >/dev/null; then
   py=$KOKORO_DIR/venv/bin/python
   stt() { "$py" -I -c "import sys; sys.path.insert(0, sys.argv[1]); import stt; $1" "$ROOT/hub"; }
@@ -93,15 +94,21 @@ if [ $hooks_only = 0 ] && [ $gpu != no ] && command -v parec >/dev/null; then
     if [ "$(stt 'print(len(stt.gpu_libraries()))')" != 0 ]; then
       gpu=yes  # installed before: kept, and the model fetched if it is missing
     elif [ $gpu = ask ] && [ $models = 1 ] && [ -t 0 ] && [ -t 1 ]; then
-      echo "Found an NVIDIA graphics card ($card). Push-to-talk can run on it: a larger model that"
-      echo "gets more words right, as fast as now. It needs about 3.4 GB of downloads."
+      echo "Found an NVIDIA graphics card ($card). Push-to-talk and the voice can run on it: a larger"
+      echo "speech model that gets more words right, and each spoken line starting sooner."
+      echo "It needs about 4.5 GB of downloads."
       read -r -p "Use the graphics card? (Enter = yes, n = no): " answer || answer=n
       case $answer in ""|[Yy]*) gpu=yes ;; *) gpu=no; echo "Left out. Any time later: ./install.sh --gpu" ;; esac
     fi
     if [ $gpu = yes ]; then
-      echo "Installing NVIDIA's libraries for the graphics card (about 1.8 GB the first time)"
-      read -r -a packages <<< "$(stt 'print(" ".join(stt.GPU_PACKAGES))')"
+      echo "Installing NVIDIA's libraries for the graphics card (about 2.9 GB the first time)"
+      read -r -a packages <<< "$(stt 'import gpu; print(" ".join(gpu.VOICE_PACKAGES))')"
       uv pip install --quiet --python "$py" "${packages[@]}"
+      # onnxruntime-gpu is the same module as onnxruntime, which kokoro-onnx and faster-whisper
+      # bring (again, at every run of this script): that one goes, and this one is put back whole.
+      ort=$(stt 'import gpu; print(gpu.ONNXRUNTIME)')
+      uv pip uninstall --quiet --python "$py" onnxruntime 2>/dev/null || true
+      uv pip install --quiet --python "$py" --reinstall-package onnxruntime-gpu "$ort"
       if [ $models = 1 ]; then
         gmodel=$(jq -r '.whisper_gpu_model // empty' "$CONFIG" 2>/dev/null) || gmodel=
         echo "Fetching the speech model ${gmodel:=large-v3-turbo} for the graphics card (about 1.6 GB the first time)"
