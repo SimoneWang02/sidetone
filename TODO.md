@@ -173,7 +173,7 @@ voice, and the wait for the transcript.
       and the best 10 s picked as the reference, redone as recordings come in; (2) a fine-tune of
       Chatterbox once there is about an hour of recordings, with the words checked first, run on
       the GPU while the PC is idle. 3.7 minutes kept by then (7 English, 4 Italian).
-      Step (1) made by hand the same day (`~/.local/share/voice-clone/build_voice.py`, 12
+      Step (1) made by hand the same day (`clone/build_voice.py`, 12
       recordings, 4.6 min); not yet redone on its own as recordings come in. The author agreed
       to both steps and sees it in the product: anyone who turns it on has every message they
       say kept, locally, to build a voice model of their own while they work.
@@ -181,7 +181,8 @@ voice, and the wait for the transcript.
       each line: the cloned voice copies the talk key's click at both ends of every recording
       (bursts of 0.03 to 0.4 s before the first word and after the last). `build_voice.py` now
       leaves out each recording's first 0.35 s and last 0.5 s and any sound under 0.25 s, and
-      trims such a burst from what it makes; measured clean after, not yet judged by ear.
+      trims such a burst from what it makes. The author, by ear: no noise left, "perfetto".
+      The scripts are in `clone/` (its README says how to set it up).
 
 - [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
