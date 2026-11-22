@@ -355,6 +355,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   output, so it is in step with the sound for every engine. Without `parec` the row says
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
+- Answering a permission prompt by voice (2026-11-21, `spoken_verdict`, `SPOKEN_YES`, `SPOKEN_NO`):
+  a bare yes or no (English, Italian, Chinese; "please", "thanks" after it allowed) allows or
+  denies as the keys do; anything longer turns the request down and follows as the next message
+  (`voice_at_prompt` "details", out of the window the same day). Before, a spoken "yes" was taken
+  as more to go on and refused the request; the author: "even if I use the voice, I can still
+  say yes or no", then "I can just say yes or no to approve or refuse". "Okay" is left out, as
+  one says it to oneself.
 - Permission prompts (`Request` in `hub/hub.py`): the overlay shows the oldest open request at once
   (what, the exact command, the keys) and keeps it solid until answered. The voice waits for
   Claude Code's own "still waiting" notification (about 6 s) so it does not nag someone answering

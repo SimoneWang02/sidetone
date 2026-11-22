@@ -2936,6 +2936,24 @@ class ThroughTheHooks(HubCase):
         self.assertNotIn("I will wait for your details.", self.spoken())  # nothing to hear: the words are on their way
         self.assertEqual(hub.collect(hub.listen("s1")), "Do not delete it, rename it instead")
 
+    def test_a_spoken_yes_or_no_answers_a_permission_prompt(self):
+        hub = self.hub
+        hub.on_event(ev("UserPromptSubmit", prompt="clean up"))
+        for said, behavior in (("Yes.", "allow"), ("No, thanks.", "deny"), ("Sì, procedi", None), ("好的。", "allow")):
+            proc = self.start_permission_hook()
+            hub.follow_up(said, session="s1", delay=0)
+            if behavior is None:  # not a bare yes: more to go on, as before
+                decision = json.loads(proc.communicate(timeout=5)[0])["hookSpecificOutput"]["decision"]
+                self.assertEqual(decision["behavior"], "deny")
+                self.assertEqual(hub.followups.pop("s1"), [said])
+                hub._unstop("s1")
+                continue
+            decision = json.loads(proc.communicate(timeout=5)[0])["hookSpecificOutput"]["decision"]
+            self.assertEqual(decision["behavior"], behavior, said)
+            self.assertEqual(hub.followups.get("s1"), None, "a yes or no is not also sent as words")
+        self.assertEqual([base.spoken_verdict(w) for w in ("yeah please", "don't", "okay", "no, use pnpm")],
+                         ["allow", "deny", None, None])
+
     def test_words_spoken_at_a_permission_prompt_can_be_made_to_wait(self):
         hub = self.hub
         hub.cfg.voice_at_prompt = "wait"

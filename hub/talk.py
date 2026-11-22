@@ -18,7 +18,7 @@ import terminal as terminal_mod
 from tts import Utterance
 from base import (aside_mode, interrupts, ASIDE_ASK, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
                   SAFE_ID, STEER, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
-                  session_model, spoken_answer)
+                  session_model, spoken_answer, spoken_verdict)
 
 CLEAR_BUSY = "it is still working"  # why a clear cannot be typed yet, and waits
 SHOWN_ECHO = 1.0  # seconds in which the editor's report of a terminal the hub asked to the front is only that
@@ -416,6 +416,13 @@ class Talk:
             self._signal("sent", s, "Sent.", lang)
         else:
             prompt = next((r for r in self.requests if r.session == s.id), None)
+            verdict = spoken_verdict(text) if prompt else None
+            if verdict:  # a bare yes or no: the answer, as the allow and deny keys give it
+                self._resolve(prompt, verdict, "voice")
+                self.speech.drop_session(s.id)
+                self._say(s, "Allowed." if verdict == "allow" else "Denied.",
+                          "allowed" if verdict == "allow" else "denied", "decision")
+                return
             if prompt and self.cfg.voice_at_prompt != "wait":
                 # More to go on, said while it waits for a yes or no. A request can only be
                 # allowed or refused, and Claude does not take a refusal's message for the

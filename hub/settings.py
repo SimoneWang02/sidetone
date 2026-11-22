@@ -106,8 +106,9 @@ SECTIONS = [
         # "While it works"; "always" in config.json still works.
         switch("aside", "Side Questions", "Start with \"by the way\" while a session works, and it is answered aloud at once "
                "without the session seeing it or changing course. An idle session simply gets your words."),
-        choice("voice_at_prompt", "Speaking at a Permission Prompt", "Turn the request down and hand your words over, or keep them until it is answered.",
-               ("details", "Deny and explain"), ("wait", "Wait")),
+        # "Speaking at a Permission Prompt" (voice_at_prompt: deny and explain, or wait) left the
+        # window on 2026-11-21: a bare yes or no now answers (`spoken_verdict`), and other words are
+        # more to go on, which is what they nearly always mean. "wait" in config.json still works.
         # "Usage by Voice" (usage_by_voice) left the window on 2026-11-21, the author: "I don't think
         # it's needed anymore since we already put it visually the usage bar". Asking still works,
         # and it is still read from config.json.

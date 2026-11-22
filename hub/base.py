@@ -666,6 +666,26 @@ def _elapsed(seconds: float) -> str:
     return f"{minutes}m" if minutes < 60 else f"{minutes // 60}h{minutes % 60:02d}"
 
 
+# A permission prompt answered by voice with a bare yes or no (the author, 2026-11-21: "I can
+# just say yes or no to approve or refuse"); before, any words there turned the request down and
+# followed as the next message, a spoken "yes" too. Only the whole utterance counts, so "no, use
+# pnpm instead" is still more to go on. "Okay" is left out: it is said to oneself too.
+SPOKEN_YES = {"yes", "yeah", "yep", "yup", "sure", "go ahead", "go for it", "do it", "allow it", "allow", "approve",
+              "approved", "yes do it", "yes go ahead", "sì", "si", "certo", "vai", "procedi", "va bene", "fallo",
+              "好", "好的", "是", "是的", "可以", "行"}
+SPOKEN_NO = {"no", "nope", "nah", "don't", "dont", "do not", "don't do it", "deny", "deny it", "refuse", "no thanks",
+             "non farlo", "no grazie", "不", "不要", "不行", "别", "不用"}
+
+
+def spoken_verdict(text: str) -> str | None:
+    """"allow" or "deny" for words that are nothing but a yes or a no, else None."""
+    words = re.sub(r"[^\w\s']+", " ", text.lower()).split()
+    while words and words[-1] in ("please", "thanks", "thank", "you", "grazie"):
+        words.pop()
+    said = " ".join(words)
+    return "allow" if said in SPOKEN_YES else "deny" if said in SPOKEN_NO else None
+
+
 def aside_mode(cfg: Config) -> str:
     """`Config.aside` as "busy", "always" or "off" (a switch since 2026-11-21: on is "busy")."""
     if isinstance(cfg.aside, bool):
