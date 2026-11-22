@@ -981,6 +981,11 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] The session colors stay twenty (2026-11-22). Shown all of them with how they were picked,
+      and the convention (8 to 10 categorical colors, then reuse with the name as the cue),
+      the author: "I don't mind them"; asked whether to keep twenty or reuse the first eight,
+      Claude advised twenty (a repeated color would make two sessions look alike in the
+      overlay and their terminals), and they agreed: "yeah sure you can proceed".
 - [x] Short sounds for states (done, needs you) for when a full sentence is too much. Push-to-talk
       has them since 2026-11-17 (`hub/sounds.py`: sent, waiting, not sent); the author, on
       hearing them played with their names said first (2026-11-22): "they do [sound right],
