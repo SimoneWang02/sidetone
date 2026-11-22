@@ -196,11 +196,12 @@ SECTIONS = [
         # (overlay.details_bars) left the window on 2026-11-22, the author: "keep it tiles by
         # default ... we can remove this setting", the bars "as well". Still read from config.json.
         switch("usage_shown", "Plan Usage", "The five-hour window and the week, at the foot of the figures."),
-        choice("overlay.usage_layout", "Usage Bars", "", ("rows", "A row each"), ("line", "Side by side")),
         # "Usage Labels" (usage_labels: short, long) left the window on 2026-11-22, the author:
         # "I don't think that is needed". Still 5H and 7D, still read from config.json.
-        choice("usage_models", "A Model's Own Week", "A third bar where the plan counts one model apart.",
-               ("none", "Off"), ("near", "Near its end"), ("all", "Always")),
+        # "Usage Bars" (overlay.usage_layout: rows, line) and "A Model's Own Week" (usage_models:
+        # none, near, all) left the window on 2026-11-22 (the author: "remove usage bars and A
+        # model's own week"). A row each stays; a model's own week stays off. Both still read
+        # from config.json.
     ]),
     ("Terminal", [
         choice("terminal.tint", "Tint", "Whose terminal wears a little of its session's color.",

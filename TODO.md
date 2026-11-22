@@ -141,7 +141,8 @@ these come before anything new.
       one line each was tried and not kept: "I still prefer two lines"); the panel and the bubble
       380 px wide instead of 340 (tried live: "I think it's good"); without it the marks stay (seen in a picture, **not yet seen live**). Time in the History
       stays off on a new install (the author). Mark Lines Not Heard, Figures Drawn As (tiles stay) and
-      Bars Under the Figures out of the window. **Next in it: Plan Usage**, then Terminal, Keys.
+      Bars Under the Figures out of the window, then Usage Bars and A Model's Own Week; Plan
+      Usage is the one setting left in Figures. **Next: Terminal**, then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
       and maximized by a button or a double click on its top, a dropdown that closes on a

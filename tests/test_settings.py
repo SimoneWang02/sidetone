@@ -281,16 +281,16 @@ class Chosen(SettingsCase):
 
     def test_what_is_kept_is_what_a_new_hub_starts_with(self):
         hub = self.make()
-        for key, value in (("label", "always"), ("usage_models", "near"), ("history_time", True),
-                           ("overlay.usage_layout", "line"), ("overlay.hotkeys.repeat", "Ctrl+Shift+R"), ("terminal.tint", "all")):
+        for key, value in (("label", "always"), ("usage_shown", False), ("history_time", True),
+                           ("overlay.layout", "island"), ("overlay.hotkeys.repeat", "Ctrl+Shift+R"), ("terminal.tint", "all")):
             self.assertIsNone(hub.set_setting(key, value), key)
         home = os.path.dirname(os.path.dirname(self.cfg.config_path))
         os.rename(os.path.dirname(self.cfg.config_path), os.path.join(home, "sidetone"))
         with unittest.mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": home}):
             fresh = Config.load()
-        self.assertEqual((fresh.label, fresh.usage_models, fresh.history_time), ("always", "near", True))
-        self.assertEqual((fresh.overlay["usage_layout"], fresh.overlay["hotkeys"]["repeat"], fresh.terminal["tint"]),
-                         ("line", "Ctrl+Shift+R", "all"))
+        self.assertEqual((fresh.label, fresh.usage_shown, fresh.history_time), ("always", False, True))
+        self.assertEqual((fresh.overlay["layout"], fresh.overlay["hotkeys"]["repeat"], fresh.terminal["tint"]),
+                         ("island", "Ctrl+Shift+R", "all"))
         self.assertEqual(fresh.overlay["hotkeys"]["talk"], "Ctrl+Alt+Space")  # the keys not touched are as they were
 
     def test_every_setting_at_the_top_of_the_file_is_read_back_at_start(self):
@@ -315,7 +315,7 @@ class Chosen(SettingsCase):
         broken = '{"label": "always", "speed": 1.3,\n "voices": {"api": "am_michael"}\n'  # the closing brace left out
         with open(self.cfg.config_path, "w") as f:
             f.write(broken)
-        self.assertIsNone(hub.set_setting("usage_models", "all"))  # taken at once, only not kept
+        self.assertIsNone(hub.set_setting("history_time", True))  # taken at once, only not kept
         hub.place_overlay(False, corner="top-left")
         hub.set_terminal(tint="all")
         with open(self.cfg.config_path) as f:
