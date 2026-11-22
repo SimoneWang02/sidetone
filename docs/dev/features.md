@@ -419,6 +419,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   "press again to exit", and at an idle prompt with words half typed), and once SessionEnd comes
   the hub asks the editor to close that terminal (`_ending`, `_ended_by_key`; handed to the
   next request if the editor was between two). A session that ends by itself keeps its terminal.
+  Ended by the key, it has a sound of its own once SessionEnd comes (2026-11-22, `TONES["ended"]`:
+  G4, E-flat 4, G3, falling a minor third and then to the octave below, 0.29 s), or "Session ended."
+  in its voice with spoken feedback, as a clear has. The author: "it doesn't have a sound ... it's a
+  negative thing". Not tried by hand yet.
   Claimed only while an editor that can do it is there (`_can_open`, `_endable_here`). Hotkeys
   name the keys "Plus" and "Minus" (a "+" would split the combination; `Ui.KeyNamed`,
   `NameOfKey`), drawn as "+" and "-" on the caps. Word has Ctrl+Alt+Minus for a long dash: shared.

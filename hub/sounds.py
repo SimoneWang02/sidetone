@@ -36,6 +36,10 @@ TONES = {
     # (the author, 2026-11-21: "whenever I clear, I don't think I should ... hear the sound ...
     # of sending a message").
     "cleared": [(1046.5, 0.045), (784.0, 0.045), (659.3, 0.045), (523.3, 0.12)],
+    # A session ended with the end key: down a minor third and then to the octave below, slower
+    # than "cleared" and ending lower than "voice_off", like a door shutting (the author,
+    # 2026-11-22: "it doesn't have a sound ... it's a negative thing").
+    "ended": [(392.0, 0.06), (311.1, 0.06), (196.0, 0.17)],
 }
 
 

@@ -12,7 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 import hub as hub_module  # noqa: E402
-from test_hub import FakeOverlay, HubCase, ev  # noqa: E402
+from test_hub import FakeOverlay, FakeSounds, HubCase, ev  # noqa: E402
 
 
 class SessionKeys(HubCase):
@@ -73,6 +73,7 @@ class SessionKeys(HubCase):
 
     def test_the_end_key_asks_then_ends_and_closes_the_terminal_once_ended(self):
         hub = self.make()
+        hub.sounds = FakeSounds()
         editor = hub.editor_waits([4001, 4002], opens=True)
         hub.on_overlay({"type": "hotkey", "name": "end_session"})
         self.assertFalse(editor.wake.is_set(), "one press only asks")
@@ -83,12 +84,15 @@ class SessionKeys(HubCase):
         self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "exit"}])
         self.assertEqual(editor.close, [], "the terminal stays until the session has ended")
         editor = hub.editor_waits([4001, 4002], opens=True)
+        self.assertEqual(hub.sounds.played, [], "no sound until it has really ended")
         hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))
         self.assertEqual(editor.close, [4001])
-        # A session that ends by itself does not have its terminal closed.
+        self.assertEqual(hub.sounds.played, ["ended"])
+        # A session that ends by itself does not have its terminal closed, nor its sound.
         editor = hub.editor_waits([4001, 4002], opens=True)
         hub.on_event(ev("SessionEnd", sid="b", reason="prompt_input_exit"))
         self.assertEqual(editor.close, [])
+        self.assertEqual(hub.sounds.played, ["ended"])
 
     def test_a_late_second_press_only_asks_again(self):
         hub = self.make()

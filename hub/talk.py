@@ -337,6 +337,13 @@ class Talk:
         else:  # its editor is between two requests: the next one is handed it
             self._editor_wanted.append(("close", tty, time.monotonic()))
         log(self.cfg, "hub.log", f"end [{sid[:8]}] ended: its terminal ({tty}) asked closed")
+        # Its own sound once it has really ended, as a clear has (or the words, in its voice).
+        s = self.sessions.by_id.get(sid)
+        if self.cfg.talk_feedback == "sound" and self.sounds:
+            if not self._muted():
+                self.sounds.play("ended")
+        elif self.cfg.talk_feedback != "none" and s and not self._muted():
+            self.speech.put(Utterance(text="Session ended.", voice=s.voice, kind="allowed", src="follow-up"))
 
     def _can_open(self) -> bool:
         """The new-session key is claimed while an editor that can open a terminal is there."""
