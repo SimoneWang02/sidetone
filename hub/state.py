@@ -10,14 +10,16 @@ from dataclasses import dataclass, field
 
 # Kokoro's clearest English voices, by the grades Kokoro gives them (VOICES.md of
 # hexgrad/Kokoro-82M: Heart A, Bella A-, Nicole and Emma B-, Michael, Fenrir and Puck C+, George
-# C), ordered so neighbours differ in accent and gender. Eight, not thirteen (the author,
+# C), ordered so neighbours differ in accent and gender. Seven, not thirteen (the author,
 # 2026-11-21: "the English models are too many ... just keep the best ones"); the others graded
-# C or better are a tick away in the settings window.
+# C or better are a tick away in the settings window. Nicole is not ticked at first (the author,
+# 2026-11-22: "I don't like it ... for other people, don't put it in the default selected"); she
+# stays in their own list, and in everyone's a tick away.
 # Best first, by Kokoro's grade (settings.KOKORO_GRADES): the first sessions get the clearest
 # voices. It took women and men in turn before (the author, 2026-11-21: "set my voices ... first
 # the best one").
 VOICE_POOL = [
-    "af_heart", "af_bella", "af_nicole", "bf_emma", "am_michael", "am_fenrir", "am_puck", "bm_george",
+    "af_heart", "af_bella", "bf_emma", "am_michael", "am_fenrir", "am_puck", "bm_george",
 ]
 
 # One color per session for its name in the overlay. Soft, easy to tell apart on dark glass,
