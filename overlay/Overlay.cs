@@ -3355,7 +3355,7 @@ namespace ClaudeSpeaks
                 var h = (Dictionary<string, object>)o;
                 if (of != null && Str(h, "name") != of) continue;
                 if (n >= most) break;
-                var line = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+                var line = new Grid { Margin = new Thickness(0, 4, 0, 4) };
                 // How long ago at the left, as in a log, and what the turn used at the right: one
                 // figure at each end (the author, 2026-11-22: both at the right "is not very
                 // aesthetic"; "I would do the time on the left"). Each as wide as its widest entry
