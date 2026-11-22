@@ -132,9 +132,9 @@ these come before anything new.
       History out too, tokens always shown ("who doesn't want to see tokens?"). Time in the
       History moved to the left end of each line, the tokens alone at the right ("having both
       time and tokens on the right ... it's not very aesthetic"; seen in a picture, turned on for
-      the author). With the time shown it takes the place of the mark, in the mark's color (green
-      done, amber asks you, red failed, blue on the way; "replacing the tick icons with the
-      time"); without it the marks stay (seen in a picture, **not yet seen live**). **Next in it:
+      the author). With the time shown it takes the place of the mark, always green, to tell the lines
+      apart ("replacing the tick icons with the time"; the mark's own colors were tried and
+      not kept: "nobody knows what the colors are"); without it the marks stay (seen in a picture, **not yet seen live**). **Next in it:
       Mark Lines Not Heard**, then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges

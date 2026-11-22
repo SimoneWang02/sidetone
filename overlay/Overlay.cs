@@ -605,19 +605,6 @@ namespace ClaudeSpeaks
             IsHitTestVisible = false;
         }
 
-        // The mark's color as a brush, for the time that takes its place.
-        public static Brush Ink(string kind)
-        {
-            switch (kind)
-            {
-                case "done": return Ui.Alpha(Ui.Tint("done"), 1);
-                case "failed": return Ui.Alpha(Ui.Tint("failed"), 1);
-                case "needs_you": return Ui.Alpha(Ui.Amber, 1);
-                case "progress": return Ui.Alpha(Ui.Tint("working"), 1);
-                default: return Ui.Faint;
-            }
-        }
-
         protected override void OnRender(DrawingContext dc)
         {
             switch (kind)
@@ -3381,12 +3368,14 @@ namespace ClaudeSpeaks
                 bool missed = h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"]);
                 if (said.Length > 0)
                 {
-                    // With the time shown, the time takes the mark's place, in the mark's color
-                    // (the author, 2026-11-22: "replacing the tick icons with the time"); a line
+                    // With the time shown, the time takes the mark's place, always green, so that
+                    // each line starts with something that stands out (the author, 2026-11-22:
+                    // "replacing the tick icons with the time"; not in the mark's own color, which
+                    // "nobody knows" without being told what each means); a line
                     // never heard to its end keeps its white dot, after the time (its room kept on
                     // every line, so the times stay lined up).
                     var ago = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 8, 0), HorizontalAlignment = HorizontalAlignment.Right };
-                    ago.Children.Add(new TextBlock { Text = said, FontSize = 12, Foreground = EndMark.Ink(kind) });
+                    ago.Children.Add(new TextBlock { Text = said, FontSize = 12, Foreground = Ui.Alpha(Ui.Tint("done"), 1) });
                     ago.Children.Add(new Border { Width = 4, Height = 4, CornerRadius = new CornerRadius(2), Background = missed ? Brushes.White : Brushes.Transparent, Margin = new Thickness(2, 3, 0, 0), VerticalAlignment = VerticalAlignment.Top });
                     line.Children.Add(ago);
                 }
