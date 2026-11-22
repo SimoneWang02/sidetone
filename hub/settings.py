@@ -105,7 +105,9 @@ SECTIONS = [
                ("busy", "While it works"), ("always", "Always"), ("off", "Off")),
         choice("voice_at_prompt", "Speaking at a Permission Prompt", "Turn the request down and hand your words over, or keep them until it is answered.",
                ("details", "Deny and explain"), ("wait", "Wait")),
-        switch("usage_by_voice", "Usage by Voice", "Ask \"what's my usage\" and hear it, without it reaching a session."),
+        # "Usage by Voice" (usage_by_voice) left the window on 2026-11-21, the author: "I don't think
+        # it's needed anymore since we already put it visually the usage bar". Asking still works,
+        # and it is still read from config.json.
         switch("clear_by_voice", "Clear the Chat by Voice", "Say \"clear the chat\" and the editor types /clear for a session at its prompt."),
         switch("focus_on_prompt", "Typing Takes the Focus", "A session you type to is the one your next spoken words go to."),
         switch("whisper_lean", "Short Words in Your Last Language", "When it is unsure which of your languages a few words are in, it keeps to the one you last spoke."),
