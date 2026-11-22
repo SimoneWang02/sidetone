@@ -23,22 +23,6 @@ these come before anything new.
       Italian line without the mark gets the Italian voice. Each guess goes to `hub.log`.
       **Not heard by the author yet**: listen for an unmarked Italian or Chinese line read by
       the right voice, and an English one never read by the Italian voice.
-- [ ] Push-to-talk on the graphics card (2026-11-22, `whisper_device`, "Transcribe On"):
-      `large-v3-turbo` on the RTX 5070, 0.18 s where `small` on the processor took 0.81 s,
-      with clearly more words right (`docs/dev/facts.md`). Built and tested with NVIDIA's
-      libraries borrowed from the voice-clone venv; installing them into the hub's
-      environment was refused by the permission check; the author installed them by hand
-      the same day, and the hub was restarted (it loads from them: 0.18 s a message).
-      **Not heard by the author yet**: talk as usual; `hub.log` should say "speech model
-      large-v3-turbo on the graphics card", short clips and Italian should come out right
-      more often.
-- [ ] The voice on the graphics card (2026-11-22, `voice_device`, "Voice Made On"): the first
-      sentence of a line made in 0.12 s instead of 0.78 s. Built and tested in a scratch venv;
-      the hub's environment needs onnxruntime-gpu 1.26.0 in place of onnxruntime and four more
-      NVIDIA packages (`gpu.VOICE_PACKAGES`), which the author installed by hand the same
-      day. Live after a hub restart: `first_audio` 67 ms for an English line and 90 ms for
-      Sara's Italian (0.55 to 1.5 s before). **Not judged by the author yet**: lines should
-      start sooner and sound the same.
 
 ## 2. To decide
 
@@ -426,6 +410,20 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] The voice on the graphics card (2026-11-22, `voice_device`, "Voice Made On"): the first
+      sentence of a line made in 0.12 s instead of 0.78 s. Built and tested in a scratch venv;
+      the hub's environment needs onnxruntime-gpu 1.26.0 in place of onnxruntime and four more
+      NVIDIA packages (`gpu.VOICE_PACKAGES`), which the author installed by hand the same
+      day. Live after a hub restart: `first_audio` 67 ms for an English line and 90 ms for
+      Sara's Italian (0.55 to 1.5 s before).
+      The author, by ear the same day: "It sounds the same and I think it starts sooner".
+- [x] Push-to-talk on the graphics card (2026-11-22, `whisper_device`, "Transcribe On"):
+      `large-v3-turbo` on the RTX 5070, 0.18 s where `small` on the processor took 0.81 s,
+      with clearly more words right (`docs/dev/facts.md`). Built and tested with NVIDIA's
+      libraries borrowed from the voice-clone venv; installing them into the hub's
+      environment was refused by the permission check; the author installed them by hand
+      the same day, and the hub was restarted (it loads from them: 0.18 s a message).
+      The author, by ear the same day: "it was faster" ("è stato più veloce").
 - [x] A session's first spoken words before anything was typed to it (mended 2026-11-17:
       the first session after the hub had gone away had no listener until its first
       prompt; the author spoke to it twice and asked "why are you not receiving audio
