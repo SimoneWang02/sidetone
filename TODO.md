@@ -18,6 +18,12 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
+- [ ] Space still paused YouTube while talking (the author, 2026-11-22: "whenever I watch
+      YouTube it pauses the video when I talk ... make it a setting"). The cause: the hook that
+      hides the talk key went in only once Ctrl and Alt were both down, so a Space within
+      30 ms of the last of them came through as a plain hotkey and its release reached the
+      browser. Now it goes in at the first of them, and "Hide the Talk Key" in the window can
+      be Always. **Not tried by the author yet**: talk over a playing video, quickly.
 - [ ] A spoken line with no `lang` in its tag: the hub now guesses its language from the
       words (2026-11-22, `hub/language.py`, no setting; see `docs/dev/features.md`), so an
       Italian line without the mark gets the Italian voice. Each guess goes to `hub.log`.
@@ -122,12 +128,6 @@ Roughly easiest first, the larger ones after.
         only; **for the author to notice in use, and to say if it is unwanted**.
         Their try on the evening of 2026-11-18 could not show it: going to the second
         terminal had moved the focus already. Not to be asked for again as a test.
-- [ ] A setting that keeps every key from other programs while `Ctrl+Alt` is held (the
-      author's idea, 2026-11-17, after Space paused a video during push-to-talk). Built so
-      far: only the held talk key is kept back. Off by default if built, because it would
-      also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
-      with those keys, and it needs a keyboard hook for as long as the keys are down.
-
 - [ ] One conversation open in two terminals (resumed in a second one; the author, 2026-11-22:
       "two terminals that are pointing into the same session. If I close one, I close ... the one
       in the overlay"): closing one now keeps it, and its terminal becomes the one left
@@ -983,6 +983,14 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] A setting that keeps every key from other programs while `Ctrl+Alt` is held (the
+      author's idea, 2026-11-17, after Space paused a video during push-to-talk). Built so
+      far: only the held talk key is kept back. Off by default if built, because it would
+      also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
+      with those keys, and it needs a keyboard hook for as long as the keys are down.
+      Replaced 2026-11-22 by what the author meant (a video pausing): see "Space still paused
+      YouTube" in step 1. Keeping every other key back as well was not wanted ("I mean [it]
+      is fine [as] it is").
 - [x] Push-to-talk goes to the session in focus when the key comes up, not when it went down
       (asked 2026-11-22: "should the audio be sent to the initial target session or the final
       ... What's more convenient [or] conventional?"). Claude advised keeping it: scrolling

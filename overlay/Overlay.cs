@@ -3593,7 +3593,11 @@ namespace ClaudeSpeaks
             bool unsent = (talkState == "transcribing" || talkState == "ready" || talkState == "aside" || talkState == "sent" || talkState == "queued")
                 && Ui.Now < talkUntil && Ui.Now < maskedUntil + 12;
             if (!holding && masked.Count > 0 && Ui.Now > maskedUntil && !unsent) masked.Clear();
-            bool ahead = talkKey != 0 && (keepTalk == "always" || (keepTalk == "held" && talkMods != 0 && Mods(talkMods, false)));
+            // In from the first of the hotkey's other keys (Ctrl, say), not once all are down: with
+            // all of them, a talk key pressed within one look (30 ms) of the last came as a plain
+            // hotkey, its release reached the program in front, and a video paused (the author,
+            // 2026-11-22: "whenever I watch YouTube it pauses the video when I talk").
+            bool ahead = talkKey != 0 && (keepTalk == "always" || (keepTalk == "held" && talkMods != 0 && AnyMod(talkMods)));
             // Shared keys keep the hook in for as long as there are any: a press that came before
             // the hook would go to the other program alone.
             KeepKey((keepTalk != "off" && (holding || ahead || masked.Count > 0)) || shared.Count > 0);
@@ -3673,6 +3677,12 @@ namespace ClaudeSpeaks
         }
 
         // Are the Ctrl, Alt, Shift and Win keys of a hotkey down? With `only`, and none of the others.
+        bool AnyMod(uint wanted)
+        {
+            return ((wanted & MOD_CONTROL) != 0 && Pressed(VK_CONTROL)) || ((wanted & MOD_ALT) != 0 && Pressed(VK_MENU))
+                || ((wanted & MOD_SHIFT) != 0 && Pressed(VK_SHIFT)) || ((wanted & MOD_WIN) != 0 && (Down(VK_LWIN) || Down(VK_RWIN)));
+        }
+
         bool Mods(uint wanted, bool only)
         {
             bool[] down = { Pressed(VK_CONTROL), Pressed(VK_MENU), Pressed(VK_SHIFT), Down(VK_LWIN) || Down(VK_RWIN) };

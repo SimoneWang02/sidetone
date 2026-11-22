@@ -1197,6 +1197,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   hook then starts the hold itself (`taken`) and the hotkey never fires. A talk key that goes
   down within about 30 ms of Ctrl and Alt still arrives as a plain hotkey, and that hold goes
   the old way (repeats kept, release passed on, so a video can still pause then).
+  The author still had YouTube pause while talking (2026-11-22: "whenever I watch YouTube it
+  pauses the video when I talk ... make it a setting"). So the hook now goes in at the first
+  of the hotkey's other keys (`AnyMod`: Ctrl, say), not once all are down, which leaves the
+  gap only for a talk key pressed within 30 ms of the very first modifier; and the window
+  has "Hide the Talk Key" (`overlay.keep_talk_key`: With Ctrl or Alt Down = `held`, or
+  Always, which closes the gap at the cost of a hook on every key; `off` from config.json).
   `overlay.keep_talk_key`: `held` (default), `always` (hook in all the time, for a talk key
   without Ctrl or Alt) or `off`. If a kept release is ever lost, the hold ends a second after
   the key stops repeating. That safeguard is dropped as soon as another key goes down during

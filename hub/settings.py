@@ -240,6 +240,11 @@ SECTIONS = [
         # 2026-11-22, asked whether the names and descriptions were intuitive, then: "do them all").
         heading("keys.speaking", "Speaking"),
         hotkey("talk", "Talk", "Hold it and speak to the session in focus."),
+        # The author, 2026-11-22, after a video paused while they talked: "make it a setting".
+        # "Off" (no keyboard hook at all) is still read from config.json.
+        choice("overlay.keep_talk_key", "Hide the Talk Key", "Keep the talk key from the program in front, so a video does not "
+               "pause when you talk. Always catches even the quickest press, at the cost of watching every key.",
+               ("held", "With Ctrl or Alt Down"), ("always", "Always")),
         hotkey("cancel", "Cancel or Stop", "Drops a recording, takes back words not yet sent, cuts the line being spoken, or stops the turn."),
         hotkey("mute", "Mute", "Turns the voice off for every session, and on again."),
         hotkey("repeat", "Say It Again", "Repeats the last line of the session in focus."),

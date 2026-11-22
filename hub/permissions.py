@@ -215,7 +215,7 @@ class Permissions:
         if (model, language) != (self.cfg.whisper_model, self.cfg.whisper_language):
             self.cfg.whisper_model, self.cfg.whisper_language = model, language
             if self.transcriber:
-                self.transcriber = stt.Transcriber(model, language)
+                self.transcriber = stt.Transcriber(model, language, self.cfg.whisper_device, self.cfg.whisper_gpu_model)
             log(self.cfg, "hub.log", f"push-to-talk now listens with {model} for: {language}")
         return {"model": model, "languages": language, "push_to_talk": bool(self.transcriber)}
 
