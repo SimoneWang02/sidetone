@@ -769,7 +769,14 @@ class Hub(Permissions, Talk):
             # Newest first, and up to four lines of each session: the overlay shows those of the
             # session under the mouse, so one that talks a lot must not push the others out.
             each, history = collections.Counter(), []
+            # The overlay finds a session's lines by its name, and names come back: "sidetone 2"
+            # opened in the afternoon showed what another "sidetone 2" had said that morning
+            # (the author, 2026-11-22: "it somehow has a history"). A line of a session that has
+            # ended is left out once a live one has its name.
+            named = {s.name: s.id for s in self.sessions.by_id.values()}
             for e in reversed(self.history):
+                if named.get(e["name"], e.get("session")) != e.get("session"):
+                    continue
                 if each[e["name"]] < 4 and len(history) < 24:
                     each[e["name"]] += 1
                     history.append({"ago": _ago(now - e["time"]) if self.cfg.history_time else "", "name": e["name"], "color": e.get("color", ""), "text": e["text"],

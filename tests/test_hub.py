@@ -789,6 +789,22 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("UserPromptSubmit"))
         self.assertEqual([h["ago"] for h in self.overlay.of("state")[-1]["history"]], ["now", "now"])
 
+    def test_a_name_taken_again_does_not_bring_the_old_sessions_lines(self):
+        """The author opened a second session in the afternoon and it showed what another
+        "sidetone 2" had said that morning (2026-11-22)."""
+        hub = self.make()
+        hub.on_event(ev("SessionStart", sid="a", cwd="/w/alpha"))
+        hub.on_event(ev("SessionStart", sid="b", cwd="/w/alpha"))
+        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/alpha", delta=tag("Morning line.")))
+        self.spoken()
+        hub.on_event(ev("SessionEnd", sid="b", cwd="/w/alpha"))
+        hub.publish()
+        self.assertIn("Morning line.", [h["text"] for h in self.overlay.of("state")[-1]["history"]])  # kept while nobody has the name
+        hub.on_event(ev("SessionStart", sid="c", cwd="/w/alpha"))
+        self.assertEqual(hub.sessions.by_id["c"].name, "alpha 2")
+        hub.publish()
+        self.assertNotIn("Morning line.", [h["text"] for h in self.overlay.of("state")[-1]["history"]])
+
     def test_history_keeps_some_lines_of_every_session(self):
         hub = self.make(label="never")
         hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/web", delta=tag("Page built.")))
