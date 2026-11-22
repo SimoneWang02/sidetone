@@ -177,6 +177,11 @@ voice, and the wait for the transcript.
       recordings, 4.6 min); not yet redone on its own as recordings come in. The author agreed
       to both steps and sees it in the product: anyone who turns it on has every message they
       say kept, locally, to build a voice model of their own while they work.
+      The author then heard "tipo il microfono ... qualche scratch" at the start and end of
+      each line: the cloned voice copies the talk key's click at both ends of every recording
+      (bursts of 0.03 to 0.4 s before the first word and after the last). `build_voice.py` now
+      leaves out each recording's first 0.35 s and last 0.5 s and any sound under 0.25 s, and
+      trims such a burst from what it makes; measured clean after, not yet judged by ear.
 
 - [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
