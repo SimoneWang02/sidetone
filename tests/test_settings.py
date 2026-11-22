@@ -370,12 +370,12 @@ class Chosen(SettingsCase):
         hub = self.make()
         self.assertIsNone(hub.set_setting("overlay.layout", "island"))
         self.assertEqual((hub.cfg.overlay["layout"], self.window.reconfigured), ("island", 1))
-        self.assertIsNone(hub.set_setting("overlay.row_lines", "2"))  # from the command line it comes as words
-        self.assertEqual(hub.cfg.overlay["row_lines"], 2)
+        self.assertIsNone(hub.set_setting("overlay.glass_clear", "35"))  # from the command line it comes as words
+        self.assertEqual(hub.cfg.overlay["glass_clear"], 35)
         self.assertIsNone(hub.set_setting("overlay.hotkeys.jump", "Ctrl+Alt+T"))
         self.assertIsNone(hub.set_setting("overlay.hotkeys.repeat", ""))  # no key
         self.assertEqual(self.window.reconfigured, 4)
-        self.assertEqual(self.saved()["overlay"], {"layout": "island", "row_lines": 2, "hotkeys": {"jump": "Ctrl+Alt+T", "repeat": ""}})
+        self.assertEqual(self.saved()["overlay"], {"layout": "island", "glass_clear": 35, "hotkeys": {"jump": "Ctrl+Alt+T", "repeat": ""}})
 
     def test_the_voice_is_switched_with_its_file(self):
         hub = self.make()
