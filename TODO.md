@@ -984,6 +984,9 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] A light mode for the overlay (offered 2026-11-22 after the terminal's light tint): not
+      wanted (the author: "No, I don't think it's [needed] either"). The overlay keeps its
+      dark glass on any theme.
 - [x] A bell on a terminal's tab when its session speaks (VS Code's visual bell): not wanted
       (the author, 2026-11-22: "I don't think it's too useful so I will skip this one as well").
 - [x] Left or right ear per session: not wanted (the author, 2026-11-22, offered it as the
