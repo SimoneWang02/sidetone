@@ -30,11 +30,11 @@ these come before anything new.
       running, a new haiku session opened in tmux; its SessionStart started the hub and the
       listener was waiting; words handed to it as a heard follow-up, nothing typed, and it
       answered "Yes, I can hear you." Only the microphone was left out.
-- [ ] The card's figures as totals of the session (2026-11-20, the author's idea after
+- [x] The card's figures as totals of the session (2026-11-20, the author's idea after
       "This reply" and "This turn" were "not very intuitive"): "Total tokens" and "Total time"
       are now what the whole session has used and how long Claude worked in it, since it began or
       was cleared; each turn's own tokens stay on its history line. Seen in a picture only.
-      **Not seen by them on their own sessions yet.**
+      Seen by the author on their own sessions 2026-11-22: "I think they look great."
 - [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
       are a JSON file and the command line.
       A first one built on the evening of 2026-11-18 and put on their screen:
