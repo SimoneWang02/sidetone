@@ -45,6 +45,9 @@ class Editor:
     shows: bool = False  # it can also bring a terminal to the front (the extension from 0.3.0 on says so)
     show: list = field(default_factory=list)  # the terminals it is asked to bring to the front, by process id
     clears: bool = False  # it can also type the command that clears a session's conversation (0.4.0 on)
+    opens: bool = False  # it can also open a terminal and start Claude Code in it, and close one (0.5.0 on)
+    open: list = field(default_factory=list)  # new sessions asked of it: {"cwd": ..., "beside": a terminal's process id or None}
+    close: list = field(default_factory=list)  # terminals it is asked to close, by process id
 
 
 EDITOR_WAIT = 25.0  # seconds an editor's request is held before it is sent back empty and asked again

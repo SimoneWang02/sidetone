@@ -156,6 +156,11 @@ DEFAULTS = {
                 # like a shortcut ... double click it to confirm"); claimed only while that session's
                 # terminal is in an editor that can type it. Word has it for "©": shared then.
                 "clear": "Ctrl+Alt+C",
+                # A new session in a terminal beside the one in focus, and the session in focus
+                # ended, pressed twice (the author, 2026-11-22: "Ctrl Alt plus and Ctrl Alt minus to
+                # add a terminal session and remove it"); claimed only while an editor with the
+                # extension (0.5.0 on) can do it. Word has Ctrl+Alt+Minus for a long dash: shared.
+                "new_session": "Ctrl+Alt+Plus", "end_session": "Ctrl+Alt+Minus",
                 # The voice off for every session, or on again (the author, 2026-11-19: "I would
                 # rather have ... a mute shortcut"; "M for mute"). The NVIDIA overlay has Ctrl+Alt+M for
                 # its microphone by default; where it does, both act on the key (share_taken_keys), which

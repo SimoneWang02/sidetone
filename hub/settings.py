@@ -253,6 +253,9 @@ SECTIONS = [
         # "Go to the Terminal" (jump) left the window on 2026-11-22: no key by default, and
         # Switching Moves the Keyboard does the same at every switch (the author: "okay, remove
         # [it]"). A key can still be given in config.json.
+        heading("keys.sessions", "Sessions"),
+        hotkey("new_session", "New Session", "Opens a terminal beside the session in focus, in its folder, and starts Claude Code in it."),
+        hotkey("end_session", "End Session", "Press it twice: the editor types /exit for the session in focus and closes its terminal."),
         hotkey("clear", "Clear the Chat", "Press it twice: the editor types /clear for the session in focus, at its prompt."),
     ]),
 ]

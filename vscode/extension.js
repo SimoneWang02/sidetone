@@ -18,8 +18,14 @@
 // that goes to the terminal of the session in focus): that only shows a terminal that is
 // already there and puts the keyboard in it.
 //
+// From 0.5.0 it can also start a session and end one (the new-session and end keys): open a
+// terminal, split beside a terminal of ours or on its own, in a folder the hub names, and type
+// `claude` into it (only that: the command is written here, not sent by the hub); "exit", typed
+// like the others; and close a terminal of ours once the hub has seen its session end.
+//
 // It runs where the terminals run (the remote side under WSL or SSH), which is where the
 // hub's socket is.
+const fs = require("fs");
 const http = require("http");
 const os = require("os");
 const path = require("path");
@@ -55,7 +61,10 @@ async function report(why) {
 }
 
 // All that can be asked for, each as what is typed one piece after the other.
-const KEYS = { escape: ["\x1b"], clear: ["\x03", "/clear\r"] };
+// exit: Escape stops a turn under way, Ctrl+C empties a line half typed, /exit ends the session
+// (measured 2026-11-22 on a working session and an idle one, 150 ms apart).
+const KEYS = { escape: ["\x1b"], clear: ["\x03", "/clear\r"], exit: ["\x1b", "\x03", "/exit\r"] };
+const START = "claude";  // what a new terminal is given to run, typed as you would
 const BETWEEN = 150;  // ms from one piece to the next: typed in one go, Claude Code may take them as one
 const RETRY = 5000;  // no hub, or one from before this: ask again after this long
 
@@ -87,13 +96,42 @@ async function show(pids) {
   }
 }
 
+// Open a terminal for each new session asked for: beside the terminal named, if it is ours, in
+// the folder named, if it is one; Claude Code started in it and the keyboard put there.
+async function openNew(asked) {
+  for (const wanted of Array.isArray(asked) ? asked : []) {
+    if (!wanted || typeof wanted !== "object") continue;
+    let parent = null;
+    for (const terminal of vscode.window.terminals) {
+      if (wanted.beside && await terminal.processId === wanted.beside) parent = terminal;
+    }
+    const options = {};
+    try {
+      if (typeof wanted.cwd === "string" && wanted.cwd && fs.statSync(wanted.cwd).isDirectory()) options.cwd = wanted.cwd;
+    } catch (e) { /* gone: the editor's own folder */ }
+    if (parent) options.location = { parentTerminal: parent };
+    const terminal = vscode.window.createTerminal(options);
+    terminal.show(false);
+    terminal.sendText(START, true);
+  }
+}
+
+// Close the terminals asked for (their sessions have ended).
+async function close(pids) {
+  for (const wanted of Array.isArray(pids) ? pids : []) {
+    for (const terminal of vscode.window.terminals) {
+      if (await terminal.processId === wanted) terminal.dispose();
+    }
+  }
+}
+
 // One request, held by the hub until a key is wanted or about half a minute has passed;
 // then the next one. The hub knows our terminals only from the request it is holding.
 async function listen() {
   if (closed) return;
   const pids = (await Promise.all(vscode.window.terminals.map((terminal) => terminal.processId))).filter(Boolean);
   if (closed || open) return;
-  const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear"] });  // what the hub may ask of us
+  const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear", "open"] });  // what the hub may ask of us
   const request = http.request({
     socketPath: socket(), path: "/editor", method: "POST", timeout: 60000,
     headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) },
@@ -116,6 +154,8 @@ async function listen() {
         const asked = JSON.parse(body || "{}");
         press(asked.keys);
         show(asked.show);
+        openNew(asked.open);
+        close(asked.close);
       } catch (e) { /* not ours to read */ }
       next(200);
     });

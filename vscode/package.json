@@ -1,8 +1,8 @@
 {
   "name": "sidetone",
   "displayName": "Sidetone",
-  "description": "Tells the Sidetone hub which terminal you are in, so the Claude Code session running there gets the focus, types Escape into a session's terminal when you stop it with the cancel key, types /clear there when you tell a session by voice to clear the chat, and brings the terminal of the session in focus to the front when you ask for it.",
-  "version": "0.4.0",
+  "description": "Tells the Sidetone hub which terminal you are in, so the Claude Code session running there gets the focus, types Escape into a session's terminal when you stop it with the cancel key, types /clear there when you tell a session by voice to clear the chat, brings the terminal of the session in focus to the front when you ask for it, and opens a terminal with a new Claude Code session or ends one with the new-session and end keys.",
+  "version": "0.5.0",
   "publisher": "sidetone",
   "license": "MIT",
   "engines": { "vscode": "^1.75.0" },

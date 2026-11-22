@@ -220,6 +220,32 @@ namespace ClaudeSpeaks
             catch (Exception) { return Brushes.White; }
         }
 
+        // A key by its name in a hotkey ("Ctrl+Alt+Plus"): "Plus" and "Minus" for the keys that
+        // bear them, since a "+" would split the hotkey; the rest as WPF names them.
+        public static Key KeyNamed(string name)
+        {
+            switch (name.Trim().ToLowerInvariant())
+            {
+                case "plus": return Key.OemPlus;
+                case "minus": return Key.OemMinus;
+                default: return (Key)new KeyConverter().ConvertFromInvariantString(name.Trim());
+            }
+        }
+
+        public static string NameOfKey(Key key)
+        {
+            if (key == Key.OemPlus) return "Plus";
+            if (key == Key.OemMinus) return "Minus";
+            return new KeyConverter().ConvertToInvariantString(key);
+        }
+
+        // What a key's cap shows: the sign itself for Plus and Minus.
+        public static string KeyLabel(string name)
+        {
+            string plain = name.Trim().ToLowerInvariant();
+            return plain == "plus" ? "+" : plain == "minus" ? "-" : name;
+        }
+
         public static SolidColorBrush Alpha(Color c, double a)
         {
             return new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Max(0, Math.Min(1, a))), c.R, c.G, c.B));
@@ -2005,7 +2031,7 @@ namespace ClaudeSpeaks
             return new Border {
                 CornerRadius = new CornerRadius(4), BorderThickness = new Thickness(1), Padding = new Thickness(6, 1, 6, 2), Margin = new Thickness(0, 0, 4, 0), MinWidth = 22,
                 BorderBrush = Ui.Paint("#52FFFFFF"), Background = Ui.Paint("#1FFFFFFF"),
-                Child = new TextBlock { Text = key, FontSize = 11.5, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center },
+                Child = new TextBlock { Text = Ui.KeyLabel(key), FontSize = 11.5, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Center },
             };
         }
 
@@ -2118,7 +2144,7 @@ namespace ClaudeSpeaks
                 if ((held & ModifierKeys.Alt) != 0) combo += "Alt+";
                 if ((held & ModifierKeys.Shift) != 0) combo += "Shift+";
                 if ((held & ModifierKeys.Windows) != 0) combo += "Win+";
-                combo += new KeyConverter().ConvertToInvariantString(key);
+                combo += Ui.NameOfKey(key);
             }
             string which = capturing;
             capturing = "";
@@ -2783,7 +2809,7 @@ namespace ClaudeSpeaks
                     uint held = 0;
                     string keyName = Str(msg, "key", "");
                     if (keyName.Length > 0)
-                        try { held = (uint)KeyInterop.VirtualKeyFromKey((Key)new KeyConverter().ConvertFromInvariantString(keyName)); }
+                        try { held = (uint)KeyInterop.VirtualKeyFromKey(Ui.KeyNamed(keyName)); }
                         catch (Exception) { Error("key to hold not understood: " + keyName); }
                     HoldKey(held);
                     break;
@@ -4316,7 +4342,7 @@ namespace ClaudeSpeaks
                 Margin = new Thickness(0, 0, gap, gap), VerticalAlignment = VerticalAlignment.Center, MinWidth = 21,
                 BorderBrush = Ui.Alpha(Ui.Amber, 0.80), Background = Ui.Alpha(Ui.Amber, 0.16),
                 // Its own line height: a cap in a line of text would take that text's, and grow tall.
-                Child = new TextBlock { Text = key, FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, LineHeight = double.NaN },
+                Child = new TextBlock { Text = Ui.KeyLabel(key), FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, LineHeight = double.NaN },
             };
         }
 
@@ -4351,9 +4377,9 @@ namespace ClaudeSpeaks
                     VoiceRow(bannerTitle, icon == "muted", Str(msg, "text"), Str(msg, "hint"));
                     bannerHint.Text = "";
                 }
-                else if (icon == "clear")  // the clear key asks, as the mute key's row says what it did; a bin (an eraser was first: "I don't like it much")
+                else if (icon == "clear" || icon == "end")  // the clear key asks, as the mute key's row says what it did; a bin (an eraser was first: "I don't like it much"); the end key the same, with a power sign
                 {
-                    bannerTitle.Inlines.Add(new Run("\uE74D") { FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 14,
+                    bannerTitle.Inlines.Add(new Run(icon == "end" ? "\uE7E8" : "\uE74D") { FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 14,
                         Foreground = Ui.Alpha(Ui.Tint("working"), 1), BaselineAlignment = BaselineAlignment.Center });
                     bannerTitle.Inlines.Add(new Run("  " + Str(msg, "text")) { Foreground = Ui.Dim });
                     string confirm = Str(msg, "hint");
@@ -4488,7 +4514,7 @@ namespace ClaudeSpeaks
             int next = 1;
             foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
-                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key == "jump" || entry.Key == "clear" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
+                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key == "jump" || entry.Key == "clear" || entry.Key == "new_session" || entry.Key == "end_session" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
                 // The focus moves with the arrows that point the way the lights run: up and down
                 // for the bar, left and right for the island. The other pair is left to other programs.
                 bool sideways = entry.Key == "focus_left" || entry.Key == "focus_right";
@@ -4510,7 +4536,7 @@ namespace ClaudeSpeaks
                             case "win": modifiers |= MOD_WIN; break;
                             case "backspace": vk = (uint)KeyInterop.VirtualKeyFromKey(Key.Back); break;
                             case "esc": vk = (uint)KeyInterop.VirtualKeyFromKey(Key.Escape); break;
-                            default: vk = (uint)KeyInterop.VirtualKeyFromKey((Key)new KeyConverter().ConvertFromInvariantString(part)); break;
+                            default: vk = (uint)KeyInterop.VirtualKeyFromKey(Ui.KeyNamed(part)); break;
                         }
                     }
                 }

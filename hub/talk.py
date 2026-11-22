@@ -21,6 +21,8 @@ from base import (aside_mode, interrupts, ASIDE_ASK, Aside, BUSY, Editor, Listen
                   session_model, spoken_answer, spoken_verdict)
 
 CLEAR_TWICE = 3.0  # seconds the clear key's question stays up for the second press
+END_TWICE = 3.0  # the same for the end key
+NEW_WAIT = 60.0  # seconds after the new-session key in which the first session to start is the one it opened
 CLEAR_BUSY = "it is still working"  # why a clear cannot be typed yet, and waits
 SHOWN_ECHO = 1.0  # seconds in which the editor's report of a terminal the hub asked to the front is only that
 
@@ -267,6 +269,79 @@ class Talk:
                     self.overlay.send({"type": "banner", "icon": "clear", "text": f"Clear {s.name}?",
                                        "hint": f"{key} to confirm" if key else "", "seconds": CLEAR_TWICE})
         self.publish()
+
+    # --- opening and ending sessions -----------------------------------------------------------
+
+    def new_session_key(self) -> None:
+        """The new-session key (the author, 2026-11-22: "Ctrl Alt plus and Ctrl Alt minus to add a
+        terminal session and remove it"): the editor opens a terminal split beside the one of the
+        session in focus, in that session's folder, and starts Claude Code in it (the extension
+        types `claude` itself; the hub only names the folder and the terminal to sit beside). The
+        session that starts there gets the focus. With no session, or one whose terminal is in no
+        editor, a terminal of its own in any editor that can open one."""
+        with self.lock:
+            s = self._target()
+            tty = s.tty if s and s.tty else ""
+            editors = [e for e in self.editors if e.opens and not e.wake.is_set()]
+            editor = next((e for e in editors if tty in e.ttys), None) or next(iter(editors), None)
+            if not editor:
+                log(self.cfg, "hub.log", "new session not asked: no editor that can open one is waiting")
+                return
+            editor.open.append({"cwd": s.cwd if s else "", "beside": editor.ttys.get(tty)})
+            editor.wake.set()
+            self._opening = time.monotonic()
+        log(self.cfg, "hub.log", f"new session asked of the editor, in {s.cwd if s else 'its own folder'}"
+            + (f", beside the terminal of {s.name} ({tty})" if tty in editor.ttys else ""))
+
+    def end_session_key(self) -> None:
+        """The end key: pressed once it asks, as the clear key does; pressed again within
+        `END_TWICE` the editor ends the session in focus (Escape stops a turn, Ctrl+C empties a line
+        half typed, /exit ends it: measured on a working session and an idle one, 2026-11-22) and,
+        once Claude Code has ended it, closes its terminal."""
+        with self.lock:
+            s = self._target()
+            if not self._endable_here(s):
+                return
+            now, armed = time.monotonic(), self._end_armed
+            if armed and armed[0] == s.id and now - armed[1] < END_TWICE:
+                self._end_armed = None
+                if self.overlay:
+                    self.overlay.send({"type": "banner"})
+                editor = next(e for e in self.editors if e.opens and s.tty in e.ttys and not e.wake.is_set())
+                editor.keys.append({"pid": editor.ttys[s.tty], "key": "exit"})
+                editor.wake.set()
+                self._ending[s.id] = s.tty
+                log(self.cfg, "hub.log", f"end [{s.id[:8]}] /exit asked of the editor for its terminal ({s.tty}): the end key")
+            else:
+                self._end_armed = (s.id, now)
+                key = self.cfg.overlay.get("hotkeys", {}).get("end_session", "")
+                if self.overlay:
+                    self.overlay.send({"type": "banner", "icon": "end", "text": f"End {s.name}?",
+                                       "hint": f"{key} to confirm" if key else "", "seconds": END_TWICE})
+        self.publish()
+
+    def _ended_by_key(self, sid: str) -> None:
+        """A session ended: if the end key asked for it, its terminal is closed now. Call with
+        the lock held."""
+        tty = self._ending.pop(sid, None)
+        if not tty:
+            return
+        for editor in self.editors:
+            if editor.opens and tty in editor.ttys and not editor.wake.is_set():
+                editor.close.append(editor.ttys[tty])
+                editor.wake.set()
+                break
+        else:  # its editor is between two requests: the next one is handed it
+            self._editor_wanted.append(("close", tty, time.monotonic()))
+        log(self.cfg, "hub.log", f"end [{sid[:8]}] ended: its terminal ({tty}) asked closed")
+
+    def _can_open(self) -> bool:
+        """The new-session key is claimed while an editor that can open a terminal is there."""
+        return any(e.opens for e in self.editors) or time.monotonic() - self._opens_by < base.EDITOR_GAP
+
+    def _endable_here(self, s) -> bool:
+        """The end key is claimed only for a session whose terminal an editor can end and close."""
+        return bool(s and s.tty and any(e.opens and s.tty in e.ttys for e in self.editors))
 
     def _clearable_here(self, s) -> bool:
         """The clear key is claimed only for a session whose terminal an editor can type into."""
@@ -786,14 +861,26 @@ class Talk:
                 return True
         return False
 
-    def editor_waits(self, pids: list, shows: bool = False, clears: bool = False) -> Editor:
+    def editor_waits(self, pids: list, shows: bool = False, clears: bool = False, opens: bool = False) -> Editor:
         """An editor's window asks to be told when a key is wanted in one of its terminals,
         which it names by the process each one runs (its shell). `shows`: it can also bring
-        one of them to the front. `clears`: it can also type /clear into one."""
+        one of them to the front. `clears`: it can also type /clear into one. `opens`: it can
+        also open a terminal with a new session, end a session and close its terminal."""
         ttys = {tty: pid for pid in pids for tty in [terminal_mod.tty_of(pid)] if tty}
-        editor = Editor(ttys, shows=shows, clears=clears)
+        editor = Editor(ttys, shows=shows, clears=clears, opens=opens)
         with self.lock:
             self.editors.append(editor)
+            if opens:
+                now, kept = time.monotonic(), []
+                for what, tty, since in self._editor_wanted:
+                    if now - since >= base.EDITOR_GAP:
+                        continue
+                    if what == "close" and tty in ttys:
+                        editor.close.append(ttys[tty])
+                        editor.wake.set()
+                    else:
+                        kept.append((what, tty, since))
+                self._editor_wanted = kept
             if clears:
                 tty, since = self._clear_wanted
                 if tty in ttys and time.monotonic() - since < base.EDITOR_GAP:  # asked for between two requests
@@ -819,6 +906,8 @@ class Talk:
                 self._shown_by.update(dict.fromkeys(editor.ttys, time.monotonic()))
             if editor.clears:
                 self._clears_by.update(dict.fromkeys(editor.ttys, time.monotonic()))
+            if editor.opens:
+                self._opens_by = time.monotonic()
             return editor.keys
 
     def _showable(self, s) -> bool:

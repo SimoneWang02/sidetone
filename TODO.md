@@ -294,6 +294,14 @@ Roughly easiest first, the larger ones after.
       also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
       with those keys, and it needs a keyboard hook for as long as the keys are down.
 
+- [ ] **Built 2026-11-22, not tried by the author:** Ctrl+Alt+Plus opens a terminal beside the
+      session in focus, in its folder, with Claude Code started and the keyboard in it, and that
+      session gets the focus; Ctrl+Alt+Minus pressed twice ends the session in focus (/exit) and
+      closes its terminal ("Ctrl Alt plus and Ctrl Alt minus to add a terminal session and
+      remove it"). Needs the extension 0.5.0 (`sidetone vscode install`, then Restart Extension
+      Host). The keystrokes measured in tmux; the editor's part (split, typing, closing) not
+      seen working yet.
+
 ### Larger extras
 
 - [ ] The full transcript and the full message in the overlay (the author, by voice,

@@ -40,7 +40,7 @@ from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, CONFIRM_WINDOW, Config, 
                   _same_call, _spoken_name, aside_question, context_mode, log, session_model, spoken_answer)  # noqa: E402,F401
 from permissions import Permissions  # noqa: E402
 from server import Handler, Server, serve  # noqa: E402,F401
-from talk import Talk  # noqa: E402
+from talk import NEW_WAIT, Talk  # noqa: E402
 
 
 # What a figure is called under the rows while it is not known (see Hub._figures).
@@ -86,6 +86,11 @@ class Hub(Permissions, Talk):
         self._shown_at: dict[str, float] = {}  # terminal -> when it was last asked to the front
         self._clears_by: dict[str, float] = {}  # terminal -> when a request of an editor that can type /clear into it last ended
         self._clear_wanted: tuple[str, float] = ("", base.NEVER)  # a terminal to be cleared while its editor was between two requests
+        self._opens_by: float = base.NEVER  # when a request of an editor that can open a terminal last ended
+        self._opening: float = base.NEVER  # when a new session was last asked of an editor (the new-session key)
+        self._end_armed: tuple[str, float] | None = None  # the session the end key asked about, and when
+        self._ending: dict[str, str] = {}  # session -> its terminal, for a session ended with the end key: closed once it has ended
+        self._editor_wanted: list = []  # (what, terminal, when) asked while the editor was between two requests: "close"
         self._clearing: dict[str, tuple] = {}  # session -> (its voice, timer) while /clear has been asked for and not yet seen done
         self._clear_after: dict[str, float] = {}  # session -> when "clear the chat" was said while it was busy: cleared once its turn ends
         self._ended: dict[str, float] = {}  # session -> when Claude Code said it ended: its listener must not bring it back
@@ -217,6 +222,7 @@ class Hub(Permissions, Talk):
             self.last_event = time.monotonic()
             if event == "SessionEnd":
                 self._cleared(sid, ev.get("reason") == "clear")
+                self._ended_by_key(sid)
                 ending = self.sessions.by_id.get(sid)
                 if ev.get("reason") == "clear":
                     self.sessions.clearing(sid)
@@ -236,6 +242,10 @@ class Hub(Permissions, Talk):
             s = self.sessions.touch(sid, ev.get("cwd", ""),
                                     after_clear=event == "SessionStart" and ev.get("source") == "clear")
             s.permission_mode = str(ev.get("permission_mode") or s.permission_mode)
+            if event == "SessionStart" and ev.get("source") == "startup" and time.monotonic() - self._opening < NEW_WAIT:
+                self._opening = base.NEVER  # the session the new-session key opened: what you say next is for it
+                self._focus_on(s)
+                log(self.cfg, "hub.log", f"focus on {s.name}: started by the new-session key")
             if event in ("PostToolUse", "PostToolUseFailure"):  # that tool ran: its prompt was answered
                 self._settle(sid, "answered in the terminal", ev.get("tool_name"), ev.get("tool_input"))
             elif event in ("UserPromptSubmit", "Stop", "StopFailure"):
@@ -710,7 +720,9 @@ class Hub(Permissions, Talk):
                              or self._asides or self._stoppable() else [])
                           + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else [])
                           + (["jump"] if self._showable(self._target()) else [])
-                          + (["clear"] if self._clearable_here(self._target()) else []))
+                          + (["clear"] if self._clearable_here(self._target()) else [])
+                          + (["new_session"] if self._can_open() else [])
+                          + (["end_session"] if self._endable_here(self._target()) else []))
             now = time.time()
             # Newest first, and up to four lines of each session: the overlay shows those of the
             # session under the mouse, so one that talks a lot must not push the others out.

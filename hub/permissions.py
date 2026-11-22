@@ -354,6 +354,10 @@ class Permissions:
             self.show_terminal()
         elif name == "clear":
             self.clear_key()
+        elif name == "new_session":
+            self.new_session_key()
+        elif name == "end_session":
+            self.end_session_key()
         elif name == "settings":
             self.show_settings()
         elif name == "mute":

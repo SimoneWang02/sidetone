@@ -401,6 +401,23 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   1.5 s first, then in the permission prompt's box with a cancel key for 5 s; having tried that:
   like "voice is muted", "it would automatically go away in three seconds, there's no need for
   the backspace to cancel that". Word types "©" with Ctrl+Alt+C: shared then.
+- The new-session and end keys (2026-11-22, `new_session` Ctrl+Alt+Plus, `end_session`
+  Ctrl+Alt+Minus, `Hub.new_session_key`, `Hub.end_session_key`, `END_TWICE` 3 s, `NEW_WAIT` 60 s;
+  the extension 0.5.0, `openNew`, `close`). The author: "Ctrl Alt plus and Ctrl Alt minus to add a
+  terminal session and remove it". New: the editor opens a terminal split beside the one of the
+  session in focus (`location: {parentTerminal}`), in that session's folder (checked to be a
+  folder; else the editor's own), types `claude` into it (the word is in the extension, the hub
+  only names folder and terminal) and puts the keyboard there; the first session to start with
+  `source: startup` within 60 s gets the focus. With no session, a terminal of its own. End:
+  asks like the clear key ("End sidetone 2?", a power sign, Segoe Fluent Icons E7E8); the second
+  press has the editor type Escape, Ctrl+C, `/exit` 150 ms apart (measured in a tmux session on
+  haiku, 2026-11-22: ends it both mid-turn, where Escape stops the turn and Ctrl+C then shows
+  "press again to exit", and at an idle prompt with words half typed), and once SessionEnd comes
+  the hub asks the editor to close that terminal (`_ending`, `_ended_by_key`; handed to the
+  next request if the editor was between two). A session that ends by itself keeps its terminal.
+  Claimed only while an editor that can do it is there (`_can_open`, `_endable_here`). Hotkeys
+  name the keys "Plus" and "Minus" (a "+" would split the combination; `Ui.KeyNamed`,
+  `NameOfKey`), drawn as "+" and "-" on the caps. Word has Ctrl+Alt+Minus for a long dash: shared.
 - Answering a permission prompt by voice (2026-11-21, `spoken_verdict`, `SPOKEN_YES`, `SPOKEN_NO`):
   a bare yes or no (English, Italian, Chinese; "please", "thanks" after it allowed) allows or
   denies as the keys do; anything longer turns the request down and follows as the next message
