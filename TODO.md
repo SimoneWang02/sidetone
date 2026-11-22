@@ -148,7 +148,8 @@ Roughly easiest first, the larger ones after.
       Animation: "Reduce Motion" built 2026-11-22 (`overlay.still`, also on with Windows'
       animation effects off). **Not tried by the author.** Size: "Size" 75 to 150 %
       (`overlay.size`), built the same day at their word ("let the user pick ... You decide");
-      pictures at 75 and 150. **Not tried by the author.**
+      pictures at 75 and 150. Tried by the author: it follows the slider while dragged, after
+      they asked for it "more responsive"; then "Looks good".
 - [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
       importance, a thin line of light at the screen edge, one small window per session); the
       code is in commit `8558c4a`.
