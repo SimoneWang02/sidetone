@@ -165,7 +165,14 @@ voice, and the wait for the transcript.
       recording. Loads in 7 s, 3 GB of GPU memory. A 4.4 s English line took 3.4 s to make, the
       Italian one 2.1 s; a short Chinese line came out 10.6 s long (perhaps padding or babble).
       Whole lines only, no streaming yet, so each waits that long before it starts. Every clip
-      carries Resemble's inaudible Perth watermark. Played to the author; their verdict not yet in.
+      carries Resemble's inaudible Perth watermark. The author: "really close. That's scary".
+      Italian from their Italian recording sounded to them "like a Chinese accent"; Italian from
+      their English one was closer, if slower. They want it to get better on its own while they
+      work ("mentre uso questo tool miglioro la qualità del modello"). Two steps: (1) with no
+      training, the fingerprint averaged over many recordings (`embeds_from_wavs` takes a list)
+      and the best 10 s picked as the reference, redone as recordings come in; (2) a fine-tune of
+      Chatterbox once there is about an hour of recordings, with the words checked first, run on
+      the GPU while the PC is idle. 3.7 minutes kept by then (7 English, 4 Italian).
 
 - [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
