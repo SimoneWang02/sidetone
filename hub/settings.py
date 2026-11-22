@@ -183,8 +183,8 @@ SECTIONS = [
         # both still read from config.json.
     ]),
     ("Figures", [
-        choice("context_shown", "Context", "How full each session's context is.",
-               ("arc", "Arc"), ("text", "Words"), ("both", "Both"), ("off", "Off")),
+        # "Context" (context_shown: arc, text, both, off) left the window on 2026-11-22, the
+        # author: "remove these settings because arc is by default". Still read from config.json.
         choice("turn_tokens", "Tokens of a Reply", "What counts: newly read and written, only written, or everything.",
                ("new", "New"), ("output", "Written"), ("all", "All"), ("off", "Off")),
         switch("turn_tokens_history", "Tokens in the History", "Each line of the history ends in what its turn used."),

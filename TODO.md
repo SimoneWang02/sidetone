@@ -127,7 +127,8 @@ these come before anything new.
       picks the first session, and the history is in the card by default (History in Selected
       Session: Always or When the Mouse Rests; **not yet tried by the author**). History Shows: This Session or All Sessions. "Release to
       Send" and Messages That Wait out of the window (Glint, Number). **Overlay is done**
-      (Layout, Details, Glass Effect, History Shows). **Next: Figures**, then Terminal, Keys.
+      (Layout, Details, Glass Effect, History Shows). **Figures, under way 2026-11-22:** Usage Labels
+      and Context out of the window (the arc is the default). **Next in it: Tokens of a Reply**, then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
       and maximized by a button or a double click on its top, a dropdown that closes on a
