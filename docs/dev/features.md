@@ -198,6 +198,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (`tests/overlay_check.py --only=size`): closed, open and speaking, rows level with their
   lights and the bubble with the speaker. The mouse over the bar at another size is not
   checked from WSL.
+  It follows the slider while it is dragged (`SettingsWindow.Previewing`, as the glass slider
+  does; the author: "I'm wanting it to be more responsive"), and is saved when it is let go.
 - Reduce Motion (2026-11-22, `overlay.still`, off; "Reduce Motion" in the Overlay section;
   the author, offered it with an overall size as the first of "more of the overlay as a
   setting": "Oh yes"). The overlay already had `still` for the pictures of

@@ -2504,6 +2504,16 @@ namespace ClaudeSpeaks
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still, stillAsked;
         double zoom = 1;  // overlay.size: the bar, the details and the bubble drawn this much bigger or smaller
+
+        // A new size, in percent; true if it changed anything.
+        bool SetZoom(double percent)
+        {
+            double size = Math.Max(0.5, Math.Min(2, percent / 100));
+            if (size == zoom) return false;
+            zoom = size;
+            foreach (Glass g in new[] { rail, panel, bubble, muteChip }) g.Zoom(zoom);
+            return true;
+        }
         string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
         double offsetX = 12, offsetY = 96, idleOpacity = 1.0, listOpacity = 1.0, lastFade = -1;
         double lastFrame, openedAt, bubbleAt, passUntil;
@@ -2692,8 +2702,7 @@ namespace ClaudeSpeaks
                     // `still`: no motion, asked for (overlay.still) or by Windows ("Animation effects" off).
                     stillAsked = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
                     still = Ui.Motionless = stillAsked || !SystemParameters.ClientAreaAnimation;
-                    double size = Math.Max(0.5, Math.Min(2, Num(msg, "size", 100) / 100));
-                    if (size != zoom) { zoom = size; foreach (Glass g in new[] { rail, panel, bubble, muteChip }) g.Zoom(zoom); }
+                    SetZoom(Num(msg, "size", 100));
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
@@ -2827,6 +2836,9 @@ namespace ClaudeSpeaks
                             settings.Previewing = delegate(string key, double value)
                             {
                                 if (key == "overlay.glass_clear") { Ui.GlassClear = value; SetGlass(); }
+                                // The overlay follows the size slider while it is dragged, not only once it is let go
+                                // (the author, 2026-11-22: "I'm wanting it to be more responsive").
+                                if (key == "overlay.size" && SetZoom(value)) { Render(); Place(); }
                             };
                             settings.Look(opaque ? "solid" : glass);
                         }
