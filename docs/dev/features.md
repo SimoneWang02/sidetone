@@ -1251,7 +1251,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   default (`usage_labels: short`), as CodeIsland labels them, to leave the bars more room;
   `long` keeps "5 hours" and "Week". A model's own week keeps its name. The author asked
   for it by voice: "still understandable and it also saves space". Made in `Hub._plan_bars`;
-  the overlay sizes the name column to fit, so it needed no change.
+  the overlay sizes the name column to fit, so it needed no change. Out of the settings
+  window the same day (the author: "I don't think that is needed"); still read from
+  `config.json`.
 - **The card's figures are the session's totals** (2026-11-20). The author found "This
   reply" and "This turn" "not very intuitive"; "Tokens" and "Running" alone would read as
   totals, "Turn tokens" and "Turn time" were offered, and the author chose to make them
