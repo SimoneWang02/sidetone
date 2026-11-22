@@ -1247,6 +1247,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
   (found by searching, 2026-11-18), so they were not offered; Squelch, Sidetone and
   Tally were, as radio and studio words for what it does.
+- **Usage Labels** (2026-11-22). The plan's two usage bars are called "5H" and "7D" by
+  default (`usage_labels: short`), as CodeIsland labels them, to leave the bars more room;
+  `long` keeps "5 hours" and "Week". A model's own week keeps its name. The author asked
+  for it by voice: "still understandable and it also saves space". Made in `Hub._plan_bars`;
+  the overlay sizes the name column to fit, so it needed no change.
 - **The card's figures are the session's totals** (2026-11-20). The author found "This
   reply" and "This turn" "not very intuitive"; "Tokens" and "Running" alone would read as
   totals, "Turn tokens" and "Turn time" were offered, and the author chose to make them
@@ -1282,7 +1287,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`always`/`never`, `never` by default; `auto`, said only with several sessions and no overlay, dropped 2026-11-20: "make it two choices ... I want to reduce [friction]"), `titles` (`ask`/`auto`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `SIDETONE_OVERLAY=off` disables the overlay.
 - `~/.local/state/sidetone/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -1319,7 +1324,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   George, Nicole, Fenrir, Emma, Puck) by Kokoro's own grades (VOICES.md of
   hexgrad/Kokoro-82M, `settings.ENGLISH_GRADES`), and the window leaves out the English
   voices graded D or F and Piper's English (kept for when Kokoro is missing); the other seven
-  graded C or better wait under More Voices. Each card line says the grade ("American woman,
+  graded C or better wait under More Voices. On 2026-11-22 Nicole left the default pool, now
+  seven ("I don't like it ... I'll disable it myself on my end, but for other people, don't put
+  it in the default selected"); the author's own `voice_pool` still has her. Each card line says the grade ("American woman,
   quality A", first written "grade A"; the author: "quality is much more intuitive"). Then one
   word for every language (`quality`, `QUALITY_WORDS`; the author: "in English, I see quality A,
   B, C+ ... in Chinese, I see clarity, X out of Y. Can you make a standard?"): Kokoro's A and A-

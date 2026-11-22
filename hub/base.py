@@ -287,6 +287,10 @@ class Config:
     # two: none | all | near = only from `usage_warn` on. Off unless asked for: the author did
     # not want it, since such a limit comes and goes with the plans.
     usage_models: str = "none"
+    # What the two bars are called: short = "5H" and "7D", which leaves the bars more room
+    # (the author, 2026-11-22: "still understandable and it also saves space") | long =
+    # "5 hours" and "Week", as at first. A model's own week keeps its name either way.
+    usage_labels: str = "short"
     # How full each session's context is, counted from its transcript, and where it shows:
     # arc = a thin arc around the session's light, filling clockwise from the top (the author,
     # 2026-11-18, found the words too long beside the running time and chose the arc of three
@@ -445,7 +449,7 @@ class Config:
             user = {}
         user = cfg._checked(user, path)
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
+                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "whisper_language", "whisper_lean", "push_to_mute", "push_to_mute_key", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:

@@ -427,11 +427,14 @@ class Talk:
     def _plan_bars(self) -> list:
         """The plan's usage for the foot of the overlay's card: [what, percent, "warn" or ""].
         After the five hours and the week, the week of each model that has a figure of its
-        own (`usage_models`: all, near = only from the warning on, none)."""
+        own (`usage_models`: all, near = only from the warning on, none). `usage_labels`
+        names the first two "5H" and "7D" or "5 hours" and "Week"."""
         plan = (self.plan if self.cfg.usage_shown else None) or {}
         warn = float(self.cfg.usage_warn or 0)
         near = lambda w: bool(warn and w["used"] >= warn)  # noqa: E731
-        bars = [[name, w] for name, w in (("5 hours", plan.get("five_hour")), ("Week", plan.get("week"))) if w]
+        short = str(self.cfg.usage_labels).lower() != "long"
+        bars = [[name, w] for name, w in (("5H" if short else "5 hours", plan.get("five_hour")),
+                                          ("7D" if short else "Week", plan.get("week"))) if w]
         which = str(self.cfg.usage_models).lower()
         if bars and which in ("all", "near"):
             bars += [[name, w] for name, w in (plan.get("models") or {}).items() if w and (which == "all" or near(w))]

@@ -193,6 +193,8 @@ SECTIONS = [
         switch("overlay.details_bars", "Bars Under the Figures", "A thin bar under a tile that is a share of a whole, such as context."),
         switch("usage_shown", "Plan Usage", "The five-hour window and the week, at the foot of the figures."),
         choice("overlay.usage_layout", "Usage Bars", "", ("rows", "A row each"), ("line", "Side by side")),
+        choice("usage_labels", "Usage Labels", "What the five-hour and week bars are called.",
+               ("short", "5H and 7D"), ("long", "5 Hours and Week")),
         choice("usage_models", "A Model's Own Week", "A third bar where the plan counts one model apart.",
                ("none", "Off"), ("near", "Near its end"), ("all", "Always")),
     ]),
