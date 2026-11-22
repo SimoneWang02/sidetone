@@ -325,6 +325,9 @@ class Hub(Permissions, Talk):
                 # Kept until the next turn starts: once, the streamed batch with the line reached
                 # the hub six seconds after Stop had already said it, and it was said again.
                 s.spoken = speech or None
+                asking = [r for r in self.requests if r.session == sid and r.agent]
+                if asking:  # a subagent in the background still waits for an answer
+                    s.state, s.note = "needs_you", f"wants to: {asking[0].summary}"
             elif event == "StopFailure":
                 s.state, s.activity, s.turn_started = "failed", "", None
                 error = str(ev.get("error") or "unknown").replace("_", " ")
@@ -332,7 +335,7 @@ class Hub(Permissions, Talk):
                 self._say(s, f"I hit an error: {error}", "failed", "stop-failure")
 
     def _forget(self, sid: str, why: str) -> None:
-        self._settle(sid, why)
+        self._settle(sid, why, agents=True)
         self._release(sid)
         self._sync_steer(sid)
         self.followups.pop(sid, None)
@@ -438,7 +441,8 @@ class Hub(Permissions, Talk):
                         if not s.given:  # its own words for what it is doing say more than that name
                             s.title = short_title(info["name"])
                     if (info["status"] == "idle" and s.state in ("working", "needs_you") and quiet > 3
-                            and time.time() - info["status_at"] > 2):
+                            and time.time() - info["status_at"] > 2
+                            and not any(r.session == s.id and r.agent for r in self.requests)):  # a subagent still asks
                         self._settle(s.id, "interrupted")
                         s.state, s.activity, s.note, s.turn_started = "idle", "", "interrupted", None
                         changed = True

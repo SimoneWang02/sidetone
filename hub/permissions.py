@@ -46,6 +46,7 @@ class Permissions:
                     req.shells = set(claude_sessions.tool_shells(pid)) if pid else None
                 s.state, s.note = "needs_you", f"wants to: {summary}"
             if req:
+                req.agent = str(ev.get("agent_id") or "")
                 self.requests.append(req)
                 self._show_request()
         self.publish()
@@ -123,9 +124,15 @@ class Permissions:
                 s.state, s.activity, s.note, s.turn_started = "idle", "", "interrupted", None
         self.publish()
 
-    def _settle(self, sid: str, why: str, tool: str | None = None, tool_input: dict | None = None) -> None:
-        """Close a session's open requests; with a tool given, only the one for that exact call."""
+    def _settle(self, sid: str, why: str, tool: str | None = None, tool_input: dict | None = None, agents: bool = False) -> None:
+        """Close a session's open requests; with a tool given, only the one for that exact call.
+        Without one (its turn moved on), not those of its subagents: one sent to the background
+        goes on after the turn that started it has ended, and its prompt is still open (found in
+        the lab, 2026-11-22: the allow key and a spoken yes could not answer it). `agents`: those
+        too (the session has ended)."""
         for req in [r for r in self.requests if r.session == sid]:
+            if tool is None and req.agent and not agents:
+                continue
             if tool is None or (req.tool == tool and _same_call(tool, req.tool_input, tool_input or {})):
                 self._resolve(req, None, why)
 

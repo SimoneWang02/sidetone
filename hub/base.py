@@ -186,6 +186,7 @@ class Request:
     message: str = ""  # with a deny: what Claude is told beside it (it reads this as the tool's output, not as the user)
     ticked: set = field(default_factory=set)  # a question with several choices to tick: those ticked so far, counted from 0
     shells: set | None = None  # the session's commands that were already running when it asked (None: not known)
+    agent: str = ""  # the subagent that asks (Claude Code's agent_id), "" for the session itself
 
     @property
     def question(self) -> dict | None:

@@ -508,3 +508,17 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   Heart's short sentence took 0.85 s, so single numbers are noisy. From `voice.log`
   (`first_audio`, previews only, the same sentence each): Kokoro English 377 ms (34), Italian
   236 ms (3), Chinese model 339 ms (5), Piper 296 ms (2).
+
+## Subagents' permission prompts (measured 2026-11-22, Claude Code 2.1.330, a lab of haiku sessions)
+
+- A subagent's PermissionRequest carries `agent_id` and `agent_type` (the session's own has
+  neither); its Notification (`permission_prompt`) does not say which agent.
+- For a subagent sent to the background, Claude Code shows its own dialog only once the
+  PermissionRequest hook has returned: held by the hub for 9 s (`permission_grace`), the dialog
+  came at 16 s after the prompt was typed; held with no end, it never came, and the agent's view
+  showed it as still working. Its notification came 6, 15 and 36 s after the request, i.e. after
+  the hub let go. So the hub can answer it only in those first seconds, and must let go for the
+  terminal to show it.
+- The main turn usually ends (Stop) while the background agent runs on, so a subagent's request
+  can still be open when its session's turn ends.
+

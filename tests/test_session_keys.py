@@ -162,5 +162,37 @@ class OneSessionTwoTerminals(SessionKeys):
         self.assertEqual((s.pids, s.tty), ([4002], "/dev/pts/42"))
 
 
+class SubagentPrompts(SessionKeys):
+    """A subagent sent to the background asks for permission after the turn that started it
+    has ended: its prompt stays open, so the keys and a spoken yes can answer it."""
+
+    def ask(self, hub, agent=""):
+        body = ev("PermissionRequest", sid="a", cwd="/w/a", tool_name="Bash", tool_input={"command": "ls /etc"})
+        if agent:
+            body["agent_id"] = agent
+        return hub.request_permission(body)
+
+    def test_the_end_of_the_turn_leaves_a_subagents_prompt_open(self):
+        hub = self.make()
+        req = self.ask(hub, agent="a1ee82860a16a140d")
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message="<speak>Started it.</speak>"))
+        self.assertIn(req, hub.requests)
+        self.assertEqual(hub.sessions.by_id["a"].state, "needs_you")
+        hub.on_event(ev("PostToolUse", sid="a", cwd="/w/a", tool_name="Bash", tool_input={"command": "ls /etc"}))
+        self.assertNotIn(req, hub.requests)  # allowed in the terminal: its call ran
+
+    def test_the_sessions_own_prompt_still_goes_with_its_turn(self):
+        hub = self.make()
+        req = self.ask(hub)
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message="<speak>Done.</speak>"))
+        self.assertNotIn(req, hub.requests)
+
+    def test_the_end_of_the_session_takes_a_subagents_prompt(self):
+        hub = self.make()
+        req = self.ask(hub, agent="x1")
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a"))
+        self.assertNotIn(req, hub.requests)
+
+
 if __name__ == "__main__":
     unittest.main()
