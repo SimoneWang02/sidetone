@@ -173,6 +173,10 @@ voice, and the wait for the transcript.
       and the best 10 s picked as the reference, redone as recordings come in; (2) a fine-tune of
       Chatterbox once there is about an hour of recordings, with the words checked first, run on
       the GPU while the PC is idle. 3.7 minutes kept by then (7 English, 4 Italian).
+      Step (1) made by hand the same day (`~/.local/share/voice-clone/build_voice.py`, 12
+      recordings, 4.6 min); not yet redone on its own as recordings come in. The author agreed
+      to both steps and sees it in the product: anyone who turns it on has every message they
+      say kept, locally, to build a voice model of their own while they work.
 
 - [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
