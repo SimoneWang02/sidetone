@@ -493,6 +493,15 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   "Yeah, uh, gone." / "Yeah, go on."; "Dero at the side by side." / "They are side by side";
   "è perfatto" / "perfetto"; "esvego" / "eseguo"; "attestare" / "addestrare"; "by coding" /
   "vibe coding". large-v3 punctuates long Italian better than turbo, at twice the time.
+- Kokoro on the RTX 5070 (2026-11-22): the first sentence of the last 40 English lines the
+  hub spoke (about 22 words, 7 s of speech), `af_heart`. Making it: CPU (onnxruntime 1.32,
+  24 threads) median 0.78 s, at most 1.51 s; GPU (onnxruntime-gpu 1.22.0 in a test venv,
+  `Kokoro.from_session` with the CUDA provider) median 0.13 s, at most 0.22 s. Only up to the
+  first comma (about 5 words, 1.8 s of speech): CPU 0.20 s, GPU 0.06 s. `voice.log` showed
+  `first_audio` 0.55 to 1.5 s for those lines, so making the sentence is nearly all of it.
+  onnxruntime-gpu replaces onnxruntime (same module name; 433 MB) and needs, besides cuBLAS
+  and cuDNN, NVIDIA's cudart 12, curand 10, cufft 11 and nvrtc 12 (`ldd` of
+  `libonnxruntime_providers_cuda.so`); loaded by full path first, like Whisper's.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
