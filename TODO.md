@@ -128,17 +128,6 @@ Roughly easiest first, the larger ones after.
       also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
       with those keys, and it needs a keyboard hook for as long as the keys are down.
 
-- [ ] **Built 2026-11-22, not tried by the author:** Ctrl+Alt+Plus opens a terminal beside the
-      session in focus, in its folder, with Claude Code started and the keyboard in it, and that
-      session gets the focus; Ctrl+Alt+Minus pressed twice ends the session in focus (/exit) and
-      closes its terminal ("Ctrl Alt plus and Ctrl Alt minus to add a terminal session and
-      remove it"). Needs the extension 0.5.0 (`sidetone vscode install`, then Restart Extension
-      Host). The keystrokes measured in tmux; the editor's part (split, typing, closing) not
-      seen working yet. Tried by the author the same hour: the new terminal opened beside and its
-      session took the focus (log); they ended this session by mistake with the end key.
-      Again 2026-11-22 17:04, on purpose: opened beside, focus moved to "sidetone 2"; it showed
-      the history of an earlier "sidetone 2" (mended the same hour: lines of an ended session
-      leave once its name is taken again).
 - [ ] One conversation open in two terminals (resumed in a second one; the author, 2026-11-22:
       "two terminals that are pointing into the same session. If I close one, I close ... the one
       in the overlay"): closing one now keeps it, and its terminal becomes the one left
@@ -388,6 +377,19 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] Ctrl+Alt+Plus opens a terminal beside the
+      session in focus, in its folder, with Claude Code started and the keyboard in it, and that
+      session gets the focus; Ctrl+Alt+Minus pressed twice ends the session in focus (/exit) and
+      closes its terminal ("Ctrl Alt plus and Ctrl Alt minus to add a terminal session and
+      remove it"). Needs the extension 0.5.0 (`sidetone vscode install`, then Restart Extension
+      Host). The keystrokes measured in tmux; the editor's part (split, typing, closing) not
+      seen working yet. Tried by the author the same hour: the new terminal opened beside and its
+      session took the focus (log); they ended this session by mistake with the end key.
+      Again 2026-11-22 17:04, on purpose: opened beside, focus moved to "sidetone 2"; it showed
+      the history of an earlier "sidetone 2" (mended the same hour: lines of an ended session
+      leave once its name is taken again).
+      Ctrl+Alt+Minus twice on "sidetone 2" closed its session and its terminal (the author:
+      "Close there. Nice."). Both keys tried by hand.
 - [x] Mixed languages: what happens when one speaks Italian, English and Chinese mixed in
       one recording or one turn ("se tipo iniziasse a parlare in italiano, in inglese, in
       cinese, mischiati, come funzionerà"). To look at: Whisper picks one language per
