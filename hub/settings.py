@@ -173,10 +173,10 @@ SECTIONS = [
         # below were tried and not liked. Still read from config.json.
         choice("overlay.history", "History Shows", "What was said last, when the mouse rests on the details: by this session, or by all of them.",
                ("session", "This Session"), ("all", "All Sessions")),
-        choice("overlay.talk_text", "\"Release to Send\"", "How those words move while you hold the talk key.",
-               ("shimmer", "Glint"), ("pulse", "Breathe"), ("still", "Still")),
-        choice("overlay.waiting_mark", "Messages That Wait", "The mark on the light of a session that has words of yours waiting.",
-               ("number", "Number"), ("clock", "Clock"), ("dot", "Dot")),
+        # "\"Release to Send\"" (overlay.talk_text: glint, breathe, still) and "Messages That Wait"
+        # (overlay.waiting_mark: number, clock, dot) left the window on 2026-11-22, the author: "Yes, go
+        # ahead ... also remove messages that wait. Let's just keep number". Glint and Number stay;
+        # both still read from config.json.
     ]),
     ("Figures", [
         choice("context_shown", "Context", "How full each session's context is.",
