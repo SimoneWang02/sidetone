@@ -113,7 +113,10 @@ SECTIONS = [
         # it's needed anymore since we already put it visually the usage bar". Asking still works,
         # and it is still read from config.json.
         switch("clear_by_voice", "Clear the Chat by Voice", "Say \"clear the chat\" and the editor types /clear for a session at its prompt."),
-        switch("focus_on_prompt", "Typing Takes the Focus", "A session you type to is the one your next spoken words go to."),
+        # "Typing Takes the Focus" (focus_on_prompt) left the window on 2026-11-21: in VS Code the
+        # focus has already followed the terminal by the time you type, so it only adds anything for
+        # terminals the extension cannot see; the author: "just remove it". Still on, and still read
+        # from config.json.
         switch("whisper_lean", "Short Words in Your Last Language", "When it is unsure which of your languages a few words are in, it keeps to the one you last spoke."),
         switch("push_to_mute", "Mute Discord While Talking",
                "Holds F24 down while you talk. In Discord's Keybinds, give Push to Mute that key: sidetone discord-key presses it for you. The steps are in the README, On a Discord call."),

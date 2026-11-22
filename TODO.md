@@ -103,8 +103,8 @@ these come before anything new.
       clear key, Ctrl+Alt+C pressed twice: asks in a banner like the mute key's, "Clear sidetone?",
       with a bin (seen by the author: "I think it looks good");
       a clear has its own sound, no "sent" sign, and the arc winds back to 0 (**the sound and the
-      arc not yet heard and seen by the author**). **Next: Talking**
-      from Typing Takes the Focus on, then Overlay,
+      arc not yet heard and seen by the author**). Typing Takes the Focus out of the
+      window (always on). **Next: Talking** from Short Words in Your Last Language on, then Overlay,
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
