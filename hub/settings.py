@@ -155,10 +155,9 @@ SECTIONS = [
         # The four signs of a muted voice (overlay.muted_line, muted_icon: on; muted_card_icon,
         # muted_mark: off) left the window on 2026-11-21, the author: "whenever I'm mute, I should be
         # able to see ... it's fine if we remove all of them". As they were, still read from config.json.
-        # Was "Opacity at Rest", shown as 0.9 (the author, 2026-11-21: "What ... is opacity at rest?",
-        # then yes to the plainer name and a percentage).
-        {**number("overlay.opacity", "Opacity When Idle", "How solid the lights are while nothing is happening; "
-                  "they turn fully solid when something does.", 0.3, 1.0, 0.05, "%"), "scale": 100},
+        # "Opacity When Idle" (overlay.opacity, and list_opacity with it; it was "Opacity at Rest")
+        # left the window on 2026-11-21, its default now 100%: the author, having seen it at 50%,
+        # "standard is 100% ... I don't think people are gonna use this". Still read from config.json.
         choice("overlay.glass", "Glass", "Blur what is behind it, or plain dark glass.",
                ("blur", "Blur"), ("none", "Plain")),
         choice("overlay.row_lines", "Lines Per Session", "How many lines a sentence may take in the details.",
@@ -784,12 +783,6 @@ def apply(hub, key: str, value) -> str | None:
         if hub.overlay and hasattr(hub.overlay, "reconfigure"):
             hub.overlay.reconfigure()
         _save(cfg, ["overlay", "hotkeys", key[16:]], value)
-        hub.publish()
-    elif key == "overlay.opacity":
-        # Both: with the details always out the overlay fades to `list_opacity` instead, so the
-        # setting did nothing there (the author, 2026-11-21, with Details on Always: "I don't see
-        # any changes").
-        hub.place_overlay(opacity=value, list_opacity=value)
         hub.publish()
     elif key.startswith("overlay."):
         hub.place_overlay(**{key[8:]: value})

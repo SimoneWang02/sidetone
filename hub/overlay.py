@@ -31,7 +31,10 @@ DEFAULTS = {
     "corner": "top-right",  # top-right | top-left | bottom-right | bottom-left
     "offset_x": 12,
     "offset_y": 96,  # below the title bar and tabs of a maximized app
-    "opacity": 0.9,  # closed capsules while nothing is happening
+    # Closed capsules while nothing is happening. 1.0 since 2026-11-21 (was 0.9), and out of the
+    # settings window: the author, having seen it fade, "standard is 100% ... I don't think
+    # people are gonna use this".
+    "opacity": 1.0,
     "list_opacity": 1.0,
     "glass": "blur",  # blur = Windows blurs what is behind | acrylic = its heavier blur (the same picture as blur on Windows 11, measured on build 26300) | none = plain dark glass
     "flash_seconds": 4,

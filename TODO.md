@@ -112,8 +112,8 @@ these come before anything new.
       picture). **Talking is done.** **Overlay, under way 2026-11-21:**
       Layout and Details name their keys (Details: Always, On Hover); Details Changing Size, Move
       It by the Details, What Opens the Details and the four signs of a muted voice out of the
-      window; Opacity at Rest is Opacity When Idle, in percent, and now also holds with the details
-      always out (it did nothing there). **Next: Overlay** from Glass on, then
+      window; Opacity at Rest out of the window, its default now 100% (seen at 50%: "standard is
+      100%"). **Next: Overlay** from Glass on, then
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges

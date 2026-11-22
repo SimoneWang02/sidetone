@@ -2422,7 +2422,7 @@ namespace ClaudeSpeaks
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
         string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
-        double offsetX = 12, offsetY = 96, idleOpacity = 0.9, listOpacity = 1.0, lastFade = -1;
+        double offsetX = 12, offsetY = 96, idleOpacity = 1.0, listOpacity = 1.0, lastFade = -1;
         double lastFrame, openedAt, bubbleAt, passUntil;
         int grabX, grabY;  // where on the bar the mouse took hold
         int frames;
