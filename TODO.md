@@ -164,6 +164,14 @@ Roughly easiest first, the larger ones after.
 
 To choose before release: which of these the first version has, and which wait.
 
+Where it stood on 2026-11-22: everything before this step done or left by choice. Claude's
+proposal, not yet decided: version 1 for Windows with WSL only, as a plugin, with the
+installer fetching the chosen languages' voices and the hub's own words in any language;
+native Windows, the Linux and macOS overlay, other agents and the cloned voice later. The
+author: "this is the next step ... I don't have time right now to follow you. And I don't
+want you to do it autonomously. I want to follow you in this progress." So this step and
+the ones after it are done together with them, not by a session alone.
+
 - [ ] Packaging as a Claude Code plugin, so it installs in one step.
 - [ ] A version that runs on Windows itself, without WSL (the author, 2026-11-17, on learning
       that Claude Code started from PowerShell or cmd does not start any of this: it reads
