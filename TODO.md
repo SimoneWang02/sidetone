@@ -145,6 +145,10 @@ Roughly easiest first, the larger ones after.
 - [ ] Make more of the overlay a setting: sizes, colors (session palette, status colors, glass
       tint), which keys do what, what the panel rows show, animation speed or none, where the
       bubble goes. Much is fixed in `overlay/Overlay.cs` today.
+      Animation: "Reduce Motion" built 2026-11-22 (`overlay.still`, also on with Windows'
+      animation effects off). **Not tried by the author.** An overall size was offered too;
+      Windows' own display scale already sizes the overlay (WPF follows it), so it waits for
+      the author's word.
 - [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
       importance, a thin line of light at the screen edge, one small window per session); the
       code is in commit `8558c4a`.

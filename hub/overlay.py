@@ -39,6 +39,10 @@ DEFAULTS = {
     "glass_clear": 50,  # how see-through the glass is, 0 (plain dark, no blur) to 100; 50 is the look it had
     "glass": "blur",  # blur = Windows blurs what is behind | acrylic = its heavier blur (the same picture as blur on Windows 11, measured on build 26300) | none = plain dark glass
     "flash_seconds": 4,
+    # Reduce motion (2026-11-22, for people who find it distracting): the panel and bubble change
+    # at once, with no springs, slides, pops or glints; the live voice levels still move. Also on
+    # by itself while Windows' "Animation effects" are off. False = the motion as designed.
+    "still": False,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
     # Held to take hold of the bar with the mouse: drag it, or turn the wheel on it. "" (the

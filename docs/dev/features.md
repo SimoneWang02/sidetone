@@ -187,6 +187,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   once each time it changes; `list.jsonl` names the model each recording was heard with.
   Choosing it in the window unloads the model, which loads where it now belongs at the next
   press of the talk key.
+- Reduce Motion (2026-11-22, `overlay.still`, off; "Reduce Motion" in the Overlay section;
+  the author, offered it with an overall size as the first of "more of the overlay as a
+  setting": "Oh yes"). The overlay already had `still` for the pictures of
+  `tests/overlay_check.py` (`Ui.Motionless`): the panel and bubble take their height at once,
+  rows and the bubble show without sliding in, the gauge, the waiting mark and the glide do
+  not move, and "Release to send" does not glint. The live voice levels still move. It is
+  also on while Windows' "Animation effects" are off (`SystemParameters.ClientAreaAnimation`,
+  read when the settings come). Seen in the settings window's picture.
 - The terminal tint on a light theme (2026-11-22, `terminal.light_background`, `#F8F8F8`,
   VS Code's Light Modern; the author, offered it: "Yes, so you're basically [doing] light mode
   and dark mode, right?"). The extension (0.6.0) sends `theme: "light" | "dark"` with each

@@ -2492,7 +2492,7 @@ namespace ClaudeSpeaks
         bool focusHistory = true;  // Selected Session: the history is in the card without the mouse resting (`focus_history: always`)
         int historyTicks = 3;  // looks of 30 ms the mouse rests on the details before the history shows (`history_after`)
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
-        bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
+        bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still, stillAsked;
         string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
         double offsetX = 12, offsetY = 96, idleOpacity = 1.0, listOpacity = 1.0, lastFade = -1;
         double lastFrame, openedAt, bubbleAt, passUntil;
@@ -2678,7 +2678,9 @@ namespace ClaudeSpeaks
                     listOpacity = Num(msg, "list_opacity", listOpacity);
                     monitor = (int)Num(msg, "monitor", monitor);
                     opaque = msg.ContainsKey("opaque") && Convert.ToBoolean(msg["opaque"]);
-                    still = Ui.Motionless = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
+                    // `still`: no motion, asked for (overlay.still) or by Windows ("Animation effects" off).
+                    stillAsked = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
+                    still = Ui.Motionless = stillAsked || !SystemParameters.ClientAreaAnimation;
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
