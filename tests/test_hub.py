@@ -548,6 +548,15 @@ class OverlayFeed(HubCase):
             self.assertEqual(row()["context"], 62.0 if arc else None, wanted)
             self.assertEqual("context 62%" in row()["meta"], words, wanted)
 
+    def test_show_tokens_off_takes_the_token_tiles_away(self):
+        hub = self.make()
+        hub.on_event(ev("UserPromptSubmit"))
+        names = lambda: [d[0] for d in self.overlay.of("state")[-1]["sessions"][0]["details"]]
+        self.assertIn("Total Tokens", names())
+        hub.cfg.turn_tokens = "off"
+        hub.on_event(ev("UserPromptSubmit"))
+        self.assertEqual(names(), ["Context", "Total Time"])
+
     def test_rows_show_activity_tasks_and_how_the_turn_ended(self):
         hub = self.make()
         hub.cfg.detail_metrics = ["context", "tokens", "time", "tasks"]  # off by default, still a choice

@@ -694,7 +694,8 @@ class Hub(Permissions, Talk):
                 # whole or None, "warn" or ""], in the order of the settings. One that is not
                 # known is not left out: its figure is "", so that each keeps its place.
                 "details": [list(figures[key][1:]) if figures.get(key) else [DETAIL_NAMES.get(key, str(key)), "", None, ""]
-                            for key in self.cfg.detail_metrics],
+                            for key in self.cfg.detail_metrics
+                            if key not in ("tokens", "session_tokens") or self.cfg.turn_tokens not in ("off", False, None)],  # Show Tokens off: no tile
                 "context": s.context if context in ("arc", "both") else None,  # percent of its window: the arc around its light
                 "waiting": self._waiting_count(s.id),  # words of yours it has not been handed yet
                 "speaking": s.id == speaking,
