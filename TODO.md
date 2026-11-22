@@ -100,7 +100,8 @@ these come before anything new.
       tried by the author**. Side Questions became a switch ("Always" taken out). A spoken
       yes or no answers a permission prompt, longer words explain (the setting left the window;
       **not yet tried by the author**). Usage by Voice left the window in another session. A
-      clear key, Ctrl+Alt+C pressed twice: asks in a banner like the mute key's, "Clear sidetone?";
+      clear key, Ctrl+Alt+C pressed twice: asks in a banner like the mute key's, "Clear sidetone?",
+      with a bin (seen by the author: "I think it looks good");
       a clear has its own sound, no "sent" sign, and the arc winds back to 0 (**the sound and the
       arc not yet heard and seen by the author**). **Next: Talking**
       from Typing Takes the Focus on, then Overlay,
