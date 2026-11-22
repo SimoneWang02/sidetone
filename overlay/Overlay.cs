@@ -3189,6 +3189,10 @@ namespace ClaudeSpeaks
         // focus. In the Selected Session view its row is the one shown.
         Row Chosen()
         {
+            // In Selected Session the mouse only borrows the card: off the lights and the card, it
+            // goes back to the selected session (the author, 2026-11-22: "when I unhover from them,
+            // it should re-display the current" session).
+            if (mode == "focus" && hot != null) return hot;
             Row about = null;
             foreach (Row row in order) if (row.Name == historyOf) about = row;
             if (about == null) about = hot;
@@ -3333,6 +3337,7 @@ namespace ClaudeSpeaks
             {
                 foreach (Row row in order) if (row.Name == historyOf) of = row.Name;
                 if (of == null) foreach (Row row in order) if (row.Focus) of = row.Name;
+                if (mode == "focus" && hot != null) of = hot.Name;  // the card's session, as in Chosen
             }
             FillHistory(historyLines, of, of != null ? 4 : 6, true);
         }
@@ -3407,11 +3412,11 @@ namespace ClaudeSpeaks
                     if (along >= 0 && along < room) under = row;
                     along -= room;
                 }
-                // Selected Session shows one row, so the panel's rows are not level with the lights:
-                // over the panel the mouse is on that session (the author, 2026-11-22: hovering the
-                // second session's card "shows the first session").
-                if (!onBar && mode == "focus") under = Chosen();
             }
+            // Selected Session shows one row, so the panel's rows are not level with the lights:
+            // over the panel the mouse stays on the session the card shows (the author, 2026-11-22:
+            // hovering the second session's card "shows the first session").
+            if (inside && !onBar && mode == "focus" && (hoverOpens || IsOpen())) under = hot != null ? hot : Chosen();
             bool sorting = onBar && CanReorder();
             bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys) || sorting))) && Ui.Now > passUntil;
             if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); }
@@ -3428,7 +3433,8 @@ namespace ClaudeSpeaks
             {
                 hot = under;
                 Run(true);
-                if (hot != null && hot.Name != historyOf) { historyOf = hot.Name; if (IsOpen()) Render(); }  // its figures, and in list mode its history
+                if (mode == "focus") { if (IsOpen()) Render(); }  // the card follows the mouse and comes back after it
+                else if (hot != null && hot.Name != historyOf) { historyOf = hot.Name; if (IsOpen()) Render(); }  // its figures, and in list mode its history
             }
             if (wantHover == hover && wantPeek == peek) return;
             hover = wantHover;

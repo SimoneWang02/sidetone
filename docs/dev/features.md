@@ -358,8 +358,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - The details as a zoom of three views (2026-11-22, `overlay.mode`: `dots` Bar Only, `list` All
   Sessions, `focus` Selected Session; `Listed`, `Chosen`, `Ui.OnlyFocus` in `Overlay.cs`): the
   details key goes through them in that order and round again. All Sessions keeps every row to
-  one line; Selected Session shows the card and only the row of the card's session (the mouse or
-  the focus, whichever moved last), its sentence in full (up to ten lines), the other rows left
+  one line; Selected Session shows the card and only the row of the card's session (the session
+  in focus; the mouse on another light shows that one only while it stays on the light or the
+  card, then the card goes back, the author 2026-11-22: "when I unhover from them, it should
+  re-display the current" session), its sentence in full (up to ten lines), the other rows left
   out and the lights at their own spacing. Lines Per Session left the window. The author: "first
   only bar, second one row per each detail box, third only one detail box with all the rows of
   the summary". Tried and not liked the same night: rows that grow with a long sentence (they
