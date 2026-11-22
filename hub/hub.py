@@ -217,6 +217,7 @@ class Hub(Permissions, Talk):
             self.last_event = time.monotonic()
             if event == "SessionEnd":
                 self._cleared(sid, ev.get("reason") == "clear")
+                ending = self.sessions.by_id.get(sid)
                 if ev.get("reason") == "clear":
                     self.sessions.clearing(sid)
                     # The chat is gone, so are its lines: the session that follows in the same
@@ -224,6 +225,8 @@ class Hub(Permissions, Talk):
                     self.history = collections.deque((e for e in self.history if e.get("session") != sid),
                                                      maxlen=self.history.maxlen)
                 self._forget(sid, "session ended")
+                if ending and ev.get("reason") == "clear":
+                    self.sessions.stand_in(ending)
                 now = time.monotonic()
                 self._ended = {k: v for k, v in self._ended.items() if now - v < 3600}
                 self._ended[sid] = now

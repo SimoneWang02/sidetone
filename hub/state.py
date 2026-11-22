@@ -211,6 +211,9 @@ class Session:
     turn_tokens: int | None = None  # what its last turn used, once that has ended; None = not known, or in a turn
     tally: object = None  # what the whole session has used so far (a usage.Tally); None = not read yet
     updated: float = field(default_factory=time.monotonic)
+    # Not a session: the light of one just cleared, kept, its context at 0, until the session
+    # Claude Code starts after it takes its place (see `Sessions.stand_in`).
+    standin: bool = False
 
     def snapshot(self) -> dict:
         now = time.monotonic()
@@ -261,7 +264,8 @@ class Sessions:
         """Return the session, creating it on first sight (the hub may start after the session).
         `after_clear`: it is the one Claude Code started for a cleared conversation."""
         now = time.monotonic()
-        for old in [k for k, s in self.by_id.items() if now - s.updated > FORGET_AFTER]:
+        for old in [k for k, s in self.by_id.items()
+                    if now - s.updated > (HEIR_WITHIN if s.standin else FORGET_AFTER)]:
             del self.by_id[old]
         if self.kept and now - self.kept_at > KEPT_FOR:
             self.kept.clear()
@@ -269,10 +273,13 @@ class Sessions:
         if s is None:
             was = self.kept.pop(sid, None)
             heir = self.cleared.pop(cwd, None) if after_clear else None
-            if heir and now - heir[1] < HEIR_WITHIN and not any(o.name == heir[0]["name"] for o in self.by_id.values()):
+            if heir and now - heir[1] < HEIR_WITHIN and not any(o.name == heir[0]["name"] and not o.standin
+                                                                  for o in self.by_id.values()):
                 old = heir[0]  # the chat is new, so its title is not kept
+                for k in [k for k, o in self.by_id.items() if o.standin and o.name == old["name"]]:
+                    del self.by_id[k]  # its light is this one's now
                 s = Session(id=sid, cwd=cwd, name=old["name"], voice=self.pinned.get(old["name"], old["voice"]),
-                            color=old["color"], order=old["order"])
+                            color=old["color"], order=old["order"], context=0.0)
             elif was:  # known before the hub restarted: the same name, color, voice and place as then
                 s = Session(id=sid, cwd=cwd or was["cwd"], name=was["name"],
                             voice=self.pinned.get(was["name"], was["voice"]), color=was["color"],
@@ -314,6 +321,17 @@ class Sessions:
         if s:
             self.cleared[s.cwd] = ({"name": s.name, "voice": s.voice, "color": s.color, "order": s.order}, time.monotonic())
 
+    def stand_in(self, old: Session) -> None:
+        """A session ended by /clear: its light stays, with its context at 0, until the session
+        that follows it in the same terminal takes it (see touch), so the overlay's arc winds
+        back to nothing instead of the light going out and coming back (the author,
+        2026-11-21: "I want the animation of the arc of the context to go to reset to zero")."""
+        self.by_id["cleared:" + old.id] = Session(id="cleared:" + old.id, cwd=old.cwd, name=old.name, voice=old.voice,
+                                                  color=old.color, order=old.order, context=0.0, standin=True)
+        in_order = sorted(self.by_id.items(), key=lambda item: item[1].order)
+        self.by_id.clear()
+        self.by_id.update(in_order)
+
     def remove(self, sid: str) -> None:
         self.by_id.pop(sid, None)
         self.kept.pop(sid, None)
@@ -325,7 +343,7 @@ class Sessions:
         back = [{"id": s.id, "cwd": s.cwd, "name": s.name, "voice": s.voice, "color": s.color,
                  "title": s.title, "named": s.named, "settled": s.settled, "given": s.given,
                  "state": s.state, "note": s.note,
-                 "seen_file": s.seen_file, "order": s.order} for s in self.by_id.values()]
+                 "seen_file": s.seen_file, "order": s.order} for s in self.by_id.values() if not s.standin]
         return sorted(back + list(self.kept.values()), key=lambda entry: entry["order"])
 
     def keep(self, entries) -> None:

@@ -296,7 +296,10 @@ class Talk:
         else:  # its editor is between two requests: the next one is handed it
             self._clear_wanted = (s.tty, time.monotonic())
         if not (late and self._talk_held()):
-            self._talk("sent", s, text, seconds=2.5)  # no sound yet: the one sound comes when it is seen done, or not
+            # Nothing on the light: the arc winding back to 0 shows it is done, and "sent" is for
+            # words that went to a session (the author, 2026-11-21: "I don't think I should see
+            # and hear the sound and the icon of sending a message").
+            self._talk(None)
         log(self.cfg, "hub.log", f"clear [{s.id[:8]}] /clear asked of the editor for its terminal ({s.tty}): {text[:80]}")
         old = self._clearing.pop(s.id, None)
         if old:
@@ -321,7 +324,7 @@ class Talk:
         mode = self.cfg.talk_feedback
         if mode == "sound" and self.sounds:
             if not self._muted():
-                self.sounds.play("sent")
+                self.sounds.play("cleared")
         elif mode != "none" and not self._muted():
             self.speech.put(Utterance(text="Chat cleared.", voice=asked[0], kind="allowed", src="follow-up"))
 

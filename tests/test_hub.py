@@ -1527,7 +1527,7 @@ class PushToTalk(HubCase):
         self.said(hub, "Hey Cloud, clear the chat.", "a")
         self.assertTrue(editor.wake.is_set())
         self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])
-        self.assertEqual(self.talks()[-1], ("sent", "a", "Hey Cloud, clear the chat."))
+        self.assertEqual(self.talks()[-1], (None, "", ""))  # not "sent": the words went to no session
         self.assertEqual((listener.wake.is_set(), hub.followups), (False, {}), "the session never gets the words")
         # Between two requests of the editor: the next request is handed it.
         self.said(hub, "clear the context please", "b")
@@ -1571,7 +1571,7 @@ class PushToTalk(HubCase):
 
     def test_a_cleared_chat_is_confirmed_when_claude_code_ends_it(self):
         """No sound when the order goes to the editor; the end of the conversation with the
-        reason "clear" says it worked, and only then the sound of "sent" plays."""
+        reason "clear" says it worked, and only then its sound plays."""
         hub = self.make()
         hub.sounds = FakeSounds()
         self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
@@ -1581,14 +1581,14 @@ class PushToTalk(HubCase):
         self.said(hub, "clear the chat", "a")
         hub.editor_done(editor)
         hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="clear"))
-        self.assertEqual(hub.sounds.played, ["sent"])  # one sound, once it is done
+        self.assertEqual(hub.sounds.played, ["cleared"])  # one sound of its own, once it is done
         self.assertNotIn("a", hub._clearing)
         # Not seen done in time: said so, with the sound for "not done".
         self.addCleanup(setattr, hub_module.base, "CLEAR_CONFIRM", hub_module.base.CLEAR_CONFIRM)
         hub_module.base.CLEAR_CONFIRM = 0.2
         editor = hub.editor_waits([4002], clears=True)
         self.said(hub, "clear the chat", "b")
-        self.assertTrue(wait_for(lambda: hub.sounds.played == ["sent", "failed"], 3))
+        self.assertTrue(wait_for(lambda: hub.sounds.played == ["cleared", "failed"], 3))
         self.assertEqual(self.talks()[-1], ("failed", "b", "Not cleared: the chat is still there"))
         # In words, for those who chose spoken feedback.
         hub.cfg.talk_feedback = "voice"
@@ -1641,10 +1641,15 @@ class PushToTalk(HubCase):
         for sid in ("a", "b", "c", "d"):
             hub.on_event(ev("SessionStart", sid=sid, cwd="/w/proj"))
         before = {k: getattr(hub.sessions.by_id["c"], k) for k in ("name", "color", "voice")}
+        hub.sessions.by_id["c"].context = 64.0
         hub.on_event(ev("SessionEnd", sid="c", cwd="/w/proj", reason="clear"))
+        # Its light stays in its place, the arc at 0, for the session that comes after it.
+        self.assertEqual(list(hub.sessions.by_id), ["a", "b", "cleared:c", "d"])
+        self.assertEqual(hub.sessions.by_id["cleared:c"].context, 0.0)
         hub.on_event(ev("SessionStart", sid="c2", cwd="/w/proj", source="clear"))
         self.assertEqual(list(hub.sessions.by_id), ["a", "b", "c2", "d"])
         self.assertEqual({k: getattr(hub.sessions.by_id["c2"], k) for k in before}, before)
+        self.assertEqual(hub.sessions.by_id["c2"].context, 0.0)
         hub.on_event(ev("SessionEnd", sid="b", cwd="/w/proj", reason="other"))
         hub.on_event(ev("SessionStart", sid="e", cwd="/w/proj", source="startup"))
         self.assertEqual(list(hub.sessions.by_id)[-1], "e")  # a session that was only closed leaves its place

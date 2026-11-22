@@ -32,6 +32,10 @@ TONES = {
     # The mute key: lower and slower than the three above, so they are not taken for them.
     "voice_off": [(392.0, 0.09), (261.6, 0.2)],
     "voice_on": [(261.6, 0.09), (392.0, 0.2)],
+    # A conversation cleared: a quick run down four notes, like a sweep, not taken for "sent"
+    # (the author, 2026-11-21: "whenever I clear, I don't think I should ... hear the sound ...
+    # of sending a message").
+    "cleared": [(1046.5, 0.045), (784.0, 0.045), (659.3, 0.045), (523.3, 0.12)],
 }
 
 

@@ -355,6 +355,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   output, so it is in step with the sound for every engine. Without `parec` the row says
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
+- What a clear looks and sounds like (2026-11-21): no "sent" sign and no "sent" sound, which are
+  for words that went to a session; its own sound once Claude Code has ended the conversation, a
+  quick run down four notes (`sounds.TONES["cleared"]`); and the light stays through it with its
+  context at 0 (`Sessions.stand_in`, a `standin` Session named "cleared:<id>" in its place for up
+  to `HEIR_WITHIN`), so the overlay's arc winds back to nothing and the session Claude Code starts
+  after it takes the same light, its context at 0 too. The author: "I don't think I should see
+  and hear the sound and the icon of sending a message ... I want the animation of the arc of
+  the context to go to reset to zero, because it's cool animation".
 - The clear key (2026-11-21, `clear` Ctrl+Alt+C, `Hub.clear_key`, `CLEAR_TWICE` 3 s): pressed
   once it asks in a banner like the mute key's, "Clear sidetone?" (first "Clear the chat of sidetone?", shortened at the author's asking) with "Ctrl+Alt+C to
   confirm" beside it and an eraser (Segoe Fluent Icons E75C; picture `clear-ask.png`), gone by
