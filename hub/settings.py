@@ -144,8 +144,8 @@ SECTIONS = [
         # And maybe shorten the answers"); they were "Under the mouse" and "Always out".
         choice("overlay.mode", "Details", "Names, titles and figures beside the lights. The details key switches them.",
                ("list", "Always"), ("dots", "On Hover")),
-        choice("overlay.resize", "Details Changing Size", "When the mouse goes to another session: grow at once and shrink in a tenth of a second, or both at once.",
-               ("quick", "Quick"), ("instant", "At once")),
+        # "Details Changing Size" (overlay.resize: quick, instant) left the window on 2026-11-21, the
+        # author: "the animation is pretty standard". Still read from config.json.
         switch("overlay.panel_drag", "Move It by the Details", "With the details kept out, dragging them moves the whole overlay. A click still goes to what is behind."),
         choice("overlay.hover", "What Opens the Details", "The mouse resting on the lights, or only holding the keys.",
                ("always", "Mouse"), ("keys", "Keys only")),
