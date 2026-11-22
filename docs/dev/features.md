@@ -361,7 +361,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   more than one line. First built as the bubble beside the light in focus (not liked: "Now I
   don't like it much"); then the author: "I want only the detail box associated with the
   selected session plus the matrix box. The other sessions' detail boxes shouldn't be
-  displayed". Picture `focus-only.png`: the glass still spans the empty rows.
+  displayed". The row shown is the card's session (`Chosen`): the mouse or the focus, whichever
+  moved last; it followed the focus alone at first and showed another session than the card.
+  Picture `focus-only.png`: the glass still spans the empty rows.
 - The newest line in full in the card (2026-11-21, `FillHistory`): the card of the session under
   the mouse shows its newest line up to five lines (84 px), the older ones two; the rows keep to
   one line, so the lights never move. Lines Per Session (`overlay.row_lines`) left the window:

@@ -2146,6 +2146,7 @@ namespace ClaudeSpeaks
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock line1 = new TextBlock(), line2 = new TextBlock(), meta = new TextBlock();
         public bool Speaking, Focus;
+        public bool Chosen;  // with Details "Selected Only": the one row shown, the card's session
         public readonly Border Pip = new Border {  // a dash of its color under the light, where rows are not beside their lights
             Width = 16, Height = 3, CornerRadius = new CornerRadius(1.5), VerticalAlignment = VerticalAlignment.Bottom,
             Margin = new Thickness(0, 0, 0, 1), Visibility = Visibility.Collapsed,
@@ -2251,7 +2252,7 @@ namespace ClaudeSpeaks
         {
             bool saying = Showing, talk = TalkKind != null;
             line2.Text = talk ? TalkText : saying ? FlashText : rowText;
-            line2.TextWrapping = saying && Ui.RowLines > 1 && (!Ui.OnlyFocus || Focus) ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            line2.TextWrapping = saying && Ui.RowLines > 1 && (!Ui.OnlyFocus || Chosen) ? TextWrapping.Wrap : TextWrapping.NoWrap;
             line2.MaxHeight = 16.7 * Ui.RowLines;
             bool live = talkInk == Ui.MicInk || talkInk == Ui.LiveInk;
             if (talk && live) Ui.GlintFor(TalkText);
@@ -2913,11 +2914,14 @@ namespace ClaudeSpeaks
             panel.Goal = goal;
             // A row that says a long sentence is taller than a light; keep the two level (where
             // rows and lights sit side by side).
+            Row chosen = mode == "focus" ? Chosen() : null;
             foreach (Row row in order)
             {
                 row.Pip.Visibility = Island ? Visibility.Visible : Visibility.Collapsed;
-                bool only = mode == "focus" && !(row.Focus || order.Count == 1);
-                row.Text.Visibility = only ? Visibility.Hidden : Visibility.Visible;
+                // the same session as the card (it followed the focus alone at first, and the card
+                // and the one row shown were two different sessions: "I see sidetone and sidetone 2")
+                row.Text.Visibility = chosen != null && row != chosen ? Visibility.Hidden : Visibility.Visible;
+                row.Chosen = row == chosen;
                 row.Light.Height = !Island && goal > 0 && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
             }
             UpdateBubble(show);
@@ -3167,15 +3171,22 @@ namespace ClaudeSpeaks
             return was;
         }
 
-        bool BuildMetrics(bool withLines)
+        // The session the card is about: whichever was chosen last, the row the mouse went onto or
+        // the session the focus moved to (`historyOf` is set by both). Before either, the one in
+        // focus. With Details "Selected Only" its row is the one row shown.
+        Row Chosen()
         {
-            // Whichever was chosen last: the row the mouse went onto, or the session the focus
-            // moved to (`historyOf` is set by both). Before either, the session in focus.
             Row about = null;
             foreach (Row row in order) if (row.Name == historyOf) about = row;
             if (about == null) about = hot;
             if (about == null) foreach (Row row in order) if (row.Focus) about = row;
             if (about == null && order.Count == 1) about = order[0];
+            return about;
+        }
+
+        bool BuildMetrics(bool withLines)
+        {
+            Row about = Chosen();
             metricsLine.Inlines.Clear();
             metricsBody.Children.Clear();
             if (about == null) return false;
