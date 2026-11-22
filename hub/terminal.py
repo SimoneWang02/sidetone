@@ -25,6 +25,9 @@ DEFAULTS = {
     "tint": "focus",  # whose terminal wears its session's color: focus | all (the focus stronger) | off
     "strength": 0.09,  # how much of the color goes into the background, 0 to 1
     "background": "#181818",  # the terminal's own background, which the color is mixed into
+    # The same in an editor with a light theme (the VS Code extension says which; 2026-11-22).
+    # VS Code's Light Modern panel and terminal; the dark one above is its Dark Modern.
+    "light_background": "#F8F8F8",
     "pulse": True,  # moving the focus by hand lights its terminal up brighter for a moment
     "pulse_strength": 0.15,  # how much of the color at the top of that moment, 0 to 1
     "title": False,  # also write the session's name and title into the terminal's title
@@ -112,6 +115,11 @@ class Terminals:
         self._shown: dict[str, tuple[str, str]] = {}  # terminal -> (background as written, title as written)
         self._pulses: dict[str, int] = {}  # terminal -> number of its latest pulse; an older one stops
         self._closed = False
+        self.light: set[str] = set()  # terminals in an editor with a light theme
+
+    def background(self, tty: str) -> str:
+        """The background a terminal's color is mixed into: its editor's light or dark one."""
+        return self.settings["light_background" if tty in self.light else "background"]
 
     def _rest(self, mark: Mark) -> float:
         """How much of its color a terminal wears while nothing is happening."""
@@ -137,7 +145,7 @@ class Terminals:
                 self._pulses.pop(tty, None)
             for tty, mark in marks.items():
                 amount = self._rest(mark)
-                spec = mix(self.settings["background"], mark.color, amount) if amount > 0 else ""
+                spec = mix(self.background(tty), mark.color, amount) if amount > 0 else ""
                 title = mark.title if self.settings["title"] else ""
                 was = self._shown.get(tty)
                 if was == (spec, title):
@@ -154,7 +162,7 @@ class Terminals:
     def pulse(self, tty: str, color: str, asked: bool = False) -> threading.Thread | None:
         """Light a terminal up in `color` and let it settle back to what it showed: "this one".
         `asked`: the user asked to be shown it, so it happens even with pulses turned off."""
-        if not (asked or self.settings["pulse"]) or not tty or not mix(self.settings["background"], color, 0):
+        if not (asked or self.settings["pulse"]) or not tty or not mix(self.background(tty), color, 0):
             return None
         with self._lock:
             if self._closed:
@@ -177,7 +185,7 @@ class Terminals:
                 at_rest = float(self.settings["strength"]) * (1 if rest else 0)
                 peak = max(at_rest, float(self.settings["pulse_strength"]))
                 amount = at_rest + (peak - at_rest) * (1 - step / PULSE_STEPS) ** 2
-                self.write(tty, _background(mix(self.settings["background"], color, amount)))
+                self.write(tty, _background(mix(self.background(tty), color, amount)))
             self.sleep(PULSE_SECONDS / PULSE_STEPS)
 
     def close(self) -> None:

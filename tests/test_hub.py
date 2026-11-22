@@ -3189,6 +3189,23 @@ class OwnTerminals(HubCase):
         self.hub.publish()
         self.assertEqual(len(self.written), count, "nothing changed, so nothing is written")
 
+    def test_an_editor_with_a_light_theme_gets_a_light_tint(self):
+        self.make()
+        me, other = os.getpid(), os.getppid()
+        self.open("a", me, "/dev/pts/91")
+        self.open("b", other, "/dev/pts/92")
+        color = self.hub.sessions.by_id["b"].color
+        editor = self.hub.editor_waits([other], theme="light")  # the VS Code extension says so
+        self.hub.editor_done(editor)
+        self.assertEqual(self.last("/dev/pts/92"), f"\x1b]11;{terminal.mix('#F8F8F8', color, 0.09)}\x1b\\".encode())
+        self.hub.terminals.pulse("/dev/pts/92", color, asked=True).join()  # a pulse settles back on the light one
+        self.assertEqual(self.last("/dev/pts/92"), f"\x1b]11;{terminal.mix('#F8F8F8', color, 0.09)}\x1b\\".encode())
+        self.hub.editor_done(self.hub.editor_waits([other], theme="dark"))  # switched back
+        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.09))
+        count = len(self.written)
+        self.hub.editor_done(self.hub.editor_waits([other]))  # an older extension says nothing: kept
+        self.assertEqual(len(self.written), count)
+
     def test_moving_the_focus_moves_the_tint_and_lights_the_new_terminal_up(self):
         hub = self.make()
         self.open("a", os.getpid(), "/dev/pts/91")
@@ -3423,6 +3440,7 @@ class HubProcess(unittest.TestCase):
             f.write("""
                 const went = [];
                 exports.went = went;
+                exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
                 exports.window = {
                   state: { focused: true },
                   terminals: [],
@@ -3431,6 +3449,8 @@ class HubProcess(unittest.TestCase):
                   onDidChangeWindowState: (f) => ({ dispose() {} }),
                   onDidOpenTerminal: (f) => ({ dispose() {} }),
                   onDidCloseTerminal: (f) => ({ dispose() {} }),
+                  onDidChangeActiveColorTheme: (f) => ({ dispose() {} }),
+                  activeColorTheme: { kind: Number(process.env.THEME_KIND || 2) },
                 };""")
         # It also keeps a request open with the hub (see the next test), so it is ended by hand.
         go = ("const x = require('./extension.js'); x.activate({ subscriptions: [] }); require('vscode').went[0]();"
@@ -3471,6 +3491,7 @@ class HubProcess(unittest.TestCase):
                   processId: Promise.resolve(pid),
                   sendText: (text, enter) => { typed.push([pid, text, enter]); fs.writeFileSync(process.env.TYPED, JSON.stringify(typed)); },
                 });
+                exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
                 exports.window = {
                   state: { focused: true },
                   terminals: [terminal(1), terminal(Number(process.env.SHELL_PID))],
@@ -3479,6 +3500,8 @@ class HubProcess(unittest.TestCase):
                   onDidChangeWindowState: (f) => ({ dispose() {} }),
                   onDidOpenTerminal: (f) => ({ dispose() {} }),
                   onDidCloseTerminal: (f) => ({ dispose() {} }),
+                  onDidChangeActiveColorTheme: (f) => ({ dispose() {} }),
+                  activeColorTheme: { kind: Number(process.env.THEME_KIND || 2) },
                 };""")
         editor = subprocess.Popen(["node", "-e", "require('./extension.js').activate({ subscriptions: [] });"], cwd=ext,
                                   env={**self.env, "SHELL_PID": str(shell.pid), "TYPED": typed})
@@ -3522,6 +3545,7 @@ class HubProcess(unittest.TestCase):
                   processId: Promise.resolve(pid),
                   sendText: (text, enter) => { typed.push([pid, text, enter]); fs.writeFileSync(process.env.TYPED, JSON.stringify(typed)); },
                 });
+                exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
                 exports.window = {
                   state: { focused: true },
                   terminals: [terminal(1), terminal(Number(process.env.SHELL_PID))],
@@ -3530,6 +3554,8 @@ class HubProcess(unittest.TestCase):
                   onDidChangeWindowState: (f) => ({ dispose() {} }),
                   onDidOpenTerminal: (f) => ({ dispose() {} }),
                   onDidCloseTerminal: (f) => ({ dispose() {} }),
+                  onDidChangeActiveColorTheme: (f) => ({ dispose() {} }),
+                  activeColorTheme: { kind: Number(process.env.THEME_KIND || 2) },
                 };""")
         editor = subprocess.Popen(["node", "-e", "require('./extension.js').activate({ subscriptions: [] });"], cwd=ext,
                                   env={**self.env, "SHELL_PID": str(shell.pid), "TYPED": typed})
@@ -3577,6 +3603,7 @@ class HubProcess(unittest.TestCase):
                   sendText: (text, enter) => note("typed", pid, text, enter),
                   show: (keepKeyboard) => note("shown", pid, keepKeyboard),
                 });
+                exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
                 exports.window = {
                   state: { focused: true },
                   terminals: [terminal(1), terminal(Number(process.env.SHELL_PID))],
@@ -3585,6 +3612,8 @@ class HubProcess(unittest.TestCase):
                   onDidChangeWindowState: (f) => ({ dispose() {} }),
                   onDidOpenTerminal: (f) => ({ dispose() {} }),
                   onDidCloseTerminal: (f) => ({ dispose() {} }),
+                  onDidChangeActiveColorTheme: (f) => ({ dispose() {} }),
+                  activeColorTheme: { kind: Number(process.env.THEME_KIND || 2) },
                 };""")
         editor = subprocess.Popen(["node", "-e", "require('./extension.js').activate({ subscriptions: [] });"], cwd=ext,
                                   env={**self.env, "SHELL_PID": str(shell.pid), "DONE": done})

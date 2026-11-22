@@ -187,6 +187,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   once each time it changes; `list.jsonl` names the model each recording was heard with.
   Choosing it in the window unloads the model, which loads where it now belongs at the next
   press of the talk key.
+- The terminal tint on a light theme (2026-11-22, `terminal.light_background`, `#F8F8F8`,
+  VS Code's Light Modern; the author, offered it: "Yes, so you're basically [doing] light mode
+  and dark mode, right?"). The extension (0.6.0) sends `theme: "light" | "dark"` with each
+  `/editor` request, from `activeColorTheme.kind` (Light and HighContrastLight are light), and
+  asks again when the theme changes (`onDidChangeActiveColorTheme`). `Hub.editor_waits` keeps
+  that window's terminals in `Terminals.light`, and `Terminals.background(tty)` mixes the color
+  and the pulse into the light background for them. An older extension sends no theme and
+  changes nothing. VS Code has no way to read a theme's actual colors, so a theme whose
+  terminal is neither of the two defaults needs them set. Checked with the real extension and
+  a stand-in editor: light, then dark after the theme changed. Not seen on a light theme by
+  the author (they use a dark one).
 - The voice on the graphics card (2026-11-22, `voice_device`: auto, cpu, gpu, "Voice Made On"
   in the Speech section). The author asked what else could cut the time from talking to
   hearing ("parlare, ricezione, processare ... sono il core"); of the steps, the start of
@@ -986,7 +997,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   writes only what changed. Default `tint: focus`: with two or more sessions, the terminal of
   the one in focus has `strength` (0.09, shown as 30 % in the settings window where 100 % is 0.3; it was 0.14 until the author said "less tint maybe", then 0.08 until they found 27 % "such a weird number") of its overlay color mixed into `background`
   (`#181818`, VS Code's dark theme; the real background cannot be asked for from outside, the
-  answer would land in Claude Code's input). `all` tints every terminal (the others at half
+  answer would land in Claude Code's input; with a light theme, see below). `all` tints every terminal (the others at half
   strength), `off` none. `Hub.focus` (wheel, tap) also calls `Terminals.pulse`: 14 steps over
   0.7 s from `pulse_strength` down to the resting tint (0.15; the author, having seen
   it at 0.42, said "maybe the flash might be too much", and it came down with the tint;

@@ -134,7 +134,7 @@ async function listen() {
   if (closed) return;
   const pids = (await Promise.all(vscode.window.terminals.map((terminal) => terminal.processId))).filter(Boolean);
   if (closed || open) return;
-  const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear", "open"] });  // what the hub may ask of us
+  const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear", "open"], theme: theme() });  // what the hub may ask of us
   const request = http.request({
     socketPath: socket(), path: "/editor", method: "POST", timeout: 60000,
     headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) },
@@ -166,6 +166,12 @@ async function listen() {
   request.end(data);
 }
 
+// Light or dark: the hub mixes each session's color into the matching background.
+function theme() {
+  const kind = vscode.window.activeColorTheme.kind;
+  return kind === vscode.ColorThemeKind.Light || kind === vscode.ColorThemeKind.HighContrastLight ? "light" : "dark";
+}
+
 // A terminal was opened or closed: the request the hub holds names the old ones.
 function relisten() {
   const request = open;
@@ -182,6 +188,7 @@ function activate(context) {
     vscode.window.onDidChangeWindowState((state) => { if (state.focused) report("window"); }),
     vscode.window.onDidOpenTerminal(() => relisten()),
     vscode.window.onDidCloseTerminal(() => relisten()),
+    vscode.window.onDidChangeActiveColorTheme(() => relisten()),  // the new theme goes with the next request
   );
   listen();
 }

@@ -879,15 +879,23 @@ class Talk:
                 return True
         return False
 
-    def editor_waits(self, pids: list, shows: bool = False, clears: bool = False, opens: bool = False) -> Editor:
+    def editor_waits(self, pids: list, shows: bool = False, clears: bool = False, opens: bool = False,
+                     theme: str = "") -> Editor:
         """An editor's window asks to be told when a key is wanted in one of its terminals,
         which it names by the process each one runs (its shell). `shows`: it can also bring
         one of them to the front. `clears`: it can also type /clear into one. `opens`: it can
-        also open a terminal with a new session, end a session and close its terminal."""
+        also open a terminal with a new session, end a session and close its terminal.
+        `theme`: "light" or "dark", what its terminals' tint is mixed into."""
         ttys = {tty: pid for pid in pids for tty in [terminal_mod.tty_of(pid)] if tty}
         editor = Editor(ttys, shows=shows, clears=clears, opens=opens)
+        repaint = False
         with self.lock:
             self.editors.append(editor)
+            if theme in ("light", "dark"):
+                light = self.terminals.light
+                now = (light | set(ttys)) if theme == "light" else (light - set(ttys))
+                repaint = now != light
+                self.terminals.light = now
             if opens:
                 now, kept = time.monotonic(), []
                 for what, tty, since in self._editor_wanted:
@@ -911,8 +919,8 @@ class Talk:
                     editor.show.append(ttys[tty])
                     editor.wake.set()
                     self._show_wanted = ("", base.NEVER)
-        if shows:
-            self.publish()  # the key that goes to a terminal can act now
+        if shows or repaint:
+            self.publish()  # the key that goes to a terminal can act now; a new theme, its tint
         return editor
 
     def editor_done(self, editor: Editor) -> list:

@@ -98,9 +98,6 @@ voice, and the wait for the transcript.
 
 Roughly easiest first, the larger ones after.
 
-- [ ] The terminal tint on a light theme: the color is mixed into `terminal.background`,
-      which defaults to VS Code's dark theme. Read the editor's theme, or offer a light
-      default.
 - [ ] Short sounds for states (done, needs you) for when a full sentence is too much. Push-to-talk
       has them since 2026-11-17 (`hub/sounds.py`: sent, waiting, not sent); the author has
       not said yet whether they sound right. "Allowed." and "Denied." are still spoken.
@@ -1345,6 +1342,10 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Built
 
+- [x] The terminal tint on a light theme (2026-11-22): the VS Code extension 0.6.0 says
+      whether its window's theme is light or dark, and light ones are tinted from
+      `terminal.light_background` (#F8F8F8). The author uses a dark theme; checked with the real
+      extension and a stand-in editor, not on a real light theme.
 - [x] Usage in the overlay (the author's idea, 2026-11-17: "customizable bar that shows the
       usage, the five-hour window and the weekly usage"): a part of the overlay that shows how
       much of the plan is used up, in the five-hour window and in the week, and when each

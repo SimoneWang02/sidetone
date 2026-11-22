@@ -235,6 +235,7 @@ optional and holds all of them:
     "tint": "focus",
     "strength": 0.08,
     "background": "#181818",
+    "light_background": "#F8F8F8",
     "pulse": true,
     "pulse_strength": 0.15,
     "title": false,
@@ -244,7 +245,9 @@ optional and holds all of them:
 ```
 
 `terminal.background` is your terminal's own background color, which the session's color is
-mixed into; the default suits VS Code's dark theme, so set it if yours is light or different.
+mixed into; the default suits VS Code's Dark Modern theme. With the VS Code extension, a window
+with a light theme uses `terminal.light_background` instead (the default suits Light Modern);
+set either if your theme's terminal is another color.
 `terminal.title` also writes the session's name into the terminal's title. A VS Code tab only
 shows that with `"terminal.integrated.tabs.title": "${sequence}"` in VS Code's settings, and
 Claude Code writes a title of its own unless `CLAUDE_CODE_DISABLE_TERMINAL_TITLE` is `1`, which

@@ -49,6 +49,7 @@ Usage: sidetone <command>
   vscode install|uninstall   the small VS Code extension that tells the hub which terminal you are in
   terminal strength N        how strong the color is, 0 to 1
   terminal background COLOR  the terminal's own background (#RRGGBB) that the color is mixed into
+  terminal light-background COLOR  the same for an editor with a light theme (VS Code says which)
   demo                       play three made-up sessions to see and hear every state
   hub start|stop|restart     manage the background hub
   log                        follow the speech log
@@ -234,9 +235,9 @@ case ${1:-} in
           *) [ "$2" = pulse ] && request=$(jq -nc --arg n "${3:-}" '{pulse: true, pulse_strength: ($n | tonumber)}' 2>/dev/null) || { usage; exit 2; } ;;
         esac ;;
       strength) request=$(jq -nc --arg n "${3:-}" '{strength: ($n | tonumber)}') || { usage; exit 2; } ;;
-      background)
+      background|light-background)
         [[ ${3:-} =~ ^#[0-9a-fA-F]{6}$ ]] || { echo "a color looks like #181818"; exit 2; }
-        request=$(jq -nc --arg c "$3" '{background: $c}') ;;
+        request=$(jq -nc --arg k "${2/-/_}" --arg c "$3" '{($k): $c}') ;;
       *) usage; exit 2 ;;
     esac
     reply=$(hub_post /terminal <<<"$request") || { echo "hub is not running, or that is not a choice (tint: focus, all, off)"; exit 1; }
