@@ -212,7 +212,9 @@ SECTIONS = [
         switch("terminal.pulse", "Flash When the Focus Moves", "The terminal lights up for a moment when you move the focus to it."),
         switch("terminal.follow", "Focus Follows the Terminal", "Going to a terminal in the editor selects its session."),
         switch("terminal.jump", "Terminal Follows the Focus", "Moving the focus with the arrows or the wheel brings that session's terminal to the front in the editor."),
-        switch("terminal.title", "Name in the Terminal's Title", "Write the session's name and title as the terminal's title."),
+        # "Name in the Terminal's Title" (terminal.title) left the window on 2026-11-22, the
+        # author after trying it: "I don't know how useful it is ... I don't usually look at
+        # them". Still off by default, still read from config.json.
     ]),
     ("Keys", [
         switch("overlay.share_taken_keys", "Share Keys Other Programs Have",
