@@ -192,9 +192,9 @@ SECTIONS = [
         # "Mark Lines Not Heard" (history_missed) left the window on 2026-11-22, the author:
         # "we can remove that" (a white dot nobody would know the meaning of). Still off by
         # default, still read from config.json.
-        choice("overlay.details_style", "Figures Drawn As", "A tile each, or one line of text.",
-               ("tiles", "Tiles"), ("line", "A line")),
-        switch("overlay.details_bars", "Bars Under the Figures", "A thin bar under a tile that is a share of a whole, such as context."),
+        # "Figures Drawn As" (overlay.details_style: tiles, line) and "Bars Under the Figures"
+        # (overlay.details_bars) left the window on 2026-11-22, the author: "keep it tiles by
+        # default ... we can remove this setting", the bars "as well". Still read from config.json.
         switch("usage_shown", "Plan Usage", "The five-hour window and the week, at the foot of the figures."),
         choice("overlay.usage_layout", "Usage Bars", "", ("rows", "A row each"), ("line", "Side by side")),
         # "Usage Labels" (usage_labels: short, long) left the window on 2026-11-22, the author:
