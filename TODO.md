@@ -18,14 +18,18 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] A session's first spoken words before anything was typed to it (mended 2026-11-17:
+- [x] A session's first spoken words before anything was typed to it (mended 2026-11-17:
       the first session after the hub had gone away had no listener until its first
       prompt; the author spoke to it twice and asked "why are you not receiving audio
       inputs?"). Tests only. 2026-11-20: a new session opened while the hub ran got a spoken
       "Hello." before anything was typed and answered (sidetone 5); the case that was
       broken, the hub gone first, still untried. To try: close every session, wait for the hub to go
       (`sidetone hub stop` does it at once), open one session and speak to it
-      without typing.
+      without typing. 2026-11-22, checked by Claude at the author's asking ("can you not check
+      this by yourself?"): a hub of its own (`CS_RUN` apart, silent voice, no overlay), none
+      running, a new haiku session opened in tmux; its SessionStart started the hub and the
+      listener was waiting; words handed to it as a heard follow-up, nothing typed, and it
+      answered "Yes, I can hear you." Only the microphone was left out.
 - [ ] The card's figures as totals of the session (2026-11-20, the author's idea after
       "This reply" and "This turn" were "not very intuitive"): "Total tokens" and "Total time"
       are now what the whole session has used and how long Claude worked in it, since it began or
@@ -154,8 +158,7 @@ these come before anything new.
       go on"). **Keys, under way 2026-11-22:** Share Keys Other Programs Have out of the window
       (on), and Go to the Terminal (no key; Switching Moves the Keyboard does it). The other keys
       checked by the author ("I checked every combination, that looked good"). **Keys is done:
-      every page has been gone through.** **Terminal is
-      done. Next: Keys**, the last page., then Terminal, Keys.
+      every page has been gone through.** **Terminal is done.**
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
       and maximized by a button or a double click on its top, a dropdown that closes on a
