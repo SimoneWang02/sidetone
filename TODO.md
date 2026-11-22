@@ -126,7 +126,8 @@ Roughly easiest first, the larger ones after.
       "two terminals that are pointing into the same session. If I close one, I close ... the one
       in the overlay"): closing one now keeps it, and its terminal becomes the one left
       (`Session.pids`). Still one row for both, since they are one conversation. **Not tried
-      by the author.**
+      by the author.** A rare case (the author, 2026-11-22: "Do you think we should ... move
+      on"): left to the full bug hunt before release, which tries it in a lab.
 - [x] Bug hunt, 2026-11-22 (the author: "do many combination of things that could happen"), in a
       lab: real haiku sessions in tmux, hooked to a silent hub of their own (no overlay), driven by
       a script. Fine: /clear keeps the row; two sessions in one folder; a conversation resumed in a
@@ -269,7 +270,8 @@ To choose before release: which of these the first version has, and which wait.
 
 - [ ] A full bug hunt once the first public version is built and the code stops changing much
       (the author, 2026-11-22): a clean install on a fresh machine, every feature together,
-      long sessions.
+      long sessions. Also, left to it: one conversation open in two terminals and closed in
+      one (step 4).
 
 - [ ] Numbers to publish with it (the author, 2026-11-17: "in the future when I'll publish
       this tool it'll be great to have some metrics"). Measured so far, to be done again on
