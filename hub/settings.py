@@ -146,7 +146,9 @@ SECTIONS = [
                ("list", "Always"), ("dots", "On Hover")),
         # "Details Changing Size" (overlay.resize: quick, instant) left the window on 2026-11-21, the
         # author: "the animation is pretty standard". Still read from config.json.
-        switch("overlay.panel_drag", "Move It by the Details", "With the details kept out, dragging them moves the whole overlay. A click still goes to what is behind."),
+        # "Move It by the Details" (overlay.panel_drag) left the window on 2026-11-21, the author:
+        # dragging to move "should be default, right? So we can remove this one". Still on, still
+        # read from config.json.
         choice("overlay.hover", "What Opens the Details", "The mouse resting on the lights, or only holding the keys.",
                ("always", "Mouse"), ("keys", "Keys only")),
         switch("overlay.muted_line", "Say When Muted", "\"Voice is muted\" in the details while the voice is off."),
