@@ -63,7 +63,10 @@ async function report(why) {
 // All that can be asked for, each as what is typed one piece after the other.
 // exit: Escape stops a turn under way, Ctrl+C empties a line half typed, /exit ends the session
 // (measured 2026-11-22 on a working session and an idle one, 150 ms apart).
-const KEYS = { escape: ["\x1b"], clear: ["\x03", "/clear\r"], exit: ["\x1b", "\x03", "/exit\r"] };
+// clear: Escape first too, for a dialog Claude Code shows at its prompt while its own file says
+// idle, such as "Teach auto mode about your environment?": without it the Enter after /clear
+// answered that dialog's "Yes" and ran /auto-mode-setup (found in a lab, 2026-11-22).
+const KEYS = { escape: ["\x1b"], clear: ["\x1b", "\x03", "/clear\r"], exit: ["\x1b", "\x03", "/exit\r"] };
 const START = "claude";  // what a new terminal is given to run, typed as you would
 const BETWEEN = 150;  // ms from one piece to the next: typed in one go, Claude Code may take them as one
 const RETRY = 5000;  // no hub, or one from before this: ask again after this long

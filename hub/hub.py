@@ -189,7 +189,11 @@ class Hub(Permissions, Talk):
                     if said:
                         said[-1]["tokens"] = s.turn_tokens
         if again and ended:
-            timer = threading.Timer(base.RECOUNT, lambda: (self._count_turn(ev, again=False), self._count_session(ev), self.publish()))
+            # The context too: a turn that is one reply has nothing in the record at its Stop,
+            # so the arc stayed empty after a first turn and lagged a reply behind after the
+            # others (found in a lab, 2026-11-22).
+            timer = threading.Timer(base.RECOUNT, lambda: (self._count_turn(ev, again=False), self._count_context(ev),
+                                                           self._count_session(ev), self.publish()))
             timer.daemon = True
             timer.start()
 

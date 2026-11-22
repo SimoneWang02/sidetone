@@ -115,7 +115,10 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   last main-chain assistant line's input plus both cache counts, or a newer compaction's
   `postTokens`; 2 ms) goes into `Session.context` and from there into the row
   (`context_shown`, see the next point). The window's size is a setting, one million as measured
-  for the models tried; the transcript does not say it.
+  for the models tried; the transcript does not say it. Measured 2026-11-22: the reply of a
+  turn that is one reply reaches the record about 0.3 s after its Stop, so the count at Stop
+  found nothing (first turn: no arc) or the reply before; it is counted again with the turn's
+  tokens, `RECOUNT` 1.5 s later.
 - Context as an arc around the light (2026-11-18, `Orb.Gauge`, `base.context_mode`). The row
   of the details ended in "context 56%" at first; the author on seeing it: the figure is
   good, but with "the running time, one beside another one is pretty long". Of three ideas

@@ -405,6 +405,15 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   take the clear question's place, drop it (and the clear key's drops the end key's). The author,
   2026-11-22, lost a conversation to Ctrl+Alt+C, Ctrl+Alt+Minus, Ctrl+Alt+C: the third press
   cleared with "End …?" on screen.
+  Bug hunt in a lab, 2026-11-22 (a hub of its own run inside a script, keys handed to it as the
+  overlay hands them, haiku sessions in tmux, a stand-in for the extension typing into the
+  panes): clear, end and new session in every order, and the clear key next to mute, cancel,
+  repeat, the details key, settings and focus. The extension now types Escape before Ctrl+C and
+  /clear (0.5.1): Claude Code's "Teach auto mode about your environment?" sits at a prompt its own
+  file calls idle, and the Enter after /clear answered its "Yes" and ran /auto-mode-setup. A
+  dialog Claude Code does report (a /model picker, a permission prompt) already makes the clear
+  wait for the end of the turn. As built: the cancel key does not take the clear question away
+  (a second clear press then clears); the focus keys stop at the first and last row.
 - The new-session and end keys (2026-11-22, `new_session` Ctrl+Alt+Plus, `end_session`
   Ctrl+Alt+Minus, `Hub.new_session_key`, `Hub.end_session_key`, `END_TWICE` 3 s, `NEW_WAIT` 60 s;
   the extension 0.5.0, `openNew`, `close`). The author: "Ctrl Alt plus and Ctrl Alt minus to add a

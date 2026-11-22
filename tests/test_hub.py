@@ -3506,7 +3506,8 @@ class HubProcess(unittest.TestCase):
         self.assertTrue(wait_for(lambda: os.path.exists(typed), 8), "nothing was typed into the terminal")
         time.sleep(1.0)
         with open(typed) as f:
-            self.assertEqual(json.load(f), [[shell.pid, "\x03", False], [shell.pid, "/clear\r", False]])
+            # Escape first: a dialog Claude Code shows at an idle prompt must not take the Enter
+            self.assertEqual(json.load(f), [[shell.pid, "\x1b", False], [shell.pid, "\x03", False], [shell.pid, "/clear\r", False]])
 
     @unittest.skipUnless(__import__("shutil").which("node"), "needs node to run the editor extension")
     def test_the_editor_extension_brings_a_sessions_terminal_to_the_front(self):
