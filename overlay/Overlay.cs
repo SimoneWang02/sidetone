@@ -56,7 +56,6 @@ namespace ClaudeSpeaks
         // is as high as its light and the bar never changes size; with more, a long sentence makes
         // its row higher and the bar stretches so that the lights stay level with their rows.
         public static int RowLines = 1;
-        public static bool OnlyFocus;  // Details "Selected Only": only the row in focus may take more than one line
         public static bool SignInLight = true;  // where push-to-talk's sign goes: in the session's light, or at the right of its line
 
         // The overlay's own words about push-to-talk move ("Release to send", "Working out what
@@ -2146,7 +2145,6 @@ namespace ClaudeSpeaks
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock line1 = new TextBlock(), line2 = new TextBlock(), meta = new TextBlock();
         public bool Speaking, Focus;
-        public bool Chosen;  // with Details "Selected Only": the one row shown, the card's session
         public readonly Border Pip = new Border {  // a dash of its color under the light, where rows are not beside their lights
             Width = 16, Height = 3, CornerRadius = new CornerRadius(1.5), VerticalAlignment = VerticalAlignment.Bottom,
             Margin = new Thickness(0, 0, 0, 1), Visibility = Visibility.Collapsed,
@@ -2252,7 +2250,7 @@ namespace ClaudeSpeaks
         {
             bool saying = Showing, talk = TalkKind != null;
             line2.Text = talk ? TalkText : saying ? FlashText : rowText;
-            line2.TextWrapping = saying && Ui.RowLines > 1 && (!Ui.OnlyFocus || Chosen) ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            line2.TextWrapping = saying && Ui.RowLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap;
             line2.MaxHeight = 16.7 * Ui.RowLines;
             bool live = talkInk == Ui.MicInk || talkInk == Ui.LiveInk;
             if (talk && live) Ui.GlintFor(TalkText);
@@ -2440,7 +2438,7 @@ namespace ClaudeSpeaks
         int historyTicks = 3;  // looks of 30 ms the mouse rests on the details before the history shows (`history_after`)
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
-        string mode = "dots", outMode = "list", corner = "top-right", glass = "blur", bubbleShows = "";
+        string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
         double offsetX = 12, offsetY = 96, idleOpacity = 1.0, listOpacity = 1.0, lastFade = -1;
         double lastFrame, openedAt, bubbleAt, passUntil;
         int grabX, grabY;  // where on the bar the mouse took hold
@@ -2683,7 +2681,7 @@ namespace ClaudeSpeaks
                             wantedKeys[entry.Key] = Convert.ToString(entry.Value);
                         RegisterHotkeys();
                     }
-                    if (msg.ContainsKey("mode")) { mode = Str(msg, "mode", mode); Ui.OnlyFocus = mode == "focus"; }
+                    if (msg.ContainsKey("mode")) mode = Str(msg, "mode", mode);
                     Render();
                     Place();
                     break;
@@ -2735,7 +2733,7 @@ namespace ClaudeSpeaks
                     break;
                 case "peek":  // open the panel and the history without a mouse (for checking how it looks)
                     peekForced = hover = msg.ContainsKey("on") && Convert.ToBoolean(msg["on"]);
-                    peek = peekForced && Listed;
+                    peek = peekForced && mode == "list";
                     historyOf = Str(msg, "over", "");  // as if the mouse were on that session's row
                     Render();
                     break;
@@ -2855,19 +2853,12 @@ namespace ClaudeSpeaks
 
         // The panel (names, titles, what each session is doing) is out in list mode, under the
         // mouse, while Ctrl+Alt is held, and while there is something to ask or show. Otherwise there are only the lights.
-        // "focus" (Details: Selected Only) keeps the details out as "list" does, with only the row
-        // of the session in focus shown, under the card; the other rows keep their places beside
-        // their lights, empty (the author, 2026-11-21: "only ... the detail box associated with the
-        // selected session plus the matrix box. The other sessions' detail boxes shouldn't be
-        // displayed").
-        bool Listed { get { return mode == "list" || mode == "focus"; } }
-
-        bool IsOpen() { return (!BarHeld || panelHeld) && (Listed || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
+        bool IsOpen() { return (!BarHeld || panelHeld) && (mode == "list" || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
 
         // Brings everything in line with what there is to show. What moves is then moved by Frame.
         void Render()
         {
-            bool isList = Listed, open = IsOpen();
+            bool isList = mode == "list", open = IsOpen();
             SyncRows();
             requestBox.Visibility = hasRequest ? Visibility.Visible : Visibility.Collapsed;
             bannerBox.Visibility = hasBanner ? Visibility.Visible : Visibility.Collapsed;
@@ -2914,17 +2905,9 @@ namespace ClaudeSpeaks
             panel.Goal = goal;
             // A row that says a long sentence is taller than a light; keep the two level (where
             // rows and lights sit side by side).
-            Row chosen = mode == "focus" ? Chosen() : null;
             foreach (Row row in order)
             {
                 row.Pip.Visibility = Island ? Visibility.Visible : Visibility.Collapsed;
-                // the same session as the card (it followed the focus alone at first, and the card
-                // and the one row shown were two different sessions: "I see sidetone and sidetone 2")
-                // Collapsed, not kept as an empty place: the glass then holds only the card and this
-                // row (the author, 2026-11-22: "there's the gap left by sidetone 2 ... I want only the
-                // selected session's detail box to show in that container").
-                row.Text.Visibility = chosen != null && row != chosen ? Visibility.Collapsed : Visibility.Visible;
-                row.Chosen = row == chosen;
                 row.Light.Height = !Island && goal > 0 && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
             }
             UpdateBubble(show);
@@ -3174,22 +3157,15 @@ namespace ClaudeSpeaks
             return was;
         }
 
-        // The session the card is about: whichever was chosen last, the row the mouse went onto or
-        // the session the focus moved to (`historyOf` is set by both). Before either, the one in
-        // focus. With Details "Selected Only" its row is the one row shown.
-        Row Chosen()
+        bool BuildMetrics(bool withLines)
         {
+            // Whichever was chosen last: the row the mouse went onto, or the session the focus
+            // moved to (`historyOf` is set by both). Before either, the session in focus.
             Row about = null;
             foreach (Row row in order) if (row.Name == historyOf) about = row;
             if (about == null) about = hot;
             if (about == null) foreach (Row row in order) if (row.Focus) about = row;
             if (about == null && order.Count == 1) about = order[0];
-            return about;
-        }
-
-        bool BuildMetrics(bool withLines)
-        {
-            Row about = Chosen();
             metricsLine.Inlines.Clear();
             metricsBody.Children.Clear();
             if (about == null) return false;
@@ -3342,10 +3318,7 @@ namespace ClaudeSpeaks
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 line.Children.Add(new EndMark(Str(h, "kind"), h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"])));
-                // The newest in full, up to five lines: the rows keep to one line each so the lights
-                // never move, and the card of the session under the mouse is where to read it all
-                // (the author, 2026-11-21: "showing the full words of the selected session").
-                var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, MaxHeight = n == 0 && !named ? 84 : 34, TextTrimming = TextTrimming.CharacterEllipsis };
+                var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
                 if (named) words.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
                 words.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Alpha(Colors.White, n == 0 ? 0.94 : n == 1 ? 0.76 : n == 2 ? 0.64 : 0.55) });
                 Grid.SetColumn(words, 1);
@@ -3381,7 +3354,7 @@ namespace ClaudeSpeaks
             bool inside = onBar || (panel.IsVisible && panel.Goal > 0 && (Within(cursor, panel.Area(), 4) || Within(cursor, Between(bar, panel.Area()), 0)));
             if (inside) { insideTicks++; outsideTicks = 0; } else { outsideTicks++; insideTicks = 0; }
             bool wantHover = inside ? insideTicks >= 3 || hover : hover && outsideTicks < 9;  // 0.1 s to open, 0.3 s to close
-            bool wantPeek = Listed && (inside ? insideTicks >= historyTicks || peek : peek && outsideTicks < 9);
+            bool wantPeek = mode == "list" && (inside ? insideTicks >= historyTicks || peek : peek && outsideTicks < 9);
             if (!hoverOpens) wantHover = false;  // only the keys (or the list key) bring the details out
             Row under = null;
             // Nor does a light grow under a mouse that is only passing: nothing answers until the details are out.
@@ -3401,7 +3374,7 @@ namespace ClaudeSpeaks
             bool sorting = onBar && CanReorder();
             bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys) || sorting))) && Ui.Now > passUntil;
             if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); }
-            bool panelWant = panelDrag && Listed && panel.IsVisible && panel.Goal > 0 && Within(cursor, panel.Area(), 0) && Ui.Now > passUntil;
+            bool panelWant = panelDrag && mode == "list" && panel.IsVisible && panel.Goal > 0 && Within(cursor, panel.Area(), 0) && Ui.Now > passUntil;
             if (panelWant != panelCatching) { panelCatching = panelWant; panel.CatchMouse(panelWant); }
             Edge();
             // The cursor says what a drag would do: arrows along the bar = put this light elsewhere,
@@ -4323,16 +4296,7 @@ namespace ClaudeSpeaks
 
         void SetMode(string wanted)
         {
-            // The details key goes from details out ("list", or "focus": Selected Only) to the lights
-            // alone and back to the one it came from (the author, 2026-11-22, on Selected Only: "if I
-            // do Ctrl+Alt+L I should be able to see only the bar").
-            if (wanted == "toggle")
-            {
-                if (Listed) { outMode = mode; mode = "dots"; }
-                else mode = outMode;
-            }
-            else mode = wanted == "list" || wanted == "focus" ? wanted : "dots";
-            Ui.OnlyFocus = mode == "focus";
+            mode = wanted == "toggle" ? (mode == "list" ? "dots" : "list") : (wanted == "list" ? "list" : "dots");
             if (mode != "list") peek = false;
             Render();
             Send("mode", "mode", mode);
@@ -4344,7 +4308,7 @@ namespace ClaudeSpeaks
         {
             bool busy = hasRequest || hasBanner || moving || hover || peek;
             foreach (Row row in order) busy = busy || row.Showing;
-            double target = opaque || busy ? 1.0 : (Listed ? listOpacity : idleOpacity);
+            double target = opaque || busy ? 1.0 : (mode == "list" ? listOpacity : idleOpacity);
             if (target == lastFade) return;
             lastFade = target;
             lights.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(220)));

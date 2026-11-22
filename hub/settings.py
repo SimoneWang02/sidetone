@@ -143,7 +143,7 @@ SECTIONS = [
         # The key named and the choices short (the author, 2026-11-21: "the same thing, the shortcut.
         # And maybe shorten the answers"); they were "Under the mouse" and "Always out".
         choice("overlay.mode", "Details", "Names, titles and figures beside the lights. The details key switches them.",
-               ("list", "Always"), ("dots", "On Hover"), ("focus", "Selected Only")),
+               ("list", "Always"), ("dots", "On Hover")),
         # "Details Changing Size" (overlay.resize: quick, instant) left the window on 2026-11-21, the
         # author: "the animation is pretty standard". Still read from config.json.
         # "Move It by the Details" (overlay.panel_drag) left the window on 2026-11-21, the author:
@@ -164,10 +164,8 @@ SECTIONS = [
         # "Glass Effect", the author's name for it the same day: 0 % then reads as no effect.
         number("overlay.glass_clear", "Glass Effect", "How much of what is behind shows through, blurred. "
                "0 is plain dark glass.", 0, 100, 5, "%"),
-        # "Lines Per Session" (overlay.row_lines, 1 to 3) left the window on 2026-11-21: a longer row
-        # pushed the lights below it down, and every row kept as tall as three lines was not liked;
-        # instead the newest line of the session under the mouse is shown in full in its card (the
-        # author: "showing the full words of the selected session"). Still read from config.json.
+        choice("overlay.row_lines", "Lines Per Session", "How many lines a sentence may take in the details.",
+               (1, "1"), (2, "2"), (3, "3")),
         choice("overlay.history", "History Shows", "The lines of the session you are on, or of all of them.",
                ("session", "One session"), ("all", "All")),
         choice("overlay.talk_text", "\"Release to Send\"", "How those words move while you hold the talk key.",
@@ -205,7 +203,7 @@ SECTIONS = [
                "When another program already has one of these keys, it still works here too, and both act on it."),
         hotkey("talk", "Talk", "Hold it and speak."),
         hotkey("cancel", "Cancel or Stop", "Drop a recording, take words back, cut a line, or stop a turn."),
-        hotkey("toggle", "Details", "Shows the details, or the lights alone, and back."),  # was "Keep the Details Out"; named as the Details setting calls it
+        hotkey("toggle", "Details", "Always out, or only on hover."),  # was "Keep the Details Out"; named as the Details setting calls it
         hotkey("mute", "Mute", "Turns the voice off for every session, and on again."),
         hotkey("repeat", "Say It Again"),
         hotkey("layout", "Switch Layout"),

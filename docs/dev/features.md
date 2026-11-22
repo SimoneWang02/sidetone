@@ -355,23 +355,6 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   output, so it is in step with the sound for every engine. Without `parec` the row says
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
-- Details "Selected Only" (2026-11-21, `overlay.mode` "focus", `Listed`, `Ui.OnlyFocus`): the
-  details stay out as with "Always", the card of figures on top, and only the row of the session
-  in focus is shown; the other rows keep their places beside their lights, empty, and never take
-  more than one line. First built as the bubble beside the light in focus (not liked: "Now I
-  don't like it much"); then the author: "I want only the detail box associated with the
-  selected session plus the matrix box. The other sessions' detail boxes shouldn't be
-  displayed". The row shown is the card's session (`Chosen`): the mouse or the focus, whichever
-  moved last; it followed the focus alone at first and showed another session than the card.
-  The other rows are collapsed, so the glass holds only the card and that row, which then sits
-  under the card rather than beside its light ("there's the gap left by sidetone 2"; kept as empty
-  places first). Picture `focus-only.png`.
-- The newest line in full in the card (2026-11-21, `FillHistory`): the card of the session under
-  the mouse shows its newest line up to five lines (84 px), the older ones two; the rows keep to
-  one line, so the lights never move. Lines Per Session (`overlay.row_lines`) left the window:
-  at three, a row that grew pushed the lights below it down ("I don't like how it creates more
-  gap"), and every row as tall as three lines was tried and not liked. The author: "showing the
-  full words of the selected session might be a good idea". Picture `card-full-line.png`.
 - How see-through the glass is (2026-11-21, `overlay.glass_clear`, 50; `Ui.GlassClear`,
   `Ui.GlassFill`): one slider from 0 to 100 % instead of Blur or Plain (`overlay.glass`, still
   read; "none" stays plain). 0 is plain dark glass with no blur (a tint of 92 %); above it the

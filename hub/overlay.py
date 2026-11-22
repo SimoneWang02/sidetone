@@ -21,7 +21,7 @@ SOURCES = ("Overlay.cs", "overlay.ps1")  # what the window is made from
 
 DEFAULTS = {
     "enabled": True,
-    "mode": "dots",  # dots = only the lights; the details come out under the mouse | list = details always out | focus = only the lights, and the session in focus in the bubble beside them
+    "mode": "dots",  # dots = only the lights; the details come out under the mouse | list = details always out
     # How the sessions are shown: bar (a column of lights at the side, details beside it) |
     # island (a row of lights at the top middle of the screen, details dropping down from it)
     "layout": "bar",

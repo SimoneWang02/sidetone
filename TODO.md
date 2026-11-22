@@ -116,10 +116,9 @@ these come before anything new.
       100%"). Glass is a slider, 0 % plain to 100 % clearest, 50 % the look it had (**not yet
       judged by the author**). Lines Per Session at 3 moves the lights as a sentence grows; every
       row kept as tall as three lines was tried and not liked ("I don't like it"), and reverted.
-      Instead the card shows the newest line in full and Lines Per Session left the window (seen
-      in a picture only). A third Details choice, Selected Only: the card and only the row of the
-      session in focus, the other rows empty (as a bubble first, not liked; seen in a picture,
-      **not yet judged by the author**). **Next: Overlay** from Glass on, then
+      Then, the same night, the newest line in full in the card, and a Details choice Selected
+      Only (the card and the chosen session's row alone): built, tried by the author, and taken
+      back at their word ("let's reverse it as it was before"). Lines Per Session stays, 1 to 3. **Next: Overlay** from Glass on, then
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges

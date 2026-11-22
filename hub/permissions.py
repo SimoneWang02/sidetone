@@ -322,7 +322,7 @@ class Permissions:
                 self.publish()
             return
         if msg.get("type") == "mode":  # details kept out, or only the lights: the same after a hub restart
-            if msg.get("mode") in ("dots", "list", "focus"):
+            if msg.get("mode") in ("dots", "list"):
                 self.place_overlay(False, mode=msg["mode"])
             return
         if msg.get("type") == "setting":  # chosen in the settings window
