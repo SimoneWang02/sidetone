@@ -982,9 +982,8 @@ Kept for the history: what was asked, what was found, and the author's words on 
       far: only the held talk key is kept back. Off by default if built, because it would
       also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
       with those keys, and it needs a keyboard hook for as long as the keys are down.
-      Replaced 2026-11-22 by what the author meant (a video pausing): see "Space still paused
-      YouTube" in step 1. Keeping every other key back as well was not wanted ("I mean [it]
-      is fine [as] it is").
+      Not wanted (the author, 2026-11-22: "I mean [it] is fine [as] it is"); the video
+      pausing it came from was mended on 2026-11-17 and is not back.
 - [x] Push-to-talk goes to the session in focus when the key comes up, not when it went down
       (asked 2026-11-22: "should the audio be sent to the initial target session or the final
       ... What's more convenient [or] conventional?"). Claude advised keeping it: scrolling
