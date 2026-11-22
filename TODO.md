@@ -97,7 +97,8 @@ these come before anything new.
       taken back; The Cancel Key Stops a Session became the switch Cancel Key Interrupts Claude ("like Ctrl+C"); the repeat key
       pressed again starts over. Words spoken to a busy session are read after its next step
       ("A Busy Session Hears You"), tested with the real hook and a haiku session, **not yet
-      tried by the author**. **Next: Talking** from Side Questions on, then Overlay,
+      tried by the author**. Side Questions became a switch ("Always" taken out). **Next:
+      Talking** from Speaking at a Permission Prompt on, then Overlay,
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges

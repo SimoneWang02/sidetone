@@ -16,7 +16,7 @@ import usage
 import stt
 import terminal as terminal_mod
 from tts import Utterance
-from base import (interrupts, ASIDE_ASK, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
+from base import (aside_mode, interrupts, ASIDE_ASK, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
                   SAFE_ID, STEER, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
                   session_model, spoken_answer)
 
@@ -439,7 +439,8 @@ class Talk:
 
     def _aside_question(self, s, text: str) -> str:
         """The question in words that are a side question for this session right now, else ""."""
-        if self.cfg.aside not in ("busy", "always") or (self.cfg.aside == "busy" and s.state not in BUSY):
+        mode = aside_mode(self.cfg)
+        if mode not in ("busy", "always") or (mode == "busy" and s.state not in BUSY):
             return ""
         return aside_question(text, self.cfg.aside_words) if SAFE_ID.match(s.id) else ""
 

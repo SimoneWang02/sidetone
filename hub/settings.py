@@ -101,8 +101,11 @@ SECTIONS = [
         # back) and Never.
         switch("cancel_stops", "Cancel Key Interrupts Claude", "Like Ctrl+C in its terminal: when there is nothing else to cancel, "
                "the cancel key interrupts the session in focus. It stays open."),
-        choice("aside", "Side Questions", "Words that open with \"by the way\" are answered at once, and the session never sees them.",
-               ("busy", "While it works"), ("always", "Always"), ("off", "Off")),
+        # A switch; "Always" (even an idle session never sees them) left the window on 2026-11-21,
+        # the author: "isn't it better to have only always and never ... on and off?". On is
+        # "While it works"; "always" in config.json still works.
+        switch("aside", "Side Questions", "Start with \"by the way\" while a session works, and it is answered aloud at once "
+               "without the session seeing it or changing course. An idle session simply gets your words."),
         choice("voice_at_prompt", "Speaking at a Permission Prompt", "Turn the request down and hand your words over, or keep them until it is answered.",
                ("details", "Deny and explain"), ("wait", "Wait")),
         # "Usage by Voice" (usage_by_voice) left the window on 2026-11-21, the author: "I don't think
@@ -560,6 +563,8 @@ def read(hub, key: str):
         return cfg.terminal.get(key[9:])
     if key == "context_shown":
         return base.context_mode(cfg)
+    if key == "aside":  # on or off; "busy", "always" and "off" from before
+        return base.aside_mode(cfg) != "off"
     if key == "cancel_stops":  # on or off; "always", "sent" and "never" from before
         return base.interrupts(cfg)
     if key == "label":

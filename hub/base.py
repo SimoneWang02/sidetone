@@ -368,15 +368,15 @@ class Config:
     # Side questions. Spoken words that open with one of `aside_words` do not wait for a busy
     # session: a throwaway copy of that session answers them at once from what the session
     # knows, without tools, and the answer is said in the session's voice. The session itself
-    # never sees the question or the answer. `aside`: "busy" = only while the session is in
-    # the middle of a turn (an idle one gets the words as usual and can act on them) |
-    # "always" | "off". `aside_model`: "session" = the copy runs on the session's own model with
+    # never sees the question or the answer. `aside`: True (or "busy") = only while the session
+    # is in the middle of a turn (an idle one gets the words as usual and can act on them) |
+    # False (or "off") | "always", out of the settings window since 2026-11-21 (`aside_mode`). `aside_model`: "session" = the copy runs on the session's own model with
     # the session's own tools, which lets it reuse the conversation the session has saved, as
     # Claude Code's `/btw` does (asking is then refused for every tool that acts) | a model's
     # name such as "haiku" = that model reads the whole conversation anew, with no tools at
     # all. If no answer comes within `aside_timeout` seconds, the words go to the session
     # after all. `aside_claude`: the Claude Code program; "" = the one on the PATH.
-    aside: str = "busy"
+    aside: bool | str = True
     aside_words: list = field(default_factory=lambda: ["by the way", "btw", "comunque", "a proposito",
                                                        "顺便问一下", "顺便问下", "顺便说一下"])
     aside_model: str = "session"
@@ -664,6 +664,13 @@ def _elapsed(seconds: float) -> str:
     if minutes < 1:
         return "<1m"
     return f"{minutes}m" if minutes < 60 else f"{minutes // 60}h{minutes % 60:02d}"
+
+
+def aside_mode(cfg: Config) -> str:
+    """`Config.aside` as "busy", "always" or "off" (a switch since 2026-11-21: on is "busy")."""
+    if isinstance(cfg.aside, bool):
+        return "busy" if cfg.aside else "off"
+    return str(cfg.aside)
 
 
 def interrupts(cfg: Config) -> bool:

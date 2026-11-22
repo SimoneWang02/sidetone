@@ -429,14 +429,16 @@ class Shown(SettingsCase):
     def test_a_choice_made_in_the_window_comes_back_as_it_stands(self):
         hub = self.make()
         hub.show_settings(True)
-        hub.on_overlay({"type": "setting", "key": "aside", "value": "off"})
-        self.assertEqual(hub.cfg.aside, "off")
+        hub.on_overlay({"type": "setting", "key": "aside", "value": False})
+        self.assertIs(hub.cfg.aside, False)
         shown = {i["key"]: i["value"] for s in self.window.of("settings")[-1]["sections"] for i in s["items"]}
-        self.assertEqual(shown["aside"], "off")
+        self.assertIs(shown["aside"], False)
         before = len(self.window.of("settings"))
         hub.on_overlay({"type": "setting", "key": "aside", "value": "sometimes"})  # refused: drawn as it is, still off
         self.assertEqual(len(self.window.of("settings")), before + 1)
-        self.assertEqual(hub.cfg.aside, "off")
+        self.assertIs(hub.cfg.aside, False)
+        hub.cfg.aside = "always"  # from before the switch
+        self.assertIs(settings.read(hub, "aside"), True)
 
     def test_a_window_closed_by_hand_opens_at_the_next_press(self):
         hub = self.make()
