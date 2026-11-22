@@ -21,6 +21,7 @@ Usage: sidetone <command>
   sound sent|queued|failed   play one of the short sounds that answer push-to-talk
   discord-key                press the key Sidetone holds while you talk (F24), in 3 s, for Discord's
                              Keybinds to record as Push to Mute
+  recordings                 how many of your recordings are kept (setting keep_recordings), and where
   languages [CODES]          show or choose the languages push-to-talk listens for: en  or  en,it  or  auto
   repeat                     say the last line of the session in focus again
   usage [say]                how much of the plan's five hours and week is used; "say" also speaks it
@@ -170,6 +171,11 @@ case ${1:-} in
     if [ $# -gt 0 ] && [ -S "$CS_SOCK" ]; then  # a running hub takes it up at once
       hub_post /languages </dev/null >/dev/null 2>&1 || echo "The running hub is older than this command: 'sidetone hub restart' applies it."
     fi
+    ;;
+  recordings)
+    list=$CS_STATE/recordings/list.jsonl
+    [ -s "$list" ] || { echo "none kept yet ($CS_STATE/recordings); turn on: sidetone settings keep_recordings true"; exit 0; }
+    jq -rs --arg d "$CS_STATE/recordings" '"\(length) recordings, \((map(.seconds) | add) / 60 * 10 | floor / 10) minutes, in \($d)"' "$list"
     ;;
   repeat) echo '{"what": "last"}' | hub_post /replay >/dev/null || { echo "hub is not running"; exit 1; } ;;
   usage)

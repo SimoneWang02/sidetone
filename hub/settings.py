@@ -107,6 +107,8 @@ SECTIONS = [
                "the work of the session in focus. The session stays open."),
         switch("clear_by_voice", "Clear the Chat by Voice", "Say \"clear the chat\" and /clear is typed into that session's terminal "
                "once it is at its prompt. Needs the VS Code extension."),
+        switch("keep_recordings", "Keep My Recordings", "Every recording is saved with the words it was heard as, "
+               "to train a model of your own voice later. They stay on this computer."),
         # Discord's own name for it is "Push to Talk Release Delay" (the author, 2026-11-21: "Is this
         # conventional?"). Was "Listen On After Release".
         number("talk_tail", "Release Delay", "After you let go of the talk key, it keeps listening this long, "

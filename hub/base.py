@@ -399,6 +399,11 @@ class Config:
     # written in the language you last spoke clearly in, and kept so unless clearly worse
     # (see stt.Transcriber.UNSURE). False: the model's guess always stands.
     whisper_lean: bool = True
+    # Each push-to-talk recording that was heard is kept as a WAV beside what it was heard as,
+    # in <state>/recordings (list.jsonl: one line per recording), for a model of your own voice
+    # later (the author, 2026-11-22: "register every message I send and create a voice model
+    # based on my speaking"). Off for new installs: it keeps your voice on disk.
+    keep_recordings: bool = False
     # While the talk key is held (and the tail after it), the overlay holds this key down, for
     # Discord's "Push to Mute" bound to it, so a call does not hear what you say to a session
     # (the author, 2026-11-20: "is it possible that when talking I don't speak to Discord?").
@@ -450,7 +455,7 @@ class Config:
         user = cfg._checked(user, path)
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
-                    "followup_confirm", "whisper_language", "whisper_lean", "push_to_mute", "push_to_mute_key", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
+                    "followup_confirm", "whisper_language", "whisper_lean", "keep_recordings", "push_to_mute", "push_to_mute_key", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])

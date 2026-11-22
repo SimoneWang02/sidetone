@@ -1133,6 +1133,26 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.collect(listener), "also add a test")
         self.assertEqual(self.spoken(), ["A is done.", "Sent."])
 
+    def test_recordings_are_kept_with_their_words_only_when_asked(self):
+        import wave
+        hub = self.make()
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: any(t[0] == "ready" for t in self.talks())))
+        folder = os.path.join(self.tmp, "recordings")
+        self.assertFalse(os.path.exists(folder))  # off by default: nobody's voice is kept unasked
+        hub.cfg.keep_recordings = True
+        hub.transcriber.text = "and keep this one"
+        hub.talk_start()
+        hub.talk_end()
+        self.assertTrue(wait_for(lambda: os.path.exists(os.path.join(folder, "list.jsonl"))))
+        with open(os.path.join(folder, "list.jsonl")) as f:
+            [line] = [json.loads(l) for l in f]
+        self.assertEqual((line["text"], line["seconds"], line["project"]), ("and keep this one", 0.1, "b"))
+        with wave.open(os.path.join(folder, line["file"])) as w:
+            self.assertEqual((w.getframerate(), w.getnchannels(), w.getnframes()), (16000, 1, 1600))
+        self.assertEqual(os.stat(folder).st_mode & 0o777, 0o700)
+
     def test_a_push_to_mute_key_is_held_while_you_talk(self):
         hub = self.make()
         hub.talk_start()

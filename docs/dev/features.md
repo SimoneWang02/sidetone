@@ -109,6 +109,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   0.9.6 in the hub's environment, `whisper_language` `en,it,zh`. Heard through the hub.
   The model was copied by hand into the author's Piper folder; `install.sh` does not
   fetch it yet.
+- Recordings kept (`keep_recordings`, "Keep My Recordings" under Talking; off for new installs,
+  on for the author). 2026-11-22, the author: "register every message I send and create a voice
+  model based on my messages, my speaking". `Hub._keep_recording` writes each recording that was
+  heard as something (also one cancelled afterwards) to `<state>/recordings/` as a 16 kHz mono
+  WAV, and a line to `list.jsonl`: file, text, language, seconds, time, Whisper model, project.
+  About 32 KB a second. The folder is owner-only. `sidetone recordings` counts them.
 - Short recordings lean to the last language (`whisper_lean`, on; 2026-11-19, the author:
   "you can fix this issue, just let me know [the] downside [and] upside"). Four of their
   short Italian recordings in a row had come back as English or Chinese. Measured on 18

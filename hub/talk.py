@@ -106,6 +106,28 @@ class Talk:
                              daemon=True).start()
         self.publish()
 
+    def _keep_recording(self, pcm: bytes, text: str, language: str, session: str | None) -> None:
+        """Saves a recording and what it was heard as (`keep_recordings`), for a voice model later."""
+        import wave
+        folder = os.path.join(self.cfg.state, "recordings")
+        now = time.time()
+        name = time.strftime("%Y-%m-%d_%H%M%S", time.localtime(now)) + f"_{int(now * 1000) % 1000:03d}.wav"
+        try:
+            os.makedirs(folder, mode=0o700, exist_ok=True)
+            with wave.open(os.path.join(folder, name), "wb") as w:
+                w.setnchannels(1)
+                w.setsampwidth(2)
+                w.setframerate(stt.RATE)
+                w.writeframes(pcm)
+            sess = self.sessions.by_id.get(session or "")
+            line = {"file": name, "text": text, "language": language or self.cfg.whisper_language,
+                    "seconds": round(len(pcm) / 2 / stt.RATE, 2), "time": time.strftime("%FT%T%z", time.localtime(now)),
+                    "model": self.cfg.whisper_model, "project": sess.name if sess else ""}
+            with open(os.path.join(folder, "list.jsonl"), "a") as f:
+                f.write(json.dumps(line, ensure_ascii=False) + "\n")
+        except (OSError, wave.Error) as e:  # a full disk must not lose the words themselves
+            log(self.cfg, "hub.log", f"talk: the recording could not be kept: {e}")
+
     def _transcribe(self, pcm: bytes, session: str | None = None, job: object | None = None) -> None:
         started = time.monotonic()
         try:
@@ -120,6 +142,8 @@ class Talk:
         log(self.cfg, "hub.log", f"talk: {len(pcm) / 2 / stt.RATE:.1f}s recorded, peak level {stt.loudness(pcm):.2f}, "
                                  f"transcribed in {time.monotonic() - started:.1f}s"
                                  f"{' as ' + heard if heard else ''}{leaned}: {text or '(nothing heard)'}")
+        if text and self.cfg.keep_recordings:
+            self._keep_recording(pcm, text, heard, session)
         if self._unload:
             self._unload.cancel()
         if self.transcriber and self.cfg.whisper_unload_minutes:

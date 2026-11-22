@@ -144,6 +144,15 @@ Nothing open.
 What gets in the way every day: words heard in the wrong language, lines read by the wrong
 voice, and the wait for the transcript.
 
+- [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
+      them since 2026-11-22: "register every message I send and create a voice model based on
+      my speaking ... you don't have to do the voice model right now"). To decide with them:
+      Whisper fine-tuned on their voice and accent (fewer words heard wrong, the point of this
+      step), or a voice that speaks like them (Kokoro cannot be trained so; it would need
+      another model, such as Piper's own training). Both use the same WAV and text pairs; the
+      words in `list.jsonl` are Whisper's and need checking first. `sidetone recordings` says
+      how much there is. Not yet tried by hand: that a real recording lands there.
+
 - [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
       too short to tell the language and English wins. Perhaps lean to the language of the
