@@ -64,7 +64,14 @@ voice, and the wait for the transcript.
       message had come through as English), so the English voice read Italian words. A
       safeguard, built 2026-11-22: when the tag has no `lang`, the hub guesses the language
       of the line itself (step 1).
-- [ ] Running the speech model on the graphics card to make transcription faster
+- [ ] Running the speech model on the graphics card to make transcription faster.
+      Measured 2026-11-22 on the author's 102 kept recordings (`docs/dev/facts.md`):
+      `large-v3-turbo` on the RTX 5070 takes 0.18 s where `small` on the CPU takes 0.81 s,
+      and gets clearly more words right, mostly in short clips and Italian. To build, if the
+      author agrees: a setting for where it runs (automatic, processor, graphics card), the
+      model following it; NVIDIA's cuBLAS and cuDNN (about 1.8 GB) installed into the hub's
+      environment where `nvidia-smi` finds a card; the processor and `small` stay the
+      fallback for everyone else.
 
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on

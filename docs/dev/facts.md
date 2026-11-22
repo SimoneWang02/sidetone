@@ -477,6 +477,22 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   (`/usr/lib/wsl/lib/nvidia-smi`, `/dev/dxg`); nothing in the project uses it yet. Notes
   here once said "no graphics card", meaning only that none was used; a session repeated it
   to the author as fact on 2026-11-19 and was corrected ("ho una 5070").
+- Whisper on the RTX 5070 (2026-11-22): the author's 102 kept recordings (1.7 to 64 s,
+  median 10 s; 94 English, 8 Italian) through the hub's own `stt.Transcriber` with
+  `en,it,zh`, one after another so leaning worked as live. ctranslate2 4.9.0 sees the card
+  (`get_cuda_device_count() == 1`) but needs cuBLAS 12 and cuDNN 9 on `LD_LIBRARY_PATH`;
+  borrowed for the test from the voice-clone venv's `nvidia/cublas/lib` and `nvidia/cudnn/lib`
+  (0.8 and 1.0 GB). Median time per recording, and for those under 4 s:
+  `small` CPU int8 (what runs now) 0.81 s / 0.68 s; `small` GPU float16 0.17 / 0.08;
+  `large-v3-turbo` GPU float16 0.18 / 0.13; `large-v3` GPU 0.40 / 0.23; `large-v3-turbo`
+  CPU int8 2.93 / 2.85 (too slow to be the default without a card). Loading: turbo on the
+  GPU 1.8 s once downloaded (the first download took 78 s; `large-v3` 102 s).
+  All five agreed on the language of every recording (no short, unsure ones among them).
+  The words: turbo and large-v3 differ from `small` in 10% of the words and from each other
+  in 5%; by reading, both large ones are clearly better, mostly on short clips and Italian:
+  "Yeah, uh, gone." / "Yeah, go on."; "Dero at the side by side." / "They are side by side";
+  "è perfatto" / "perfetto"; "esvego" / "eseguo"; "attestare" / "addestrare"; "by coding" /
+  "vibe coding". large-v3 punctuates long Italian better than turbo, at twice the time.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
