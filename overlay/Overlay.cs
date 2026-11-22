@@ -3405,6 +3405,10 @@ namespace ClaudeSpeaks
                     if (along >= 0 && along < room) under = row;
                     along -= room;
                 }
+                // Selected Session shows one row, so the panel's rows are not level with the lights:
+                // over the panel the mouse is on that session (the author, 2026-11-22: hovering the
+                // second session's card "shows the first session").
+                if (!onBar && mode == "focus") under = Chosen();
             }
             bool sorting = onBar && CanReorder();
             bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys) || sorting))) && Ui.Now > passUntil;
