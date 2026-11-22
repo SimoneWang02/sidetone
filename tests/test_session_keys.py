@@ -98,6 +98,23 @@ class SessionKeys(HubCase):
         hub.on_overlay({"type": "hotkey", "name": "end_session"})
         self.assertFalse(editor.wake.is_set())
 
+    def test_only_the_question_on_screen_is_confirmed(self):
+        """Clear asked, then end asked: the clear key again only asks, as nothing on screen said
+        it would clear (the author lost a conversation so, 2026-11-22). The same the other way, and
+        after the mute key's banner."""
+        hub = self.make()
+        editor = hub.editor_waits([4001], opens=True, clears=True)
+        for first, second in (("clear", "end_session"), ("end_session", "clear"), ("clear", "mute"), ("end_session", "mute")):
+            hub.on_overlay({"type": "hotkey", "name": first})
+            hub.on_overlay({"type": "hotkey", "name": second})
+            hub.on_overlay({"type": "hotkey", "name": first})
+            self.assertFalse(editor.wake.is_set(), f"{first}, {second}, {first}")
+            self.assertIn("?", self.overlay.of("banner")[-1]["text"])  # asked again
+            hub._clear_armed = hub._end_armed = None
+        hub.on_overlay({"type": "hotkey", "name": "clear"})
+        hub.on_overlay({"type": "hotkey", "name": "clear"})
+        self.assertTrue(editor.wake.is_set())
+
     def test_a_close_asked_between_two_requests_goes_to_the_next(self):
         hub = self.make()
         editor = hub.editor_waits([4001], opens=True)

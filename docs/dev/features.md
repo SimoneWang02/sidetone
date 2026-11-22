@@ -401,6 +401,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   1.5 s first, then in the permission prompt's box with a cancel key for 5 s; having tried that:
   like "voice is muted", "it would automatically go away in three seconds, there's no need for
   the backspace to cancel that". Word types "©" with Ctrl+Alt+C: shared then.
+  Only the question on screen counts: the end key's question or the mute key's banner, which
+  take the clear question's place, drop it (and the clear key's drops the end key's). The author,
+  2026-11-22, lost a conversation to Ctrl+Alt+C, Ctrl+Alt+Minus, Ctrl+Alt+C: the third press
+  cleared with "End …?" on screen.
 - The new-session and end keys (2026-11-22, `new_session` Ctrl+Alt+Plus, `end_session`
   Ctrl+Alt+Minus, `Hub.new_session_key`, `Hub.end_session_key`, `END_TWICE` 3 s, `NEW_WAIT` 60 s;
   the extension 0.5.0, `openNew`, `close`). The author: "Ctrl Alt plus and Ctrl Alt minus to add a

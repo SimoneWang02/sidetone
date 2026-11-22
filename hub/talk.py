@@ -255,7 +255,7 @@ class Talk:
             s = self._target()
             if not s:
                 return
-            now, armed = time.monotonic(), getattr(self, "_clear_armed", None)
+            now, armed = time.monotonic(), self._clear_armed
             if armed and armed[0] == s.id and now - armed[1] < CLEAR_TWICE:
                 self._clear_armed = None
                 if self.overlay:
@@ -263,7 +263,10 @@ class Talk:
                 log(self.cfg, "hub.log", f"clear [{s.id[:8]}] asked for with the clear key")
                 self._clear_chat(s, "the clear key")
             else:
-                self._clear_armed = (s.id, now)
+                # Only the question on screen counts: the end key's, which this banner replaces, is
+                # dropped (the author, 2026-11-22: clear asked, end asked, and the clear key again
+                # cleared with no question on screen).
+                self._clear_armed, self._end_armed = (s.id, now), None
                 key = self.cfg.overlay.get("hotkeys", {}).get("clear", "")
                 if self.overlay:
                     self.overlay.send({"type": "banner", "icon": "clear", "text": f"Clear {s.name}?",
@@ -313,7 +316,7 @@ class Talk:
                 self._ending[s.id] = s.tty
                 log(self.cfg, "hub.log", f"end [{s.id[:8]}] /exit asked of the editor for its terminal ({s.tty}): the end key")
             else:
-                self._end_armed = (s.id, now)
+                self._end_armed, self._clear_armed = (s.id, now), None  # as the clear key's question
                 key = self.cfg.overlay.get("hotkeys", {}).get("end_session", "")
                 if self.overlay:
                     self.overlay.send({"type": "banner", "icon": "end", "text": f"End {s.name}?",

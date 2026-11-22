@@ -88,6 +88,7 @@ class Hub(Permissions, Talk):
         self._clear_wanted: tuple[str, float] = ("", base.NEVER)  # a terminal to be cleared while its editor was between two requests
         self._opens_by: float = base.NEVER  # when a request of an editor that can open a terminal last ended
         self._opening: float = base.NEVER  # when a new session was last asked of an editor (the new-session key)
+        self._clear_armed: tuple[str, float] | None = None  # the session the clear key asked about, and when
         self._end_armed: tuple[str, float] | None = None  # the session the end key asked about, and when
         self._ending: dict[str, str] = {}  # session -> its terminal, for a session ended with the end key: closed once it has ended
         self._editor_wanted: list = []  # (what, terminal, when) asked while the editor was between two requests: "close"
