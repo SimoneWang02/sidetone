@@ -56,6 +56,7 @@ namespace ClaudeSpeaks
         // is as high as its light and the bar never changes size; with more, a long sentence makes
         // its row higher and the bar stretches so that the lights stay level with their rows.
         public static int RowLines = 1;
+        public static bool OnlyFocus;  // Details "Selected Only": only the row in focus may take more than one line
         public static bool SignInLight = true;  // where push-to-talk's sign goes: in the session's light, or at the right of its line
 
         // The overlay's own words about push-to-talk move ("Release to send", "Working out what
@@ -2154,7 +2155,6 @@ namespace ClaudeSpeaks
         Brush talkInk = Brushes.White;  // white for your words, dim for a note, the microphone's color for what to do
         public double FlashUntil, Hot, Lit;
         string rowText = "", metaText = "";
-        public string Doing { get { return rowText; } }  // what its line under the name says when nothing is being said
         public object[] Details = new object[0];  // its figures for the line under the rows: [what it is, the figure] each
 
         public Row(bool right, Wave wave)
@@ -2251,7 +2251,7 @@ namespace ClaudeSpeaks
         {
             bool saying = Showing, talk = TalkKind != null;
             line2.Text = talk ? TalkText : saying ? FlashText : rowText;
-            line2.TextWrapping = saying && Ui.RowLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            line2.TextWrapping = saying && Ui.RowLines > 1 && (!Ui.OnlyFocus || Focus) ? TextWrapping.Wrap : TextWrapping.NoWrap;
             line2.MaxHeight = 16.7 * Ui.RowLines;
             bool live = talkInk == Ui.MicInk || talkInk == Ui.LiveInk;
             if (talk && live) Ui.GlintFor(TalkText);
@@ -2682,7 +2682,7 @@ namespace ClaudeSpeaks
                             wantedKeys[entry.Key] = Convert.ToString(entry.Value);
                         RegisterHotkeys();
                     }
-                    if (msg.ContainsKey("mode")) mode = Str(msg, "mode", mode);
+                    if (msg.ContainsKey("mode")) { mode = Str(msg, "mode", mode); Ui.OnlyFocus = mode == "focus"; }
                     Render();
                     Place();
                     break;
@@ -2734,7 +2734,7 @@ namespace ClaudeSpeaks
                     break;
                 case "peek":  // open the panel and the history without a mouse (for checking how it looks)
                     peekForced = hover = msg.ContainsKey("on") && Convert.ToBoolean(msg["on"]);
-                    peek = peekForced && mode == "list";
+                    peek = peekForced && Listed;
                     historyOf = Str(msg, "over", "");  // as if the mouse were on that session's row
                     Render();
                     break;
@@ -2854,12 +2854,19 @@ namespace ClaudeSpeaks
 
         // The panel (names, titles, what each session is doing) is out in list mode, under the
         // mouse, while Ctrl+Alt is held, and while there is something to ask or show. Otherwise there are only the lights.
-        bool IsOpen() { return (!BarHeld || panelHeld) && (mode == "list" || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
+        // "focus" (Details: Selected Only) keeps the details out as "list" does, with only the row
+        // of the session in focus shown, under the card; the other rows keep their places beside
+        // their lights, empty (the author, 2026-11-21: "only ... the detail box associated with the
+        // selected session plus the matrix box. The other sessions' detail boxes shouldn't be
+        // displayed").
+        bool Listed { get { return mode == "list" || mode == "focus"; } }
+
+        bool IsOpen() { return (!BarHeld || panelHeld) && (Listed || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
 
         // Brings everything in line with what there is to show. What moves is then moved by Frame.
         void Render()
         {
-            bool isList = mode == "list", open = IsOpen();
+            bool isList = Listed, open = IsOpen();
             SyncRows();
             requestBox.Visibility = hasRequest ? Visibility.Visible : Visibility.Collapsed;
             bannerBox.Visibility = hasBanner ? Visibility.Visible : Visibility.Collapsed;
@@ -2909,6 +2916,8 @@ namespace ClaudeSpeaks
             foreach (Row row in order)
             {
                 row.Pip.Visibility = Island ? Visibility.Visible : Visibility.Collapsed;
+                bool only = mode == "focus" && !(row.Focus || order.Count == 1);
+                row.Text.Visibility = only ? Visibility.Hidden : Visibility.Visible;
                 row.Light.Height = !Island && goal > 0 && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
             }
             UpdateBubble(show);
@@ -2986,20 +2995,12 @@ namespace ClaudeSpeaks
                     if (row.Saying && (found == null || row.Speaking || (!found.Speaking && row.FlashUntil > found.FlashUntil))) found = row;
                 }
             bool orphan = away && talking && (found == null || found.TalkKind == null);  // push-to-talk with no session to show it on
-            // Details "Selected Only": with nothing being said, the bubble shows the session in focus,
-            // its name, title and line, three lines at most, and the other lights show nothing (the
-            // author, 2026-11-21: "just the session squares on the bar ... and in the detail just
-            // show the details of the session selected").
-            bool resting = false;
-            if (found == null && !orphan && away && mode == "focus")
-                foreach (Row row in order) if (row.Focus || (found == null && order.Count == 1)) { found = row; resting = true; }
             if (found == null && !orphan) { bubble.Goal = 0; return; }
             talker = orphan ? null : found;
             // The first line is always the session's name and title; push-to-talk shows as a sign
             // at its right and as words underneath.
             bool mine = orphan || (found.TalkKind != null && !hushed), listening = mine && talkState == "listening";
-            string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : resting ? found.Doing : found.FlashText;
-            bubbleLine2.MaxHeight = resting ? 51 : 68;  // three lines for the one in focus, four while one is said
+            string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : found.FlashText;
             string kind = mine ? TalkKind() : "";
             bubbleMuted.Visibility = muted && mutedIconOn && !mine ? Visibility.Visible : Visibility.Collapsed;  // a line shown, not said
             string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind + Ui.SignInLight + Ui.TalkText;
@@ -3366,7 +3367,7 @@ namespace ClaudeSpeaks
             bool inside = onBar || (panel.IsVisible && panel.Goal > 0 && (Within(cursor, panel.Area(), 4) || Within(cursor, Between(bar, panel.Area()), 0)));
             if (inside) { insideTicks++; outsideTicks = 0; } else { outsideTicks++; insideTicks = 0; }
             bool wantHover = inside ? insideTicks >= 3 || hover : hover && outsideTicks < 9;  // 0.1 s to open, 0.3 s to close
-            bool wantPeek = mode == "list" && (inside ? insideTicks >= historyTicks || peek : peek && outsideTicks < 9);
+            bool wantPeek = Listed && (inside ? insideTicks >= historyTicks || peek : peek && outsideTicks < 9);
             if (!hoverOpens) wantHover = false;  // only the keys (or the list key) bring the details out
             Row under = null;
             // Nor does a light grow under a mouse that is only passing: nothing answers until the details are out.
@@ -3386,7 +3387,7 @@ namespace ClaudeSpeaks
             bool sorting = onBar && CanReorder();
             bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys) || sorting))) && Ui.Now > passUntil;
             if (wantCatch != catching) { catching = wantCatch; rail.CatchMouse(catching); }
-            bool panelWant = panelDrag && mode == "list" && panel.IsVisible && panel.Goal > 0 && Within(cursor, panel.Area(), 0) && Ui.Now > passUntil;
+            bool panelWant = panelDrag && Listed && panel.IsVisible && panel.Goal > 0 && Within(cursor, panel.Area(), 0) && Ui.Now > passUntil;
             if (panelWant != panelCatching) { panelCatching = panelWant; panel.CatchMouse(panelWant); }
             Edge();
             // The cursor says what a drag would do: arrows along the bar = put this light elsewhere,
@@ -4312,6 +4313,7 @@ namespace ClaudeSpeaks
             // the details key goes from either to "list" and back to the one it came from.
             if (mode != "list") restMode = mode;
             mode = wanted == "toggle" ? (mode == "list" ? restMode : "list") : (wanted == "list" || wanted == "focus" ? wanted : "dots");
+            Ui.OnlyFocus = mode == "focus";
             if (mode != "list") peek = false;
             Render();
             Send("mode", "mode", mode);
@@ -4323,7 +4325,7 @@ namespace ClaudeSpeaks
         {
             bool busy = hasRequest || hasBanner || moving || hover || peek;
             foreach (Row row in order) busy = busy || row.Showing;
-            double target = opaque || busy ? 1.0 : (mode == "list" ? listOpacity : idleOpacity);
+            double target = opaque || busy ? 1.0 : (Listed ? listOpacity : idleOpacity);
             if (target == lastFade) return;
             lastFade = target;
             lights.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(220)));

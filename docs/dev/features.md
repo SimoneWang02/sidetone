@@ -355,13 +355,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   output, so it is in step with the sound for every engine. Without `parec` the row says
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
-- Details "Selected Only" (2026-11-21, `overlay.mode` "focus"): only the lights, and beside them
-  the bubble with the session in focus (its name, title and line, three lines at most; `Row.Doing`)
-  whenever nothing is being said; a line being said, or push-to-talk, takes the bubble as in
-  "dots", and the mouse on the lights opens the details as there. The details key goes to
-  "list" and back to the mode it came from (`restMode`). The author, with three lines a session
-  not liked: "don't show the other box details, just the session squares on the bar. And in the
-  detail just show the details of the session selected". Picture `focus-only.png`.
+- Details "Selected Only" (2026-11-21, `overlay.mode` "focus", `Listed`, `Ui.OnlyFocus`): the
+  details stay out as with "Always", the card of figures on top, and only the row of the session
+  in focus is shown; the other rows keep their places beside their lights, empty, and never take
+  more than one line. First built as the bubble beside the light in focus (not liked: "Now I
+  don't like it much"); then the author: "I want only the detail box associated with the
+  selected session plus the matrix box. The other sessions' detail boxes shouldn't be
+  displayed". Picture `focus-only.png`: the glass still spans the empty rows.
 - The newest line in full in the card (2026-11-21, `FillHistory`): the card of the session under
   the mouse shows its newest line up to five lines (84 px), the older ones two; the rows keep to
   one line, so the lights never move. Lines Per Session (`overlay.row_lines`) left the window:

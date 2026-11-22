@@ -616,7 +616,7 @@ send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history=
 send(type="peek", on=True, over="web-app")
 shot("list-history-all")  # every session's lines mixed: under the card, with their names
 send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history="session", **HERE)
-# Details "Selected Only": the lights, and the session in focus beside them in the bubble.
+# Details "Selected Only": the card and the row of the session in focus; the other rows empty.
 send(type="peek", on=False)
 send(type="config", opaque=True, still=True, mode="focus", hotkeys=KEYS, **HERE)
 send(type="state", sessions=sessions(focus="api-server"), history=HISTORY)

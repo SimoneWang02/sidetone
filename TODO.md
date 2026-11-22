@@ -117,8 +117,9 @@ these come before anything new.
       judged by the author**). Lines Per Session at 3 moves the lights as a sentence grows; every
       row kept as tall as three lines was tried and not liked ("I don't like it"), and reverted.
       Instead the card shows the newest line in full and Lines Per Session left the window (seen
-      in a picture only). A third Details choice, Selected Only: the lights, and the session in
-      focus in the bubble beside them (seen in a picture; **not yet tried by the author**). **Next: Overlay** from Glass on, then
+      in a picture only). A third Details choice, Selected Only: the card and only the row of the
+      session in focus, the other rows empty (as a bubble first, not liked; seen in a picture,
+      **not yet judged by the author**). **Next: Overlay** from Glass on, then
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
