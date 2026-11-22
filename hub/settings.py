@@ -219,8 +219,9 @@ SECTIONS = [
         # them". Still off by default, still read from config.json.
     ]),
     ("Keys", [
-        switch("overlay.share_taken_keys", "Share Keys Other Programs Have",
-               "When another program already has one of these keys, it still works here too, and both act on it."),
+        # "Share Keys Other Programs Have" (overlay.share_taken_keys) left the window on
+        # 2026-11-22, the author: "I think we can just remove it" (off only makes keys stop
+        # working). Still on by default, still read from config.json.
         hotkey("talk", "Talk", "Hold it and speak."),
         hotkey("cancel", "Cancel or Stop", "Drop a recording, take words back, cut a line, or stop a turn."),
         hotkey("toggle", "Details", "Bar only, all sessions, the selected session, and round again."),  # was "Keep the Details Out"; named as the Details setting calls it
