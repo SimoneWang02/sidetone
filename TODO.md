@@ -147,7 +147,9 @@ these come before anything new.
       (100 % is 0.3 of the color, the old top; "a percentage from 0 to 100"; seen in a picture),
       in steps of 5, the default 30 % (0.09; 27 % was "such a weird number").
       The flash when the focus moves stays its own switch, apart from Tint (the author saw it
-      flash with Tint off). **Next in it: Flash When the Focus Moves**, then Keys., then Terminal, Keys.
+      flash with Tint off). Focus Follows the Terminal tried by the author ("I checked it. I like
+      it"). Terminal Follows the Focus explained (with terminals side by side it only moves the
+      keyboard; "I see"), kept. **Next in it: Name in the Terminal's Title**, then Keys., then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
       and maximized by a button or a double click on its top, a dropdown that closes on a
