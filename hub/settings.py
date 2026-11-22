@@ -84,9 +84,11 @@ SECTIONS = [
         # The author, 2026-11-21, after hearing that Claude Code hands a message typed while it works
         # to Claude after its current step: "instead of queuing audios, I'm putting more info into
         # the request ... Yes". Was "A Busy Session Hears You".
-        choice("followup_when", "Talking to a Busy Session", "Your words reach a session that is working after the step it is on, "
-               "as typed ones do, or only once its reply ends.",
-               ("step", "After Its Current Step"), ("end", "When Its Reply Ends")),
+        # Short choices: "After Its Current Step" and "When Its Reply Ends" took half the width (the
+        # author, 2026-11-21: "the options are very long").
+        choice("followup_when", "Talking to a Busy Session", "Your words reach a session that is working at its next step, "
+               "as typed ones do, or at the end of its reply.",
+               ("step", "Next Step"), ("end", "End of Reply")),
         # A switch; "Always" (even an idle session never sees them) left the window on 2026-11-21,
         # the author: "isn't it better to have only always and never ... on and off?". On is
         # "While it works"; "always" in config.json still works.
