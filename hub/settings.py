@@ -239,7 +239,9 @@ SECTIONS = [
         hotkey("option2", "Answer 2"),
         hotkey("option3", "Answer 3"),
         hotkey("option4", "Answer 4"),
-        hotkey("jump", "Go to the Terminal", "Of the session in focus, in the editor."),
+        # "Go to the Terminal" (jump) left the window on 2026-11-22: no key by default, and
+        # Switching Moves the Keyboard does the same at every switch (the author: "okay, remove
+        # [it]"). A key can still be given in config.json.
         hotkey("clear", "Clear the Chat", "Press it twice: the editor types /clear for the session in focus, at its prompt."),
     ]),
 ]

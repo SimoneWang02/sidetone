@@ -152,7 +152,8 @@ these come before anything new.
       keyboard; "I see"), kept. Name in the Terminal's Title tried and taken out of the window (off). Renamed: Terminal
       Color, Color Strength, Clicking a Terminal Selects It, Switching Moves the Keyboard ("yeah,
       go on"). **Keys, under way 2026-11-22:** Share Keys Other Programs Have out of the window
-      (on). **Next in it: Talk**, the first key. **Terminal is
+      (on), and Go to the Terminal (no key; Switching Moves the Keyboard does it). The other keys
+      checked by the author ("I checked every combination, that looked good"). **Terminal is
       done. Next: Keys**, the last page., then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
