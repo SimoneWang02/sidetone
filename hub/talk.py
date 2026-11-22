@@ -20,7 +20,7 @@ from base import (aside_mode, interrupts, ASIDE_ASK, Aside, BUSY, Editor, Listen
                   SAFE_ID, STEER, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
                   session_model, spoken_answer, spoken_verdict)
 
-CLEAR_TWICE = 1.5  # seconds for the second press of the clear key
+CLEAR_TWICE = 5.0  # seconds the clear key's question stays up for the second press
 CLEAR_BUSY = "it is still working"  # why a clear cannot be typed yet, and waits
 SHOWN_ECHO = 1.0  # seconds in which the editor's report of a terminal the hub asked to the front is only that
 
@@ -218,9 +218,13 @@ class Talk:
         self._type_clear(s, text)
 
     def clear_key(self) -> None:
-        """The clear key: pressed once it asks, pressed again within `CLEAR_TWICE` it clears the
-        session in focus as "clear the chat" does (the author, 2026-11-21: "double click it to
-        confirm"). A conversation cleared by a stray press could not be had back."""
+        """The clear key: pressed once it asks, in the box a permission prompt has, with the keys
+        that clear and cancel at its right; pressed again within `CLEAR_TWICE` it clears the
+        session in focus as "clear the chat" does. The cancel key, or the time running out,
+        drops the question. The author, 2026-11-21: "double click it to confirm", then, having
+        tried it, the question in the permission prompt's place with "Ctrl-Alt-C to confirm
+        clear ... and also how to cancel", and "Do I have like time window?". A conversation
+        cleared by a stray press could not be had back."""
         with self.lock:
             s = self._target()
             if not s:
@@ -228,14 +232,48 @@ class Talk:
             now, armed = time.monotonic(), getattr(self, "_clear_armed", None)
             if armed and armed[0] == s.id and now - armed[1] < CLEAR_TWICE:
                 self._clear_armed = None
+                self._show_request()  # the question goes; a permission prompt comes back if one waits
                 log(self.cfg, "hub.log", f"clear [{s.id[:8]}] asked for with the clear key")
                 self._clear_chat(s, "the clear key")
             else:
-                self._clear_armed = (s.id, now)
-                key = self.cfg.overlay.get("hotkeys", {}).get("clear", "")
-                self._talk("ready", s, "Clear the chat?", f"{key} again to clear" if key else "Press again to clear",
-                           seconds=CLEAR_TWICE)
+                self._clear_armed = armed = (s.id, now)
+                self._ask_to_clear(s)
+                timer = threading.Timer(CLEAR_TWICE, self._clear_expired, args=(armed,))
+                timer.daemon = True
+                timer.start()
         self.publish()
+
+    def _ask_to_clear(self, s) -> None:
+        keys = self.cfg.overlay.get("hotkeys", {})
+        if self.requests or not self.overlay:  # the box is a permission prompt's: the light asks instead
+            self._talk("ready", s, "Clear the chat?", f"{keys.get('clear', '')} again to clear", seconds=CLEAR_TWICE)
+            return
+        wide = base.gap(self.cfg, True)
+        self.overlay.send({
+            "type": "request", "name": s.name, "color": s.color, "text": "clear the chat?",
+            "detail": f"Claude forgets this conversation. This goes away in {CLEAR_TWICE:.0f} s.",
+            "hints": [h for h in ([keys.get("clear", ""), "clear", ""], [keys.get("cancel", ""), "cancel", ""]) if h[0]],
+            "keys": f"{keys.get('clear', '')} clear{wide}{keys.get('cancel', '')} cancel",
+        })
+
+    def _clear_expired(self, armed) -> None:
+        with self.lock:
+            if getattr(self, "_clear_armed", None) is not armed:
+                return
+            self._clear_armed = None
+            self._show_request()
+        self.publish()
+
+    def _drop_clear_question(self) -> bool:
+        """The cancel key while the clear key asks: the question goes. Call with the lock held."""
+        armed = getattr(self, "_clear_armed", None)
+        if not armed:
+            return False
+        self._clear_armed = None
+        self._show_request()
+        self._talk("failed", self.sessions.by_id.get(armed[0]), "Not cleared", seconds=1.5)
+        log(self.cfg, "hub.log", f"clear [{armed[0][:8]}] dropped with the cancel key")
+        return True
 
     def _clearable_here(self, s) -> bool:
         """The clear key is claimed only for a session whose terminal an editor can type into."""
@@ -868,6 +906,11 @@ class Talk:
         out, one on screen, or one sent in the last few seconds), or cut the line being spoken,
         or, with none of those, end the turn of the session in focus."""
         stopped = dropped = False
+        with self.lock:
+            asked = self._drop_clear_question()  # the clear key's question, the newest thing on screen
+        if asked:
+            self.publish()
+            return
         with self.lock:
             talking, self._talking = self._talking, None
             about = self.sessions.by_id.get(self._pending.session) if self._pending else self._target()

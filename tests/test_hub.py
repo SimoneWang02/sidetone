@@ -1556,13 +1556,22 @@ class PushToTalk(HubCase):
         self.assertIn("clear", self.overlay.of("keys")[-1]["live"])
         hub.on_overlay({"type": "hotkey", "name": "clear"})
         self.assertFalse(editor.wake.is_set(), "one press only asks")
-        self.assertEqual(self.talks()[-1][:3], ("ready", "a", "Clear the chat?"))
+        asked = self.overlay.of("request")[-1]
+        self.assertEqual((asked["name"], asked["text"]), ("a", "clear the chat?"))  # in the permission prompt's box
+        self.assertEqual(asked["hints"], [["Ctrl+Alt+C", "clear", ""], ["Ctrl+Alt+Backspace", "cancel", ""]])
+        self.assertIn("cancel", self.overlay.of("keys")[-1]["live"])
         hub.on_overlay({"type": "hotkey", "name": "clear"})
+        self.assertEqual(self.overlay.of("request")[-1], {"type": "request"})  # the question goes
         self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])
         editor = hub.editor_waits([4001], shows=True, clears=True)
         hub._clearing.pop("a", None)
         hub.on_overlay({"type": "hotkey", "name": "clear"})
-        hub._clear_armed = ("a", time.monotonic() - 2)  # the second press came too late
+        hub.cancel()  # the cancel key drops the question
+        self.assertEqual(self.overlay.of("request")[-1], {"type": "request"})
+        self.assertEqual(self.talks()[-1][:3], ("failed", "a", "Not cleared"))
+        hub.on_overlay({"type": "hotkey", "name": "clear"})
+        self.assertFalse(editor.wake.is_set())
+        hub._clear_armed = ("a", time.monotonic() - 6)  # the second press came too late
         hub.on_overlay({"type": "hotkey", "name": "clear"})
         self.assertFalse(editor.wake.is_set())
 

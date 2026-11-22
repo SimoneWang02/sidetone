@@ -355,9 +355,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   output, so it is in step with the sound for every engine. Without `parec` the row says
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
-- The clear key (2026-11-21, `clear` Ctrl+Alt+C, `Hub.clear_key`, `CLEAR_TWICE` 1.5 s): pressed
-  once the light asks "Clear the chat?", pressed again in time it does what "clear the chat"
-  does for the session in focus. Claimed only while that session's terminal is in an editor that
+- The clear key (2026-11-21, `clear` Ctrl+Alt+C, `Hub.clear_key`, `CLEAR_TWICE` 5 s): pressed
+  once it asks "clear the chat?" in the permission prompt's box, with the clear and cancel keys
+  as caps at its right and "This goes away in 5 s" (`_ask_to_clear`; on the light instead while
+  a permission prompt holds the box); pressed again in time it does what "clear the chat" does
+  for the session in focus; the cancel key drops the question first of all (`_drop_clear_question`).
+  It asked on the light for 1.5 s at first; the author, having tried it: the question where a
+  permission prompt is, "Ctrl-Alt-C to confirm clear ... and also how to cancel", "Do I have
+  like time window?". Claimed only while that session's terminal is in an editor that
   can type /clear (`_clearable_here`). The author: "making it like a shortcut", Ctrl+C at first
   (taken by copying and by Claude Code's interrupt), then "double click it to confirm", as a
   stray press cannot be undone. Word types "©" with Ctrl+Alt+C: shared then (`share_taken_keys`).

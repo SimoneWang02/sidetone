@@ -703,6 +703,7 @@ class Hub(Permissions, Talk):
                            + (["allow"] if asking.get("multiSelect") else []) if asking
                            else ["allow", "deny"] if self.requests else [])
                           + (["cancel"] if self._talking or self._transcribing or self._pending or current or self._unsendable()
+                             or getattr(self, "_clear_armed", None)
                              or self._asides or self._stoppable() else [])
                           + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else [])
                           + (["jump"] if self._showable(self._target()) else [])
