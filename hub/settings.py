@@ -149,8 +149,9 @@ SECTIONS = [
         # "Move It by the Details" (overlay.panel_drag) left the window on 2026-11-21, the author:
         # dragging to move "should be default, right? So we can remove this one". Still on, still
         # read from config.json.
-        choice("overlay.hover", "What Opens the Details", "The mouse resting on the lights, or only holding the keys.",
-               ("always", "Mouse"), ("keys", "Keys only")),
+        # "What Opens the Details" (overlay.hover: mouse, or keys only) left the window on 2026-11-21,
+        # the author: "opening the details by just hovering ... should be by default". Still read
+        # from config.json.
         switch("overlay.muted_line", "Say When Muted", "\"Voice is muted\" in the details while the voice is off."),
         switch("overlay.muted_icon", "Icon When Muted", "A slashed speaker in the corner of a line that pops out while the voice is off."),
         switch("overlay.muted_card_icon", "Icon in the Figures When Muted", "The same speaker in the corner of the card of figures."),
