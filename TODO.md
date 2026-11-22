@@ -118,7 +118,10 @@ these come before anything new.
       row kept as tall as three lines was tried and not liked ("I don't like it"), and reverted.
       Then, the same night, the newest line in full in the card, and a Details choice Selected
       Only (the card and the chosen session's row alone): built, tried by the author, and taken
-      back at their word ("let's reverse it as it was before"). Lines Per Session stays, 1 to 3. **Next: Overlay** from Glass on, then
+      back at their word ("let's reverse it as it was before"). Lines Per Session stays, 1 to 3.
+      A long sentence floating over the rows below, as a card, was tried too and not liked.
+      Agreed next: the details key as a zoom of three views (lights only; every session on one
+      line; the card and the chosen session alone, its sentence in full). **Next: Overlay** from Glass on, then
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
