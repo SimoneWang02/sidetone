@@ -140,8 +140,10 @@ SECTIONS = [
         # put the combination key to switch").
         choice("overlay.layout", "Layout", "A bar of lights at the side, or an island at the top. The layout key switches them.",
                ("bar", "Bar"), ("island", "Island")),
-        choice("overlay.mode", "Details", "Names, titles and figures beside the lights.",
-               ("dots", "Under the mouse"), ("list", "Always out")),
+        # The key named and the choices short (the author, 2026-11-21: "the same thing, the shortcut.
+        # And maybe shorten the answers"); they were "Under the mouse" and "Always out".
+        choice("overlay.mode", "Details", "Names, titles and figures beside the lights. The details key switches them.",
+               ("list", "Always"), ("dots", "On Hover")),
         choice("overlay.resize", "Details Changing Size", "When the mouse goes to another session: grow at once and shrink in a tenth of a second, or both at once.",
                ("quick", "Quick"), ("instant", "At once")),
         switch("overlay.panel_drag", "Move It by the Details", "With the details kept out, dragging them moves the whole overlay. A click still goes to what is behind."),
@@ -193,7 +195,7 @@ SECTIONS = [
                "When another program already has one of these keys, it still works here too, and both act on it."),
         hotkey("talk", "Talk", "Hold it and speak."),
         hotkey("cancel", "Cancel or Stop", "Drop a recording, take words back, cut a line, or stop a turn."),
-        hotkey("toggle", "Keep the Details Out"),
+        hotkey("toggle", "Details", "Always out, or only on hover."),  # was "Keep the Details Out"; named as the Details setting calls it
         hotkey("mute", "Mute", "Turns the voice off for every session, and on again."),
         hotkey("repeat", "Say It Again"),
         hotkey("layout", "Switch Layout"),
@@ -628,9 +630,9 @@ def _with_keys(hub, help: str) -> str:
     keys = hub.cfg.overlay.get("hotkeys", {})
 
     def named(m):
-        combo = keys.get(m.group(2).lower(), "")
+        combo = keys.get({"details": "toggle"}.get(m.group(2).lower(), m.group(2).lower()), "")
         return f"{m.group(0)} ({combo})" if combo else m.group(0)
-    return re.sub(r"\b(the) (mute|talk|cancel|repeat|layout|clear|settings) key\b", named, help, flags=re.I)
+    return re.sub(r"\b(the) (mute|talk|cancel|repeat|layout|clear|settings|details) key\b", named, help, flags=re.I)
 
 
 def describe(hub) -> list:
