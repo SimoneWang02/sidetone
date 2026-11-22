@@ -173,6 +173,8 @@ SECTIONS = [
         # below were tried and not liked. Still read from config.json.
         choice("overlay.history", "History Shows", "What was said last, when the mouse rests on the details: by this session, or by all of them.",
                ("session", "This Session"), ("all", "All Sessions")),
+        choice("overlay.focus_history", "History in Selected Session", "In the Selected Session view, what it said last: always in its card, or only when the mouse rests on the details.",
+               ("always", "Always"), ("rest", "When the Mouse Rests")),
         # "\"Release to Send\"" (overlay.talk_text: glint, breathe, still) and "Messages That Wait"
         # (overlay.waiting_mark: number, clock, dot) left the window on 2026-11-22, the author: "Yes, go
         # ahead ... also remove messages that wait. Let's just keep number". Glint and Number stay;

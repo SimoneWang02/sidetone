@@ -123,7 +123,9 @@ these come before anything new.
       Then built (2026-11-22): the details key as a zoom of three views, Bar Only, All Sessions
       (one line each), Selected Session (the card and that session alone, its sentence in full);
       Details offers the same three, Lines Per Session left the window (seen in a picture; **not
-      yet tried by the author**). History Shows: This Session or All Sessions. "Release to
+      yet tried by the author**). In Selected Session the mouse over the card no longer
+      picks the first session, and the history is in the card by default (History in Selected
+      Session: Always or When the Mouse Rests; **not yet tried by the author**). History Shows: This Session or All Sessions. "Release to
       Send" and Messages That Wait out of the window (Glint, Number). **Overlay is done**
       (Layout, Details, Glass Effect, History Shows). **Next: Figures**, then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a

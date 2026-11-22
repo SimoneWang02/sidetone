@@ -83,6 +83,10 @@ DEFAULTS = {
     # Seconds the mouse rests on the kept-out details before the history joins them (0.66 is
     # what it was at first; the details themselves come after 0.1)
     "history_after": 0.1,
+    # In Selected Session: always = the session's history is in its card whenever the details are
+    # out | rest = only once the mouse rests on them, as in All Sessions (the author, 2026-11-22:
+    # "it would be cool to also have the history displayed by default")
+    "focus_history": "always",
     # The plan's usage at the foot of the card: rows = each bar on a line of its own, names in
     # one column | line = the five hours and the week side by side, as at first
     "usage_layout": "rows",

@@ -836,6 +836,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   lines of the session under the mouse (`historyOf`; before a row was touched, the session
   in focus): the author hovered another session, saw it light up and expected its history
   (2026-11-17). `overlay.history: all` shows every session's lines mixed, as before.
+  In Selected Session the history is in the card whenever the details are out, without the
+  mouse resting (`overlay.focus_history: always`, "History in Selected Session"; `rest` waits
+  as All Sessions does). The author, 2026-11-22: "it would be cool to also have the history
+  displayed by default"; the other rows are left out there, so it has the room.
 - Follow-ups waiting for a busy session are also written to `followups.json` in the run folder
   (owner-only, dropped when over an hour old), because a hub restart lost one for real: the
   author asked a question by voice during a reply, and a restart made while working on the

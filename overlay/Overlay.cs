@@ -2440,6 +2440,7 @@ namespace ClaudeSpeaks
         object[] usage = new object[0];  // the plan's usage, from the hub: [what, percent, "warn" or ""] each
         string focusWas = "";  // the session in focus as of the last state, to notice when it moves
         string historyOf = "";  // the session whose lines the history shows: the one the mouse was on last
+        bool focusHistory = true;  // Selected Session: the history is in the card without the mouse resting (`focus_history: always`)
         int historyTicks = 3;  // looks of 30 ms the mouse rests on the details before the history shows (`history_after`)
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
@@ -2666,6 +2667,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_sign")) Ui.SignInLight = Str(msg, "talk_sign") != "line";
                     keepTalk = Str(msg, "keep_talk_key", keepTalk);
                     if (msg.ContainsKey("history")) historyAll = Str(msg, "history") == "all";
+                    if (msg.ContainsKey("focus_history")) focusHistory = Str(msg, "focus_history") != "rest";
                     if (msg.ContainsKey("usage_layout")) usageRows = Str(msg, "usage_layout") != "line";
                     historyTicks = (int)Math.Max(1, Math.Round(Num(msg, "history_after", historyTicks * 0.03) / 0.03));
                     if (msg.ContainsKey("hover")) hoverOpens = Str(msg, "hover") != "keys";
@@ -2876,7 +2878,7 @@ namespace ClaudeSpeaks
             requestBox.Visibility = hasRequest ? Visibility.Visible : Visibility.Collapsed;
             bannerBox.Visibility = hasBanner ? Visibility.Visible : Visibility.Collapsed;
             emptyLine.Visibility = sessions.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
-            bool showHistory = isList && peek && history.Length > 0;
+            bool showHistory = isList && (peek || (mode == "focus" && focusHistory)) && history.Length > 0;
             historyLines.Children.Clear();
             // The figures show whenever the details were asked for (not when the panel is only
             // out for a request or to be moved); the history, as before, in list mode at rest.
