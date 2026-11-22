@@ -237,6 +237,10 @@ class Hub(Permissions, Talk):
                 self._ended = {k: v for k, v in self._ended.items() if now - v < 3600}
                 self._ended[sid] = now
                 return
+            if event == "SessionStart" and ev.get("source") in ("resume", "startup"):
+                # A conversation that ended can be resumed under the same id (`claude --resume`,
+                # or the terminals an editor brings back): it is alive again (2026-11-22).
+                self._ended.pop(sid, None)
             if sid in self._ended:  # an event of it that came after its end (hooks report on their own)
                 return
             s = self.sessions.touch(sid, ev.get("cwd", ""),

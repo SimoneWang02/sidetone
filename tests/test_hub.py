@@ -2826,6 +2826,15 @@ class AcrossARestart(HubCase):
         self.assertEqual([sid for sid, _, _, _ in self.who()], ["a", "c"])
         self.assertNotIn("b", self.hub.sessions.kept)
 
+    def test_a_resumed_session_comes_back(self):
+        hub = self.three()
+        hub.on_event(ev("SessionEnd", sid="b"))
+        hub.on_event(ev("UserPromptSubmit", sid="b"))  # a late report of the one that ended
+        self.assertNotIn("b", [sid for sid, _, _, _ in self.who()])
+        hub.on_event(dict(ev("SessionStart", sid="b"), source="resume"))
+        self.assertIn("b", [sid for sid, _, _, _ in self.who()])
+        self.assertFalse(hub.listen("b").released)
+
     def test_an_order_dragged_in_the_overlay_is_kept_across_a_restart(self):
         hub = self.three()
         names = {sid: name for sid, name, _, _ in self.who()}
