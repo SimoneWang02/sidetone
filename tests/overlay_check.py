@@ -627,6 +627,8 @@ send(type="banner", icon="muted", text="Voice is muted", hint="Ctrl+Alt+M turns 
 shot("mute-off", 0.6)
 send(type="banner", icon="voice", text="Voice is on", hint="")
 shot("mute-on", 0.6)
+send(type="banner", icon="clear", text="Clear the chat of sidetone?", hint="Ctrl+Alt+C to confirm")  # the clear key asks
+shot("clear-ask", 0.6)
 send(type="banner", text=None)
 send(type="state", sessions=sessions(), history=HISTORY, muted=True)
 send(type="peek", on=True)
