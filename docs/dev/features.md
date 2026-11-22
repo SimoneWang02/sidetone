@@ -355,6 +355,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   output, so it is in step with the sound for every engine. Without `parec` the row says
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
+- How see-through the glass is (2026-11-21, `overlay.glass_clear`, 50; `Ui.GlassClear`,
+  `Ui.GlassFill`): one slider from 0 to 100 % instead of Blur or Plain (`overlay.glass`, still
+  read; "none" stays plain). 0 is plain dark glass with no blur (a tint of 92 %); above it the
+  blur is on and the tint over it goes from 92 % down, 55 to 65 % at 50 (the look it always had),
+  20 to 30 % at 100. The author: "both are glass-like. Do you think we could do percentage like
+  from 0 to 100? It's like basically opacity". Opacity at Rest left the window the same day,
+  its default 100 %.
 - What a clear looks and sounds like (2026-11-21): no "sent" sign and no "sent" sound, which are
   for words that went to a session; its own sound once Claude Code has ended the conversation, a
   quick run down four notes (`sounds.TONES["cleared"]`); and the light stays through it with its

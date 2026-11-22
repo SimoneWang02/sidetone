@@ -158,8 +158,11 @@ SECTIONS = [
         # "Opacity When Idle" (overlay.opacity, and list_opacity with it; it was "Opacity at Rest")
         # left the window on 2026-11-21, its default now 100%: the author, having seen it at 50%,
         # "standard is 100% ... I don't think people are gonna use this". Still read from config.json.
-        choice("overlay.glass", "Glass", "Blur what is behind it, or plain dark glass.",
-               ("blur", "Blur"), ("none", "Plain")),
+        # A slider since 2026-11-21; it was Blur or Plain (`overlay.glass`, still read: "none" stays
+        # plain). The author: "both are glass-like. Do you think we could do percentage like from 0
+        # to 100?"
+        number("overlay.glass_clear", "Glass", "How see-through the glass is. 0 is plain dark glass; above it, "
+               "what is behind shows through, blurred.", 0, 100, 5, "%"),
         choice("overlay.row_lines", "Lines Per Session", "How many lines a sentence may take in the details.",
                (1, "1"), (2, "2"), (3, "3")),
         choice("overlay.history", "History Shows", "The lines of the session you are on, or of all of them.",

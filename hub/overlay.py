@@ -36,6 +36,7 @@ DEFAULTS = {
     # people are gonna use this".
     "opacity": 1.0,
     "list_opacity": 1.0,
+    "glass_clear": 50,  # how see-through the glass is, 0 (plain dark, no blur) to 100; 50 is the look it had
     "glass": "blur",  # blur = Windows blurs what is behind | acrylic = its heavier blur (the same picture as blur on Windows 11, measured on build 26300) | none = plain dark glass
     "flash_seconds": 4,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off

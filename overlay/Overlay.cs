@@ -87,6 +87,11 @@ namespace ClaudeSpeaks
         // or a color of your own (waiting_color, "#RRGGBB").
         public static Color Waiting = Color.FromRgb(0xFF, 0x3B, 0x30);
         public static string WaitingMark = "number";  // or "clock", "dot"
+        // How see-through the glass is, 0 to 100 (`glass_clear`): 0 plain dark glass with no blur,
+        // 50 the look it always had (a tint of 55 to 65 % over the blur), 100 the clearest (20 to
+        // 30 %). The author, 2026-11-21, of Blur and Plain: "both are glass-like ... percentage like
+        // from 0 to 100?".
+        public static double GlassClear = 50;
         public static string WaitingMany = "face";  // above nine messages: a dismayed face | "number" = "9+"
         // Which messages show their number across the whole light before it goes to the corner:
         // never (it comes up in its corner, with a small jump) | first = the first to wait | each.
@@ -239,7 +244,11 @@ namespace ClaudeSpeaks
         {
             if (kind == "solid") return Gradient(new Point(0, 0), new Point(0, 1), "#FF2B303A", "#FF14171D");
             if (kind == "none") return Gradient(new Point(0, 0), new Point(0, 1), "#EB2B303A", "#EB14171D");
-            return Gradient(new Point(0, 0), new Point(0, 1), "#8C3A4150", "#A612151B");
+            double c = Clamp(GlassClear / 100);
+            double top = c <= 0.5 ? 0xEB + (0x8C - 0xEB) * c * 2 : 0x8C + (0x33 - 0x8C) * (c - 0.5) * 2;
+            double bottom = c <= 0.5 ? 0xEB + (0xA6 - 0xEB) * c * 2 : 0xA6 + (0x4D - 0xA6) * (c - 0.5) * 2;
+            return Gradient(new Point(0, 0), new Point(0, 1), "#" + ((int)Math.Round(top)).ToString("X2") + "3A4150",
+                            "#" + ((int)Math.Round(bottom)).ToString("X2") + "12151B");
         }
 
         public static readonly Brush GlassEdge = Gradient(new Point(0, 0), new Point(1, 1), "#99FFFFFF", "#2EFFFFFF", "#52FFFFFF");
@@ -2631,6 +2640,7 @@ namespace ClaudeSpeaks
                         Ui.WaitingMark = mark == "dot" || mark == "clock" ? mark : "number";
                     }
                     glass = Str(msg, "glass", glass);
+                    Ui.GlassClear = Num(msg, "glass_clear", Ui.GlassClear);
                     islandX = Num(msg, "island_x", islandX);
                     islandY = Num(msg, "island_y", islandY);
                     string wanted = Str(msg, "layout", layout);
@@ -2771,7 +2781,7 @@ namespace ClaudeSpeaks
 
         void SetGlass()
         {
-            string kind = opaque ? "solid" : glass;
+            string kind = opaque ? "solid" : Ui.GlassClear <= 0 ? "none" : glass;
             rail.Look(kind);
             panel.Look(kind);
             bubble.Look(kind);
