@@ -47,6 +47,11 @@ def number(key: str, name: str, help: str, low: float, high: float, step: float,
     return {"key": key, "kind": "number", "name": name, "help": help, "min": low, "max": high, "step": step, "unit": unit}
 
 
+def heading(key: str, name: str) -> dict:
+    """A small title over the settings that follow it, inside a section."""
+    return {"key": f"heading.{key}", "kind": "heading", "name": name, "help": ""}
+
+
 def hotkey(name: str, label: str, help: str = "") -> dict:
     return {"key": f"overlay.hotkeys.{name}", "kind": "key", "name": label, "help": help}
 
@@ -222,23 +227,29 @@ SECTIONS = [
         # "Share Keys Other Programs Have" (overlay.share_taken_keys) left the window on
         # 2026-11-22, the author: "I think we can just remove it" (off only makes keys stop
         # working). Still on by default, still read from config.json.
-        hotkey("talk", "Talk", "Hold it and speak."),
-        hotkey("cancel", "Cancel or Stop", "Drop a recording, take words back, cut a line, or stop a turn."),
-        hotkey("toggle", "Details", "Bar only, all sessions, the selected session, and round again."),  # was "Keep the Details Out"; named as the Details setting calls it
+        # Grouped by what they are for, every key with a line saying what it does (the author,
+        # 2026-11-22, asked whether the names and descriptions were intuitive, then: "do them all").
+        heading("keys.speaking", "Speaking"),
+        hotkey("talk", "Talk", "Hold it and speak to the session in focus."),
+        hotkey("cancel", "Cancel or Stop", "Drops a recording, takes back words not yet sent, cuts the line being spoken, or stops the turn."),
         hotkey("mute", "Mute", "Turns the voice off for every session, and on again."),
-        hotkey("repeat", "Say It Again"),
-        hotkey("layout", "Switch Layout"),
-        hotkey("settings", "Settings", "Opens and closes this window."),
-        hotkey("allow", "Allow"),
-        hotkey("deny", "Deny"),
-        hotkey("focus_prev", "Focus Up", "In the bar."),
-        hotkey("focus_next", "Focus Down"),
-        hotkey("focus_left", "Focus Left", "In the island."),
-        hotkey("focus_right", "Focus Right"),
-        hotkey("option1", "Answer 1"),
+        hotkey("repeat", "Say It Again", "Repeats the last line of the session in focus."),
+        heading("keys.answering", "Answering"),
+        hotkey("allow", "Allow", "Allows what a session asks to do. With answers to tick, it confirms them."),
+        hotkey("deny", "Deny", "Refuses what a session asks to do."),
+        hotkey("option1", "Answer 1", "Picks an answer when a session asks a question."),
         hotkey("option2", "Answer 2"),
         hotkey("option3", "Answer 3"),
         hotkey("option4", "Answer 4"),
+        heading("keys.moving", "Moving Between Sessions"),
+        hotkey("focus_prev", "Previous Session (Bar)", "Moves the focus up the bar."),  # was "Focus Up"
+        hotkey("focus_next", "Next Session (Bar)", "Moves the focus down the bar."),
+        hotkey("focus_left", "Previous Session (Island)", "Moves the focus left in the island."),
+        hotkey("focus_right", "Next Session (Island)", "Moves the focus right in the island."),
+        heading("keys.window", "Window"),
+        hotkey("toggle", "Details", "Steps through: the bar only, every session, the session in focus."),  # was "Keep the Details Out"; named as the Details setting calls it
+        hotkey("layout", "Switch Layout", "Swaps the bar and the island."),
+        hotkey("settings", "Settings", "Opens and closes this window."),
         # "Go to the Terminal" (jump) left the window on 2026-11-22: no key by default, and
         # Switching Moves the Keyboard does the same at every switch (the author: "okay, remove
         # [it]"). A key can still be given in config.json.
@@ -595,7 +606,7 @@ def _voices(hub) -> list:
 
 def items(hub) -> dict:
     """Every setting the window has, by its key."""
-    found = {item["key"]: item for _, section in SECTIONS for item in section}
+    found = {item["key"]: item for _, section in SECTIONS for item in section if item["kind"] != "heading"}
     found.update({item["key"]: item for item in _voices(hub)})
     return found
 

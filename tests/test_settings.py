@@ -62,7 +62,7 @@ class Offered(SettingsCase):
         for _, section in settings.SECTIONS:
             for item in section:
                 key = item["key"]
-                if key == "mute":
+                if key == "mute" or item["kind"] == "heading":
                     continue
                 if key.startswith("overlay.hotkeys."):
                     self.assertIn(key[16:], overlay.DEFAULTS["hotkeys"], key)
@@ -77,6 +77,8 @@ class Offered(SettingsCase):
         hub = self.make()
         for section in settings.describe(hub):
             for item in section["items"]:
+                if item["kind"] in ("heading", "intro"):
+                    continue
                 if item["kind"] in ("choice", "pick"):
                     self.assertIn(item["value"], [o[0] for o in item["options"]], item["key"])
                 elif item["kind"] == "number":

@@ -1152,6 +1152,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   at the top of the file is read back at start. `sidetone settings list` prints them
   all and `sidetone settings KEY VALUE` sets one, which is also how the live hub was
   tried (`history_time` on and off; a wrong value refused).
+  The Keys page (2026-11-22, the author asked whether its names and descriptions were
+  intuitive, then "do them all"): grouped under small titles (`heading(...)` in `SECTIONS`,
+  drawn like the language titles on the Voices page; `items` leaves them out, they are not
+  settings): Speaking (Talk, Cancel or Stop, Mute, Say It Again), Answering (Allow, Deny,
+  Answer 1 to 4), Moving Between Sessions, Window (Details, Switch Layout, Settings, Clear the
+  Chat). Every key got a line, all written as what it does ("Repeats ...", not "Repeat ...").
+  The four Focus keys are now Previous / Next Session (Bar) and (Island), since "focus" was a
+  programmer's word and only the first of each pair said which layout it served.
   A hotkey is changed by clicking its caps and pressing the new keys (Esc keeps the old,
   Delete leaves it without one; a key with nothing held is not taken, except F keys).
   While that waits, the overlay lets go of all its own hotkeys and of the talk key's
