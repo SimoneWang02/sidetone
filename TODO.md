@@ -153,7 +153,8 @@ these come before anything new.
       Color, Color Strength, Clicking a Terminal Selects It, Switching Moves the Keyboard ("yeah,
       go on"). **Keys, under way 2026-11-22:** Share Keys Other Programs Have out of the window
       (on), and Go to the Terminal (no key; Switching Moves the Keyboard does it). The other keys
-      checked by the author ("I checked every combination, that looked good"). **Terminal is
+      checked by the author ("I checked every combination, that looked good"). **Keys is done:
+      every page has been gone through.** **Terminal is
       done. Next: Keys**, the last page., then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
