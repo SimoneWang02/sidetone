@@ -153,6 +153,12 @@ voice, and the wait for the transcript.
       English, Italian, Chinese) or Qwen3-TTS (Apache-2.0), to try side by side on their
       recordings. Fine-tuning on the kept pairs later if the likeness is not close enough. Their
       first real recording landed in `recordings/` on 2026-11-22.
+      For everyone, not just the author ("my ultimate goal is for this tool to be used by people
+      so they will have to register their voice"): optional, local only, said plainly where it is
+      turned on (nothing leaves the machine). Before building it in, measure how long the
+      cloned voice takes to start a line on the GPU and on a CPU: Kokoro starts fast on a CPU,
+      and a slower voice works against the whole point. Kokoro stays the default; the cloned
+      voice is one more engine to choose.
 
 - [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
