@@ -292,6 +292,13 @@ Roughly easiest first, the larger ones after.
       also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
       with those keys, and it needs a keyboard hook for as long as the keys are down.
 
+- [ ] A mouse button as a key (the author, 2026-11-22: "someone would want to bind ... a
+      key on the mouse to talk"): the side buttons (XButton1, XButton2) through a low-level mouse
+      hook, offered when a hotkey is being typed. Until then, a mouse's own program (Logitech
+      Options+ or G HUB) can send a key: F13 or another F key nobody has is the cleanest, set as
+      Talk in the window. Holding works only if that program holds the key while the button is
+      down; **not tried**.
+
 ### Larger extras
 
 - [ ] The full transcript and the full message in the overlay (the author, by voice,
