@@ -240,7 +240,7 @@ class Talk:
                 self._clear_armed = (s.id, now)
                 key = self.cfg.overlay.get("hotkeys", {}).get("clear", "")
                 if self.overlay:
-                    self.overlay.send({"type": "banner", "icon": "clear", "text": f"Clear the chat of {_spoken_name(s.name)}?",
+                    self.overlay.send({"type": "banner", "icon": "clear", "text": f"Clear {s.name}?",
                                        "hint": f"{key} to confirm" if key else "", "seconds": CLEAR_TWICE})
         self.publish()
 

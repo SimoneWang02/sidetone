@@ -1558,7 +1558,7 @@ class PushToTalk(HubCase):
         self.assertFalse(editor.wake.is_set(), "one press only asks")
         asked = self.overlay.of("banner")[-1]
         self.assertEqual((asked["icon"], asked["text"], asked["hint"], asked["seconds"]),
-                         ("clear", "Clear the chat of a?", "Ctrl+Alt+C to confirm", 3.0))  # as the mute key's banner
+                         ("clear", "Clear a?", "Ctrl+Alt+C to confirm", 3.0))  # as the mute key's banner
         hub.on_overlay({"type": "hotkey", "name": "clear"})
         self.assertEqual(self.overlay.of("banner")[-1], {"type": "banner"})  # the question goes
         self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])

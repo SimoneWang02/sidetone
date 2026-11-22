@@ -356,7 +356,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
 - The clear key (2026-11-21, `clear` Ctrl+Alt+C, `Hub.clear_key`, `CLEAR_TWICE` 3 s): pressed
-  once it asks in a banner like the mute key's, "Clear the chat of sidetone?" with "Ctrl+Alt+C to
+  once it asks in a banner like the mute key's, "Clear sidetone?" (first "Clear the chat of sidetone?", shortened at the author's asking) with "Ctrl+Alt+C to
   confirm" beside it and an eraser (Segoe Fluent Icons E75C; picture `clear-ask.png`), gone by
   itself after 3 s; pressed again in time it does what "clear the chat" does for the session in
   focus. Claimed only while that session's terminal is in an editor that can type /clear
