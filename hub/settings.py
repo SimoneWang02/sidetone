@@ -152,10 +152,9 @@ SECTIONS = [
         # "What Opens the Details" (overlay.hover: mouse, or keys only) left the window on 2026-11-21,
         # the author: "opening the details by just hovering ... should be by default". Still read
         # from config.json.
-        switch("overlay.muted_line", "Say When Muted", "\"Voice is muted\" in the details while the voice is off."),
-        switch("overlay.muted_icon", "Icon When Muted", "A slashed speaker in the corner of a line that pops out while the voice is off."),
-        switch("overlay.muted_card_icon", "Icon in the Figures When Muted", "The same speaker in the corner of the card of figures."),
-        switch("overlay.muted_mark", "Mark When Muted", "A small struck-out speaker past the end of the lights while the voice is off."),
+        # The four signs of a muted voice (overlay.muted_line, muted_icon: on; muted_card_icon,
+        # muted_mark: off) left the window on 2026-11-21, the author: "whenever I'm mute, I should be
+        # able to see ... it's fine if we remove all of them". As they were, still read from config.json.
         number("overlay.opacity", "Opacity at Rest", "How solid the lights are while nothing happens.", 0.3, 1.0, 0.05),
         choice("overlay.glass", "Glass", "Blur what is behind it, or plain dark glass.",
                ("blur", "Blur"), ("none", "Plain")),
