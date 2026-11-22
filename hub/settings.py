@@ -120,8 +120,11 @@ SECTIONS = [
         # "Short Words in Your Last Language" (whisper_lean) left the window on 2026-11-21, the
         # author: "should we remove this setting? ... by default that is true". It matters only
         # with two or more languages on. Still on, and still read from config.json.
-        switch("push_to_mute", "Mute Discord While Talking",
-               "Holds F24 down while you talk. In Discord's Keybinds, give Push to Mute that key: sidetone discord-key presses it for you. The steps are in the README, On a Discord call."),
+        # "Mute Discord While Talking" (push_to_mute) left the window on 2026-11-21, the author: "I
+        # don't think we should have this setting on our side". Holding F24 does nothing until
+        # Discord is given it, and no keyboard has it, so there is nothing to turn off; Discord's
+        # own keybind on the talk key itself does not work (the overlay keeps that key from other
+        # programs). Still on, still read from config.json; the setup is in the README.
         number("talk_tail", "Listen On After Release", "Keeps the end of your last word from being cut off.", 0, 1, 0.1, "s"),
     ]),
     ("Overlay", [

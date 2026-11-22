@@ -63,8 +63,8 @@ its own spoken line as the first line of its reply.
 - **Not heard on a Discord call.** While you hold the talk key, Discord mutes you, and it
   unmutes you when you let go. It takes one minute of setup in Discord: see
   [On a Discord call](#on-a-discord-call).
-- **Side questions.** Words for a busy session normally wait until its reply is over. Start
-  with "by the way" ("by the way, which file was that?") and they do not wait: a throwaway
+- **Side questions.** Words for a busy session normally reach it after the step it is on, and
+  change what it does. Start with "by the way" ("by the way, which file was that?") and they do not wait: a throwaway
   copy of that session answers within a few seconds from what the session already knows, in
   the session's voice, while the session works on undisturbed. It never sees the question or
   the answer, and the copy cannot read files or run commands, like Claude Code's own `/btw`.
@@ -268,9 +268,9 @@ To check: hold the talk key and speak while you watch your picture in a voice ch
 ring around it stays dark.
 
 Push to Mute works when Discord is set to Voice Activity; with Push to Talk, Discord sends nothing
-unless you hold its own key anyway. "Mute Discord While Talking" under Talking in the settings
-window (`push_to_mute`) turns this off, and `push_to_mute_key` holds another key instead, for
-another program with a push-to-mute key of its own.
+unless you hold its own key anyway. `push_to_mute` in `config.json` turns this off, and
+`push_to_mute_key` holds another key instead, for another program with a push-to-mute key of
+its own.
 
 ## How it works
 

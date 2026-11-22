@@ -104,8 +104,10 @@ these come before anything new.
       with a bin (seen by the author: "I think it looks good");
       a clear has its own sound, no "sent" sign, and the arc winds back to 0 (**the sound and the
       arc not yet heard and seen by the author**). Typing Takes the Focus out of the
-      window (always on), Short Words in Your Last Language too. **Next: Talking** from Mute
-      Discord While Talking on, then Overlay,
+      window (always on), Short Words in Your Last Language too, and Mute Discord While Talking
+      (always on; binding the talk key itself in Discord does not work). The README's list of
+      what it does still names settings that left the window (`unsend_seconds`, `followup_delay`):
+      for the documentation step. **Next: Talking**, Listen On After Release, then Overlay,
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
