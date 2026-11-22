@@ -2250,7 +2250,7 @@ namespace ClaudeSpeaks
         {
             bool saying = Showing, talk = TalkKind != null;
             line2.Text = talk ? TalkText : saying ? FlashText : rowText;
-            line2.TextWrapping = Ui.RowLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap;
+            line2.TextWrapping = saying && Ui.RowLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap;
             line2.MaxHeight = 16.7 * Ui.RowLines;
             bool live = talkInk == Ui.MicInk || talkInk == Ui.LiveInk;
             if (talk && live) Ui.GlintFor(TalkText);
@@ -2904,17 +2904,11 @@ namespace ClaudeSpeaks
             if (goal > 0 && panel.Goal == 0) openedAt = Ui.Now;  // the rows come in one after another from now
             panel.Goal = goal;
             // A row that says a long sentence is taller than a light; keep the two level (where
-            // rows and lights sit side by side). With more than one line a session, every row and
-            // light is as tall as all those lines from the start, so the lights stay evenly spaced
-            // and nothing moves as a sentence grows and goes (the author, 2026-11-21, with three:
-            // "I don't like how it creates more gap between this session and this session below").
-            double tall = !Island && goal > 0 && Ui.RowLines > 1 ? Row.High + 16.7 * (Ui.RowLines - 1) : 0;
+            // rows and lights sit side by side).
             foreach (Row row in order)
             {
                 row.Pip.Visibility = Island ? Visibility.Visible : Visibility.Collapsed;
-                row.Text.MinHeight = Math.Max(Row.High, tall);
-                double need = row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
-                row.Light.Height = !Island && goal > 0 ? Math.Max(tall, need) : Row.High;
+                row.Light.Height = !Island && goal > 0 && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
             }
             UpdateBubble(show);
             PlaceSides();
