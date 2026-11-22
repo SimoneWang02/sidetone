@@ -109,6 +109,21 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   0.9.6 in the hub's environment, `whisper_language` `en,it,zh`. Heard through the hub.
   The model was copied by hand into the author's Piper folder; `install.sh` does not
   fetch it yet.
+  A line with no `lang` (2026-11-22, `language.guess`, called from `Hub._voice_for` with the
+  line itself). Seen 2026-11-19: a session answered in Italian without the mark, and the
+  English voice read it. The author, offered it as the next thing: "just proceed"; asked
+  whether it should be a setting, they left it to Claude, who chose none: it only fills in a
+  missing mark, a mark is never second-guessed (`lang="en"` stays English), and
+  `reply_language: english` still keeps every line in the session's own voice. Chinese,
+  Japanese and Hindi by their script (two characters at least); Italian, Spanish, French and
+  Portuguese by their small everyday words and letters (è, ñ, ã...), words shared with
+  English left out. Only the Latin-letter languages named in `whisper_language` are weighed
+  when one is (Italian is then never taken for Spanish); all four otherwise. Sure enough means
+  two signs at least, twice the English ones and more than the next language; anything less
+  stays English, so "Fatto." alone is read by the English voice. Each guess is written to
+  `hub.log` ("a line with no lang, guessed it"). Not from the language Whisper heard last:
+  Whisper is the part that already goes wrong. Side answers are guessed too when Whisper gave
+  no language.
 - Recordings kept (`keep_recordings`, "Keep My Recordings" under Talking; off for new installs,
   on for the author). 2026-11-22, the author: "register every message I send and create a voice
   model based on my messages, my speaking". `Hub._keep_recording` writes each recording that was

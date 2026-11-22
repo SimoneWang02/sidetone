@@ -18,7 +18,11 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-Nothing open (2026-11-22).
+- [ ] A spoken line with no `lang` in its tag: the hub now guesses its language from the
+      words (2026-11-22, `hub/language.py`, no setting; see `docs/dev/features.md`), so an
+      Italian line without the mark gets the Italian voice. Each guess goes to `hub.log`.
+      **Not heard by the author yet**: listen for an unmarked Italian or Chinese line read by
+      the right voice, and an English one never read by the Italian voice.
 
 ## 2. To decide
 
@@ -48,10 +52,6 @@ voice, and the wait for the transcript.
       unsure short clip keeps to the language last heard for sure. Fixes Italian after
       Italian on the test clips; a switch to a short, unsure Italian clip right after
       English can still go wrong. **Not tried by them yet.**
-- [ ] A spoken line with no `lang` in its tag: guess its language in the hub (Chinese
-      characters are easy; Italian against English needs a small detector, or the language
-      Whisper heard in the user's last recording). Seen 2026-11-19: a session answered in
-      Italian without the mark and the English voice read it. Also under "Mixed languages".
 - [ ] Mixed languages: what happens when one speaks Italian, English and Chinese mixed in
       one recording or one turn ("se tipo iniziasse a parlare in italiano, in inglese, in
       cinese, mischiati, come funzionerà"). To look at: Whisper picks one language per
@@ -62,9 +62,8 @@ voice, and the wait for the transcript.
       Piper's Italian voices do not read Chinese). Try it for real first, then decide.
       Seen the same night: a session answered in Italian without `lang="it"` (the user's
       message had come through as English), so the English voice read Italian words. A
-      safeguard to consider: when the tag has no `lang`, the hub guesses the language of
-      the line itself (Chinese characters are easy; Italian against English needs a small
-      detector, or the language Whisper heard in the user's last recording).
+      safeguard, built 2026-11-22: when the tag has no `lang`, the hub guesses the language
+      of the line itself (step 1).
 - [ ] Running the speech model on the graphics card to make transcription faster
 
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for

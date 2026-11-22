@@ -17,6 +17,7 @@ import unittest.mock
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
 import hub as hub_module  # noqa: E402
+import language  # noqa: E402
 import base  # noqa: E402  (what the hub's parts share; the waits these tests shorten are read from it)
 from hub import Config, Hub, serve  # noqa: E402
 import sounds  # noqa: E402
@@ -325,6 +326,39 @@ class ReplyLanguage(HubCase):
         hub.on_display(ev("MessageDisplay", delta='<speak lang="it">Fatto di nuovo.</speak>'))
         self.spoken()
         self.assertEqual(self.engine.spoken[-1][1], "im_nicola")  # one chosen in config.json wins
+
+    def test_a_line_with_no_mark_is_guessed_from_its_words(self):
+        hub = self.make(whisper_language="en,it,zh")
+        hub.on_display(ev("MessageDisplay", delta=tag("Ho aggiunto il tasto, adesso funziona.")))
+        self.spoken()
+        self.assertTrue(self.engine.spoken[-1][1].startswith("i"), self.engine.spoken[-1])
+        hub.on_event(ev("Stop", last_assistant_message=tag("Perfetto, è pronto. Vuoi che lo provi?")))
+        self.spoken()
+        self.assertTrue(self.engine.spoken[-1][1].startswith("i"))
+        own = self.session()["voice"]
+        for line in ("I fixed the Italian voice, so perché is read right now.", "Fatto.",
+                     "The word ciao was heard as English."):  # English, or too little to be sure
+            hub.on_display(ev("MessageDisplay", delta=tag(line)))
+            self.spoken()
+            self.assertEqual(self.engine.spoken[-1][1], own, line)
+        hub.on_display(ev("MessageDisplay", delta='<speak lang="en">Va bene, procedo con la prossima cosa.</speak>'))
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][1], own)  # a mark is never second-guessed
+        hub.cfg.reply_language = "english"
+        hub.on_display(ev("MessageDisplay", delta=tag("Ok, il push è fatto e i test passano.")))
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][1], own)  # English only: its own voice whatever the words
+
+    def test_the_guess(self):
+        mine = ["en", "it", "zh"]
+        for line, want in (("Ho aggiunto il tasto, adesso funziona.", "it"), ("Sì, fatto.", "it"),
+                           ("好了，我已经改好了。", "zh"), ("できました。", "ja"),
+                           ("Done, I moved the cloned voice to the end of the list.", ""),
+                           ("The hub reads the mark and picks a voice for that language.", ""),
+                           ("Fatto.", ""), ("", "")):
+            self.assertEqual(language.guess(line, mine), want, line)
+        self.assertEqual(language.guess("Listo, ya está hecho.", mine), "")  # not one of theirs
+        self.assertEqual(language.guess("Listo, ya está hecho.", ["en"]), "es")  # none named: all
 
     def test_chinese_takes_the_chinese_model_and_falls_back_to_kokoros_own(self):
         hub = self.make()
@@ -1791,7 +1825,7 @@ class PushToTalk(HubCase):
     def test_asked_in_italian_it_is_answered_in_italian_with_the_context(self):
         hub = self.make(talk_feedback="none")
         hub.usage_ask = lambda program, timeout: (self.USAGE, "")
-        hub._voice_for = lambda s, lang: "if_sara" if lang == "it" else None
+        hub._voice_for = lambda s, lang, text="": "if_sara" if lang == "it" else None
         hub.sessions.by_id["a"].context = 41.0
         listener = hub.listen("a")
         hub.follow_up("Hey, quanto stai consumando? Quant'è il contesto al momento?", "a", delay=0)
@@ -2268,7 +2302,7 @@ class SideQuestions(HubCase):
 
     def test_a_side_question_is_answered_in_the_language_it_was_heard_in(self):
         hub = self.make(answer="Sono le tre.")
-        hub._voice_for = lambda s, lang: "if_sara" if lang == "it" else None
+        hub._voice_for = lambda s, lang, text="": "if_sara" if lang == "it" else None
         self.assertIn("plain spoken Italian", hub_module.base.aside_prompt("che ore sono?", "it"))
         self.assertIn("plain spoken English", hub_module.base.aside_prompt("what time is it?", "en"))
         hub.follow_up("E comunque, che ore sono?", "a", delay=0, lang="it")

@@ -546,7 +546,7 @@ class FakeHub:
                 "zh": [f"zh:z{k}_{n:03d}" for k, n in (("f", 49), ("f", 6), ("m", 56), ("m", 57), ("f", 1), ("m", 9))],
                 "projects": {"sidetone": "af_heart", "api-server": "bm_fable", "web-app": "af_bella"}}
 
-    def _voice_for(self, s, lang):  # what the hub would give: the first of the language's voices
+    def _voice_for(self, s, lang, text=""):  # what the hub would give: the first of the language's voices
         return settings_mod.in_use(self, lang)[0]
 
 

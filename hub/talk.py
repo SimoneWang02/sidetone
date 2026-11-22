@@ -628,7 +628,7 @@ class Talk:
                 pass  # taken back, replaced by a newer one, or the session ended
             elif answer:
                 log(self.cfg, "hub.log", f"side question [{s.id[:8]}] answered in {took:.1f}s")
-                self._say_aside(s, answer, self._voice_for(s, aside.lang))
+                self._say_aside(s, answer, self._voice_for(s, aside.lang, answer))
             else:  # the words are not lost: the session gets them like any others
                 log(self.cfg, "hub.log", f"side question [{s.id[:8]}] not answered after {took:.1f}s ({why[:200]}); "
                                          "the words go to the session instead")

@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # run with -I, s
 import collections  # noqa: E402
 
 import claude_sessions  # noqa: E402
+import language  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
 import sounds as sounds_mod  # noqa: E402
 import stale  # noqa: E402
@@ -322,7 +323,7 @@ class Hub(Permissions, Talk):
                 s.note = speech or "done"
                 self._title_from(s, reply=speech, given=title_from_message(message))
                 if speech and speech != s.spoken and not self._spoken_without_hub(sid, speech):
-                    self._say(s, speech, "done", "stop", self._voice_for(s, lang_from_message(message)))
+                    self._say(s, speech, "done", "stop", self._voice_for(s, lang_from_message(message), speech))
                 elif not speech:
                     self._flash(s, "done")  # nothing is spoken for this turn, so show it instead
                 self._unstop(sid, "its turn ended by itself")
@@ -513,16 +514,23 @@ class Hub(Permissions, Talk):
             s.spoken = speech
             self._title_from(s, reply=speech, given=title)
             if not late:
-                self._say(s, speech, "done", "stream", self._voice_for(s, lang))
+                self._say(s, speech, "done", "stream", self._voice_for(s, lang, speech))
         self.publish()
         return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
 
-    def _voice_for(self, s, lang: str) -> str | None:
+    def _voice_for(self, s, lang: str, text: str = "") -> str | None:
         """The voice for a line in another language than English: one of Kokoro's voices for
         that language, of the same kind (female or male) as the session's own where there is
         one, and always the same for a session. None = the session's own voice, for English,
-        for a language Kokoro has no voice for, and with `reply_language: en`."""
-        if not lang or lang == "en" or base.fixed_language(self.cfg) == "en":
+        for a language Kokoro has no voice for, and with `reply_language: en`. `text`: the
+        line itself, whose language is guessed when its tag has no `lang` (see language.py)."""
+        if lang == "en" or base.fixed_language(self.cfg) == "en":
+            return None
+        if not lang and text:
+            lang = language.guess(text, stt.codes(self.cfg.whisper_language))
+            if lang:
+                log(self.cfg, "hub.log", f"[{s.id[:8]}] a line with no lang, guessed {lang}: {text[:80]}")
+        if not lang:
             return None
         engine = self.speech.engine
         for wanted in (self.cfg.language_voices.get(lang), PREFERRED_VOICE.get(lang)):
