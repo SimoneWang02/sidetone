@@ -99,8 +99,10 @@ voice, and the wait for the transcript.
 Roughly easiest first, the larger ones after.
 
 - [ ] Short sounds for states (done, needs you) for when a full sentence is too much. Push-to-talk
-      has them since 2026-11-17 (`hub/sounds.py`: sent, waiting, not sent); the author has
-      not said yet whether they sound right. "Allowed." and "Denied." are still spoken.
+      has them since 2026-11-17 (`hub/sounds.py`: sent, waiting, not sent); the author, on
+      hearing them played with their names said first (2026-11-22): "they do [sound right],
+      but I don't like them [the names]. I prefer the short sounds". "Allowed." and "Denied."
+      are still spoken.
 - [ ] More for the VS Code extension, now that it exists: color the tab itself in the
       session's color. (Bringing the terminal of the session in focus to the front is
       done, see the jump key above; the hub can ask the extension since 0.2.0.)
