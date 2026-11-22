@@ -52,19 +52,6 @@ voice, and the wait for the transcript.
       unsure short clip keeps to the language last heard for sure. Fixes Italian after
       Italian on the test clips; a switch to a short, unsure Italian clip right after
       English can still go wrong. **Not tried by them yet.**
-- [ ] Mixed languages: what happens when one speaks Italian, English and Chinese mixed in
-      one recording or one turn ("se tipo iniziasse a parlare in italiano, in inglese, in
-      cinese, mischiati, come funzionerà"). To look at: Whisper picks one language per
-      half minute of recording (`stt.Named`), so a mixed sentence may come out in one
-      language; the reminder asks for "the language of my last message", which is
-      unclear when it mixes; the speak tag carries one `lang`, so a mixed line is said
-      by one voice (the Chinese model already reads Latin words as English; Kokoro's and
-      Piper's Italian voices do not read Chinese). Try it for real first, then decide.
-      Seen the same night: a session answered in Italian without `lang="it"` (the user's
-      message had come through as English), so the English voice read Italian words. A
-      safeguard, built 2026-11-22: when the tag has no `lang`, the hub guesses the language
-      of the line itself (step 1).
-
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a
@@ -410,6 +397,22 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] Mixed languages: what happens when one speaks Italian, English and Chinese mixed in
+      one recording or one turn ("se tipo iniziasse a parlare in italiano, in inglese, in
+      cinese, mischiati, come funzionerà"). To look at: Whisper picks one language per
+      half minute of recording (`stt.Named`), so a mixed sentence may come out in one
+      language; the reminder asks for "the language of my last message", which is
+      unclear when it mixes; the speak tag carries one `lang`, so a mixed line is said
+      by one voice (the Chinese model already reads Latin words as English; Kokoro's and
+      Piper's Italian voices do not read Chinese). Try it for real first, then decide.
+      Seen the same night: a session answered in Italian without `lang="it"` (the user's
+      message had come through as English), so the English voice read Italian words. A
+      safeguard, built 2026-11-22: when the tag has no `lang`, the hub guesses the language
+      of the line itself (step 1).
+      Tried by the author 2026-11-22 (Italian, English, Chinese in one message): it came back
+      all English. Built the same day (`whisper_mixed`, see `docs/dev/features.md`): an unsure
+      long recording is written part by part, each in its language, cut at pauses; the same
+      recording then came out right. The spoken reply's single `lang` is unchanged.
 - [x] The voice on the graphics card (2026-11-22, `voice_device`, "Voice Made On"): the first
       sentence of a line made in 0.12 s instead of 0.78 s. Built and tested in a scratch venv;
       the hub's environment needs onnxruntime-gpu 1.26.0 in place of onnxruntime and four more

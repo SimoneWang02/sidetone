@@ -135,6 +135,7 @@ class Talk:
         try:
             if self.transcriber:
                 self.transcriber.lean = self.cfg.whisper_lean
+                self.transcriber.mixed = self.cfg.whisper_mixed
             text = self.transcriber.transcribe(pcm) if self.transcriber else ""
         except Exception as e:  # a broken model must not take the hub down
             log(self.cfg, "hub.log", f"transcription failed: {e}")
@@ -146,6 +147,8 @@ class Talk:
             why = getattr(self.transcriber, "why_not_gpu", "")
             log(self.cfg, "hub.log", f"talk: speech model {running}" + (f" (not the graphics card: {why})" if why else ""))
         leaned = " (leaned to it: unsure, and the last language)" if text and getattr(self.transcriber, "leaned", False) else ""
+        if text and getattr(self.transcriber, "parts", None):
+            leaned = f" (mixed: {', '.join(self.transcriber.parts)})"
         log(self.cfg, "hub.log", f"talk: {len(pcm) / 2 / stt.RATE:.1f}s recorded, peak level {stt.loudness(pcm):.2f}, "
                                  f"transcribed in {time.monotonic() - started:.1f}s"
                                  f"{' as ' + heard if heard else ''}{leaned}: {text or '(nothing heard)'}")

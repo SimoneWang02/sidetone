@@ -275,3 +275,60 @@ class ChosenInTheWindow(HubCase):
         self.assertIsNone(settings.apply(hub, "whisper_device", "cpu"))
         self.assertEqual((hub.transcriber.device, hub.transcriber._model, hub.cfg.whisper_device), ("cpu", None, "cpu"))
         self.assertIsNotNone(settings.apply(hub, "whisper_device", "tpu"))
+
+
+class MixedLanguages(unittest.TestCase):
+    """A message that goes from one language to another, cut at its pauses (`stt.runs`)."""
+    S = stt.RATE
+
+    def test_each_run_of_one_language_on_its_own(self):
+        # The author's own mix, 2026-11-22: Italian (0.72 sure), English twice, Chinese twice.
+        found = [({"it": 0.72, "en": 0.2}, 0, 72000), ({"en": 0.98}, 86000, 128000), ({"en": 0.96}, 133000, 171000),
+                 ({"zh": 0.99}, 181000, 221000), ({"zh": 1.0}, 222000, 248000)]
+        self.assertEqual(stt.runs(found, ["en", "it", "zh"]), [("it", 0, 72000), ("en", 86000, 171000), ("zh", 181000, 248000)])
+
+    def test_unsure_or_short_stretches_go_with_their_neighbour(self):
+        found = [({"it": 0.99}, 0, 3 * self.S), ({"en": 0.24, "it": 0.2}, 3 * self.S, 6 * self.S)]  # measured: no mix
+        self.assertEqual(stt.runs(found, ["en", "it"]), [])
+        found = [({"en": 0.98}, 0, self.S // 2), ({"it": 0.99}, self.S, 4 * self.S)]  # "ok" before Italian
+        self.assertEqual(stt.runs(found, ["en", "it"]), [])
+        found = [({"en": 0.3}, 0, self.S), ({"it": 0.99}, self.S, 4 * self.S), ({"en": 0.97}, 4 * self.S, 7 * self.S)]
+        self.assertEqual(stt.runs(found, ["en", "it"]), [("it", 0, 4 * self.S), ("en", 4 * self.S, 7 * self.S)])
+
+    def test_only_the_named_languages(self):
+        found = [({"es": 0.6, "it": 0.35}, 0, 3 * self.S), ({"en": 0.99}, 3 * self.S, 6 * self.S)]
+        self.assertEqual(stt.runs(found, ["en", "it"]), [])  # Italian taken for Spanish: not sure enough of it
+        self.assertEqual(stt.runs(found, []), [("es", 0, 3 * self.S), ("en", 3 * self.S, 6 * self.S)])
+
+
+class MixedRecording(unittest.TestCase):
+    """The transcriber with a stand-in model: only an unsure long recording is looked at again."""
+
+    def transcriber(self, sure, runs):
+        t = stt.Transcriber("small", "en,it,zh")
+        written = []
+
+        def write(audio, language, options):
+            written.append("whole" if options.get("multilingual") else language)
+            words = "All of it." if options.get("multilingual") else {"it": "Va bene.", "en": "And then English.", "zh": "中文的话"}[language]
+            return (words, -0.3,
+                    types.SimpleNamespace(language="en"))
+
+        t._model = types.SimpleNamespace()
+        t._named = types.SimpleNamespace(heard="en", sure=sure)
+        t._write, t._runs = write, lambda audio: runs
+        t.load = lambda: None
+        return t, written
+
+    def test_an_unsure_long_one_is_written_part_by_part(self):
+        t, written = self.transcriber(0.66, [("it", 0, 72000), ("en", 72000, 171000), ("zh", 171000, 248000)])
+        self.assertEqual(t.transcribe(bytes(2 * 248000)), "Va bene. And then English. 中文的话")
+        self.assertEqual((t.parts, t.heard), (["it", "en", "zh"], "en"))  # the most speech in English
+        self.assertEqual(written, ["whole", "it", "en", "zh"])
+
+    def test_a_sure_one_or_with_it_off_is_left_alone(self):
+        t, written = self.transcriber(0.97, [("it", 0, 72000), ("en", 72000, 171000)])
+        self.assertEqual((t.transcribe(bytes(2 * 171000)), t.parts), ("All of it.", []))
+        t, written = self.transcriber(0.66, [("it", 0, 72000), ("en", 72000, 171000)])
+        t.mixed = False
+        self.assertEqual((t.transcribe(bytes(2 * 171000)), t.parts), ("All of it.", []))

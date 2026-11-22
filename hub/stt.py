@@ -111,6 +111,25 @@ class Recorder:
         return b"".join(self._chunks)
 
 
+def runs(stretches: list, languages: list, least_sure: float = 0.6, least_long: int = RATE) -> list:
+    """[(language, start, end)]: each stretch of speech ({language: likelihood}, start, end) given
+    the likeliest of `languages` (any, when none are named), and neighbours in one language
+    joined. A stretch shorter than `least_long` samples or less sure than `least_sure` goes
+    with the one before it (the first such with the one after); one run means no mix."""
+    found = []
+    for likely, start, end in stretches:
+        lang = max(languages or likely, key=lambda code: likely.get(code, 0.0))
+        sure = likely.get(lang, 0.0) >= least_sure and end - start >= least_long
+        if found and (not sure or found[-1][0] in (lang, None)):
+            if found[-1][0] is None and sure:
+                found[-1][0] = lang
+            found[-1][2] = end
+        else:
+            found.append([lang if sure else None, start, end])
+    found = [r for r in found if r[0] is not None]
+    return [tuple(r) for r in found] if len(found) > 1 else []
+
+
 class Named:
     """The speech model, asked which of the user's languages a recording is.
 
@@ -157,6 +176,16 @@ class Transcriber:
     UNSURE = 0.9
     MARGIN = 0.1
     LONG = 4.0  # seconds; a recording this long tells its language well enough by itself
+    # Mixed languages. Whisper takes one language per half minute, so a message that went from
+    # Italian to English to Chinese came back all English, the rest dropped or translated (the
+    # author, 2026-11-22). When a long recording leaves the model unsure (under UNSURE; 4 of the
+    # author's 87 long recordings, the mixed one among them at 0.66), the language of each
+    # stretch of speech between pauses is found too, and if they differ each run of one
+    # language is written in it. A stretch counts only when it is MIXED_LONG seconds or more
+    # and MIXED_SURE sure of its language (the mixed one's Italian was 0.72; the wrong ones in
+    # the author's recordings were 0.49 at most); others go with the stretch before them.
+    MIXED_SURE = 0.6
+    MIXED_LONG = 1.0
 
     def __init__(self, model: str = "small.en", language: str | list = "en", device: str = "cpu",
                  gpu_model: str = "large-v3-turbo"):
@@ -170,6 +199,8 @@ class Transcriber:
         self.languages = ["en"] if model.endswith(".en") else codes(language)  # empty: any language
         self.heard = ""  # the language of the last recording
         self.lean = True  # see UNSURE; `whisper_lean` in the settings
+        self.mixed = True  # see MIXED_SURE; `whisper_mixed` in the settings
+        self.parts: list = []  # the languages of the last recording, in order, when it mixed them
         self.last = ""  # the language last heard for sure (or in a long recording)
         self.leaned = False  # the last recording was taken in `last` instead of the model's guess
         self._model = None
@@ -237,9 +268,39 @@ class Transcriber:
                 text, self.heard, self.leaned = other, self.last, True
             else:
                 sure = 1.0  # clearly the other language: a change of language
+        self.parts = []
+        if self.mixed and long and text and sure < self.UNSURE and len(self.languages) != 1:
+            runs = self._runs(audio)
+            if len(runs) > 1:
+                written = [(lang, self._write(audio[start:end], lang, {})[0]) for lang, start, end in runs]
+                written = [(lang, words) for lang, words in written if words]
+                if len({lang for lang, _ in written}) > 1:
+                    text = " ".join(words for _, words in written)
+                    self.parts = [lang for lang, _ in written]
+                    spoken = {}
+                    for lang, start, end in runs:
+                        spoken[lang] = spoken.get(lang, 0) + end - start
+                    self.heard, self.leaned = max(spoken, key=spoken.get), False
         if sure >= self.UNSURE or long:
             self.last = self.heard
         return text
+
+    def _runs(self, audio) -> list:
+        """[(language, start, end)] in samples: the recording cut at its pauses, each stretch's
+        language found (all in one pass through the model), and neighbours in one language joined."""
+        import numpy as np
+        from faster_whisper.audio import pad_or_trim
+        from faster_whisper.vad import VadOptions, get_speech_timestamps
+
+        spans = get_speech_timestamps(audio, VadOptions(min_silence_duration_ms=300, speech_pad_ms=150))
+        if len(spans) < 2:
+            return []
+        model = self._model
+        features = np.stack([pad_or_trim(model.feature_extractor(audio[s["start"]:s["end"]])) for s in spans])
+        inner = getattr(model.model, "_model", model.model)  # past Named, which would reorder them
+        found = inner.detect_language(model.encode(features))
+        return runs([({token[2:-2]: p for token, p in likely}, span["start"], span["end"]) for span, likely in zip(spans, found)],
+                    self.languages, self.MIXED_SURE, int(self.MIXED_LONG * RATE))
 
     def _write(self, audio, language: str | None, options: dict) -> tuple:
         """The words in a recording, Whisper's mean log-probability per token for them, and its info."""

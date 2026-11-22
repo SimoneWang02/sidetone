@@ -116,6 +116,8 @@ SECTIONS = [
                "once it is at its prompt. Needs the VS Code extension."),
         # The model on the card (whisper_gpu_model) is left out, like whisper_model: a model's
         # name, which `large-v3-turbo` fits for nearly everyone with a card.
+        switch("whisper_mixed", "Mixed Languages", "When one message goes from one of your languages to another, "
+               "each part is written in its own. It splits where you pause."),
         choice("whisper_device", "Transcribe On", "Where your words are written down. The graphics card (NVIDIA) is "
                "faster and uses a larger model that gets more words right; Automatic uses it when there is one.",
                ("auto", "Automatic"), ("cpu", "Processor"), ("gpu", "Graphics Card")),

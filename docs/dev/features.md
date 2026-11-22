@@ -144,6 +144,22 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   before); last English: 3 (2 before; "Quant'è il contesto" kept English, its words almost
   the same); last Chinese: 2 (as before). The second writing costs about 0.6 s, only for
   unsure short clips. The log line says "(leaned to it ...)" when it happens.
+- Mixed languages in one message (2026-11-22, `whisper_mixed`, on; "Mixed Languages" in the
+  window; `stt.runs`, `Transcriber._runs`). The author's first try, Italian then English then
+  Chinese in 16.5 s, came back as English only ("Well, I'm going to try English as well ...")
+  at 0.66 sure: Whisper takes one language per half minute and dropped or translated the
+  rest. The author on building it: "sure, go on". Now, when a recording is 4 s or longer and
+  the model is under 0.9 sure of its language, the voice filter cuts it at pauses of 0.3 s,
+  the language of every stretch is found in one batched pass, a stretch under 1 s or under
+  0.6 sure goes with the one before it, and if two or more languages remain each run is
+  written in its own and the parts joined; `heard` is the language with the most speech. The
+  same recording then gave "Va bene, io inizierò a parlare in italiano da qui. and then I'll
+  try English as well. I hope it doesn't have any conflict. 中文的话我觉得看一下吧 看一下怎么样",
+  in 1.2 s on the card (0.2 s without). Of the author's 113 kept recordings, 4 of the long
+  ones were unsure and only the mixed one was split. Checking every recording instead cost
+  0.34 s each (every stretch is padded to Whisper's 30 s), so it waits for an unsure one. A
+  switch in the middle of a sentence with no pause still comes out in one language. The log
+  line says "(mixed: it, en, zh)".
 - Push-to-talk on the graphics card (2026-11-22, `whisper_device`: auto, cpu, gpu, "Transcribe
   On" in the window; `whisper_gpu_model`, `large-v3-turbo`, config.json only, like
   `whisper_model`). Measured first on the author's 102 kept recordings (`docs/dev/facts.md`):
