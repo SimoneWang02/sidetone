@@ -161,8 +161,9 @@ SECTIONS = [
         # A slider since 2026-11-21; it was Blur or Plain (`overlay.glass`, still read: "none" stays
         # plain). The author: "both are glass-like. Do you think we could do percentage like from 0
         # to 100?"
-        number("overlay.glass_clear", "Glass", "How see-through the glass is. 0 is plain dark glass; above it, "
-               "what is behind shows through, blurred.", 0, 100, 5, "%"),
+        # "Glass Effect", the author's name for it the same day: 0 % then reads as no effect.
+        number("overlay.glass_clear", "Glass Effect", "How much of what is behind shows through, blurred. "
+               "0 is plain dark glass.", 0, 100, 5, "%"),
         choice("overlay.row_lines", "Lines Per Session", "How many lines a sentence may take in the details.",
                (1, "1"), (2, "2"), (3, "3")),
         choice("overlay.history", "History Shows", "The lines of the session you are on, or of all of them.",
