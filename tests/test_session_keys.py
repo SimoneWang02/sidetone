@@ -140,6 +140,17 @@ class OneSessionTwoTerminals(SessionKeys):
         hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))  # and the other one too
         self.assertNotIn("a", hub.sessions.by_id)
 
+    def test_cleared_in_one_of_its_terminals_it_goes_on_in_the_other(self):
+        hub = self.make()
+        hub.sessions.by_id["a"].pids = [4001, 4002]
+        name = hub.sessions.by_id["a"].name
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="clear"))
+        hub.on_event(ev("SessionStart", sid="c", cwd="/w/a", source="clear"))
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message="<speak>Still here.</speak>"))
+        self.assertEqual(hub.sessions.by_id["a"].name, name)
+        self.assertEqual(hub.sessions.by_id["a"].state, "done")  # its turn is still heard
+        self.assertNotEqual(hub.sessions.by_id["c"].name, hub.sessions.by_id["a"].name)
+
     def test_the_terminal_that_is_left_is_found(self):
         hub = self.make()
         s = hub.sessions.by_id["a"]

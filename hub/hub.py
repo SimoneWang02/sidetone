@@ -222,11 +222,15 @@ class Hub(Permissions, Talk):
         with self.lock:
             self.last_event = time.monotonic()
             ending = self.sessions.by_id.get(sid)
-            if event == "SessionEnd" and ending and len(ending.pids) > 1 and ev.get("reason") != "clear":
+            if event == "SessionEnd" and ending and len(ending.pids) > 1:
                 # The same conversation is open in another terminal too (resumed there; the author,
                 # 2026-11-22: "two terminals that are pointing into the same session. If I close one
-                # ... the one in the overlay" went): it stays. `reconcile` takes it away once no
-                # terminal has it, and finds the terminal that is left.
+                # ... the one in the overlay" went): it stays, name and lines too. `reconcile` takes
+                # it away once no terminal has it, and finds the terminal that is left. Cleared in
+                # one of them, the same: the conversation goes on in the other, and the new one in
+                # the cleared terminal is a session of its own (found in the lab, 2026-11-22: it
+                # came back as "alpha 2" and its replies were not spoken).
+                self._cleared(sid, ev.get("reason") == "clear")
                 ending.pids = []  # read again from the files; a second end before that is the last one
                 log(self.cfg, "hub.log", f"session [{sid[:8]}] ended in one terminal, still open in another")
                 return

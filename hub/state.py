@@ -236,6 +236,7 @@ class Session:
             "idle_seconds": round(now - self.updated),
             "context": self.context,
             "turn_tokens": self.turn_tokens,
+            "tty": self.tty or "",  # the terminal it runs in, where known
         }
 
 
