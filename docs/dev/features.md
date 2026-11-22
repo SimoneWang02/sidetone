@@ -365,7 +365,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the context to go to reset to zero, because it's cool animation".
 - The clear key (2026-11-21, `clear` Ctrl+Alt+C, `Hub.clear_key`, `CLEAR_TWICE` 3 s): pressed
   once it asks in a banner like the mute key's, "Clear sidetone?" (first "Clear the chat of sidetone?", shortened at the author's asking) with "Ctrl+Alt+C to
-  confirm" beside it and an eraser (Segoe Fluent Icons E75C; picture `clear-ask.png`), gone by
+  confirm" beside it and a bin (Segoe Fluent Icons E74D; an eraser, E75C, first: "I don't like it much"; picture `clear-ask.png`), gone by
   itself after 3 s; pressed again in time it does what "clear the chat" does for the session in
   focus. Claimed only while that session's terminal is in an editor that can type /clear
   (`_clearable_here`). The author: "making it like a shortcut", Ctrl+C at first (taken by copying

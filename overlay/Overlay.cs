@@ -4247,9 +4247,9 @@ namespace ClaudeSpeaks
                     VoiceRow(bannerTitle, icon == "muted", Str(msg, "text"), Str(msg, "hint"));
                     bannerHint.Text = "";
                 }
-                else if (icon == "clear")  // the clear key asks, as the mute key's row says what it did
+                else if (icon == "clear")  // the clear key asks, as the mute key's row says what it did; a bin (an eraser was first: "I don't like it much")
                 {
-                    bannerTitle.Inlines.Add(new Run("\uE75C") { FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 14,
+                    bannerTitle.Inlines.Add(new Run("\uE74D") { FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 14,
                         Foreground = Ui.Alpha(Ui.Tint("working"), 1), BaselineAlignment = BaselineAlignment.Center });
                     bannerTitle.Inlines.Add(new Run("  " + Str(msg, "text")) { Foreground = Ui.Dim });
                     string confirm = Str(msg, "hint");
