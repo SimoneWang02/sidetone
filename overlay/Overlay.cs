@@ -3375,7 +3375,7 @@ namespace ClaudeSpeaks
                     // never heard to its end keeps its white dot, after the time (its room kept on
                     // every line, so the times stay lined up).
                     var ago = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 8, 0), HorizontalAlignment = HorizontalAlignment.Right };
-                    ago.Children.Add(new TextBlock { Text = said, FontSize = 12, Foreground = Ui.Alpha(Ui.Tint("done"), 1) });
+                    ago.Children.Add(new TextBlock { Text = said, FontSize = 12, Foreground = Ui.Alpha(Ui.Tint("done"), 1), MinWidth = AgoWidth(), TextAlignment = TextAlignment.Right });
                     ago.Children.Add(new Border { Width = 4, Height = 4, CornerRadius = new CornerRadius(2), Background = missed ? Brushes.White : Brushes.Transparent, Margin = new Thickness(2, 3, 0, 0), VerticalAlignment = VerticalAlignment.Top });
                     line.Children.Add(ago);
                 }
@@ -3396,6 +3396,21 @@ namespace ClaudeSpeaks
                 into.Children.Add(line);
                 n++;
             }
+        }
+
+        // As wide as the widest time the history writes ("now", "59m", "23h", "99d"), so that the
+        // column has one width whatever the times are and the sentences never move.
+        static double agoWidth;
+        static double AgoWidth()
+        {
+            if (agoWidth > 0) return agoWidth;
+            foreach (string text in new[] { "now", "59m", "23h", "99d", "00m" })
+            {
+                var probe = new TextBlock { Text = text, FontSize = 12 };
+                probe.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                agoWidth = Math.Max(agoWidth, Math.Ceiling(probe.DesiredSize.Width));
+            }
+            return agoWidth;
         }
 
         // --- the mouse ------------------------------------------------------------------------------

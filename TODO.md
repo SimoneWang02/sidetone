@@ -134,7 +134,9 @@ these come before anything new.
       time and tokens on the right ... it's not very aesthetic"; seen in a picture, turned on for
       the author). With the time shown it takes the place of the mark, always green, to tell the lines
       apart ("replacing the tick icons with the time"; the mark's own colors were tried and
-      not kept: "nobody knows what the colors are"); without it the marks stay (seen in a picture, **not yet seen live**). **Next in it:
+      not kept: "nobody knows what the colors are"); the time column one width whatever it
+      holds, "now" or "14m", and times past an hour as "2h", past a day as "3d" ("I want it to
+      be ... consistent"); without it the marks stay (seen in a picture, **not yet seen live**). **Next in it:
       Mark Lines Not Heard**, then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges

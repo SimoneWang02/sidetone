@@ -649,7 +649,13 @@ def _read_out(question: dict, place: str = "") -> str:
 
 
 def _ago(seconds: float) -> str:
-    return "now" if seconds < 60 else _elapsed(seconds)
+    """How long ago a line of the history was said, in at most three letters, so the column
+    keeps one width (the author, 2026-11-22: "now" then "2m" and the whole history shifts;
+    "I want it to be ... consistent"): now, 1m to 59m, 1h to 23h, then days."""
+    minutes = int(seconds // 60)
+    if minutes < 1:
+        return "now"
+    return f"{minutes}m" if minutes < 60 else f"{minutes // 60}h" if minutes < 1440 else f"{min(minutes // 1440, 99)}d"
 
 
 def gap(cfg: Config, wide: bool = False) -> str:
