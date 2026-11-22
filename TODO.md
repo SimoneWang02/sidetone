@@ -142,12 +142,6 @@ Roughly easiest first, the larger ones after.
 
 ### Larger extras
 
-- [ ] The full transcript and the full message in the overlay (the author, by voice,
-      2026-11-19: "I want to be able to see the full transcript and the full message in the
-      overlay"). Today the bubble and the rows cut long text (`overlay.row_lines`, 1 to 3
-      lines). To ask: whether "the full message" is the whole spoken line or the session's
-      whole written reply, and "the full transcript" all of their own words as heard; and
-      where (the bubble growing, a click or key that opens it, the history).
 - [ ] Make more of the overlay a setting: sizes, colors (session palette, status colors, glass
       tint), which keys do what, what the panel rows show, animation speed or none, where the
       bubble goes. Much is fixed in `overlay/Overlay.cs` today.
@@ -977,6 +971,14 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] The full transcript and the full message in the overlay (the author, by voice,
+      2026-11-19: "I want to be able to see the full transcript and the full message in the
+      overlay"). Today the bubble and the rows cut long text (`overlay.row_lines`, 1 to 3
+      lines). To ask: whether "the full message" is the whole spoken line or the session's
+      whole written reply, and "the full transcript" all of their own words as heard; and
+      where (the bubble growing, a click or key that opens it, the history).
+      Not needed any more (the author, 2026-11-22: "Having the layout of selected session
+      already displays the full transcript and also the answer. So it's not needed anymore").
 - [x] A setting that keeps every key from other programs while `Ctrl+Alt` is held (the
       author's idea, 2026-11-17, after Space paused a video during push-to-talk). Built so
       far: only the held talk key is kept back. Off by default if built, because it would
