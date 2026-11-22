@@ -109,8 +109,11 @@ these come before anything new.
       what it does still names settings that left the window (`unsend_seconds`, `followup_delay`):
       for the documentation step. Listen On After Release kept, renamed Release Delay (Discord's
       word). The page ordered most important first, names and descriptions polished (seen in a
-      picture). **Talking is done.** **Next:
-      Overlay**, then
+      picture). **Talking is done.** **Overlay, under way 2026-11-21:**
+      Layout and Details name their keys (Details: Always, On Hover); Details Changing Size, Move
+      It by the Details, What Opens the Details and the four signs of a muted voice out of the
+      window; Opacity at Rest is Opacity When Idle, in percent, and now also holds with the details
+      always out (it did nothing there). **Next: Overlay** from Glass on, then
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges

@@ -185,6 +185,12 @@ class Chosen(SettingsCase):
         hub.cfg.cancel_stops = "sent"
         self.assertIs(read(), True)
 
+    def test_opacity_when_idle_holds_with_the_details_out_too(self):
+        hub = self.make()
+        hub.place_overlay = lambda tell_window=True, **changes: hub.cfg.overlay.update(changes)
+        self.assertIsNone(hub.set_setting("overlay.opacity", 0.6))
+        self.assertEqual((hub.cfg.overlay["opacity"], hub.cfg.overlay["list_opacity"]), (0.6, 0.6))
+
     def test_confirming_before_sending_is_on_or_off(self):
         hub = self.make()
         for value in (True, False):

@@ -1964,11 +1964,14 @@ namespace ClaudeSpeaks
         {
             double min = Convert.ToDouble(item["min"], CultureInfo.InvariantCulture), max = Convert.ToDouble(item["max"], CultureInfo.InvariantCulture);
             double step = Convert.ToDouble(item["step"], CultureInfo.InvariantCulture);
-            string unit = Overlay.Str(item, "unit"), places = step >= 1 ? "0" : step >= 0.1 ? "0.0" : "0.00";
+            string unit = Overlay.Str(item, "unit");
+            // "scale": the figure shown is the value times this, as 0.9 shown as 90%.
+            double scale = item.ContainsKey("scale") ? Convert.ToDouble(item["scale"], CultureInfo.InvariantCulture) : 1;
+            string places = step * scale >= 1 ? "0" : step * scale >= 0.1 ? "0.0" : "0.00";
             var slide = new Slide(min, max, step, value == null ? min : Convert.ToDouble(value, CultureInfo.InvariantCulture));
             var figure = new TextBlock { FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Ui.Dim, Width = 46, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
-            figure.Text = slide.Value.ToString(places, CultureInfo.InvariantCulture) + unit;
-            slide.Moved = delegate(double now) { figure.Text = now.ToString(places, CultureInfo.InvariantCulture) + unit; };
+            figure.Text = (slide.Value * scale).ToString(places, CultureInfo.InvariantCulture) + unit;
+            slide.Moved = delegate(double now) { figure.Text = (now * scale).ToString(places, CultureInfo.InvariantCulture) + unit; };
             slide.Chosen = delegate(double now) { choose(key, now); };
             var row = new StackPanel { Orientation = Orientation.Horizontal };
             row.Children.Add(slide);
