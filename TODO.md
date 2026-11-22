@@ -149,7 +149,9 @@ these come before anything new.
       The flash when the focus moves stays its own switch, apart from Tint (the author saw it
       flash with Tint off). Focus Follows the Terminal tried by the author ("I checked it. I like
       it"). Terminal Follows the Focus explained (with terminals side by side it only moves the
-      keyboard; "I see"), kept. Name in the Terminal's Title tried and taken out of the window (off). **Terminal is
+      keyboard; "I see"), kept. Name in the Terminal's Title tried and taken out of the window (off). Renamed: Terminal
+      Color, Color Strength, Clicking a Terminal Selects It, Switching Moves the Keyboard ("yeah,
+      go on"). **Terminal is
       done. Next: Keys**, the last page., then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
