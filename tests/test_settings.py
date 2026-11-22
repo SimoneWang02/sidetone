@@ -88,7 +88,7 @@ class Offered(SettingsCase):
 
     def test_every_hotkey_can_be_set_in_the_window(self):
         offered = {item["key"][16:] for _, section in settings.SECTIONS for item in section if item["kind"] == "key"}
-        self.assertEqual(offered, set(overlay.DEFAULTS["hotkeys"]))
+        self.assertEqual(offered, set(overlay.DEFAULTS["hotkeys"]) - {"jump"})  # jump: only in config.json since 2026-11-22
 
     def test_the_voices_section_lists_each_project_with_the_voices_there_are(self):
         hub = self.make()
@@ -372,10 +372,10 @@ class Chosen(SettingsCase):
         self.assertEqual((hub.cfg.overlay["layout"], self.window.reconfigured), ("island", 1))
         self.assertIsNone(hub.set_setting("overlay.glass_clear", "35"))  # from the command line it comes as words
         self.assertEqual(hub.cfg.overlay["glass_clear"], 35)
-        self.assertIsNone(hub.set_setting("overlay.hotkeys.jump", "Ctrl+Alt+T"))
+        self.assertIsNone(hub.set_setting("overlay.hotkeys.layout", "Ctrl+Alt+T"))
         self.assertIsNone(hub.set_setting("overlay.hotkeys.repeat", ""))  # no key
         self.assertEqual(self.window.reconfigured, 4)
-        self.assertEqual(self.saved()["overlay"], {"layout": "island", "glass_clear": 35, "hotkeys": {"jump": "Ctrl+Alt+T", "repeat": ""}})
+        self.assertEqual(self.saved()["overlay"], {"layout": "island", "glass_clear": 35, "hotkeys": {"layout": "Ctrl+Alt+T", "repeat": ""}})
 
     def test_the_voice_is_switched_with_its_file(self):
         hub = self.make()
