@@ -1200,9 +1200,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   The author still had YouTube pause while talking (2026-11-22: "whenever I watch YouTube it
   pauses the video when I talk ... make it a setting"). So the hook now goes in at the first
   of the hotkey's other keys (`AnyMod`: Ctrl, say), not once all are down, which leaves the
-  gap only for a talk key pressed within 30 ms of the very first modifier; and the window
-  has "Hide the Talk Key" (`overlay.keep_talk_key`: With Ctrl or Alt Down = `held`, or
-  Always, which closes the gap at the cost of a hook on every key; `off` from config.json).
+  gap only for a talk key pressed within 30 ms of the very first modifier. A window entry
+  for `keep_talk_key` came and went the same hour: the author had meant the trouble of
+  2026-11-17 ("right now I don't have any issues with YouTube"); `always` and `off` stay in
+  config.json.
   `overlay.keep_talk_key`: `held` (default), `always` (hook in all the time, for a talk key
   without Ctrl or Alt) or `off`. If a kept release is ever lost, the hold ends a second after
   the key stops repeating. That safeguard is dropped as soon as another key goes down during

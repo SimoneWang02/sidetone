@@ -18,12 +18,6 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] Space still paused YouTube while talking (the author, 2026-11-22: "whenever I watch
-      YouTube it pauses the video when I talk ... make it a setting"). The cause: the hook that
-      hides the talk key went in only once Ctrl and Alt were both down, so a Space within
-      30 ms of the last of them came through as a plain hotkey and its release reached the
-      browser. Now it goes in at the first of them, and "Hide the Talk Key" in the window can
-      be Always. **Not tried by the author yet**: talk over a playing video, quickly.
 - [ ] A spoken line with no `lang` in its tag: the hub now guesses its language from the
       words (2026-11-22, `hub/language.py`, no setting; see `docs/dev/features.md`), so an
       Italian line without the mark gets the Italian voice. Each guess goes to `hub.log`.
@@ -1100,6 +1094,15 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Rough edges mended
 
+- [x] Space still paused YouTube while talking (the author, 2026-11-22: "whenever I watch
+      YouTube it pauses the video when I talk ... make it a setting"). The cause: the hook that
+      hides the talk key went in only once Ctrl and Alt were both down, so a Space within
+      30 ms of the last of them came through as a plain hotkey and its release reached the
+      browser. Now it goes in at the first of them, and "Hide the Talk Key" in the window can
+      be Always. **Not tried by the author yet**: talk over a playing video, quickly.
+      A misreading: the author meant the trouble of 2026-11-17 and has none now ("right now I
+      don't have any issues with YouTube"). The window entry was taken out again; the hook
+      going in at the first modifier stays, since it only narrows a gap that was known.
 - [x] A short bug hunt before the speech work (the author, 2026-11-22, asked when bug hunting is
       best: a short one now on what they have not tried, a full one before release; "Yeah").
       In a key lab: a hub of its own run inside a script with its own overlay and no hotkeys,
