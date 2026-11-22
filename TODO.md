@@ -27,8 +27,8 @@ these come before anything new.
       `large-v3-turbo` on the RTX 5070, 0.18 s where `small` on the processor took 0.81 s,
       with clearly more words right (`docs/dev/facts.md`). Built and tested with NVIDIA's
       libraries borrowed from the voice-clone venv; installing them into the hub's
-      environment was refused by the permission check, so the author runs
-      `./install.sh --gpu` (or the `uv pip install` it does) and then `sidetone hub restart`.
+      environment was refused by the permission check; the author installed them by hand
+      the same day, and the hub was restarted (it loads from them: 0.18 s a message).
       **Not heard by the author yet**: talk as usual; `hub.log` should say "speech model
       large-v3-turbo on the graphics card", short clips and Italian should come out right
       more often.
