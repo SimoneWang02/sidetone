@@ -2920,7 +2920,10 @@ namespace ClaudeSpeaks
                 row.Pip.Visibility = Island ? Visibility.Visible : Visibility.Collapsed;
                 // the same session as the card (it followed the focus alone at first, and the card
                 // and the one row shown were two different sessions: "I see sidetone and sidetone 2")
-                row.Text.Visibility = chosen != null && row != chosen ? Visibility.Hidden : Visibility.Visible;
+                // Collapsed, not kept as an empty place: the glass then holds only the card and this
+                // row (the author, 2026-11-22: "there's the gap left by sidetone 2 ... I want only the
+                // selected session's detail box to show in that container").
+                row.Text.Visibility = chosen != null && row != chosen ? Visibility.Collapsed : Visibility.Visible;
                 row.Chosen = row == chosen;
                 row.Light.Height = !Island && goal > 0 && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
             }
