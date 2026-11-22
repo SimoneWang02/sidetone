@@ -292,13 +292,6 @@ Roughly easiest first, the larger ones after.
       also take other programs' `Ctrl+Alt` shortcuts and the characters some keyboards type
       with those keys, and it needs a keyboard hook for as long as the keys are down.
 
-- [ ] A mouse button as a key (the author, 2026-11-22: "someone would want to bind ... a
-      key on the mouse to talk"): the side buttons (XButton1, XButton2) through a low-level mouse
-      hook, offered when a hotkey is being typed. Until then, a mouse's own program (Logitech
-      Options+ or G HUB) can send a key: F13 or another F key nobody has is the cleanest, set as
-      Talk in the window. Holding works only if that program holds the key while the button is
-      down; **not tried**.
-
 ### Larger extras
 
 - [ ] The full transcript and the full message in the overlay (the author, by voice,
@@ -942,6 +935,10 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] No mouse buttons as keys in Sidetone itself (the author, 2026-11-22: "I don't think we
+      should do anything on our part ... they can just do it with their own program"). A
+      mouse's own program (Logitech Options+, G HUB) can send the talk key; for the
+      documentation step: say so there, with an F key nobody has (F13) as the tidiest choice.
 - [x] Session names in the terminal tabs: turned on 2026-11-20 at the author's yes, and
       turned back off the same hour ("I don't like them this much. I would prefer [Claude's
       own] session [title] ... I think you should revert this"). `terminal.title` stays a
