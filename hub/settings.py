@@ -136,7 +136,9 @@ SECTIONS = [
         # README.
     ]),
     ("Overlay", [
-        choice("overlay.layout", "Layout", "A bar of lights at the side, or an island at the top.",
+        # The key that switches it named too (the author, 2026-11-21: "in the description of layout
+        # put the combination key to switch").
+        choice("overlay.layout", "Layout", "A bar of lights at the side, or an island at the top. The layout key switches them.",
                ("bar", "Bar"), ("island", "Island")),
         choice("overlay.mode", "Details", "Names, titles and figures beside the lights.",
                ("dots", "Under the mouse"), ("list", "Always out")),
@@ -628,7 +630,7 @@ def _with_keys(hub, help: str) -> str:
     def named(m):
         combo = keys.get(m.group(2).lower(), "")
         return f"{m.group(0)} ({combo})" if combo else m.group(0)
-    return re.sub(r"\b(the) (mute|talk|cancel|repeat) key\b", named, help, flags=re.I)
+    return re.sub(r"\b(the) (mute|talk|cancel|repeat|layout|clear|settings) key\b", named, help, flags=re.I)
 
 
 def describe(hub) -> list:
