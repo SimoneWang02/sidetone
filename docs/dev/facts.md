@@ -502,6 +502,16 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   onnxruntime-gpu replaces onnxruntime (same module name; 433 MB) and needs, besides cuBLAS
   and cuDNN, NVIDIA's cudart 12, curand 10, cufft 11 and nvrtc 12 (`ldd` of
   `libonnxruntime_providers_cuda.so`); loaded by full path first, like Whisper's.
+- From the talk key to the reply's first sound (2026-11-22, the author's last 12 spoken
+  messages to one session, both models on the RTX 5070): release delay 0.4 s (`talk_tail`);
+  transcription 0.14 to 0.5 s; from the transcript (the kept recording's time, in ms) to Claude
+  Code queueing it, 7 to 35 ms, so the listener's long poll costs nothing; queued to the turn
+  starting, 10 to 20 ms; the turn to Claude's first written output, 1.0 to 18.8 s (the model,
+  and nearly all of the wait); the spoken line to its first sound, about 70 ms. In the last
+  0.6 s of the last 25 recordings the speech had nearly always ended before the key came up
+  (1 to 3% of the peak); the key's click arrives 0.1 to 0.15 s after release (30 to 100% of the
+  peak, one or two 50 ms chunks), then quiet, so stopping at the first quiet after the click
+  would save only about 0.15 s of the 0.4.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
