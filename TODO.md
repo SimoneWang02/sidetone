@@ -98,9 +98,6 @@ voice, and the wait for the transcript.
 
 Roughly easiest first, the larger ones after.
 
-- [ ] More for the VS Code extension, now that it exists: color the tab itself in the
-      session's color. (Bringing the terminal of the session in focus to the front is
-      done, see the jump key above; the hub can ask the extension since 0.2.0.)
 - [ ] What following the terminal does not do yet:
       - VS Code only reports a change of the active terminal. Clicking back into the
         terminal you were last in (from the editor, or after another session spoke and
@@ -981,6 +978,15 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] More for the VS Code extension, now that it exists: color the tab itself in the
+      session's color. (Bringing the terminal of the session in focus to the front is
+      done, see the jump key above; the hub can ask the extension since 0.2.0.)
+      Skipped (the author, 2026-11-22: "Then we can skip this one"). Found first: an
+      extension can give a terminal's tab a color only when it creates the terminal
+      (`TerminalOptions.color`, any theme color, so the exact palette through
+      `contributes.colors`); VS Code's change-color commands for an open terminal always show
+      a picker, and the API has no setter. So only terminals opened with the new-session key
+      could have had it; the background tint already marks every terminal.
 - [x] The session colors stay twenty (2026-11-22). Shown all of them with how they were picked,
       and the convention (8 to 10 categorical colors, then reuse with the name as the cue),
       the author: "I don't mind them"; asked whether to keep twenty or reuse the first eight,
