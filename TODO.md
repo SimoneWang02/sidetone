@@ -98,8 +98,6 @@ voice, and the wait for the transcript.
 
 Roughly easiest first, the larger ones after.
 
-- [ ] Not tried: ringing a terminal's bell when its session speaks, which VS Code can show
-      as a small sign on the tab for a moment (its visual bell setting is off by default).
 - [ ] The terminal tint on a light theme: the color is mixed into `terminal.background`,
       which defaults to VS Code's dark theme. Read the editor's theme, or offer a light
       default.
@@ -989,6 +987,8 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] A bell on a terminal's tab when its session speaks (VS Code's visual bell): not wanted
+      (the author, 2026-11-22: "I don't think it's too useful so I will skip this one as well").
 - [x] Left or right ear per session: not wanted (the author, 2026-11-22, offered it as the
       next small extra: "I don't like it. Let's just skip it").
 - [x] No mouse buttons as keys in Sidetone itself (the author, 2026-11-22: "I don't think we
