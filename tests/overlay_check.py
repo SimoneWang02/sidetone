@@ -616,6 +616,13 @@ send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history=
 send(type="peek", on=True, over="web-app")
 shot("list-history-all")  # every session's lines mixed: under the card, with their names
 send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history="session", **HERE)
+# Three lines a session, one of them speaking a long sentence: it floats over the rows below it,
+# every row stays level with its light.
+send(type="peek", on=False)
+send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, row_lines=3, **HERE)
+say(6)
+shot("list-three-lines", 1.2)
+send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, row_lines=1, **HERE)
 send(type="peek", on=False)
 send(type="mode", mode="dots")
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, monitor=1, corner="bottom-left", offset_x=30, offset_y=30)

@@ -2143,6 +2143,8 @@ namespace ClaudeSpeaks
         readonly Border glow = new Border { CornerRadius = new CornerRadius(6), Background = Ui.Paint("#FFFFFF"), Opacity = 0 };
         readonly Grid row2 = new Grid();
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
+        // Holds the words; while a long sentence floats over the rows below, it is a card of its own.
+        readonly Border holder = new Border { CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock line1 = new TextBlock(), line2 = new TextBlock(), meta = new TextBlock();
         public bool Speaking, Focus;
         public readonly Border Pip = new Border {  // a dash of its color under the light, where rows are not beside their lights
@@ -2165,7 +2167,8 @@ namespace ClaudeSpeaks
             Light.RenderTransform = Shift;
             Text.RenderTransform = TextShift;
             Strip.Margin = right ? new Thickness(8, 0, 0, 0) : new Thickness(0, 0, 8, 0);
-            words.Margin = new Thickness(12, 5, 12, 6);
+            holder.Padding = new Thickness(12, 5, 12, 6);
+            holder.Child = words;
             words.RenderTransform = Slide;
             line1.TextTrimming = line2.TextTrimming = TextTrimming.CharacterEllipsis;
             line2.FontSize = meta.FontSize = 12;
@@ -2187,7 +2190,7 @@ namespace ClaudeSpeaks
             words.Children.Add(row2);
             Text.Children.Add(glow);
             Text.Children.Add(Strip);
-            Text.Children.Add(words);
+            Text.Children.Add(holder);
         }
 
         public void Update(Dictionary<string, object> s)
@@ -2252,6 +2255,19 @@ namespace ClaudeSpeaks
             line2.Text = talk ? TalkText : saying ? FlashText : rowText;
             line2.TextWrapping = saying && Ui.RowLines > 1 ? TextWrapping.Wrap : TextWrapping.NoWrap;
             line2.MaxHeight = 16.7 * Ui.RowLines;
+            // A sentence on more than one line floats down over the rows below instead of making its
+            // row taller, so every row stays level with its light and nothing moves (the author,
+            // 2026-11-22: "each detail box should be aligned with its session's square on the bar
+            // ... it stretches, which I don't like"). The negative margin lets it reach past its row
+            // without being cut; drawn above the rows after it, on a ground of its own.
+            bool floating = saying && Ui.RowLines > 1;
+            holder.Measure(new Size(Text.ActualWidth > 0 ? Text.ActualWidth : 330, double.PositiveInfinity));  // as wide as it is drawn
+            double extra = floating ? Math.Max(0, holder.DesiredSize.Height - High) : 0;
+            holder.VerticalAlignment = floating ? VerticalAlignment.Top : VerticalAlignment.Center;
+            holder.Margin = floating ? new Thickness(0, 0, 0, -extra) : new Thickness(0);
+            holder.Background = floating ? Ui.Paint("#F7262A33") : null;
+            holder.BorderBrush = floating ? Ui.Paint("#33FFFFFF") : null;
+            Panel.SetZIndex(Text, floating ? 10 : 0);
             bool live = talkInk == Ui.MicInk || talkInk == Ui.LiveInk;
             if (talk && live) Ui.GlintFor(TalkText);
             line2.Foreground = talk ? (live ? Ui.MicLive : talkInk) : saying ? Brushes.White : Ui.Dim;
