@@ -4373,7 +4373,7 @@ namespace ClaudeSpeaks
             int next = 1;
             foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
-                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key == "jump" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
+                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key == "jump" || entry.Key == "clear" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
                 // The focus moves with the arrows that point the way the lights run: up and down
                 // for the bar, left and right for the island. The other pair is left to other programs.
                 bool sideways = entry.Key == "focus_left" || entry.Key == "focus_right";

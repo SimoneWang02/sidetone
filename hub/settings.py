@@ -191,6 +191,7 @@ SECTIONS = [
         hotkey("option3", "Answer 3"),
         hotkey("option4", "Answer 4"),
         hotkey("jump", "Go to the Terminal", "Of the session in focus, in the editor."),
+        hotkey("clear", "Clear the Chat", "Press it twice: the editor types /clear for the session in focus, at its prompt."),
     ]),
 ]
 KEY_PARTS = {"ctrl", "alt", "shift", "win"}

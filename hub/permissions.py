@@ -352,6 +352,8 @@ class Permissions:
             self.set_layout("next")
         elif name == "jump":
             self.show_terminal()
+        elif name == "clear":
+            self.clear_key()
         elif name == "settings":
             self.show_settings()
         elif name == "mute":

@@ -99,7 +99,9 @@ these come before anything new.
       ("A Busy Session Hears You"), tested with the real hook and a haiku session, **not yet
       tried by the author**. Side Questions became a switch ("Always" taken out). A spoken
       yes or no answers a permission prompt, longer words explain (the setting left the window;
-      **not yet tried by the author**). **Next: Talking** from Usage by Voice on, then Overlay,
+      **not yet tried by the author**). Usage by Voice left the window in another session. A
+      clear key, Ctrl+Alt+C pressed twice (**not yet tried by the author**). **Next: Talking**
+      from Typing Takes the Focus on, then Overlay,
       Figures, Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges

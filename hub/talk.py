@@ -20,6 +20,7 @@ from base import (aside_mode, interrupts, ASIDE_ASK, Aside, BUSY, Editor, Listen
                   SAFE_ID, STEER, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
                   session_model, spoken_answer, spoken_verdict)
 
+CLEAR_TWICE = 1.5  # seconds for the second press of the clear key
 CLEAR_BUSY = "it is still working"  # why a clear cannot be typed yet, and waits
 SHOWN_ECHO = 1.0  # seconds in which the editor's report of a terminal the hub asked to the front is only that
 
@@ -215,6 +216,30 @@ class Talk:
             log(self.cfg, "hub.log", f"clear [{s.id[:8]}] already asked for, not typed again: {text[:80]}")
             return
         self._type_clear(s, text)
+
+    def clear_key(self) -> None:
+        """The clear key: pressed once it asks, pressed again within `CLEAR_TWICE` it clears the
+        session in focus as "clear the chat" does (the author, 2026-11-21: "double click it to
+        confirm"). A conversation cleared by a stray press could not be had back."""
+        with self.lock:
+            s = self._target()
+            if not s:
+                return
+            now, armed = time.monotonic(), getattr(self, "_clear_armed", None)
+            if armed and armed[0] == s.id and now - armed[1] < CLEAR_TWICE:
+                self._clear_armed = None
+                log(self.cfg, "hub.log", f"clear [{s.id[:8]}] asked for with the clear key")
+                self._clear_chat(s, "the clear key")
+            else:
+                self._clear_armed = (s.id, now)
+                key = self.cfg.overlay.get("hotkeys", {}).get("clear", "")
+                self._talk("ready", s, "Clear the chat?", f"{key} again to clear" if key else "Press again to clear",
+                           seconds=CLEAR_TWICE)
+        self.publish()
+
+    def _clearable_here(self, s) -> bool:
+        """The clear key is claimed only for a session whose terminal an editor can type into."""
+        return bool(s and s.tty and any(e.clears and s.tty in e.ttys for e in self.editors))
 
     def _talk_held(self) -> bool:
         """Push-to-talk is under way (key held, words being worked out or waiting for a

@@ -705,7 +705,8 @@ class Hub(Permissions, Talk):
                           + (["cancel"] if self._talking or self._transcribing or self._pending or current or self._unsendable()
                              or self._asides or self._stoppable() else [])
                           + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else [])
-                          + (["jump"] if self._showable(self._target()) else []))
+                          + (["jump"] if self._showable(self._target()) else [])
+                          + (["clear"] if self._clearable_here(self._target()) else []))
             now = time.time()
             # Newest first, and up to four lines of each session: the overlay shows those of the
             # session under the mouse, so one that talks a lot must not push the others out.

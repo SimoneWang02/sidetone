@@ -144,6 +144,10 @@ DEFAULTS = {
                 "jump": "",
                 # Open and close the settings window.
                 "settings": "Ctrl+Alt+S",
+                # /clear for the session in focus, pressed twice (the author, 2026-11-21: "making it
+                # like a shortcut ... double click it to confirm"); claimed only while that session's
+                # terminal is in an editor that can type it. Word has it for "©": shared then.
+                "clear": "Ctrl+Alt+C",
                 # The voice off for every session, or on again (the author, 2026-11-19: "I would
                 # rather have ... a mute shortcut"; "M for mute"). The NVIDIA overlay has Ctrl+Alt+M for
                 # its microphone by default; where it does, both act on the key (share_taken_keys), which

@@ -1543,6 +1543,29 @@ class PushToTalk(HubCase):
         self.said(hub, "clear the chat", "b")
         self.assertEqual((waiting.wake.is_set(), hub.followups.get("b")), (False, ["clear the chat"]))
 
+    def test_the_clear_key_clears_on_its_second_press(self):
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41"}.get(pid)
+        hub.sessions.by_id["a"].tty = "/dev/pts/41"
+        hub.talk_target = "a"
+        hub.publish()
+        self.assertNotIn("clear", self.overlay.of("keys")[-1]["live"] if self.overlay.of("keys") else [])  # no editor
+        editor = hub.editor_waits([4001], shows=True, clears=True)
+        hub.publish()
+        self.assertIn("clear", self.overlay.of("keys")[-1]["live"])
+        hub.on_overlay({"type": "hotkey", "name": "clear"})
+        self.assertFalse(editor.wake.is_set(), "one press only asks")
+        self.assertEqual(self.talks()[-1][:3], ("ready", "a", "Clear the chat?"))
+        hub.on_overlay({"type": "hotkey", "name": "clear"})
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])
+        editor = hub.editor_waits([4001], shows=True, clears=True)
+        hub._clearing.pop("a", None)
+        hub.on_overlay({"type": "hotkey", "name": "clear"})
+        hub._clear_armed = ("a", time.monotonic() - 2)  # the second press came too late
+        hub.on_overlay({"type": "hotkey", "name": "clear"})
+        self.assertFalse(editor.wake.is_set())
+
     def test_a_cleared_chat_is_confirmed_when_claude_code_ends_it(self):
         """No sound when the order goes to the editor; the end of the conversation with the
         reason "clear" says it worked, and only then the sound of "sent" plays."""
