@@ -616,6 +616,13 @@ send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history=
 send(type="peek", on=True, over="web-app")
 shot("list-history-all")  # every session's lines mixed: under the card, with their names
 send(type="config", opaque=True, still=True, mode="list", hotkeys=KEYS, history="session", **HERE)
+# The newest line of the session under the mouse in full, in its card; the rows keep to one line.
+LONG = [dict(HISTORY[0], text="All forty two tests pass. The flaky one was a race in the login mock, which I fixed by "
+             "waiting for the session to be written before the check, and I added a test that runs it a hundred times.")] + HISTORY[1:]
+send(type="state", sessions=sessions(), history=LONG)
+send(type="peek", on=True)
+shot("card-full-line")
+send(type="state", sessions=sessions(), history=HISTORY)
 send(type="peek", on=False)
 send(type="mode", mode="dots")
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, monitor=1, corner="bottom-left", offset_x=30, offset_y=30)

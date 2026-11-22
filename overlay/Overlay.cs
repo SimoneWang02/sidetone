@@ -3318,7 +3318,10 @@ namespace ClaudeSpeaks
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 line.Children.Add(new EndMark(Str(h, "kind"), h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"])));
-                var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
+                // The newest in full, up to five lines: the rows keep to one line each so the lights
+                // never move, and the card of the session under the mouse is where to read it all
+                // (the author, 2026-11-21: "showing the full words of the selected session").
+                var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, MaxHeight = n == 0 && !named ? 84 : 34, TextTrimming = TextTrimming.CharacterEllipsis };
                 if (named) words.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
                 words.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Alpha(Colors.White, n == 0 ? 0.94 : n == 1 ? 0.76 : n == 2 ? 0.64 : 0.55) });
                 Grid.SetColumn(words, 1);

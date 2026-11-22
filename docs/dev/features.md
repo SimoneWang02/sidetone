@@ -355,6 +355,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   output, so it is in step with the sound for every engine. Without `parec` the row says
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
+- The newest line in full in the card (2026-11-21, `FillHistory`): the card of the session under
+  the mouse shows its newest line up to five lines (84 px), the older ones two; the rows keep to
+  one line, so the lights never move. Lines Per Session (`overlay.row_lines`) left the window:
+  at three, a row that grew pushed the lights below it down ("I don't like how it creates more
+  gap"), and every row as tall as three lines was tried and not liked. The author: "showing the
+  full words of the selected session might be a good idea". Picture `card-full-line.png`.
 - How see-through the glass is (2026-11-21, `overlay.glass_clear`, 50; `Ui.GlassClear`,
   `Ui.GlassFill`): one slider from 0 to 100 % instead of Blur or Plain (`overlay.glass`, still
   read; "none" stays plain). 0 is plain dark glass with no blur (a tint of 92 %); above it the

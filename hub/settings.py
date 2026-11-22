@@ -164,8 +164,10 @@ SECTIONS = [
         # "Glass Effect", the author's name for it the same day: 0 % then reads as no effect.
         number("overlay.glass_clear", "Glass Effect", "How much of what is behind shows through, blurred. "
                "0 is plain dark glass.", 0, 100, 5, "%"),
-        choice("overlay.row_lines", "Lines Per Session", "How many lines a sentence may take in the details.",
-               (1, "1"), (2, "2"), (3, "3")),
+        # "Lines Per Session" (overlay.row_lines, 1 to 3) left the window on 2026-11-21: a longer row
+        # pushed the lights below it down, and every row kept as tall as three lines was not liked;
+        # instead the newest line of the session under the mouse is shown in full in its card (the
+        # author: "showing the full words of the selected session"). Still read from config.json.
         choice("overlay.history", "History Shows", "The lines of the session you are on, or of all of them.",
                ("session", "One session"), ("all", "All")),
         choice("overlay.talk_text", "\"Release to Send\"", "How those words move while you hold the talk key.",
