@@ -3343,9 +3343,9 @@ namespace ClaudeSpeaks
         }
 
         // The last lines said, newest first: of one session (`of`), or of all of them. Each
-        // line has a small mark in front for how that turn ended, the sentence (the newest
-        // brightest, older ones dimmer), and at its right end how long ago it was and what the
-        // turn used; a white dot there marks a line that was never heard to its end.
+        // line has how long ago it was, a small mark for how that turn ended, the sentence (the
+        // newest brightest, older ones dimmer), and at its right end what the turn used; a white
+        // dot on the mark tells a line that was never heard to its end.
         void FillHistory(Panel into, string of, int most, bool named)
         {
             int n = 0;
@@ -3356,25 +3356,27 @@ namespace ClaudeSpeaks
                 if (of != null && Str(h, "name") != of) continue;
                 if (n >= most) break;
                 var line = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+                // How long ago at the left, as in a log, and what the turn used at the right: one
+                // figure at each end (the author, 2026-11-22: both at the right "is not very
+                // aesthetic"; "I would do the time on the left"). Each as wide as its widest entry
+                // in this list, so the times stand under one another and so do the tokens.
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "ago" });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                line.Children.Add(new EndMark(Str(h, "kind"), h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"])));
+                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "used" });
+                string said = Str(h, "ago"), used = Str(h, "tokens");
+                var ago = new TextBlock { Text = said, FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(0, 0, said.Length > 0 ? 8 : 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
+                line.Children.Add(ago);
+                var mark = new EndMark(Str(h, "kind"), h.ContainsKey("missed") && h["missed"] != null && Convert.ToBoolean(h["missed"]));
+                Grid.SetColumn(mark, 1);
+                line.Children.Add(mark);
                 var words = new TextBlock { TextWrapping = TextWrapping.Wrap, FontSize = 12, MaxHeight = 34, TextTrimming = TextTrimming.CharacterEllipsis };
                 if (named) words.Inlines.Add(new Run(Str(h, "name") + "  ") { FontWeight = FontWeights.SemiBold, Foreground = Ui.Named(Str(h, "color")) });
                 words.Inlines.Add(new Run(Str(h, "text")) { Foreground = Ui.Alpha(Colors.White, n == 0 ? 0.94 : n == 1 ? 0.76 : n == 2 ? 0.64 : 0.55) });
-                Grid.SetColumn(words, 1);
+                Grid.SetColumn(words, 2);
                 line.Children.Add(words);
-                // Two columns at the right, each as wide as its widest entry in this list, so the
-                // times stand under one another and so do the tokens, with or without a figure.
-                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "ago" });
-                line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "used" });
-                string used = Str(h, "tokens");
-                var ago = new TextBlock { Text = Str(h, "ago"), FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(Str(h, "ago").Length > 0 ? 8 : 0, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
-                Grid.SetColumn(ago, 3);
-                line.Children.Add(ago);
                 var spent = new TextBlock { Text = used, FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(used.Length > 0 ? 10 : 0, 0, 0, 0), HorizontalAlignment = HorizontalAlignment.Right };
-                Grid.SetColumn(spent, 4);
+                Grid.SetColumn(spent, 3);
                 line.Children.Add(spent);
                 into.Children.Add(line);
                 n++;

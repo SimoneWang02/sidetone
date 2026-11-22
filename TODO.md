@@ -129,8 +129,10 @@ these come before anything new.
       Send" and Messages That Wait out of the window (Glint, Number). **Overlay is done**
       (Layout, Details, Glass Effect, History Shows). **Figures, under way 2026-11-22:** Usage Labels
       and Context out of the window (the arc is the default); Tokens of a Reply and Tokens in the
-      History out too, tokens always shown ("who doesn't want to see tokens?"). **Next in it:
-      Time in the History**, then Terminal, Keys.
+      History out too, tokens always shown ("who doesn't want to see tokens?"). Time in the
+      History moved to the left end of each line, the tokens alone at the right ("having both
+      time and tokens on the right ... it's not very aesthetic"; seen in a picture, turned on for
+      the author, **not yet seen live**). **Next in it: Mark Lines Not Heard**, then Terminal, Keys.
       Built on the way, **not seen by them yet**: the Reset button under each section (a
       second click within 4 s confirms; none for Voices), the window resized from its edges
       and maximized by a button or a double click on its top, a dropdown that closes on a
