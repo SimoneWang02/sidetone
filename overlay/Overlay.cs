@@ -2913,20 +2913,26 @@ namespace ClaudeSpeaks
             else if (!show && rail.IsVisible) rail.Hide();
             ShowMuteChip();
 
+            // Selected Session: the other rows are left out, so the glass holds the card and this row
+            // only, and the lights keep their own spacing. Before the panel is measured: measured
+            // first, it kept the room of the rows just left out until the next redraw, which with
+            // Ctrl+Alt still held did not come (the author, 2026-11-22: "the gap left by the second
+            // session still isn't covered ... because I'm still holding Ctrl+Alt").
+            Row chosen = mode == "focus" ? Chosen() : null;
+            foreach (Row row in order)
+            {
+                bool shown = chosen == null || row == chosen;
+                if (row.Chosen != (row == chosen)) { row.Chosen = row == chosen; row.Refresh(); }
+                row.Text.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+            }
             double goal = open && show ? panel.Natural() : 0;
             if (goal > 0 && panel.Goal == 0) openedAt = Ui.Now;  // the rows come in one after another from now
             panel.Goal = goal;
             // A row that says a long sentence is taller than a light; keep the two level (where
             // rows and lights sit side by side).
-            Row chosen = mode == "focus" ? Chosen() : null;
             foreach (Row row in order)
             {
                 row.Pip.Visibility = Island ? Visibility.Visible : Visibility.Collapsed;
-                // Selected Session: the other rows are left out, so the glass holds the card and this
-                // row only, and the lights keep their own spacing.
-                bool shown = chosen == null || row == chosen;
-                if (row.Chosen != (row == chosen)) { row.Chosen = row == chosen; row.Refresh(); }
-                row.Text.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
                 row.Light.Height = !Island && goal > 0 && chosen == null && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
             }
             UpdateBubble(show);
