@@ -159,6 +159,13 @@ voice, and the wait for the transcript.
       cloned voice takes to start a line on the GPU and on a CPU: Kokoro starts fast on a CPU,
       and a slower voice works against the whole point. Kokoro stays the default; the cloned
       voice is one more engine to choose.
+      Tried 2026-11-22: Chatterbox Multilingual 0.1.7 in its own venv
+      (`~/.local/share/voice-clone`, `try.py`; its torch 2.6 pin overridden to 2.8.0+cu128 for
+      the RTX 5070, and `setuptools<81` for its watermarker), cloned from one 40 s English
+      recording. Loads in 7 s, 3 GB of GPU memory. A 4.4 s English line took 3.4 s to make, the
+      Italian one 2.1 s; a short Chinese line came out 10.6 s long (perhaps padding or babble).
+      Whole lines only, no streaming yet, so each waits that long before it starts. Every clip
+      carries Resemble's inaudible Perth watermark. Played to the author; their verdict not yet in.
 
 - [ ] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
