@@ -171,8 +171,8 @@ SECTIONS = [
         # to one line so nothing shifts, and Selected Session shows the sentence in full. Rows that
         # grew pushed the lights apart; rows kept tall, a bubble, and a card floating over the rows
         # below were tried and not liked. Still read from config.json.
-        choice("overlay.history", "History Shows", "The lines of the session you are on, or of all of them.",
-               ("session", "One session"), ("all", "All")),
+        choice("overlay.history", "History Shows", "What was said last, when the mouse rests on the details: by this session, or by all of them.",
+               ("session", "This Session"), ("all", "All Sessions")),
         choice("overlay.talk_text", "\"Release to Send\"", "How those words move while you hold the talk key.",
                ("shimmer", "Glint"), ("pulse", "Breathe"), ("still", "Still")),
         choice("overlay.waiting_mark", "Messages That Wait", "The mark on the light of a session that has words of yours waiting.",
