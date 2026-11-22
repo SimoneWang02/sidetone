@@ -355,6 +355,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   output, so it is in step with the sound for every engine. Without `parec` the row says
   `synth` and the overlay makes up a motion. The same meter gives `heard=` in `voice.log`: the
   time from starting to speak a line until sound really came out.
+- More than one line a session (`overlay.row_lines`, 2026-11-21): every row and its light are as
+  tall as all those lines from the start, said or not (`tall` in the overlay's placing of rows),
+  so the lights stay evenly spaced and nothing moves as a sentence grows and goes; a row grew only
+  while its sentence was said before. The author, with three: "I don't like how it creates more
+  gap between this session and this session below". Picture `list-three-lines.png`: lights 75 to
+  79 px apart (the shapes of the lights account for the rest).
 - How see-through the glass is (2026-11-21, `overlay.glass_clear`, 50; `Ui.GlassClear`,
   `Ui.GlassFill`): one slider from 0 to 100 % instead of Blur or Plain (`overlay.glass`, still
   read; "none" stays plain). 0 is plain dark glass with no blur (a tint of 92 %); above it the
