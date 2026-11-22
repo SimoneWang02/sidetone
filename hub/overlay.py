@@ -43,6 +43,10 @@ DEFAULTS = {
     # at once, with no springs, slides, pops or glints; the live voice levels still move. Also on
     # by itself while Windows' "Animation effects" are off. False = the motion as designed.
     "still": False,
+    # How big the bar, the details and the bubble are drawn, in percent (the author, 2026-11-22:
+    # "let the user pick ... You decide"): 75 to 150 in the window, as Windows' own display scale,
+    # which already sizes everything, overlay too. The settings window is not changed by it.
+    "size": 100,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
     # Held to take hold of the bar with the mouse: drag it, or turn the wheel on it. "" (the

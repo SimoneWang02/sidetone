@@ -187,6 +187,8 @@ SECTIONS = [
         # to one line so nothing shifts, and Selected Session shows the sentence in full. Rows that
         # grew pushed the lights apart; rows kept tall, a bubble, and a card floating over the rows
         # below were tried and not liked. Still read from config.json.
+        number("overlay.size", "Size", "How big the bar, the details and the bubble are drawn. Windows' own display scale "
+               "comes on top of this.", 75, 150, 5, "%"),
         switch("overlay.still", "Reduce Motion", "The overlay opens and changes at once, with no springs, slides or glints. "
                "It is on by itself while Windows' animation effects are off."),
         choice("overlay.history", "History Shows", "What was said last, when the mouse rests on the details: by this session, or by all of them.",

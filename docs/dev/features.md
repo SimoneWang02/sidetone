@@ -187,6 +187,17 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   once each time it changes; `list.jsonl` names the model each recording was heard with.
   Choosing it in the window unloads the model, which loads where it now belongs at the next
   press of the talk key.
+- Overlay size (2026-11-22, `overlay.size`, percent, 100; "Size" in the Overlay section, 75 to
+  150 in steps of 5). The author, told Windows' display scale already sizes it: "we could let
+  the user pick ... You decide"; a percentage like Windows' own. `Glass.Zoom` puts a
+  `ScaleTransform` as the `LayoutTransform` of each window's content (bar, details, bubble,
+  mute mark; their one-pixel edge stays), and the details and bubble are as much wider.
+  What turns the mouse into places along the bar divides by it (`AlongBar`, the press that
+  starts a drag), and the placing beside the bar uses the windows' own widths and the scaled
+  mute mark. The settings window is not changed by it. Pictures at 75 and 150
+  (`tests/overlay_check.py --only=size`): closed, open and speaking, rows level with their
+  lights and the bubble with the speaker. The mouse over the bar at another size is not
+  checked from WSL.
 - Reduce Motion (2026-11-22, `overlay.still`, off; "Reduce Motion" in the Overlay section;
   the author, offered it with an overall size as the first of "more of the overlay as a
   setting": "Oh yes"). The overlay already had `still` for the pictures of

@@ -957,7 +957,7 @@ namespace ClaudeSpeaks
         // at once, so nothing is cut off, and shrinks in about a tenth of a second.
         public static string Resize = "quick";
         FrameworkElement body;
-        double speed;
+        double speed, baseWidth;
 
         public Glass(double unfoldingWidth) : this(unfoldingWidth, false) { }
 
@@ -980,6 +980,7 @@ namespace ClaudeSpeaks
             // only does that for a window that says it can be minimized. (The author: "if I click
             // the icon in the start bar it appears and if I click it again it doesn't disappear".)
             ResizeMode = takesInput ? ResizeMode.CanMinimize : ResizeMode.NoResize;
+            baseWidth = unfoldingWidth;
             if (Unfolds) { Width = unfoldingWidth; Height = 1; MinHeight = 0; Panel.ClipToBounds = true; }
             else SizeToContent = SizeToContent.WidthAndHeight;
             WindowStartupLocation = WindowStartupLocation.Manual;
@@ -1002,6 +1003,15 @@ namespace ClaudeSpeaks
         {
             get { return body; }
             set { body = value; body.VerticalAlignment = VerticalAlignment.Top; Panel.Child = body; }
+        }
+
+        // The whole of what it holds drawn bigger or smaller (overlay.size), its edge kept one
+        // pixel; an unfolding window is as much wider.
+        public void Zoom(double scale)
+        {
+            var inside = Panel.Child as FrameworkElement;
+            if (inside != null) inside.LayoutTransform = scale == 1 ? Transform.Identity : new ScaleTransform(scale, scale);
+            if (Unfolds) Width = Math.Round(baseWidth * scale);
         }
 
         // How tall the window is when fully open: what it holds, plus the edge.
@@ -2493,6 +2503,7 @@ namespace ClaudeSpeaks
         int historyTicks = 3;  // looks of 30 ms the mouse rests on the details before the history shows (`history_after`)
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still, stillAsked;
+        double zoom = 1;  // overlay.size: the bar, the details and the bubble drawn this much bigger or smaller
         string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
         double offsetX = 12, offsetY = 96, idleOpacity = 1.0, listOpacity = 1.0, lastFade = -1;
         double lastFrame, openedAt, bubbleAt, passUntil;
@@ -2681,6 +2692,8 @@ namespace ClaudeSpeaks
                     // `still`: no motion, asked for (overlay.still) or by Windows ("Animation effects" off).
                     stillAsked = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
                     still = Ui.Motionless = stillAsked || !SystemParameters.ClientAreaAnimation;
+                    double size = Math.Max(0.5, Math.Min(2, Num(msg, "size", 100) / 100));
+                    if (size != zoom) { zoom = size; foreach (Glass g in new[] { rail, panel, bubble, muteChip }) g.Zoom(zoom); }
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
@@ -3487,8 +3500,7 @@ namespace ClaudeSpeaks
             {
                 // In the bar's own units, past its edge: along it, whichever way it runs. (In the
                 // bar layout the rows are level with the lights, so this also works over the panel.)
-                double along = Island ? (cursor.X - bar[0]) * rail.ActualWidth / Math.Max(1, bar[2]) - 4
-                                      : (cursor.Y - bar[1]) * rail.ActualHeight / Math.Max(1, bar[3]) - 4;
+                double along = AlongBar(cursor);
                 foreach (Row row in order)
                 {
                     double room = Island ? Row.High : row.Light.Height;
@@ -3928,8 +3940,8 @@ namespace ClaudeSpeaks
         double AlongBar(CursorPoint at)
         {
             int[] bar = rail.Area();
-            return Island ? (at.X - bar[0]) * rail.ActualWidth / Math.Max(1, bar[2]) - 4
-                          : (at.Y - bar[1]) * rail.ActualHeight / Math.Max(1, bar[3]) - 4;
+            return (Island ? (at.X - bar[0]) * rail.ActualWidth / Math.Max(1, bar[2])
+                           : (at.Y - bar[1]) * rail.ActualHeight / Math.Max(1, bar[3])) / zoom - 4;
         }
 
         double Room(Row row) { return Island ? Row.High : row.Light.Height; }
@@ -3954,7 +3966,7 @@ namespace ClaudeSpeaks
             BeginDrag(at);
             if (!dragging) return;
             undecided = true;
-            pressAlong = (Island ? at.X : at.Y) - 4;
+            pressAlong = (Island ? at.X : at.Y) / zoom - 4;
         }
 
         bool ReorderKeyed()
@@ -4490,14 +4502,15 @@ namespace ClaudeSpeaks
             if (!rail.IsVisible) return;
             Rect work = WorkArea();
             bool right = corner.EndsWith("right"), bottom = Low;
-            double width = rail.ActualWidth > 0 ? rail.ActualWidth : Row.High + 8, height = rail.ActualHeight;
+            double width = rail.ActualWidth > 0 ? rail.ActualWidth : (Row.High + 8) * zoom, height = rail.ActualHeight;
             // The mute mark: past the end of the bar that is away from the screen's edge (under a
             // bar at the top, over one at the bottom), or at the right end of the island.
-            if (Island) { muteChip.Left = rail.Left + width + ChipGap; muteChip.Top = rail.Top + (height - ChipSize) / 2; }
+            double chip = ChipSize * zoom;
+            if (Island) { muteChip.Left = rail.Left + width + ChipGap; muteChip.Top = rail.Top + (height - chip) / 2; }
             else
             {
-                muteChip.Left = rail.Left + (width - ChipSize) / 2;
-                muteChip.Top = bottom ? rail.Top - ChipGap - ChipSize : rail.Top + height + ChipGap;
+                muteChip.Left = rail.Left + (width - chip) / 2;
+                muteChip.Top = bottom ? rail.Top - ChipGap - chip : rail.Top + height + ChipGap;
             }
             if (Island)
             {
@@ -4505,19 +4518,19 @@ namespace ClaudeSpeaks
                 // Under its middle (over it in the lower half of the screen), kept on the screen.
                 if (panel.Goal > 0)
                 {
-                    panel.Left = Math.Max(work.Left + 4, Math.Min(work.Right - PanelWidth - 4, middle - PanelWidth / 2));
+                    panel.Left = Math.Max(work.Left + 4, Math.Min(work.Right - panel.Width - 4, middle - panel.Width / 2));
                     panel.Top = bottom ? rail.Top - Gap - panel.Goal : rail.Top + height + Gap;
                 }
                 if (bubble.Goal > 0)
                 {
-                    bubble.Left = Math.Max(work.Left + 4, Math.Min(work.Right - BubbleWidth - 4, middle - BubbleWidth / 2));
+                    bubble.Left = Math.Max(work.Left + 4, Math.Min(work.Right - bubble.Width - 4, middle - bubble.Width / 2));
                     bubble.Top = bottom ? rail.Top - Gap - bubble.Goal : rail.Top + height + Gap;
                 }
                 return;
             }
             if (panel.Goal > 0)
             {
-                panel.Left = right ? rail.Left - PanelWidth - Gap : rail.Left + width + Gap;
+                panel.Left = right ? rail.Left - panel.Width - Gap : rail.Left + width + Gap;
                 double top = bottom ? rail.Top + height - panel.Goal : rail.Top;
                 panel.Top = Math.Max(work.Top + 4, Math.Min(work.Bottom - panel.Goal - 4, top));
             }
@@ -4526,7 +4539,7 @@ namespace ClaudeSpeaks
                 double level = height / 2;
                 try { if (talker != null) level = talker.Light.TransformToAncestor(rail).Transform(new Point(0, talker.Light.ActualHeight / 2)).Y; }
                 catch (InvalidOperationException) { }  // its light is not on screen yet
-                bubble.Left = right ? rail.Left - BubbleWidth - Gap : rail.Left + width + Gap;
+                bubble.Left = right ? rail.Left - bubble.Width - Gap : rail.Left + width + Gap;
                 bubble.Top = Math.Max(work.Top + 4, Math.Min(work.Bottom - bubble.Goal - 4, rail.Top + level - bubble.Goal / 2));
             }
         }

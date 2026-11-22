@@ -473,6 +473,20 @@ marks("waiting-dot", opened=False)
 look(still=False, waiting_cover="each", waiting_hold=60)
 marks("waiting-covers-the-light", opened=False, settle=1.6)
 look()
+# The whole overlay drawn smaller and bigger (overlay.size): closed, with the details out, and
+# with a session speaking, so the bubble's width and place show too.
+for size in (75, 150):
+    look(size=size)
+    send(type="state", sessions=sessions(), history=HISTORY)
+    shot(f"size-{size}", 0.8)
+    send(type="peek", on=True)
+    shot(f"size-{size}-open", 0.6)
+    send(type="peek", on=False)
+    say(3)
+    shot(f"size-{size}-speaking", 1.6)
+    send(type="state", sessions=sessions(), history=HISTORY)
+    time.sleep(0.5)
+look()
 # How full each session's context is, as an arc around its light: nearly empty, about half,
 # past the warning, full, and one that is not known; then with words waiting on top of it.
 CONTEXT = {"sidetone": 7, "api-server": 56, "web-app": 83, "data-pipeline": 100}
