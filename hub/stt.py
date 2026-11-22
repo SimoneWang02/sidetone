@@ -111,14 +111,18 @@ class Recorder:
         return b"".join(self._chunks)
 
 
-def runs(stretches: list, languages: list, least_sure: float = 0.6, least_long: int = RATE) -> list:
+def runs(stretches: list, languages: list, least_sure: float = 0.7, least_long: int = int(0.75 * RATE)) -> list:
     """[(language, start, end)]: each stretch of speech ({language: likelihood}, start, end) given
     the likeliest of `languages` (any, when none are named), and neighbours in one language
-    joined. A stretch shorter than `least_long` samples or less sure than `least_sure` goes
-    with the one before it (the first such with the one after); one run means no mix."""
+    joined. A stretch shorter than `least_long` samples or less sure than `least_sure` (among
+    `languages` alone) goes with the one before it (the first such with the one after); one
+    run means no mix."""
     found = []
     for likely, start, end in stretches:
-        lang = max(languages or likely, key=lambda code: likely.get(code, 0.0))
+        if languages:
+            total = sum(likely.get(code, 0.0) for code in languages) or 1.0
+            likely = {code: likely.get(code, 0.0) / total for code in languages}
+        lang = max(likely, key=likely.get)
         sure = likely.get(lang, 0.0) >= least_sure and end - start >= least_long
         if found and (not sure or found[-1][0] in (lang, None)):
             if found[-1][0] is None and sure:
@@ -182,10 +186,14 @@ class Transcriber:
     # author's 87 long recordings, the mixed one among them at 0.66), the language of each
     # stretch of speech between pauses is found too, and if they differ each run of one
     # language is written in it. A stretch counts only when it is MIXED_LONG seconds or more
-    # and MIXED_SURE sure of its language (the mixed one's Italian was 0.72; the wrong ones in
-    # the author's recordings were 0.49 at most); others go with the stretch before them.
-    MIXED_SURE = 0.6
-    MIXED_LONG = 1.0
+    # and MIXED_SURE sure of its language, weighed among the languages you speak alone (the
+    # author's "试一下吧" was 0.9 s; an Italian stretch the model took for Hungarian still came
+    # out Italian among en, it and zh); others go with the stretch before them. Chosen on the
+    # author's recordings (the per-stretch likelihoods of all 78 with pauses): 0.7 split
+    # their three mixed ones and none of the others it would look at; 0.6 also split an
+    # Italian sentence with "side by side" in it, writing its Italian as English.
+    MIXED_SURE = 0.7
+    MIXED_LONG = 0.75
 
     def __init__(self, model: str = "small.en", language: str | list = "en", device: str = "cpu",
                  gpu_model: str = "large-v3-turbo"):

@@ -290,15 +290,17 @@ class MixedLanguages(unittest.TestCase):
     def test_unsure_or_short_stretches_go_with_their_neighbour(self):
         found = [({"it": 0.99}, 0, 3 * self.S), ({"en": 0.24, "it": 0.2}, 3 * self.S, 6 * self.S)]  # measured: no mix
         self.assertEqual(stt.runs(found, ["en", "it"]), [])
-        found = [({"en": 0.98}, 0, self.S // 2), ({"it": 0.99}, self.S, 4 * self.S)]  # "ok" before Italian
+        found = [({"en": 0.98}, 0, self.S // 2), ({"it": 0.99}, self.S, 4 * self.S)]  # "ok" before Italian, 0.5 s
         self.assertEqual(stt.runs(found, ["en", "it"]), [])
-        found = [({"en": 0.3}, 0, self.S), ({"it": 0.99}, self.S, 4 * self.S), ({"en": 0.97}, 4 * self.S, 7 * self.S)]
+        found = [({"en": 0.3, "it": 0.25}, 0, self.S), ({"it": 0.99}, self.S, 4 * self.S), ({"en": 0.97}, 4 * self.S, 7 * self.S)]
         self.assertEqual(stt.runs(found, ["en", "it"]), [("it", 0, 4 * self.S), ("en", 4 * self.S, 7 * self.S)])
 
-    def test_only_the_named_languages(self):
-        found = [({"es": 0.6, "it": 0.35}, 0, 3 * self.S), ({"en": 0.99}, 3 * self.S, 6 * self.S)]
-        self.assertEqual(stt.runs(found, ["en", "it"]), [])  # Italian taken for Spanish: not sure enough of it
-        self.assertEqual(stt.runs(found, []), [("es", 0, 3 * self.S), ("en", 3 * self.S, 6 * self.S)])
+    def test_weighed_among_the_named_languages_alone(self):
+        # The author's, 2026-11-22: Italian taken for Hungarian, then Chinese, 0.9 s at the end.
+        found = [({"hu": 0.86, "en": 0.1}, 0, 25000), ({"it": 0.26, "en": 0.09, "zh": 0.02}, 34000, 56000),
+                 ({"zh": 0.99, "en": 0.01}, 62000, 83000), ({"zh": 0.9, "en": 0.06}, 98000, 113000)]
+        self.assertEqual(stt.runs(found, ["en", "it", "zh"]), [("en", 0, 25000), ("it", 34000, 56000), ("zh", 62000, 113000)])
+        self.assertEqual(stt.runs(found, []), [("hu", 0, 56000), ("zh", 62000, 113000)])  # any language
 
 
 class MixedRecording(unittest.TestCase):

@@ -160,6 +160,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   0.34 s each (every stretch is padded to Whisper's 30 s), so it waits for an unsure one. A
   switch in the middle of a sentence with no pause still comes out in one language. The log
   line says "(mixed: it, en, zh)".
+  Tuned the same hour on the author's next two tries: "试一下吧" at the end (0.9 s, 0.90 Chinese)
+  was under the 1 s floor and became Italian, and a message that began in Italian the model
+  took for Hungarian (0.86) stayed all English. Each stretch is now weighed among the named
+  languages alone, at 0.7 and 0.75 s: on the per-stretch likelihoods of all 78 kept recordings
+  with pauses this splits the three mixed ones and none of the others it would look at (0.6
+  also split "Aspetta, fammi sentire side by side, ..." and wrote its Italian as English).
+  The three now: it/en/zh, en/it/zh, and en/zh ("Ah, it was too short. I said in Chinese.
+  试一下吧 就看一下怎么样 试一下吧": its Italian opening still came out in English).
 - Push-to-talk on the graphics card (2026-11-22, `whisper_device`: auto, cpu, gpu, "Transcribe
   On" in the window; `whisper_gpu_model`, `large-v3-turbo`, config.json only, like
   `whisper_model`). Measured first on the author's 102 kept recordings (`docs/dev/facts.md`):
