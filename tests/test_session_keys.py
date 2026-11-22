@@ -110,5 +110,29 @@ class SessionKeys(HubCase):
         self.assertTrue(editor.wake.is_set())
 
 
+class OneSessionTwoTerminals(SessionKeys):
+    """One conversation open in two terminals (resumed in a second one): closing one of them
+    does not take it off the overlay."""
+
+    def test_closing_one_of_its_terminals_keeps_it(self):
+        hub = self.make()
+        s = hub.sessions.by_id["a"]
+        s.pids = [4001, 4002]
+        hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))
+        self.assertIn("a", hub.sessions.by_id)
+        hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))  # and the other one too
+        self.assertNotIn("a", hub.sessions.by_id)
+
+    def test_the_terminal_that_is_left_is_found(self):
+        hub = self.make()
+        s = hub.sessions.by_id["a"]
+        s.pids, s.tty, s.seen_file = [4001, 4002], "/dev/pts/41", True
+        live = {"a": {"pid": 4002, "pids": [4002], "status": "idle", "status_at": 0, "name": ""}}
+        self.addCleanup(setattr, hub_module.claude_sessions, "read", hub_module.claude_sessions.read)
+        hub_module.claude_sessions.read = lambda directory: live
+        hub.reconcile()
+        self.assertEqual((s.pids, s.tty), ([4002], "/dev/pts/42"))
+
+
 if __name__ == "__main__":
     unittest.main()

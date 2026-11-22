@@ -300,7 +300,13 @@ Roughly easiest first, the larger ones after.
       closes its terminal ("Ctrl Alt plus and Ctrl Alt minus to add a terminal session and
       remove it"). Needs the extension 0.5.0 (`sidetone vscode install`, then Restart Extension
       Host). The keystrokes measured in tmux; the editor's part (split, typing, closing) not
-      seen working yet.
+      seen working yet. Tried by the author the same hour: the new terminal opened beside and its
+      session took the focus (log); they ended this session by mistake with the end key.
+- [ ] One conversation open in two terminals (resumed in a second one; the author, 2026-11-22:
+      "two terminals that are pointing into the same session. If I close one, I close ... the one
+      in the overlay"): closing one now keeps it, and its terminal becomes the one left
+      (`Session.pids`). Still one row for both, since they are one conversation. **Not tried
+      by the author.**
 
 ### Larger extras
 

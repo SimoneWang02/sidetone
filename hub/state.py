@@ -205,6 +205,7 @@ class Session:
     permission_mode: str = ""  # default | plan | acceptEdits | auto | ... as last reported by a hook
     seen_file: bool = False  # Claude Code's own session file was seen for it (see claude_sessions.py)
     tty: str | None = None  # the terminal it runs in ("" = none); not looked for yet while None (see terminal.py)
+    pids: list = field(default_factory=list)  # the live processes that have it, from Claude Code's files: two when it is open in two terminals
     order: int = 0  # its place in the bar: lower comes first, and it keeps it across a hub restart
     context: float | None = None  # how full its context is, in percent (see usage.context); None = not known
     turn_at: int | None = None  # how long its record was when the turn's prompt came (see usage.turn)

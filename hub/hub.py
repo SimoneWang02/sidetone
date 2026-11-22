@@ -220,6 +220,15 @@ class Hub(Permissions, Talk):
         sid, event = ev["session_id"], ev.get("hook_event_name", "")
         with self.lock:
             self.last_event = time.monotonic()
+            ending = self.sessions.by_id.get(sid)
+            if event == "SessionEnd" and ending and len(ending.pids) > 1 and ev.get("reason") != "clear":
+                # The same conversation is open in another terminal too (resumed there; the author,
+                # 2026-11-22: "two terminals that are pointing into the same session. If I close one
+                # ... the one in the overlay" went): it stays. `reconcile` takes it away once no
+                # terminal has it, and finds the terminal that is left.
+                ending.pids = []  # read again from the files; a second end before that is the last one
+                log(self.cfg, "hub.log", f"session [{sid[:8]}] ended in one terminal, still open in another")
+                return
             if event == "SessionEnd":
                 self._cleared(sid, ev.get("reason") == "clear")
                 self._ended_by_key(sid)
@@ -410,6 +419,13 @@ class Hub(Permissions, Talk):
                 info, quiet = live.get(s.id), time.monotonic() - s.updated
                 if info:
                     s.seen_file = True
+                    pids = info.get("pids") or [info["pid"]]
+                    if s.pids != pids:
+                        # A terminal it was open in has closed: its terminal is one that is left.
+                        ttys = {terminal_mod.tty_of(pid) for pid in pids}
+                        if s.tty and all(ttys) and s.tty not in ttys:  # only when every one is known
+                            s.tty = None
+                        s.pids = pids
                     if s.tty is None:  # the terminal it runs in, to mark it (see terminal.py)
                         s.tty = terminal_mod.tty_of(info["pid"])
                     if info.get("name") and info["name"] != s.named:  # Claude Code's own name for the session
