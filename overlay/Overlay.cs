@@ -3222,7 +3222,10 @@ namespace ClaudeSpeaks
                 tiles.Children.Add(Tile(name, figure, detailsBars ? share : -2, warn, detailsBars && share >= 0 ? Stood("tile" + tiles.Children.Count, share) : -1));
             }
             if (!any) return false;
-            if (order.Count > 1)  // whose figures they are, where there is a choice
+            // Whose figures they are, where there is a choice; not in Selected Session, where the one
+            // row under the card says it already (the author, 2026-11-22: "the metric box shouldn't
+            // have the title repeated ... it's redundant").
+            if (order.Count > 1 && mode != "focus")
             {
                 var whose = new TextBlock { FontSize = 12, Margin = new Thickness(0, 0, 0, 5), TextTrimming = TextTrimming.CharacterEllipsis };
                 Heading(whose, about.Name, about.Title, about.Color);
