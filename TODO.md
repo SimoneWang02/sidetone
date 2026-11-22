@@ -18,151 +18,7 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [x] A session's first spoken words before anything was typed to it (mended 2026-11-17:
-      the first session after the hub had gone away had no listener until its first
-      prompt; the author spoke to it twice and asked "why are you not receiving audio
-      inputs?"). Tests only. 2026-11-20: a new session opened while the hub ran got a spoken
-      "Hello." before anything was typed and answered (sidetone 5); the case that was
-      broken, the hub gone first, still untried. To try: close every session, wait for the hub to go
-      (`sidetone hub stop` does it at once), open one session and speak to it
-      without typing. 2026-11-22, checked by Claude at the author's asking ("can you not check
-      this by yourself?"): a hub of its own (`CS_RUN` apart, silent voice, no overlay), none
-      running, a new haiku session opened in tmux; its SessionStart started the hub and the
-      listener was waiting; words handed to it as a heard follow-up, nothing typed, and it
-      answered "Yes, I can hear you." Only the microphone was left out.
-- [x] The card's figures as totals of the session (2026-11-20, the author's idea after
-      "This reply" and "This turn" were "not very intuitive"): "Total tokens" and "Total time"
-      are now what the whole session has used and how long Claude worked in it, since it began or
-      was cleared; each turn's own tokens stay on its history line. Seen in a picture only.
-      Seen by the author on their own sessions 2026-11-22: "I think they look great."
-- [ ] A settings window for voices, keys and overlay options (the author's idea). Today these
-      are a JSON file and the command line.
-      A first one built on the evening of 2026-11-18 and put on their screen:
-      `Ctrl+Alt+S` or `sidetone settings`. Sections at the left (Voice, Voices,
-      Talking, Overlay, Figures, Terminal, Keys), 54 settings, each changed with a
-      click and in effect at once; hotkeys are changed by clicking one and pressing the
-      new keys. **For the author to judge, none of it agreed beforehand:** the look,
-      the wording, which settings are in it, and the key that opens it. **To try by
-      hand** (checked from WSL only with pictures and with clicks made inside the
-      program): a choice, a switch, a slider, the list of voices, typing a new hotkey
-      and getting the old one back, moving the window by its head, Esc.
-      Not in it yet: languages, the colors, where the overlay sits and on which
-      monitor, which figures a row and the card show, your own voices, voices of
-      projects that are not open, a way back to what a new install has, a search.
-      Their first look: it must be an ordinary window that can go behind others and be
-      put away, the menu at the left on a ground of its own, and the tool's name not
-      beside the heading. All three done the same hour and seen by them ("that's
-      better"); putting it away and bringing it back from the taskbar: "It works
-      perfectly". Still untried by hand: a slider, the list of voices, typing a new
-      hotkey.
-      On 2026-11-19 the author put it last of the things to try: "the settings are the
-      last things to try because there are so many".
-      2026-11-20: going through it one section at a time. **Voice is done** (renamed Mute,
-      keys named in descriptions, title case, summary language as a dropdown of Match My
-      Language, English, Italian, Chinese, Say the Session Name as Always or Never, one
-      Volume 0 to 100, progress, the repeat choice and the feedback choice removed, most used
-      first). **Next: Talking**, then Overlay, Figures, Terminal, Keys, Voices (the author
-      stopped for the night: "We can continue tomorrow").
-      2026-11-21: Voices taken first. The author: "Voice" and "Voices" too alike, only the
-      open sessions, no label, no preview, narrow in the middle, and a voice per language.
-      Agreed and built: Voice renamed **Speech**; the page as wide as the others; English,
-      Italian and Chinese, each a card of its voices with readable names ("Heart, American
-      woman, quality A"), a ▶ and a tick; sessions take the ticked voices in their order
-      (dragged by the dots at the left); unticked ones folded under "More Voices". English
-      down to the eight clearest by Kokoro's grades, Piper's voices marked faster. A part
-      with each open session's voice came out the same morning ("what is the point of it").
-      Later the same night, agreed with the author: each language a row that opens and
-      closes (all closed at first, "8 voices" beside it), one sentence for the page that says
-      the purpose first, at most twelve voices a language, Chinese ordered by measured clarity
-      (the author's four ticked, the eight clearest under More Voices), Piper's voices marked
-      faster, "quality A" instead of "grade A", a ▶ pressed again starts over, and a stop
-      square while a preview plays. 2026-11-21 noon: the count reads "4 selected" (agreed after "4 of 12 ticked" was "not very conventional") every voice described alike ("American woman, Excellent", "Chinese woman, Good", "Italian woman, Okay, faster"), and an unticked voice stays in place until its language is closed (built, not tried). Speech now plays with a 300 ms buffer and silence around
-      it (scratches through AirPods; "still a bit" at 150 ms, and Fenrir and Michael scratched
-      while the processor was loaded by the Chinese ranking). **For the author to try**: the
-      stop square, dragging, ticking, More Voices, and whether Fenrir and Michael still
-      scratch now that nothing else loads the processor. Noon: the scratches left
-      were the loudness meter taking the speakers' buffer to 30 ms (measured); it now asks for
-      the voice's. Previews heard by the author: "It's perfect". Still to see: whether the wave
-      beside a speaking session moves smoothly. Piper's "Faster" became the seconds each voice takes
-      to make a sentence, timed on each computer by itself, with an i that explains it (seen
-      in a picture only). Each language has a switch for whether you speak it, the same as
-      the languages push-to-talk listens for (seen in a picture only). A project keeps its voice
-      when the order changes, in every language (Italian and Chinese were dealt out again; the
-      author, after swapping Heart and Bella: keep it simple); the order is for new projects. The voices best first, on a new
-      install and in the author's own lists ("set my voices ... first the best one"): English
-      by Kokoro's grade (the women first, as they are graded higher), Italian Sara, Nicola,
-      then Paola, Chinese the four clearest measured instead of the four picked by ear. Tried by
-      the author by hand the same afternoon: dragging, unticking and ticking again, the language
-      switches (Italian off, then Italian spoken came out as English, as it should), the gap
-      under an open language ("That's perfect"). **Voices is done**; still to notice: the wave
-      beside a speaking session after the meter change. **Talking, started 2026-11-21:**
-      Confirm Before Sending is a switch ("Acting alone" taken out); Time to Cancel Before
-      Sending out of the window; Time to Take Words Back out too, waiting words can always be
-      taken back; The Cancel Key Stops a Session became the switch Cancel Key Interrupts Claude ("like Ctrl+C"); the repeat key
-      pressed again starts over. Words spoken to a busy session are read after its next step
-      ("A Busy Session Hears You"), tested with the real hook and a haiku session, **not yet
-      tried by the author**. Side Questions became a switch ("Always" taken out). A spoken
-      yes or no answers a permission prompt, longer words explain (the setting left the window;
-      **not yet tried by the author**). Usage by Voice left the window in another session. A
-      clear key, Ctrl+Alt+C pressed twice: asks in a banner like the mute key's, "Clear sidetone?",
-      with a bin (seen by the author: "I think it looks good");
-      a clear has its own sound, no "sent" sign, and the arc winds back to 0 (**the sound and the
-      arc not yet heard and seen by the author**). Typing Takes the Focus out of the
-      window (always on), Short Words in Your Last Language too, and Mute Discord While Talking
-      (always on; binding the talk key itself in Discord does not work). The README's list of
-      what it does still names settings that left the window (`unsend_seconds`, `followup_delay`):
-      for the documentation step. Listen On After Release kept, renamed Release Delay (Discord's
-      word). The page ordered most important first, names and descriptions polished (seen in a
-      picture). **Talking is done.** **Overlay, under way 2026-11-21:**
-      Layout and Details name their keys (Details: Always, On Hover); Details Changing Size, Move
-      It by the Details, What Opens the Details and the four signs of a muted voice out of the
-      window; Opacity at Rest out of the window, its default now 100% (seen at 50%: "standard is
-      100%"). Glass is a slider, 0 % plain to 100 % clearest, 50 % the look it had (**not yet
-      judged by the author**). Lines Per Session at 3 moves the lights as a sentence grows; every
-      row kept as tall as three lines was tried and not liked ("I don't like it"), and reverted.
-      Then, the same night, the newest line in full in the card, and a Details choice Selected
-      Only (the card and the chosen session's row alone): built, tried by the author, and taken
-      back at their word ("let's reverse it as it was before"). Lines Per Session stays, 1 to 3.
-      A long sentence floating over the rows below, as a card, was tried too and not liked.
-      Then built (2026-11-22): the details key as a zoom of three views, Bar Only, All Sessions
-      (one line each), Selected Session (the card and that session alone, its sentence in full);
-      Details offers the same three, Lines Per Session left the window (seen in a picture; **not
-      yet tried by the author**). In Selected Session the mouse over the card no longer
-      picks the first session, and the history is in the card by default (History in Selected
-      Session: Always or When the Mouse Rests; **not yet tried by the author**). History Shows: This Session or All Sessions. "Release to
-      Send" and Messages That Wait out of the window (Glint, Number). **Overlay is done**
-      (Layout, Details, Glass Effect, History Shows). **Figures, under way 2026-11-22:** Usage Labels
-      and Context out of the window (the arc is the default); Tokens of a Reply and Tokens in the
-      History out too, tokens always shown ("who doesn't want to see tokens?"). Time in the
-      History moved to the left end of each line, the tokens alone at the right ("having both
-      time and tokens on the right ... it's not very aesthetic"; seen in a picture, turned on for
-      the author). With the time shown it takes the place of the mark, always green, to tell the lines
-      apart ("replacing the tick icons with the time"; the mark's own colors were tried and
-      not kept: "nobody knows what the colors are"); the time column one width whatever it
-      holds, "now" or "14m", and times past an hour as "2h", past a day as "3d" ("I want it to
-      be ... consistent"); a little more room between the history's lines, 4 px above and below
-      each instead of 2, so a sentence's two lines stay apart from the next one ("very dense";
-      one line each was tried and not kept: "I still prefer two lines"); the panel and the bubble
-      380 px wide instead of 340 (tried live: "I think it's good"); without it the marks stay (seen in a picture, **not yet seen live**). Time in the History
-      stays off on a new install (the author). Mark Lines Not Heard, Figures Drawn As (tiles stay) and
-      Bars Under the Figures out of the window, then Usage Bars and A Model's Own Week; the two
-      left (Time in the History, Plan Usage) moved to the end of Overlay and the Figures page
-      gone (the author: "moving them into overlays instead?"). **Figures is done.** **Terminal, under way 2026-11-22:** Tint Strength in percent, 0 to 100
-      (100 % is 0.3 of the color, the old top; "a percentage from 0 to 100"; seen in a picture),
-      in steps of 5, the default 30 % (0.09; 27 % was "such a weird number").
-      The flash when the focus moves stays its own switch, apart from Tint (the author saw it
-      flash with Tint off). Focus Follows the Terminal tried by the author ("I checked it. I like
-      it"). Terminal Follows the Focus explained (with terminals side by side it only moves the
-      keyboard; "I see"), kept. Name in the Terminal's Title tried and taken out of the window (off). Renamed: Terminal
-      Color, Color Strength, Clicking a Terminal Selects It, Switching Moves the Keyboard ("yeah,
-      go on"). **Keys, under way 2026-11-22:** Share Keys Other Programs Have out of the window
-      (on), and Go to the Terminal (no key; Switching Moves the Keyboard does it). The other keys
-      checked by the author ("I checked every combination, that looked good"). **Keys is done:
-      every page has been gone through.** **Terminal is done.**
-      Built on the way, **not seen by them yet**: the Reset button under each section (a
-      second click within 4 s confirms; none for Voices), the window resized from its edges
-      and maximized by a button or a double click on its top, a dropdown that closes on a
-      second click.
+Nothing open (2026-11-22).
 
 ## 2. To decide
 
@@ -538,6 +394,153 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Tried by hand
 
+- [x] A session's first spoken words before anything was typed to it (mended 2026-11-17:
+      the first session after the hub had gone away had no listener until its first
+      prompt; the author spoke to it twice and asked "why are you not receiving audio
+      inputs?"). Tests only. 2026-11-20: a new session opened while the hub ran got a spoken
+      "Hello." before anything was typed and answered (sidetone 5); the case that was
+      broken, the hub gone first, still untried. To try: close every session, wait for the hub to go
+      (`sidetone hub stop` does it at once), open one session and speak to it
+      without typing. 2026-11-22, checked by Claude at the author's asking ("can you not check
+      this by yourself?"): a hub of its own (`CS_RUN` apart, silent voice, no overlay), none
+      running, a new haiku session opened in tmux; its SessionStart started the hub and the
+      listener was waiting; words handed to it as a heard follow-up, nothing typed, and it
+      answered "Yes, I can hear you." Only the microphone was left out.
+- [x] The card's figures as totals of the session (2026-11-20, the author's idea after
+      "This reply" and "This turn" were "not very intuitive"): "Total tokens" and "Total time"
+      are now what the whole session has used and how long Claude worked in it, since it began or
+      was cleared; each turn's own tokens stay on its history line. Seen in a picture only.
+      Seen by the author on their own sessions 2026-11-22: "I think they look great."
+- [x] A settings window for voices, keys and overlay options (the author's idea). Today these
+      are a JSON file and the command line.
+      A first one built on the evening of 2026-11-18 and put on their screen:
+      `Ctrl+Alt+S` or `sidetone settings`. Sections at the left (Voice, Voices,
+      Talking, Overlay, Figures, Terminal, Keys), 54 settings, each changed with a
+      click and in effect at once; hotkeys are changed by clicking one and pressing the
+      new keys. **For the author to judge, none of it agreed beforehand:** the look,
+      the wording, which settings are in it, and the key that opens it. **To try by
+      hand** (checked from WSL only with pictures and with clicks made inside the
+      program): a choice, a switch, a slider, the list of voices, typing a new hotkey
+      and getting the old one back, moving the window by its head, Esc.
+      Not in it yet: languages, the colors, where the overlay sits and on which
+      monitor, which figures a row and the card show, your own voices, voices of
+      projects that are not open, a way back to what a new install has, a search.
+      Their first look: it must be an ordinary window that can go behind others and be
+      put away, the menu at the left on a ground of its own, and the tool's name not
+      beside the heading. All three done the same hour and seen by them ("that's
+      better"); putting it away and bringing it back from the taskbar: "It works
+      perfectly". Still untried by hand: a slider, the list of voices, typing a new
+      hotkey.
+      On 2026-11-19 the author put it last of the things to try: "the settings are the
+      last things to try because there are so many".
+      2026-11-20: going through it one section at a time. **Voice is done** (renamed Mute,
+      keys named in descriptions, title case, summary language as a dropdown of Match My
+      Language, English, Italian, Chinese, Say the Session Name as Always or Never, one
+      Volume 0 to 100, progress, the repeat choice and the feedback choice removed, most used
+      first). **Next: Talking**, then Overlay, Figures, Terminal, Keys, Voices (the author
+      stopped for the night: "We can continue tomorrow").
+      2026-11-21: Voices taken first. The author: "Voice" and "Voices" too alike, only the
+      open sessions, no label, no preview, narrow in the middle, and a voice per language.
+      Agreed and built: Voice renamed **Speech**; the page as wide as the others; English,
+      Italian and Chinese, each a card of its voices with readable names ("Heart, American
+      woman, quality A"), a ▶ and a tick; sessions take the ticked voices in their order
+      (dragged by the dots at the left); unticked ones folded under "More Voices". English
+      down to the eight clearest by Kokoro's grades, Piper's voices marked faster. A part
+      with each open session's voice came out the same morning ("what is the point of it").
+      Later the same night, agreed with the author: each language a row that opens and
+      closes (all closed at first, "8 voices" beside it), one sentence for the page that says
+      the purpose first, at most twelve voices a language, Chinese ordered by measured clarity
+      (the author's four ticked, the eight clearest under More Voices), Piper's voices marked
+      faster, "quality A" instead of "grade A", a ▶ pressed again starts over, and a stop
+      square while a preview plays. 2026-11-21 noon: the count reads "4 selected" (agreed after "4 of 12 ticked" was "not very conventional") every voice described alike ("American woman, Excellent", "Chinese woman, Good", "Italian woman, Okay, faster"), and an unticked voice stays in place until its language is closed (built, not tried). Speech now plays with a 300 ms buffer and silence around
+      it (scratches through AirPods; "still a bit" at 150 ms, and Fenrir and Michael scratched
+      while the processor was loaded by the Chinese ranking). **For the author to try**: the
+      stop square, dragging, ticking, More Voices, and whether Fenrir and Michael still
+      scratch now that nothing else loads the processor. Noon: the scratches left
+      were the loudness meter taking the speakers' buffer to 30 ms (measured); it now asks for
+      the voice's. Previews heard by the author: "It's perfect". Still to see: whether the wave
+      beside a speaking session moves smoothly. Piper's "Faster" became the seconds each voice takes
+      to make a sentence, timed on each computer by itself, with an i that explains it (seen
+      in a picture only). Each language has a switch for whether you speak it, the same as
+      the languages push-to-talk listens for (seen in a picture only). A project keeps its voice
+      when the order changes, in every language (Italian and Chinese were dealt out again; the
+      author, after swapping Heart and Bella: keep it simple); the order is for new projects. The voices best first, on a new
+      install and in the author's own lists ("set my voices ... first the best one"): English
+      by Kokoro's grade (the women first, as they are graded higher), Italian Sara, Nicola,
+      then Paola, Chinese the four clearest measured instead of the four picked by ear. Tried by
+      the author by hand the same afternoon: dragging, unticking and ticking again, the language
+      switches (Italian off, then Italian spoken came out as English, as it should), the gap
+      under an open language ("That's perfect"). **Voices is done**; still to notice: the wave
+      beside a speaking session after the meter change. **Talking, started 2026-11-21:**
+      Confirm Before Sending is a switch ("Acting alone" taken out); Time to Cancel Before
+      Sending out of the window; Time to Take Words Back out too, waiting words can always be
+      taken back; The Cancel Key Stops a Session became the switch Cancel Key Interrupts Claude ("like Ctrl+C"); the repeat key
+      pressed again starts over. Words spoken to a busy session are read after its next step
+      ("A Busy Session Hears You"), tested with the real hook and a haiku session, **not yet
+      tried by the author**. Side Questions became a switch ("Always" taken out). A spoken
+      yes or no answers a permission prompt, longer words explain (the setting left the window;
+      **not yet tried by the author**). Usage by Voice left the window in another session. A
+      clear key, Ctrl+Alt+C pressed twice: asks in a banner like the mute key's, "Clear sidetone?",
+      with a bin (seen by the author: "I think it looks good");
+      a clear has its own sound, no "sent" sign, and the arc winds back to 0 (**the sound and the
+      arc not yet heard and seen by the author**). Typing Takes the Focus out of the
+      window (always on), Short Words in Your Last Language too, and Mute Discord While Talking
+      (always on; binding the talk key itself in Discord does not work). The README's list of
+      what it does still names settings that left the window (`unsend_seconds`, `followup_delay`):
+      for the documentation step. Listen On After Release kept, renamed Release Delay (Discord's
+      word). The page ordered most important first, names and descriptions polished (seen in a
+      picture). **Talking is done.** **Overlay, under way 2026-11-21:**
+      Layout and Details name their keys (Details: Always, On Hover); Details Changing Size, Move
+      It by the Details, What Opens the Details and the four signs of a muted voice out of the
+      window; Opacity at Rest out of the window, its default now 100% (seen at 50%: "standard is
+      100%"). Glass is a slider, 0 % plain to 100 % clearest, 50 % the look it had (**not yet
+      judged by the author**). Lines Per Session at 3 moves the lights as a sentence grows; every
+      row kept as tall as three lines was tried and not liked ("I don't like it"), and reverted.
+      Then, the same night, the newest line in full in the card, and a Details choice Selected
+      Only (the card and the chosen session's row alone): built, tried by the author, and taken
+      back at their word ("let's reverse it as it was before"). Lines Per Session stays, 1 to 3.
+      A long sentence floating over the rows below, as a card, was tried too and not liked.
+      Then built (2026-11-22): the details key as a zoom of three views, Bar Only, All Sessions
+      (one line each), Selected Session (the card and that session alone, its sentence in full);
+      Details offers the same three, Lines Per Session left the window (seen in a picture; **not
+      yet tried by the author**). In Selected Session the mouse over the card no longer
+      picks the first session, and the history is in the card by default (History in Selected
+      Session: Always or When the Mouse Rests; **not yet tried by the author**). History Shows: This Session or All Sessions. "Release to
+      Send" and Messages That Wait out of the window (Glint, Number). **Overlay is done**
+      (Layout, Details, Glass Effect, History Shows). **Figures, under way 2026-11-22:** Usage Labels
+      and Context out of the window (the arc is the default); Tokens of a Reply and Tokens in the
+      History out too, tokens always shown ("who doesn't want to see tokens?"). Time in the
+      History moved to the left end of each line, the tokens alone at the right ("having both
+      time and tokens on the right ... it's not very aesthetic"; seen in a picture, turned on for
+      the author). With the time shown it takes the place of the mark, always green, to tell the lines
+      apart ("replacing the tick icons with the time"; the mark's own colors were tried and
+      not kept: "nobody knows what the colors are"); the time column one width whatever it
+      holds, "now" or "14m", and times past an hour as "2h", past a day as "3d" ("I want it to
+      be ... consistent"); a little more room between the history's lines, 4 px above and below
+      each instead of 2, so a sentence's two lines stay apart from the next one ("very dense";
+      one line each was tried and not kept: "I still prefer two lines"); the panel and the bubble
+      380 px wide instead of 340 (tried live: "I think it's good"); without it the marks stay (seen in a picture, **not yet seen live**). Time in the History
+      stays off on a new install (the author). Mark Lines Not Heard, Figures Drawn As (tiles stay) and
+      Bars Under the Figures out of the window, then Usage Bars and A Model's Own Week; the two
+      left (Time in the History, Plan Usage) moved to the end of Overlay and the Figures page
+      gone (the author: "moving them into overlays instead?"). **Figures is done.** **Terminal, under way 2026-11-22:** Tint Strength in percent, 0 to 100
+      (100 % is 0.3 of the color, the old top; "a percentage from 0 to 100"; seen in a picture),
+      in steps of 5, the default 30 % (0.09; 27 % was "such a weird number").
+      The flash when the focus moves stays its own switch, apart from Tint (the author saw it
+      flash with Tint off). Focus Follows the Terminal tried by the author ("I checked it. I like
+      it"). Terminal Follows the Focus explained (with terminals side by side it only moves the
+      keyboard; "I see"), kept. Name in the Terminal's Title tried and taken out of the window (off). Renamed: Terminal
+      Color, Color Strength, Clicking a Terminal Selects It, Switching Moves the Keyboard ("yeah,
+      go on"). **Keys, under way 2026-11-22:** Share Keys Other Programs Have out of the window
+      (on), and Go to the Terminal (no key; Switching Moves the Keyboard does it). The other keys
+      checked by the author ("I checked every combination, that looked good"). **Keys is done:
+      every page has been gone through.** **Terminal is done.**
+      Built on the way: the Reset button under each section (a second click within 4 s
+      confirms; none for Voices), the window resized from its edges and maximized by a button
+      or a double click on its top, a dropdown that closes on a second click. Checked by Claude
+      with the real mouse on a test overlay, at the author's asking ("this one is a task you can
+      do by yourself"), 2026-11-22: 22 checks pass after two mends (a double click to restore
+      left the window at the top of the screen; a quick tap on an open dropdown opened it again).
 - [x] Discord muted while you talk (asked for and built 2026-11-20, `push_to_mute`, on, in the
       settings window under Talking as "Mute Discord While Talking"). While the talk key is
       held, Sidetone holds F24 down; Discord's Push to Mute bound to F24 mutes you. Muting

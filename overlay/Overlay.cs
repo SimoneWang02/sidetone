@@ -1289,19 +1289,38 @@ namespace ClaudeSpeaks
             var root = new Grid();
             root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NavWidth) });
             root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            // Maximized, a press only remembers where it was: the window comes back to its size
+            // once the mouse moves with the button held, as a title bar does. Restoring at the
+            // press itself moved it under the mouse, so a double click to restore left it at the
+            // top of the screen instead of where it was (found with the real mouse, 2026-11-22).
+            Point pressAt = new Point(), pressIn = new Point();
             MouseButtonEventHandler move = delegate(object sender, MouseButtonEventArgs e)
             {
                 if (e.ClickCount == 2) { ToggleMax(); return; }  // as a window's title bar does
-                if (maxed)  // dragged away from maximized: back to its size, under the mouse where it was held
+                if (maxed)
                 {
-                    Point at = e.GetPosition(Window), screen = OnScreen(e);
-                    double share = at.X / Math.Max(1, Window.Width);
-                    ToggleMax();
-                    Window.Left = screen.X - share * Window.Width;
-                    Window.Top = screen.Y - at.Y;
+                    pressAt = OnScreen(e); pressIn = e.GetPosition(Window);
+                    ((UIElement)sender).CaptureMouse();
+                    return;
                 }
                 try { Window.DragMove(); } catch (InvalidOperationException) { }
             };
+            MouseEventHandler pull = delegate(object sender, MouseEventArgs e)
+            {
+                var held = (UIElement)sender;
+                if (!held.IsMouseCaptured) return;
+                Point now = OnScreen(e);
+                if (!maxed || e.LeftButton != MouseButtonState.Pressed) { held.ReleaseMouseCapture(); return; }
+                if (Math.Abs(now.X - pressAt.X) < SystemParameters.MinimumHorizontalDragDistance
+                    && Math.Abs(now.Y - pressAt.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+                held.ReleaseMouseCapture();
+                double share = pressIn.X / Math.Max(1, Window.Width);  // back to its size, under the mouse where it was held
+                ToggleMax();
+                Window.Left = now.X - share * Window.Width;
+                Window.Top = now.Y - pressIn.Y;
+                try { Window.DragMove(); } catch (InvalidOperationException) { }
+            };
+            MouseButtonEventHandler letGo = delegate(object sender, MouseButtonEventArgs e) { ((UIElement)sender).ReleaseMouseCapture(); };
 
             var side = new Grid();
             side.RowDefinitions.Add(new RowDefinition { Height = new GridLength(54) });
@@ -1313,7 +1332,7 @@ namespace ClaudeSpeaks
             title.FontSize = 15; title.FontWeight = FontWeights.SemiBold; title.VerticalAlignment = VerticalAlignment.Center; title.Margin = new Thickness(9, 0, 0, 1);
             brand.Children.Add(title);
             var name = new Border { Background = Brushes.Transparent, Child = brand };
-            name.MouseLeftButtonDown += move;
+            name.MouseLeftButtonDown += move; name.MouseMove += pull; name.MouseLeftButtonUp += letGo;
             side.Children.Add(name);
             Grid.SetRow(nav, 1);
             side.Children.Add(nav);
@@ -1323,7 +1342,7 @@ namespace ClaudeSpeaks
             main.RowDefinitions.Add(new RowDefinition { Height = new GridLength(44) });
             main.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             var head = new Grid { Background = Brushes.Transparent };
-            head.MouseLeftButtonDown += move;
+            head.MouseLeftButtonDown += move; head.MouseMove += pull; head.MouseLeftButtonUp += letGo;
             var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 4, 10, 0) };
             buttons.Children.Add(HeadButton("M0,5 L9,5", delegate { Window.WindowState = WindowState.Minimized; }));
             maxButton = HeadButton(MaxSign, delegate { ToggleMax(); });
@@ -2110,8 +2129,12 @@ namespace ClaudeSpeaks
             // A second click on the box closes the list (the author, 2026-11-20: "if I click again the
             // select shouldn't it be closing"). The list already shuts on the press of that click, as
             // any click outside it does, so the release must not open it again.
+            // The moment it shut is taken when IsOpen turns false, not from Closed, which comes
+            // later: with a quick tap (press and release together, as a touchpad gives) the
+            // release was handled before Closed and opened the list again (found 2026-11-22).
             DateTime shut = DateTime.MinValue;
-            popup.Closed += delegate { shut = DateTime.UtcNow; };
+            System.ComponentModel.DependencyPropertyDescriptor.FromProperty(System.Windows.Controls.Primitives.Popup.IsOpenProperty, typeof(System.Windows.Controls.Primitives.Popup))
+                .AddValueChanged(popup, delegate { if (!popup.IsOpen) shut = DateTime.UtcNow; });
             box.MouseLeftButtonUp += delegate
             {
                 if (popup.IsOpen) popup.IsOpen = false;

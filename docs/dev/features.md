@@ -1251,7 +1251,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   A dropdown (`Pick`) closes on a second click on it (2026-11-20, the author: "if I click
   again the select shouldn't it be closing"): the popup shut on the press, as for any click
   outside it, and the release opened it again; a release within 400 ms of it shutting now
-  leaves it shut. Not tried by them yet.
+  leaves it shut. Checked with the real mouse 2026-11-22: with a press and release at the same
+  instant (a quick tap) the list opened again, because the moment it shut was taken from
+  `Closed`, which comes after the release; it is now taken when `IsOpen` turns false.
   Removed the same night: the spoken progress in long turns ("3 of 5 steps done" once a
   task list had 3 or more steps, after 45 s of work, at most once a minute; `progress`,
   `progress_after`, `progress_interval`, `Hub._maybe_say_progress`). It had never spoken in
@@ -1278,7 +1280,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   close or a double click on its top (`ToggleMax`: the work area of its screen; dragged
   from there, it goes back to its size under the mouse); the settings keep at most 760 px
   wide, in the middle (the author: "for settings panel to be resizable and also to have
-  like a maximized size button"). Not tried by them yet.
+  like a maximized size button"). Checked with the real mouse 2026-11-22 (every edge and
+  corner, the smallest size, the button, double clicks, moving it): a double click to restore
+  left the window at the top of the screen, as the first press already restored it under the
+  mouse. Maximized, a press now only remembers the point, and the window comes back to its size
+  once the mouse moves past the system's drag distance with the button held, as a title bar
+  does. The Reset button checked the same way: one click asks, 4 s later it is back to Reset
+  and a click asks again, two clicks within 4 s reset.
   The Voice section in the order of use (the author: "most use should be on top"; proposed
   and agreed): Mute, Volume, Speed, Language of the Summary, Say the Session Name.
   Names: Earshot, Switchboard, Hark and Heard are all taken by tools for coding agents
