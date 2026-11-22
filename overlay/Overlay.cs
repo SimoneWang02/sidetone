@@ -1232,6 +1232,10 @@ namespace ClaudeSpeaks
         readonly Action<string, object> choose;  // a setting was chosen
         readonly Action closed;                  // the window was closed from here
         readonly Action<bool> typingKey;         // a hotkey is being typed: the overlay's own hotkeys must let the keys through
+        // A slider being moved, before it is let go: the overlay shows what that value looks like
+        // at once, and the hub is told only on release (the author, 2026-11-21, of Glass: "it
+        // updates only on release. Can you make it more responsive").
+        public Action<string, double> Previewing;
         readonly StackPanel nav = new StackPanel { Margin = new Thickness(10, 2, 10, 12) };
         readonly StackPanel list = new StackPanel { Margin = new Thickness(18, 0, 22, 20) };
         readonly ScrollViewer scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
@@ -1980,7 +1984,11 @@ namespace ClaudeSpeaks
             var slide = new Slide(min, max, step, value == null ? min : Convert.ToDouble(value, CultureInfo.InvariantCulture));
             var figure = new TextBlock { FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Ui.Dim, Width = 46, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
             figure.Text = (slide.Value * scale).ToString(places, CultureInfo.InvariantCulture) + unit;
-            slide.Moved = delegate(double now) { figure.Text = (now * scale).ToString(places, CultureInfo.InvariantCulture) + unit; };
+            slide.Moved = delegate(double now)
+            {
+                figure.Text = (now * scale).ToString(places, CultureInfo.InvariantCulture) + unit;
+                if (Previewing != null) Previewing(key, now);
+            };
             slide.Chosen = delegate(double now) { choose(key, now); };
             var row = new StackPanel { Orientation = Orientation.Horizontal };
             row.Children.Add(slide);
@@ -2745,6 +2753,10 @@ namespace ClaudeSpeaks
                                 delegate(string key, object value) { Write(new Dictionary<string, object> { { "type", "setting" }, { "key", key }, { "value", value } }); },
                                 delegate { Write(new Dictionary<string, object> { { "type", "settings" }, { "open", false } }); },
                                 delegate(bool typing) { typingKey = typing; RegisterHotkeys(); });
+                            settings.Previewing = delegate(string key, double value)
+                            {
+                                if (key == "overlay.glass_clear") { Ui.GlassClear = value; SetGlass(); }
+                            };
                             settings.Look(opaque ? "solid" : glass);
                         }
                         settings.Show(msg.ContainsKey("sections") && msg["sections"] is object[] ? (object[])msg["sections"] : new object[0], Str(msg, "section"), WorkArea(), msg.ContainsKey("quiet") && Convert.ToBoolean(msg["quiet"]), Str(msg, "title"));
