@@ -392,7 +392,7 @@ class Chosen(SettingsCase):
         self.assertEqual((hub.cfg.terminal["strength"], hub.terminals.settings["strength"]), (0.15, 0.15))
         self.assertEqual(self.saved(), {"terminal": {"strength": 0.15}})
         self.assertEqual(settings.read(hub, "terminal.strength"), 50)
-        self.assertEqual(settings.default("terminal.strength"), 27)  # 0.08 of the color
+        self.assertEqual(settings.default("terminal.strength"), 30)  # 0.09 of the color
 
     def test_the_play_button_lets_a_voice_be_heard_and_changes_nothing(self):
         hub = self.make()

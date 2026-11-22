@@ -208,7 +208,7 @@ SECTIONS = [
                ("focus", "In focus"), ("all", "All"), ("off", "Off")),
         # Tint Strength in percent (the author, 2026-11-22: "a percentage from 0 to 100"): 100 %
         # is the strongest the window offers, 0.3 of the color in config.json (see STRENGTH_TOP).
-        number("terminal.strength", "Tint Strength", "How much of the color goes into the background.", 0, 100, 1, "%"),
+        number("terminal.strength", "Tint Strength", "How much of the color goes into the background.", 0, 100, 5, "%"),
         switch("terminal.pulse", "Flash When the Focus Moves", "The terminal lights up for a moment when you move the focus to it."),
         switch("terminal.follow", "Focus Follows the Terminal", "Going to a terminal in the editor selects its session."),
         switch("terminal.jump", "Terminal Follows the Focus", "Moving the focus with the arrows or the wheel brings that session's terminal to the front in the editor."),

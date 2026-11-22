@@ -3140,7 +3140,7 @@ class OwnTerminals(HubCase):
         self.assertEqual(self.written, [("/dev/pts/91", terminal.RESET)])  # alone: nothing to tell apart
         self.open("b", other, "/dev/pts/92")
         self.assertEqual(self.hub._target().id, "b")
-        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.08))
+        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.09))
         self.assertEqual(self.last("/dev/pts/91"), terminal.RESET)
         count = len(self.written)
         self.hub.publish()
@@ -3156,9 +3156,9 @@ class OwnTerminals(HubCase):
             if thread.name == "terminal-pulse":
                 thread.join(5)
         to_a = [data for tty, data in self.written if tty == "/dev/pts/91"]
-        self.assertEqual(to_a[0], self.tint("a", 0.08))  # at once
+        self.assertEqual(to_a[0], self.tint("a", 0.09))  # at once
         self.assertEqual(to_a[1], self.tint("a", 0.15))  # then a little brighter
-        self.assertEqual(to_a[-1], self.tint("a", 0.08))  # and back to its resting tint
+        self.assertEqual(to_a[-1], self.tint("a", 0.09))  # and back to its resting tint
         self.assertEqual(len(to_a), terminal.PULSE_STEPS + 2)
         self.assertEqual([data for tty, data in self.written if tty == "/dev/pts/92"], [terminal.RESET])
 
@@ -3175,8 +3175,8 @@ class OwnTerminals(HubCase):
         self.open("a", os.getpid(), "/dev/pts/91")
         self.open("b", os.getppid(), "/dev/pts/92")
         hub.set_terminal(tint="all")
-        self.assertEqual(self.last("/dev/pts/91"), self.tint("a", 0.04))
-        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.08))
+        self.assertEqual(self.last("/dev/pts/91"), self.tint("a", 0.045))
+        self.assertEqual(self.last("/dev/pts/92"), self.tint("b", 0.09))
         hub.set_terminal(tint="off", pulse=False)
         self.assertEqual(self.last("/dev/pts/91"), terminal.RESET)
         self.assertEqual(self.last("/dev/pts/92"), terminal.RESET)
@@ -3204,7 +3204,7 @@ class OwnTerminals(HubCase):
         del self.written[:]
         self.assertEqual(hub.terminal_in_front(7001), "alpha")
         self.assertEqual(hub._target().id, "a")
-        self.assertCountEqual(self.written, [("/dev/pts/92", terminal.RESET), ("/dev/pts/91", self.tint("a", 0.08))])  # no flash
+        self.assertCountEqual(self.written, [("/dev/pts/92", terminal.RESET), ("/dev/pts/91", self.tint("a", 0.09))])  # no flash
         self.assertIsNone(hub.terminal_in_front(7001), "it has the focus already")
         self.assertIsNone(hub.terminal_in_front(7003), "a terminal with no session in it")
         self.assertEqual(hub._target().id, "a")
