@@ -35,9 +35,10 @@ these come before anything new.
 - [ ] The voice on the graphics card (2026-11-22, `voice_device`, "Voice Made On"): the first
       sentence of a line made in 0.12 s instead of 0.78 s. Built and tested in a scratch venv;
       the hub's environment needs onnxruntime-gpu 1.26.0 in place of onnxruntime and four more
-      NVIDIA packages (`gpu.VOICE_PACKAGES`), which the author installs by hand (the
-      permission check refused the earlier install). **Not heard by the author yet**: lines
-      should start sooner and sound the same.
+      NVIDIA packages (`gpu.VOICE_PACKAGES`), which the author installed by hand the same
+      day. Live after a hub restart: `first_audio` 67 ms for an English line and 90 ms for
+      Sara's Italian (0.55 to 1.5 s before). **Not judged by the author yet**: lines should
+      start sooner and sound the same.
 
 ## 2. To decide
 
