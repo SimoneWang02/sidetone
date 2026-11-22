@@ -416,7 +416,7 @@ class Shown(SettingsCase):
         hub.on_overlay({"type": "hotkey", "name": "settings"})
         opened = self.window.of("settings")[-1]
         self.assertTrue(opened["open"] and opened["toggle"])
-        self.assertEqual([s["name"] for s in opened["sections"]], ["Speech", "Talking", "Overlay", "Figures", "Terminal", "Keys"])
+        self.assertEqual([s["name"] for s in opened["sections"]], ["Speech", "Talking", "Overlay", "Terminal", "Keys"])
         hub.on_overlay({"type": "settings", "open": False})  # it was in front, so the window shut and said so
         self.assertFalse(hub._settings_open)
         hub.on_overlay({"type": "hotkey", "name": "settings"})  # behind another program it would only come forward

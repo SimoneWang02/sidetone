@@ -181,8 +181,8 @@ SECTIONS = [
         # (overlay.waiting_mark: number, clock, dot) left the window on 2026-11-22, the author: "Yes, go
         # ahead ... also remove messages that wait. Let's just keep number". Glint and Number stay;
         # both still read from config.json.
-    ]),
-    ("Figures", [
+        # The page "Figures" was folded into this one on 2026-11-22, when two of its settings
+        # were left (the author: "moving them into overlays instead?"). What left it:
         # "Context" (context_shown: arc, text, both, off) left the window on 2026-11-22, the
         # author: "remove these settings because arc is by default". Still read from config.json.
         # "Tokens of a Reply" (turn_tokens: new, output, all, off) and "Tokens in the History"
@@ -195,7 +195,7 @@ SECTIONS = [
         # "Figures Drawn As" (overlay.details_style: tiles, line) and "Bars Under the Figures"
         # (overlay.details_bars) left the window on 2026-11-22, the author: "keep it tiles by
         # default ... we can remove this setting", the bars "as well". Still read from config.json.
-        switch("usage_shown", "Plan Usage", "The five-hour window and the week, at the foot of the figures."),
+        switch("usage_shown", "Plan Usage", "The five-hour window and the week, at the foot of the details."),
         # "Usage Labels" (usage_labels: short, long) left the window on 2026-11-22, the author:
         # "I don't think that is needed". Still 5H and 7D, still read from config.json.
         # "Usage Bars" (overlay.usage_layout: rows, line) and "A Model's Own Week" (usage_models:

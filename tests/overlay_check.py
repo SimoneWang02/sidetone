@@ -588,7 +588,6 @@ def click(section, x, y, expect):
 
 
 clicks = [click("Overlay", 716, 117, ("overlay.layout", "island")),
-          click("Figures", 735, 117, ("history_time", True)),
           click("Talking", 735, 117, ("followup_when", "end"))]
 send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Speech", click=[46, 278])  # "Keys" at the left
 shot("settings-clicked-keys", 0.5)
