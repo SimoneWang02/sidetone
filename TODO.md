@@ -18,7 +18,13 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-Nothing open (2026-11-22).
+- [ ] A short bug hunt before the speech work (the author, 2026-11-22, asked when bug hunting is
+      best: a short one now on what they have not tried, a full one before release; "Yeah").
+      The session lab (another session, same day) covered sessions coming and going. This one:
+      the keys together, with a hub and overlay of their own on spare keys, real haiku sessions
+      in tmux, and a stand-in for the VS Code extension that types into them. Clear, end and new
+      session pressed in every order and next to mute, cancel, talk, repeat and the details key;
+      on idle, busy and asking sessions; the three detail views. The full hunt is in step 6.
 
 ## 2. To decide
 
@@ -306,6 +312,10 @@ To choose before release: which of these the first version has, and which wait.
       the author's machine by hand on 2026-11-19; a new install gets neither.
 
 ## 6. Release
+
+- [ ] A full bug hunt once the first public version is built and the code stops changing much
+      (the author, 2026-11-22): a clean install on a fresh machine, every feature together,
+      long sessions.
 
 - [ ] Numbers to publish with it (the author, 2026-11-17: "in the future when I'll publish
       this tool it'll be great to have some metrics"). Measured so far, to be done again on
