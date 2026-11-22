@@ -130,7 +130,10 @@ hooks are kept and a backup of the file is written first. It also links the comm
 `~/.local/bin` as `sidetone` and the shorter `st`. It asks once which languages you will
 speak to it (`./install.sh --languages en,it` answers in advance; `sidetone languages`
 changes it later). The Whisper model for push-to-talk (about 460 MB for the default size) is
-downloaded too; `--no-models` leaves it for the first time you use the talk key. `./uninstall.sh` removes the hooks again.
+downloaded too; `--no-models` leaves it for the first time you use the talk key. Where it finds an
+NVIDIA graphics card it offers to run push-to-talk there (`--gpu` or `--no-gpu` answers ahead): a
+larger model that gets more words right, as fast as the small one on the processor, for about
+3.4 GB of downloads. `./uninstall.sh` removes the hooks again.
 
 Start a new Claude Code session and it speaks. To see and hear everything without doing real
 work, run `st demo` in a terminal.

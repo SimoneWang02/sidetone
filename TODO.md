@@ -23,6 +23,15 @@ these come before anything new.
       Italian line without the mark gets the Italian voice. Each guess goes to `hub.log`.
       **Not heard by the author yet**: listen for an unmarked Italian or Chinese line read by
       the right voice, and an English one never read by the Italian voice.
+- [ ] Push-to-talk on the graphics card (2026-11-22, `whisper_device`, "Transcribe On"):
+      `large-v3-turbo` on the RTX 5070, 0.18 s where `small` on the processor took 0.81 s,
+      with clearly more words right (`docs/dev/facts.md`). Built and tested with NVIDIA's
+      libraries borrowed from the voice-clone venv; installing them into the hub's
+      environment was refused by the permission check, so the author runs
+      `./install.sh --gpu` (or the `uv pip install` it does) and then `sidetone hub restart`.
+      **Not heard by the author yet**: talk as usual; `hub.log` should say "speech model
+      large-v3-turbo on the graphics card", short clips and Italian should come out right
+      more often.
 
 ## 2. To decide
 
@@ -64,14 +73,6 @@ voice, and the wait for the transcript.
       message had come through as English), so the English voice read Italian words. A
       safeguard, built 2026-11-22: when the tag has no `lang`, the hub guesses the language
       of the line itself (step 1).
-- [ ] Running the speech model on the graphics card to make transcription faster.
-      Measured 2026-11-22 on the author's 102 kept recordings (`docs/dev/facts.md`):
-      `large-v3-turbo` on the RTX 5070 takes 0.18 s where `small` on the CPU takes 0.81 s,
-      and gets clearly more words right, mostly in short clips and Italian. To build, if the
-      author agrees: a setting for where it runs (automatic, processor, graphics card), the
-      model following it; NVIDIA's cuBLAS and cuDNN (about 1.8 GB) installed into the hub's
-      environment where `nvidia-smi` finds a card; the processor and `small` stay the
-      fallback for everyone else.
 
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on

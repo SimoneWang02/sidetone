@@ -3,14 +3,15 @@
 # hooks in ~/.claude/settings.json (your existing hooks are kept; a backup is written first).
 # Re-running is safe. Options: --no-models (skip downloads), --hooks-only (only settings.json),
 # --languages CODES (what you will speak to it, for example en,it; without it the script asks once),
-# --vscode or --no-vscode (the VS Code extension; without either the script asks once).
+# --vscode or --no-vscode (the VS Code extension; without either the script asks once),
+# --gpu or --no-gpu (push-to-talk on an NVIDIA graphics card; asked once where one is found).
 set -euo pipefail
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 KOKORO_DIR=${KOKORO_DIR:-$HOME/.local/share/kokoro}
 SETTINGS=$HOME/.claude/settings.json
 MODELS=https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
 CONFIG=${XDG_CONFIG_HOME:-$HOME/.config}/sidetone/config.json
-models=1 hooks_only=0 languages= vscode=ask
+models=1 hooks_only=0 languages= vscode=ask gpu=ask
 EXTENSION=sidetone.sidetone
 while [ $# -gt 0 ]; do
   case $1 in
@@ -21,6 +22,8 @@ while [ $# -gt 0 ]; do
     --languages=*) languages=${1#*=} ;;
     --vscode) vscode=yes ;;
     --no-vscode) vscode=no ;;
+    --gpu) gpu=yes ;;
+    --no-gpu) gpu=no ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
   shift
@@ -73,6 +76,40 @@ if [ $hooks_only = 0 ] && [ $models = 1 ] && command -v parec >/dev/null; then
   echo "Fetching the speech model ${model:=small.en} for push-to-talk (several hundred MB the first time)"
   "$KOKORO_DIR/venv/bin/python" -I -c 'import sys; from faster_whisper import download_model; download_model(sys.argv[1])' "$model" >/dev/null 2>&1 ||
     echo "Note: that did not work now; it will be fetched at the first push-to-talk instead."
+fi
+
+# Push-to-talk on an NVIDIA graphics card: a larger model that gets more words right, as fast
+# as the small one on the processor (whisper_device "auto" uses it once this is installed).
+# It needs NVIDIA's cuBLAS and cuDNN in the environment, about 1.8 GB, and the model, 1.6 GB,
+# so it is asked, and only where a card is found; with nobody to ask it is left out.
+if [ $hooks_only = 0 ] && [ $gpu != no ] && command -v parec >/dev/null; then
+  py=$KOKORO_DIR/venv/bin/python
+  stt() { "$py" -I -c "import sys; sys.path.insert(0, sys.argv[1]); import stt; $1" "$ROOT/hub"; }
+  smi=$(command -v nvidia-smi || echo /usr/lib/wsl/lib/nvidia-smi)
+  card=$("$smi" --query-gpu=name --format=csv,noheader 2>/dev/null | head -n 1) || card=
+  if [ -z "$card" ]; then
+    [ $gpu = yes ] && echo "Note: no NVIDIA graphics card found, so push-to-talk stays on the processor."
+  else
+    if [ "$(stt 'print(len(stt.gpu_libraries()))')" != 0 ]; then
+      gpu=yes  # installed before: kept, and the model fetched if it is missing
+    elif [ $gpu = ask ] && [ $models = 1 ] && [ -t 0 ] && [ -t 1 ]; then
+      echo "Found an NVIDIA graphics card ($card). Push-to-talk can run on it: a larger model that"
+      echo "gets more words right, as fast as now. It needs about 3.4 GB of downloads."
+      read -r -p "Use the graphics card? (Enter = yes, n = no): " answer || answer=n
+      case $answer in ""|[Yy]*) gpu=yes ;; *) gpu=no; echo "Left out. Any time later: ./install.sh --gpu" ;; esac
+    fi
+    if [ $gpu = yes ]; then
+      echo "Installing NVIDIA's libraries for the graphics card (about 1.8 GB the first time)"
+      read -r -a packages <<< "$(stt 'print(" ".join(stt.GPU_PACKAGES))')"
+      uv pip install --quiet --python "$py" "${packages[@]}"
+      if [ $models = 1 ]; then
+        gmodel=$(jq -r '.whisper_gpu_model // empty' "$CONFIG" 2>/dev/null) || gmodel=
+        echo "Fetching the speech model ${gmodel:=large-v3-turbo} for the graphics card (about 1.6 GB the first time)"
+        "$py" -I -c 'import sys; from faster_whisper import download_model; download_model(sys.argv[1])' "$gmodel" >/dev/null 2>&1 ||
+          echo "Note: that did not work now; it will be fetched at the first push-to-talk instead."
+      fi
+    fi
+  fi
 fi
 
 # Add our hooks next to whatever is already registered. An entry of ours from an earlier

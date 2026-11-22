@@ -144,6 +144,25 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   before); last English: 3 (2 before; "Quant'è il contesto" kept English, its words almost
   the same); last Chinese: 2 (as before). The second writing costs about 0.6 s, only for
   unsure short clips. The log line says "(leaned to it ...)" when it happens.
+- Push-to-talk on the graphics card (2026-11-22, `whisper_device`: auto, cpu, gpu, "Transcribe
+  On" in the window; `whisper_gpu_model`, `large-v3-turbo`, config.json only, like
+  `whisper_model`). Measured first on the author's 102 kept recordings (`docs/dev/facts.md`):
+  turbo on the RTX 5070 takes 0.18 s where `small` on the processor takes 0.81 s, and gets
+  clearly more words right. The author: "Sure proceed", and on whether it is worth it for
+  others, "for me, yes"; offered as an install-time question only where a card is found,
+  since it costs about 3.4 GB of downloads. `stt.gpu_ready` says why not (no card, no
+  libraries, one that would not load); `Transcriber.load` then falls back to `whisper_model`
+  on the processor, and also when the card fails to take the model (out of memory). NVIDIA's
+  cuBLAS 12 and cuDNN 9 come from their pip packages (`stt.GPU_PACKAGES`, the versions the
+  voice clone already runs with) and are loaded by full path, shared, before the model goes
+  on the card (`ctypes.CDLL(..., RTLD_GLOBAL)`, retried in rounds since one needs another);
+  ctranslate2 opens them by name only then, so no `LD_LIBRARY_PATH`. Measured that way: 2.0 s
+  for the first recording with loading, 0.17 s after. `install.sh` asks where `nvidia-smi`
+  names a card (`--gpu`, `--no-gpu`), keeps an earlier yes, and fetches the model. The hub
+  logs "talk: speech model large-v3-turbo on the graphics card" (or the processor, and why)
+  once each time it changes; `list.jsonl` names the model each recording was heard with.
+  Choosing it in the window unloads the model, which loads where it now belongs at the next
+  press of the talk key.
 - `hub/state.py`: session registry. Label = folder name, spoken only when more than one session
   was active in the last 15 min and no overlay is on screen (the author, 2026-11-17: "i dont
   think it's necessary to say the project folder whenever it speaks"; the bubble and the voice

@@ -124,7 +124,7 @@ class Talk:
             sess = self.sessions.by_id.get(session or "")
             line = {"file": name, "text": text, "language": language or self.cfg.whisper_language,
                     "seconds": round(len(pcm) / 2 / stt.RATE, 2), "time": time.strftime("%FT%T%z", time.localtime(now)),
-                    "model": self.cfg.whisper_model, "project": sess.name if sess else ""}
+                    "model": (getattr(self.transcriber, "running", "") or self.cfg.whisper_model).split(" on ")[0], "project": sess.name if sess else ""}
             with open(os.path.join(folder, "list.jsonl"), "a") as f:
                 f.write(json.dumps(line, ensure_ascii=False) + "\n")
         except (OSError, wave.Error) as e:  # a full disk must not lose the words themselves
@@ -140,6 +140,11 @@ class Talk:
             log(self.cfg, "hub.log", f"transcription failed: {e}")
             text = ""
         heard = getattr(self.transcriber, "heard", "") if text else ""
+        running = getattr(self.transcriber, "running", "")
+        if running and running != getattr(self, "_running_said", ""):  # once each time it changes
+            self._running_said = running
+            why = getattr(self.transcriber, "why_not_gpu", "")
+            log(self.cfg, "hub.log", f"talk: speech model {running}" + (f" (not the graphics card: {why})" if why else ""))
         leaned = " (leaned to it: unsure, and the last language)" if text and getattr(self.transcriber, "leaned", False) else ""
         log(self.cfg, "hub.log", f"talk: {len(pcm) / 2 / stt.RATE:.1f}s recorded, peak level {stt.loudness(pcm):.2f}, "
                                  f"transcribed in {time.monotonic() - started:.1f}s"

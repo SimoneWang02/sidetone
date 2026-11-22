@@ -112,6 +112,11 @@ SECTIONS = [
                "the work of the session in focus. The session stays open."),
         switch("clear_by_voice", "Clear the Chat by Voice", "Say \"clear the chat\" and /clear is typed into that session's terminal "
                "once it is at its prompt. Needs the VS Code extension."),
+        # The model on the card (whisper_gpu_model) is left out, like whisper_model: a model's
+        # name, which `large-v3-turbo` fits for nearly everyone with a card.
+        choice("whisper_device", "Transcribe On", "Where your words are written down. The graphics card (NVIDIA) is "
+               "faster and uses a larger model that gets more words right; Automatic uses it when there is one.",
+               ("auto", "Automatic"), ("cpu", "Processor"), ("gpu", "Graphics Card")),
         switch("keep_recordings", "Keep My Recordings", "Every recording is saved with the words it was heard as, "
                "to train a model of your own voice later. They stay on this computer."),
         # Discord's own name for it is "Push to Talk Release Delay" (the author, 2026-11-21: "Is this
@@ -853,6 +858,9 @@ def apply(hub, key: str, value) -> str | None:
             hub.speech.engine.speed = value
         if key == "volume":
             base.set_volume(hub)
+        if key == "whisper_device" and getattr(hub, "transcriber", None):
+            hub.transcriber.device = value
+            hub.transcriber.unload()  # loaded again where it now belongs, on the next press of the talk key
         if key == "usage_shown" and value:
             hub._plan_asked = float("-inf")  # read it now, not in five minutes
         _save(cfg, [key], value)

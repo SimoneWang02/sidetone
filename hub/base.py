@@ -251,6 +251,12 @@ class Config:
     # with no such notification after this long was answered in the terminal.
     permission_grace: float = 9.0
     whisper_model: str = "small.en"
+    # Where push-to-talk is written down: "auto" (the graphics card when an NVIDIA one and its
+    # libraries are there, else the processor), "cpu" or "gpu". On the card the model is
+    # `whisper_gpu_model`, which the card runs about as fast as the processor runs `small` and
+    # which gets more words right (measured 2026-11-22, docs/dev/facts.md).
+    whisper_device: str = "auto"
+    whisper_gpu_model: str = "large-v3-turbo"
     mic_source: str = ""  # PulseAudio source for push-to-talk; empty = the default microphone
     followup_delay: float = 0.0  # seconds a transcript is shown (and can be cancelled) before it is sent; 0 = at once
     talk_tail: float = 0.4  # seconds to keep recording after the talk key is released
@@ -458,7 +464,7 @@ class Config:
             user = {}
         user = cfg._checked(user, path)
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
+                    "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "whisper_language", "whisper_lean", "keep_recordings", "push_to_mute", "push_to_mute_key", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:

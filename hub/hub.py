@@ -967,7 +967,7 @@ def main() -> int:
     if stt.Recorder.available() and stt.Transcriber.available():
         hub.recorder = stt.Recorder(cfg.mic_source)
         hub.recorder.on_chunk = hub._mic_heard
-        hub.transcriber = stt.Transcriber(cfg.whisper_model, cfg.whisper_language)
+        hub.transcriber = stt.Transcriber(cfg.whisper_model, cfg.whisper_language, cfg.whisper_device, cfg.whisper_gpu_model)
     server = serve(hub, cfg.sock)
     stop = lambda *_: threading.Thread(target=server.shutdown, daemon=True).start()  # noqa: E731
     signal.signal(signal.SIGTERM, stop)

@@ -28,6 +28,57 @@ LANGUAGES = frozenset("""
 """.split())
 
 
+# NVIDIA's libraries that faster-whisper (ctranslate2) needs on the graphics card, cuBLAS 12 and
+# cuDNN 9, from their pip packages in the hub's environment (install.sh asks for them where it
+# finds an NVIDIA card). ctranslate2 opens them by name only when a model goes on the card, so
+# loading them first by their full path, shared, is enough; no LD_LIBRARY_PATH.
+GPU_PACKAGES = ("nvidia-cublas-cu12==12.8.4.1", "nvidia-cudnn-cu12==9.10.2.21")
+_gpu_libs: list = []
+
+
+def gpu_libraries(roots=None) -> list:
+    """The .so files of NVIDIA's pip packages under `roots` (the `nvidia` package folders)."""
+    if roots is None:
+        spec = importlib.util.find_spec("nvidia")
+        roots = list(spec.submodule_search_locations or []) if spec else []
+    found = []
+    for root in roots:
+        for part in ("cublas", "cudnn"):
+            folder = os.path.join(root, part, "lib")
+            if os.path.isdir(folder):
+                found += sorted(os.path.join(folder, f) for f in os.listdir(folder) if ".so" in f)
+    return found
+
+
+def gpu_ready(roots=None) -> str:
+    """"" when Whisper can run on the graphics card here, else why not."""
+    import ctypes
+
+    try:
+        import ctranslate2
+        if ctranslate2.get_cuda_device_count() < 1:
+            return "no NVIDIA graphics card found"
+    except Exception as e:
+        return f"ctranslate2: {e}"
+    if _gpu_libs:
+        return ""
+    files = gpu_libraries(roots)
+    if not any("cublas" in f for f in files) or not any("cudnn" in f for f in files):
+        return "NVIDIA's cuBLAS and cuDNN are not installed (" + " ".join(GPU_PACKAGES) + ")"
+    left = files
+    while left:  # one library needs another: load what can be, again, until nothing more can
+        failed = []
+        for f in left:
+            try:
+                _gpu_libs.append(ctypes.CDLL(f, mode=ctypes.RTLD_GLOBAL))
+            except OSError:
+                failed.append(f)
+        if len(failed) == len(left):
+            return "could not load " + os.path.basename(failed[0])
+        left = failed
+    return ""
+
+
 def loudness(pcm: bytes) -> float:
     """Peak level of a recording, 0 to 1. Near zero means the microphone heard nothing."""
     samples = array.array("h", pcm[: len(pcm) // 2 * 2])
@@ -137,8 +188,15 @@ class Transcriber:
     MARGIN = 0.1
     LONG = 4.0  # seconds; a recording this long tells its language well enough by itself
 
-    def __init__(self, model: str = "small.en", language: str | list = "en"):
+    def __init__(self, model: str = "small.en", language: str | list = "en", device: str = "cpu",
+                 gpu_model: str = "large-v3-turbo"):
         self.name = model
+        # Where it runs: "cpu", "gpu", or "auto" (the graphics card when it can, see gpu_ready).
+        # On the card it is `gpu_model`, a larger model that the card runs as fast as the
+        # processor runs `small` and that gets more words right (docs/dev/facts.md).
+        self.device, self.gpu_model = device, gpu_model
+        self.running = ""  # what the loaded model is and where: "large-v3-turbo on the graphics card"
+        self.why_not_gpu = ""  # why it is on the processor although the card was wanted
         self.languages = ["en"] if model.endswith(".en") else codes(language)  # empty: any language
         self.heard = ""  # the language of the last recording
         self.lean = True  # see UNSURE; `whisper_lean` in the settings
@@ -157,7 +215,18 @@ class Transcriber:
             if self._model is None:
                 from faster_whisper import WhisperModel  # slow import, and downloads the model once
 
-                model = WhisperModel(self.name, device="cpu", compute_type="int8")
+                model = None
+                if self.device in ("gpu", "auto"):
+                    self.why_not_gpu = gpu_ready()
+                    if not self.why_not_gpu:
+                        try:
+                            model = WhisperModel(self.gpu_model, device="cuda", compute_type="float16")
+                            self.running = f"{self.gpu_model} on the graphics card"
+                        except Exception as e:  # out of memory, a driver too old for the libraries
+                            self.why_not_gpu = f"{type(e).__name__}: {e}"
+                if model is None:
+                    model = WhisperModel(self.name, device="cpu", compute_type="int8")
+                    self.running = f"{self.name} on the processor"
                 # Several languages, or any: find the language in the pass that writes the words.
                 # Needs a faster-whisper that can do that (1.1 or later); older ones go the long way.
                 if len(self.languages) != 1 and "multilingual" in inspect.signature(model.transcribe).parameters:

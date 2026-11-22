@@ -6,6 +6,7 @@ import sys
 import tempfile
 import types
 import unittest
+import unittest.mock
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
@@ -217,3 +218,60 @@ class TheRunningHub(HubCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WhereItRuns(unittest.TestCase):
+    """Push-to-talk on the graphics card when it can be, else on the processor (`whisper_device`)."""
+
+    def load(self, device, ready="", fails=False):
+        made = []
+
+        def model(name, device, compute_type):
+            if device == "cuda" and fails:
+                raise RuntimeError("CUDA failed with error out of memory")
+            made.append((name, device, compute_type))
+            return types.SimpleNamespace(model=None, transcribe=lambda *a, **k: ([], None))
+
+        t = stt.Transcriber("small", "en,it", device)
+        with unittest.mock.patch("faster_whisper.WhisperModel", model), \
+                unittest.mock.patch.object(stt, "gpu_ready", lambda roots=None: ready):
+            t.load()
+        return t, made
+
+    def test_the_card_takes_the_larger_model(self):
+        for device in ("auto", "gpu"):
+            t, made = self.load(device)
+            self.assertEqual(made, [("large-v3-turbo", "cuda", "float16")])
+            self.assertEqual((t.running, t.why_not_gpu), ("large-v3-turbo on the graphics card", ""))
+
+    def test_without_a_card_or_its_libraries_the_processor(self):
+        t, made = self.load("auto", ready="no NVIDIA graphics card found")
+        self.assertEqual(made, [("small", "cpu", "int8")])
+        self.assertEqual((t.running, t.why_not_gpu), ("small on the processor", "no NVIDIA graphics card found"))
+        t, made = self.load("cpu")
+        self.assertEqual((made, t.why_not_gpu), ([("small", "cpu", "int8")], ""))  # never even asked
+
+    def test_a_card_that_fails_falls_back_to_the_processor(self):
+        t, made = self.load("gpu", fails=True)
+        self.assertEqual(made, [("small", "cpu", "int8")])
+        self.assertIn("out of memory", t.why_not_gpu)
+
+    def test_the_libraries_are_found_in_the_nvidia_packages(self):
+        with tempfile.TemporaryDirectory() as root:
+            for part, name in (("cublas", "libcublas.so.12"), ("cudnn", "libcudnn.so.9"), ("cuda_nvrtc", "libnvrtc.so.12")):
+                os.makedirs(os.path.join(root, part, "lib"))
+                open(os.path.join(root, part, "lib", name), "w").close()
+            self.assertEqual([os.path.basename(f) for f in stt.gpu_libraries([root])], ["libcublas.so.12", "libcudnn.so.9"])
+        self.assertEqual(stt.gpu_libraries(["/nowhere"]), [])
+
+
+
+class ChosenInTheWindow(HubCase):
+    def test_choosing_it_in_the_window_loads_it_again_there(self):
+        import settings
+        hub = self.make()
+        hub.transcriber = stt.Transcriber("small", "en", "auto")
+        hub.transcriber._model = object()
+        self.assertIsNone(settings.apply(hub, "whisper_device", "cpu"))
+        self.assertEqual((hub.transcriber.device, hub.transcriber._model, hub.cfg.whisper_device), ("cpu", None, "cpu"))
+        self.assertIsNotNone(settings.apply(hub, "whisper_device", "tpu"))
