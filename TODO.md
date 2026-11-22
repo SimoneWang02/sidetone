@@ -435,6 +435,18 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         approving; check what it does before building any of this.
 - [ ] A phone notification when a session needs you and you are away
 
+## After the release
+
+- [ ] A weekly scheduled task that reads Anthropic's and Claude Code's release notes for
+      changes the tool depends on (the author, by voice, 2026-11-22: "when this is published
+      ... a schedule task weekly to see if Claude has made any changes to their models and
+      stuff ... What if Anthropic in the future they increase the window to 5 hours to 6
+      hours? I need to update this tool as well"). Fixed in the code today: the plan's two
+      windows (five hours and seven days, the bars' 5H and 7D labels and the spoken
+      "five hours" in `hub/usage.py`), the model names in the usage figures (Fable), and the
+      hook events and session files the hooks read. The author makes it once the tool is
+      published, not before.
+
 ## Done
 
 Kept for the history: what was asked, what was found, and the author's words on it.
