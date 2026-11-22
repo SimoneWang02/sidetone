@@ -18,13 +18,7 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
-- [ ] A short bug hunt before the speech work (the author, 2026-11-22, asked when bug hunting is
-      best: a short one now on what they have not tried, a full one before release; "Yeah").
-      The session lab (another session, same day) covered sessions coming and going. This one:
-      the keys together, with a hub and overlay of their own on spare keys, real haiku sessions
-      in tmux, and a stand-in for the VS Code extension that types into them. Clear, end and new
-      session pressed in every order and next to mute, cancel, talk, repeat and the details key;
-      on idle, busy and asking sessions; the three detail views. The full hunt is in step 6.
+Nothing open (2026-11-22).
 
 ## 2. To decide
 
@@ -1055,6 +1049,20 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Rough edges mended
 
+- [x] A short bug hunt before the speech work (the author, 2026-11-22, asked when bug hunting is
+      best: a short one now on what they have not tried, a full one before release; "Yeah").
+      In a key lab: a hub of its own run inside a script with its own overlay and no hotkeys,
+      keys handed to it as the overlay hands them (no key pressed on the real keyboard), haiku
+      sessions in tmux, a stand-in for the VS Code extension typing into the panes. Fine: clear,
+      end and new session in every order; clear next to mute, cancel, repeat, the details key,
+      settings and focus; clear on a session at a permission prompt or with a /model picker open
+      (waits for the turn's end, nothing approved); end on an idle and on a working session (row
+      and pane gone, focus to another); a spoken yes, no and longer words at a permission prompt;
+      the three detail views (pictures from the lab overlay's own windows). Fixed: the clear typed
+      into Claude Code's auto mode nudge ran /auto-mode-setup (the extension 0.5.1 types Escape
+      first; **VS Code needs Restart Extension Host once**); no context arc after a first turn,
+      and one reply behind after a turn of one reply (counted again 1.5 s after the Stop). As
+      built, to know: the cancel key leaves the clear question up, so a second clear still clears.
 - [x] A bug pass, 2026-11-21 (an agent read the code, then the author chose what to do with what
       it found). A sentence Kokoro cannot say no longer ends all speech; a `config.json` that is
       not JSON is no longer written over, and gives the defaults at start; a value of the wrong
