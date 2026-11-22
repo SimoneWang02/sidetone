@@ -2154,6 +2154,7 @@ namespace ClaudeSpeaks
         Brush talkInk = Brushes.White;  // white for your words, dim for a note, the microphone's color for what to do
         public double FlashUntil, Hot, Lit;
         string rowText = "", metaText = "";
+        public string Doing { get { return rowText; } }  // what its line under the name says when nothing is being said
         public object[] Details = new object[0];  // its figures for the line under the rows: [what it is, the figure] each
 
         public Row(bool right, Wave wave)
@@ -2438,7 +2439,7 @@ namespace ClaudeSpeaks
         int historyTicks = 3;  // looks of 30 ms the mouse rests on the details before the history shows (`history_after`)
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still;
-        string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
+        string mode = "dots", restMode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
         double offsetX = 12, offsetY = 96, idleOpacity = 1.0, listOpacity = 1.0, lastFade = -1;
         double lastFrame, openedAt, bubbleAt, passUntil;
         int grabX, grabY;  // where on the bar the mouse took hold
@@ -2985,12 +2986,20 @@ namespace ClaudeSpeaks
                     if (row.Saying && (found == null || row.Speaking || (!found.Speaking && row.FlashUntil > found.FlashUntil))) found = row;
                 }
             bool orphan = away && talking && (found == null || found.TalkKind == null);  // push-to-talk with no session to show it on
+            // Details "Selected Only": with nothing being said, the bubble shows the session in focus,
+            // its name, title and line, three lines at most, and the other lights show nothing (the
+            // author, 2026-11-21: "just the session squares on the bar ... and in the detail just
+            // show the details of the session selected").
+            bool resting = false;
+            if (found == null && !orphan && away && mode == "focus")
+                foreach (Row row in order) if (row.Focus || (found == null && order.Count == 1)) { found = row; resting = true; }
             if (found == null && !orphan) { bubble.Goal = 0; return; }
             talker = orphan ? null : found;
             // The first line is always the session's name and title; push-to-talk shows as a sign
             // at its right and as words underneath.
             bool mine = orphan || (found.TalkKind != null && !hushed), listening = mine && talkState == "listening";
-            string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : found.FlashText;
+            string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : resting ? found.Doing : found.FlashText;
+            bubbleLine2.MaxHeight = resting ? 51 : 68;  // three lines for the one in focus, four while one is said
             string kind = mine ? TalkKind() : "";
             bubbleMuted.Visibility = muted && mutedIconOn && !mine ? Visibility.Visible : Visibility.Collapsed;  // a line shown, not said
             string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind + Ui.SignInLight + Ui.TalkText;
@@ -4299,7 +4308,10 @@ namespace ClaudeSpeaks
 
         void SetMode(string wanted)
         {
-            mode = wanted == "toggle" ? (mode == "list" ? "dots" : "list") : (wanted == "list" ? "list" : "dots");
+            // "focus" (Selected Only) is like "dots" with the session in focus kept in the bubble;
+            // the details key goes from either to "list" and back to the one it came from.
+            if (mode != "list") restMode = mode;
+            mode = wanted == "toggle" ? (mode == "list" ? restMode : "list") : (wanted == "list" || wanted == "focus" ? wanted : "dots");
             if (mode != "list") peek = false;
             Render();
             Send("mode", "mode", mode);

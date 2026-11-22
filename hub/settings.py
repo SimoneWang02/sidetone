@@ -143,7 +143,7 @@ SECTIONS = [
         # The key named and the choices short (the author, 2026-11-21: "the same thing, the shortcut.
         # And maybe shorten the answers"); they were "Under the mouse" and "Always out".
         choice("overlay.mode", "Details", "Names, titles and figures beside the lights. The details key switches them.",
-               ("list", "Always"), ("dots", "On Hover")),
+               ("list", "Always"), ("dots", "On Hover"), ("focus", "Selected Only")),
         # "Details Changing Size" (overlay.resize: quick, instant) left the window on 2026-11-21, the
         # author: "the animation is pretty standard". Still read from config.json.
         # "Move It by the Details" (overlay.panel_drag) left the window on 2026-11-21, the author:
