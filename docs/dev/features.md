@@ -492,6 +492,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   its default 100 %. The glass follows the slider while it moves (`SettingsWindow.Previewing`;
   the hub is told on release); the author: "it updates only on release. Can you make it more
   responsive".
+- The status lights' colors and the glass's color (2026-11-23, while the author was away, from
+  "Make more of the overlay a setting" in `TODO.md`): `overlay.working_color`, `needs_you_color`,
+  `done_color`, `failed_color`, `idle_color` (`Ui.Working` ... `Ui.Idle`, `Ui.Amber` for needs
+  you, `Ui.SetStateColors`), the defaults the colors they always had. needs_you's color is also
+  `Ui.AmberEdge`: a request's edge, its "▲", the numbers of its choices and its keys. Each state
+  keeps its own shape, so a light still reads without color vision. `overlay.glass_color`: ""
+  is the dark slate (#3A4150 at the top of the blurred glass); a color of your own takes the
+  top, and the bottom and the solid glass are made from it in the slate's proportions
+  (`Ui.GlassFill`; 0.32 of it at the bottom, 0.74 and 0.35 for solid), so "#3A4150" looks as
+  "" does. Only in `config.json` so far: the settings window has no way to choose a color yet,
+  like `mic_color`, `waiting_color` and the context colors before them. Pictures `own-colors*.png`
+  (violet, orange-red, cyan, pink, grey on plum glass); a test checks every `*_color` default is
+  a color and is read by `Overlay.cs`. **Not seen by the author yet.**
 - What a clear looks and sounds like (2026-11-21): no "sent" sign and no "sent" sound, which are
   for words that went to a session; its own sound once Claude Code has ended the conversation, a
   quick run down four notes (`sounds.TONES["cleared"]`); and the light stays through it with its

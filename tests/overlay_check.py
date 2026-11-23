@@ -487,6 +487,17 @@ for size in (75, 150):
     send(type="state", sessions=sessions(), history=HISTORY)
     time.sleep(0.5)
 look()
+# Colors of one's own (2026-11-23): every status light, and the glass, in colors other than
+# the hub's, closed and with the details out; then the hub's own colors again.
+OWN_COLORS = dict(working_color="#B388FF", needs_you_color="#FF7043", done_color="#26C6DA",
+                  failed_color="#F06292", idle_color="#7A7A7A", glass_color="#3A2E48")
+look(**OWN_COLORS)
+send(type="state", sessions=sessions(), history=HISTORY)
+shot("own-colors", 0.8)
+send(type="peek", on=True)
+shot("own-colors-open", 0.6)
+send(type="peek", on=False)
+look(**{key: overlay.DEFAULTS[key] for key in OWN_COLORS})
 # How full each session's context is, as an arc around its light: nearly empty, about half,
 # past the warning, full, and one that is not known; then with words waiting on top of it.
 CONTEXT = {"sidetone": 7, "api-server": 56, "web-app": 83, "data-pipeline": 100}

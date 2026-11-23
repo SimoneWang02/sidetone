@@ -150,6 +150,18 @@ DEFAULTS = {
     "context_warn": 80,
     "context_color": "#FFFFFF",
     "context_warn_color": "#FF8A3D",
+    # The status lights' colors, "#RRGGBB" (2026-11-23). Each state has its own shape as well
+    # (see Orb), so a light still reads without color vision. needs_you's amber also edges a
+    # request and marks its keys.
+    "working_color": "#4FC3F7",
+    "needs_you_color": "#FFB300",
+    "done_color": "#66BB6A",
+    "failed_color": "#EF5350",
+    "idle_color": "#B0B6C0",
+    # The glass's own color: "" = the dark slate it always had | "#RRGGBB" = the top of the
+    # glass in that color, the rest made darker from it as the slate is ("#3A4150" is the
+    # slate). Dark colors keep white words readable: "#2E3A4A" a deeper blue, "#3A2E48" a plum.
+    "glass_color": "",
     # allow, deny, cancel and option1-4 are only claimed while there is something for them to act on.
     "hotkeys": {"toggle": "Ctrl+Alt+L", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N",
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",

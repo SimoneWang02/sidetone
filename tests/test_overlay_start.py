@@ -68,6 +68,18 @@ class ReadingTheWindow(unittest.TestCase):
         self.assertTrue(any("talk_end failed" in line and "recorder gone" in line for line in logged), logged)
 
 
+class Colors(unittest.TestCase):
+    def test_every_color_setting_is_a_color_the_window_reads(self):
+        # A color the hub sends but the window never reads would change nothing on screen.
+        with open(os.path.join(ROOT, "overlay", "Overlay.cs"), encoding="ascii") as f:
+            source = f.read()
+        colors = [key for key in overlay.DEFAULTS if key.endswith("_color")]
+        for key in ["working_color", "needs_you_color", "done_color", "failed_color", "idle_color", "glass_color"]:
+            self.assertIn(key, colors)
+        for key in colors:
+            self.assertRegex(overlay.DEFAULTS[key], r"^(#[0-9A-F]{6})?$", key)
+            self.assertIn(f'"{key}"', source, key)
+
 
 if __name__ == "__main__":
     unittest.main()

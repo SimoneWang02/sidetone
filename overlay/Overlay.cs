@@ -34,7 +34,11 @@ namespace ClaudeSpeaks
         public static double Now { get { return watch.Elapsed.TotalSeconds; } }
 
         public static readonly FontFamily Symbols = new FontFamily("Segoe UI Symbol");
-        public static readonly Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00);
+        // The status lights' colors (working_color, needs_you_color, done_color, failed_color,
+        // idle_color in the overlay settings, "#RRGGBB"; added 2026-11-23 so they can be one's own).
+        // Amber is "needs you", and also the edge and marks of a request.
+        public static Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00), Working = Color.FromRgb(0x4F, 0xC3, 0xF7),
+            Done = Color.FromRgb(0x66, 0xBB, 0x6A), Failed = Color.FromRgb(0xEF, 0x53, 0x50), Idle = Color.FromRgb(0xB0, 0xB6, 0xC0);
         // The microphone's color: the light, bars and wave of the session you are talking to.
         // The tool's blue since the author asked for "the hex code to be the brand color"
         // (`mic_color`; it was a pink, "#FF6E8A", chosen to stand apart from the lights' own
@@ -182,11 +186,11 @@ namespace ClaudeSpeaks
         {
             switch (state)
             {
-                case "working": return Color.FromRgb(0x4F, 0xC3, 0xF7);
+                case "working": return Working;
                 case "needs_you": return Amber;
-                case "done": return Color.FromRgb(0x66, 0xBB, 0x6A);
-                case "failed": return Color.FromRgb(0xEF, 0x53, 0x50);
-                default: return Color.FromRgb(0xB0, 0xB6, 0xC0);
+                case "done": return Done;
+                case "failed": return Failed;
+                default: return Idle;
             }
         }
 
@@ -269,19 +273,48 @@ namespace ClaudeSpeaks
         }
 
         // Dark smoked glass: enough tint that white text stays readable over a bright page.
+        // GlassTint (glass_color, "#RRGGBB"): the color at the top of the blurred glass, "" = the
+        // dark slate it always had (#3A4150). The bottom and the solid glass are made from it in
+        // the same proportions as the slate's own (#12151B, #2B303A to #14171D), so "#3A4150" gives
+        // what "" gives. A dark color keeps white words readable; a light one does not.
+        public static string GlassTint = "";
+
+        static string Shade(Color top, double share)
+        {
+            return ((int)Math.Round(top.R * share)).ToString("X2") + ((int)Math.Round(top.G * share)).ToString("X2") + ((int)Math.Round(top.B * share)).ToString("X2");
+        }
+
         public static Brush GlassFill(string kind)
         {
-            if (kind == "solid") return Gradient(new Point(0, 0), new Point(0, 1), "#FF2B303A", "#FF14171D");
-            if (kind == "none") return Gradient(new Point(0, 0), new Point(0, 1), "#EB2B303A", "#EB14171D");
+            Color tint = ColorOr(GlassTint, Color.FromRgb(0x3A, 0x41, 0x50));
+            bool own = GlassTint != null && GlassTint.Length > 0 && tint != Color.FromRgb(0x3A, 0x41, 0x50);
+            string solidTop = own ? Shade(tint, 0.74) : "2B303A", solidBottom = own ? Shade(tint, 0.35) : "14171D";
+            string blurTop = own ? Shade(tint, 1) : "3A4150", blurBottom = own ? Shade(tint, 0.32) : "12151B";
+            if (kind == "solid") return Gradient(new Point(0, 0), new Point(0, 1), "#FF" + solidTop, "#FF" + solidBottom);
+            if (kind == "none") return Gradient(new Point(0, 0), new Point(0, 1), "#EB" + solidTop, "#EB" + solidBottom);
             double c = Clamp(GlassClear / 100);
             double top = c <= 0.5 ? 0xEB + (0x8C - 0xEB) * c * 2 : 0x8C + (0x33 - 0x8C) * (c - 0.5) * 2;
             double bottom = c <= 0.5 ? 0xEB + (0xA6 - 0xEB) * c * 2 : 0xA6 + (0x4D - 0xA6) * (c - 0.5) * 2;
-            return Gradient(new Point(0, 0), new Point(0, 1), "#" + ((int)Math.Round(top)).ToString("X2") + "3A4150",
-                            "#" + ((int)Math.Round(bottom)).ToString("X2") + "12151B");
+            return Gradient(new Point(0, 0), new Point(0, 1), "#" + ((int)Math.Round(top)).ToString("X2") + blurTop,
+                            "#" + ((int)Math.Round(bottom)).ToString("X2") + blurBottom);
+        }
+
+        public static void SetStateColors(Dictionary<string, object> msg)
+        {
+            if (msg.ContainsKey("working_color")) Working = ColorOr(Overlay.Str(msg, "working_color"), Color.FromRgb(0x4F, 0xC3, 0xF7));
+            if (msg.ContainsKey("needs_you_color")) Amber = ColorOr(Overlay.Str(msg, "needs_you_color"), Color.FromRgb(0xFF, 0xB3, 0x00));
+            if (msg.ContainsKey("done_color")) Done = ColorOr(Overlay.Str(msg, "done_color"), Color.FromRgb(0x66, 0xBB, 0x6A));
+            if (msg.ContainsKey("failed_color")) Failed = ColorOr(Overlay.Str(msg, "failed_color"), Color.FromRgb(0xEF, 0x53, 0x50));
+            if (msg.ContainsKey("idle_color")) Idle = ColorOr(Overlay.Str(msg, "idle_color"), Color.FromRgb(0xB0, 0xB6, 0xC0));
+            if (msg.ContainsKey("glass_color")) GlassTint = Overlay.Str(msg, "glass_color");
+            var edge = new SolidColorBrush(Amber);
+            edge.Freeze();
+            AmberEdge = edge;
         }
 
         public static readonly Brush GlassEdge = Gradient(new Point(0, 0), new Point(1, 1), "#99FFFFFF", "#2EFFFFFF", "#52FFFFFF");
-        public static readonly Brush AmberEdge = Paint("#FFFFB300"), BrightEdge = Paint("#D0FFFFFF");
+        public static Brush AmberEdge = Paint("#FFFFB300");
+        public static readonly Brush BrightEdge = Paint("#D0FFFFFF");
     }
 
     // How loud the voice is over time. The hub listens to the speakers while a line plays and
@@ -2707,6 +2740,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
                     if (msg.ContainsKey("mic_color")) Ui.Mic = Ui.ColorOr(Str(msg, "mic_color"), Ui.Mic);
+                    Ui.SetStateColors(msg);
                     if (msg.ContainsKey("details_style")) detailsStyle = Str(msg, "details_style") == "line" ? "line" : "tiles";
                     if (msg.ContainsKey("details_bars")) detailsBars = Convert.ToBoolean(msg["details_bars"]);
                     if (msg.ContainsKey("choice_caps")) choiceCaps = Convert.ToBoolean(msg["choice_caps"]);
