@@ -141,33 +141,9 @@ Roughly easiest first, the larger ones after.
       tenth ready color became a color wheel that opens a picker of any color, at their word.
       **Not tried by the author**: pick a ready color, type a code, Reset, drag in the picker
       (the overlay follows; chosen when the list shuts). Still only in `config.json`: the waiting
-      mark's and the context arc's colors and the session palette. Next: which keys do what,
-      what the rows show, and where the bubble goes.
-- [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
-      importance, a thin line of light at the screen edge, one small window per session); the
-      code is in commit `8558c4a`.
-- [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
-      2026-11-19: "a feature that let you register my voice and evaluate the correctness
-      of my English ... evaluate our pronunciation of the words"; asked "What do you
-      think?"). The thought: developers already speak to it all day, so the recordings are
-      practice that costs nothing extra. On hearing that: "I think it's a good
-      feature." Kept for later, not started. Notes for whoever builds it:
-      - Opt in, off by default; recordings and results stay on the machine (a folder
-        under `~/.local/state/sidetone/`), with a way to delete them.
-      - Never in the way: no correction while you are talking to a session. A report you
-        ask for (`sidetone english`, or by voice), said in a few sentences and with the
-        details in a page or the settings window.
-      - Two separate things. Grammar and wording: the transcript is enough, and a side
-        copy (as for side questions) or a small local model can suggest a better
-        sentence. Pronunciation: harder, because Whisper is built to guess the intended
-        word, so a mispronounced word often comes out spelled right and nothing shows.
-        Whisper's per-word probability (`word_timestamps=True`) is a cheap first signal
-        of words it found hard. Real scoring needs the sounds: a phoneme recognizer
-        (for example wav2vec2 trained on espeak phonemes) run on the clip, compared with
-        the expected phonemes of the transcribed words (`espeak-ng --ipa`, already a
-        dependency), word by word. Kokoro could then say the word the right way.
-      - Measure before promising: synthetic voices are too clean to test it; it needs real
-        recordings with known mistakes, the author's own among them.
+      mark's and the context arc's colors and the session palette. The rest (the keys held with
+      the mouse, what the rows show, where the bubble goes) moved to after the release on
+      2026-11-24 (the author: "are this necessary? ... we can skip them").
 
 ## 5. What the first public version needs
 
@@ -385,6 +361,39 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
 - [ ] A phone notification when a session needs you and you are away
 
 ## After the release
+
+- [ ] The rest of the overlay as settings (from step 4, 2026-11-24, the author: "we can skip
+      them"): the keys held with the mouse (`focus_wheel`, `drag_keys`, `reorder_keys`, only in
+      `config.json`), what the panel rows show, where the bubble goes.
+
+The two below were step 4's larger extras, moved here on 2026-11-24 when the author chose to go
+on to the release ("let's go to publish unless there's something else to implement first"):
+
+- [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
+      importance, a thin line of light at the screen edge, one small window per session); the
+      code is in commit `8558c4a`.
+- [ ] Pronunciation and English feedback from push-to-talk (the author, by voice,
+      2026-11-19: "a feature that let you register my voice and evaluate the correctness
+      of my English ... evaluate our pronunciation of the words"; asked "What do you
+      think?"). The thought: developers already speak to it all day, so the recordings are
+      practice that costs nothing extra. On hearing that: "I think it's a good
+      feature." Kept for later, not started. Notes for whoever builds it:
+      - Opt in, off by default; recordings and results stay on the machine (a folder
+        under `~/.local/state/sidetone/`), with a way to delete them.
+      - Never in the way: no correction while you are talking to a session. A report you
+        ask for (`sidetone english`, or by voice), said in a few sentences and with the
+        details in a page or the settings window.
+      - Two separate things. Grammar and wording: the transcript is enough, and a side
+        copy (as for side questions) or a small local model can suggest a better
+        sentence. Pronunciation: harder, because Whisper is built to guess the intended
+        word, so a mispronounced word often comes out spelled right and nothing shows.
+        Whisper's per-word probability (`word_timestamps=True`) is a cheap first signal
+        of words it found hard. Real scoring needs the sounds: a phoneme recognizer
+        (for example wav2vec2 trained on espeak phonemes) run on the clip, compared with
+        the expected phonemes of the transcribed words (`espeak-ng --ipa`, already a
+        dependency), word by word. Kokoro could then say the word the right way.
+      - Measure before promising: synthetic voices are too clean to test it; it needs real
+        recordings with known mistakes, the author's own among them.
 
 - [ ] A weekly scheduled task that reads Anthropic's and Claude Code's release notes for
       changes the tool depends on (the author, by voice, 2026-11-22: "when this is published
