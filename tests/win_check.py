@@ -17,9 +17,10 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 home = tempfile.mkdtemp(prefix="cs-win-")
-env = {**os.environ, "USERPROFILE": home, "HOME": home, "LOCALAPPDATA": os.path.join(home, "AppData", "Local"),
-       "CS_STATE": os.path.join(home, "state"), "XDG_CONFIG_HOME": os.path.join(home, "config"), "SIDETONE_TERMINAL": "off"}
-run = env["CS_RUN"] = os.path.join(env["LOCALAPPDATA"], "sidetone", "run")  # named, since a hub WMI starts has the real profile's
+# The runner's own profile (a throwaway machine): with another one, the C# compiler cannot sign.
+env = {**os.environ, "CS_STATE": os.path.join(home, "state"), "XDG_CONFIG_HOME": os.path.join(home, "config"),
+       "SIDETONE_TERMINAL": "off"}
+run = env["CS_RUN"] = os.path.join(home, "run")
 os.environ.update(env)
 failed = []
 

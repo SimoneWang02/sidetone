@@ -1058,4 +1058,12 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception:  # noqa: BLE001  on Windows the hub has no console to say it: hub.log does
+        import traceback
+        try:
+            log(Config.load(), "hub.log", "hub failed: " + traceback.format_exc())
+        except Exception:  # noqa: BLE001
+            pass
+        raise

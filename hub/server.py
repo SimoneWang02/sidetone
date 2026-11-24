@@ -261,7 +261,9 @@ class Handler(BaseHTTPRequestHandler):
             pass
 
 
-UNIX = hasattr(socketserver, "ThreadingUnixStreamServer")
+# Windows' Python has Unix sockets now, but the hooks there (a C# program) and the extension
+# reach the hub on a port, as they did before it had them.
+UNIX = hasattr(socketserver, "ThreadingUnixStreamServer") and os.name != "nt"
 
 
 class Server(socketserver.ThreadingUnixStreamServer if UNIX else socketserver.ThreadingTCPServer):
