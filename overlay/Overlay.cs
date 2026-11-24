@@ -1136,8 +1136,13 @@ namespace ClaudeSpeaks
         // of the window while it is being resized).
         public int[] Area()
         {
+            return AreaOf(Handle);
+        }
+
+        public static int[] AreaOf(IntPtr handle)
+        {
             WindowRect r;
-            GetWindowRect(Handle, out r);
+            GetWindowRect(handle, out r);
             return new[] { r.Left, r.Top, r.Right - r.Left, r.Bottom - r.Top };
         }
     }
@@ -2014,6 +2019,7 @@ namespace ClaudeSpeaks
             else if (kind == "number") control = Number(key, item, value);
             else if (kind == "key") control = KeyBox(key, Convert.ToString(value, CultureInfo.InvariantCulture) ?? "", typing);
             else if (kind == "pick") control = Pick(key, options, value);
+            else if (kind == "color") control = ColorBox(key, item, value);
             else if (kind == "voice") control = new Toggle(value != null && Convert.ToBoolean(value, CultureInfo.InvariantCulture));
             else control = Segments(key, options, value);
             if (kind == "voice")
@@ -2186,13 +2192,135 @@ namespace ClaudeSpeaks
             return box;
         }
 
+        // A color (2026-11-23; the author chose ready colors and a code over themes or a color
+        // wheel): a dot of it and its code, which can be typed over (Enter or a click elsewhere
+        // takes it, Esc puts it back). A click on the dot or the arrow drops down the ready
+        // colors, the setting's own first, and Reset. The code is typed here in the window and
+        // not in the list, so that the keys go where the window's other keys go. "" (the glass's
+        // own slate) is drawn as the item's "empty" color, its code faint.
+        FrameworkElement ColorBox(string key, Dictionary<string, object> item, object value)
+        {
+            string now = (Convert.ToString(value, CultureInfo.InvariantCulture) ?? "").ToUpperInvariant();
+            string empty = Overlay.Str(item, "empty", "#3A4150").ToUpperInvariant();
+            object[] swatches = item.ContainsKey("swatches") && item["swatches"] is object[] ? (object[])item["swatches"] : new object[0];
+            string first = swatches.Length > 0 ? (Convert.ToString(swatches[0], CultureInfo.InvariantCulture) ?? "") : now;
+            Color seen = Ui.ColorOr(now.Length > 0 ? now : empty, Colors.Gray);
+            string code = (now.Length > 0 ? now : empty).TrimStart('#');
+
+            var popup = new System.Windows.Controls.Primitives.Popup { Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true, VerticalOffset = 4 };
+            var grid = new WrapPanel { Width = 5 * 30 };
+            foreach (object o in swatches)
+            {
+                string mine = (Convert.ToString(o, CultureInfo.InvariantCulture) ?? "").ToUpperInvariant();
+                bool on = mine == now;
+                var dot = new Border {
+                    Width = 24, Height = 24, CornerRadius = new CornerRadius(12), Margin = new Thickness(3), Cursor = Cursors.Hand,
+                    Background = new SolidColorBrush(Ui.ColorOr(mine.Length > 0 ? mine : empty, Colors.Gray)),
+                    BorderBrush = on ? Brushes.White : Ui.Paint("#38FFFFFF"), BorderThickness = new Thickness(on ? 2 : 1),
+                    ToolTip = mine.Length > 0 ? mine : "As it was",
+                };
+                dot.MouseLeftButtonUp += delegate { popup.IsOpen = false; if (!on) choose(key, mine); };
+                grid.Children.Add(dot);
+            }
+            var menu = new StackPanel();
+            menu.Children.Add(grid);
+            if (now != first.ToUpperInvariant())
+            {
+                var back = new Border { CornerRadius = new CornerRadius(5), Padding = new Thickness(8, 4, 8, 5), Margin = new Thickness(0, 4, 0, 0), Cursor = Cursors.Hand,
+                    Child = new TextBlock { Text = "Reset", FontSize = 12, Foreground = Ui.Dim } };
+                Lit(back, "#00FFFFFF", "#24FFFFFF");
+                back.MouseLeftButtonUp += delegate { popup.IsOpen = false; choose(key, first); };
+                menu.Children.Add(back);
+            }
+            popup.Child = new Border {
+                CornerRadius = new CornerRadius(9), Background = Ui.Paint("#FA20242C"), BorderBrush = Ui.Paint("#38FFFFFF"), BorderThickness = new Thickness(1), Padding = new Thickness(5),
+                Child = menu,
+            };
+
+            var face = new StackPanel { Orientation = Orientation.Horizontal };
+            var opener = new StackPanel { Orientation = Orientation.Horizontal, Background = Brushes.Transparent, Cursor = Cursors.Hand };
+            opener.Children.Add(new System.Windows.Shapes.Ellipse { Width = 16, Height = 16, Fill = new SolidColorBrush(seen), Stroke = Ui.Paint("#52FFFFFF"), StrokeThickness = 1, VerticalAlignment = VerticalAlignment.Center });
+            var hash = new TextBlock { Text = "#", FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(9, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+            var typed = new TextBox {
+                Text = code, MaxLength = 7, Width = 58, Margin = new Thickness(-2, 0, 0, 0), FontSize = 12, CharacterCasing = CharacterCasing.Upper, VerticalAlignment = VerticalAlignment.Center,
+                Background = Brushes.Transparent, BorderThickness = new Thickness(0), Padding = new Thickness(0),
+                Foreground = now.Length > 0 ? Brushes.White : Ui.Faint, CaretBrush = Brushes.White, SelectionBrush = Ui.Alpha(Accent, 1),
+            };
+            bool done = false;
+            Action take = delegate
+            {
+                if (done) return;
+                string text = typed.Text.Trim().TrimStart('#').ToUpperInvariant();
+                bool color = text.Length == 6;
+                foreach (char c in text) color &= Uri.IsHexDigit(c);
+                if (!color || text == code) { typed.Text = code; return; }
+                done = true;
+                choose(key, "#" + text);
+            };
+            typed.PreviewMouseLeftButtonDown += delegate { Window.Activate(); };
+            typed.GotKeyboardFocus += delegate { typed.Dispatcher.BeginInvoke(new Action(typed.SelectAll)); };
+            typed.LostKeyboardFocus += delegate { take(); };
+            typed.KeyDown += delegate(object sender, KeyEventArgs e)
+            {
+                if (e.Key == Key.Enter) { take(); e.Handled = true; }
+            };
+            var arrow = new System.Windows.Shapes.Path { Data = Geometry.Parse("M0,0 L4,4 L8,0"), Stroke = Ui.Dim, StrokeThickness = 1.4, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 2, 0, 0) };
+            face.Children.Add(opener);
+            face.Children.Add(hash);
+            face.Children.Add(typed);
+            var arrowHit = new Border { Background = Brushes.Transparent, Cursor = Cursors.Hand, Child = arrow, Padding = new Thickness(0, 4, 0, 4) };
+            face.Children.Add(arrowHit);
+            var box = new Border { CornerRadius = new CornerRadius(8), BorderBrush = Ui.Paint("#24FFFFFF"), BorderThickness = new Thickness(1), Padding = new Thickness(9, 5, 10, 6), Child = face };
+            Lit(box, "#17FFFFFF", "#26FFFFFF");
+            popup.PlacementTarget = box;
+            // As in Pick: a second click closes the list, which has already shut on the press.
+            DateTime shut = DateTime.MinValue;
+            System.ComponentModel.DependencyPropertyDescriptor.FromProperty(System.Windows.Controls.Primitives.Popup.IsOpenProperty, typeof(System.Windows.Controls.Primitives.Popup))
+                .AddValueChanged(popup, delegate { if (!popup.IsOpen) shut = DateTime.UtcNow; List = popup.IsOpen ? popup : null; });
+            MouseButtonEventHandler open = delegate
+            {
+                if (popup.IsOpen) popup.IsOpen = false;
+                else if ((DateTime.UtcNow - shut).TotalMilliseconds > 400)
+                {
+                    // Its right edge under the box's, so it does not reach past the window's side.
+                    popup.Child.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    popup.HorizontalOffset = box.ActualWidth - popup.Child.DesiredSize.Width;
+                    popup.IsOpen = true;
+                }
+            };
+            opener.MouseLeftButtonUp += open;
+            arrowHit.MouseLeftButtonUp += open;
+            return box;
+        }
+
+        // A list that has dropped down, for the pictures of tests/overlay_check.py: it is a window
+        // of its own, and its place is reported with the settings window's.
+        System.Windows.Controls.Primitives.Popup List;
+
+        public int[] ListArea()
+        {
+            if (List == null || !List.IsOpen || List.Child == null) return null;
+            var source = PresentationSource.FromVisual(List.Child) as HwndSource;
+            return source == null ? null : Glass.AreaOf(source.Handle);
+        }
+
         // Esc closes the window. While a hotkey is being typed every key is for that: the keys
-        // held and one more make the new hotkey.
+        // held and one more make the new hotkey. While a color's code is being typed, Esc puts
+        // the code back and leaves the box instead.
         void OnKey(object sender, KeyEventArgs e)
         {
             Key key = e.Key == Key.System ? e.SystemKey : e.Key;
             if (capturing.Length == 0)
             {
+                var typed = Keyboard.FocusedElement as TextBox;
+                if (typed != null && key == Key.Escape)
+                {
+                    typed.Text = "";  // not a color: the box puts its own code back as it loses the keyboard
+                    Keyboard.ClearFocus();
+                    Window.Focus();
+                    e.Handled = true;
+                    return;
+                }
                 if (key == Key.Escape) { Close(); e.Handled = true; }
                 return;
             }
@@ -4688,7 +4816,12 @@ namespace ClaudeSpeaks
                 if (panel.IsVisible) pieces.Add(panel.Area());
                 if (bubble.IsVisible) pieces.Add(bubble.Area());
                 if (muteChip.IsVisible) pieces.Add(muteChip.Area());
-                if (settings != null && settings.IsOpen) pieces.Add(settings.Window.Area());
+                if (settings != null && settings.IsOpen)
+                {
+                    pieces.Add(settings.Window.Area());
+                    int[] list = settings.ListArea();
+                    if (list != null) pieces.Add(list);
+                }
                 int[] area = rail.Area();
                 reply["x"] = area[0]; reply["y"] = area[1]; reply["w"] = area[2]; reply["h"] = area[3];
                 reply["pieces"] = pieces;

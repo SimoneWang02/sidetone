@@ -136,11 +136,11 @@ Roughly easiest first, the larger ones after.
       they asked for it "more responsive"; then "Looks good".
       Colors: the five status lights and the glass's own color, built 2026-11-23
       (`overlay.working_color` ... `idle_color`, `glass_color`; defaults as before), pictures
-      `own-colors*.png`. **Not seen by the author.** Like the session palette (`colors`), the
-      microphone, the waiting mark and the context arc, they are only in `config.json`: the
-      settings window has no color picker. Next: a Colors section in the window with one
-      (its look to agree with the author first), then which keys do what, what the rows show,
-      and where the bubble goes.
+      `own-colors*.png`. In the settings window the same day, a Colors section (the author chose
+      ready colors plus a typed code): the five lights, Glass, Microphone. **Not tried by the
+      author**: pick a ready color, type a code, Reset. Still only in `config.json`: the waiting
+      mark's and the context arc's colors and the session palette. Next: which keys do what,
+      what the rows show, and where the bubble goes.
 - [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by
       importance, a thin line of light at the screen edge, one small window per session); the
       code is in commit `8558c4a`.

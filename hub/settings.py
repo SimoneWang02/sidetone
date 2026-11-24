@@ -10,6 +10,7 @@ setting is one entry of SECTIONS:
            (whether that language's sessions take that voice; see `_voices`)
     kind   choice (a few named values, drawn side by side) | switch | number | key (a hotkey)
            | pick (one of many, drawn as a list that drops down; "play": a ▶ that previews it)
+           | color ("#RRGGBB", drawn as a dot; a few ready colors and a box for one's own drop down)
            | voice (a voice of a language with a ▶ and a tick; "more": folded away until asked)
            | heading (a title over the next card; "fold": it opens and closes it, "summary" beside it)
            | intro (a sentence under the section's title; the Voices section only)
@@ -45,6 +46,23 @@ def switch(key: str, name: str, help: str) -> dict:
 
 def number(key: str, name: str, help: str, low: float, high: float, step: float, unit: str = "") -> dict:
     return {"key": key, "kind": "number", "name": name, "help": help, "min": low, "max": high, "step": step, "unit": unit}
+
+
+# The ready colors a color setting drops down, after its own default (2026-11-23, the author
+# chose "swatches + hex" over themes only or a color wheel). Light enough to read on the dark
+# glass; the glass's own are dark, so white words stay readable on them.
+LIGHT_SWATCHES = ["#4FC3F7", "#FFB300", "#66BB6A", "#EF5350", "#B0B6C0", "#B388FF", "#FF7043", "#26C6DA",
+                  "#F06292", "#FFEE58"]
+GLASS_SWATCHES = ["#2E3A4A", "#3A2E48", "#2E4038", "#463434", "#3C3C3C", "#1E2A3A", "#403828", "#2A3F4A", "#101010"]
+SLATE = "#3A4150"  # what the glass's "" looks like
+
+
+def color(key: str, name: str, help: str, swatches: list) -> dict:
+    """An overlay color. Its default comes first among the swatches; "" (the glass's own
+    slate) is drawn as `empty`."""
+    first = overlay_mod.DEFAULTS[key[8:]]
+    return {"key": key, "kind": "color", "name": name, "help": help, "empty": SLATE,
+            "swatches": ([first] + [c for c in swatches if c != first])[:10]}
 
 
 def heading(key: str, name: str) -> dict:
@@ -220,6 +238,18 @@ SECTIONS = [
         # none, near, all) left the window on 2026-11-22 (the author: "remove usage bars and A
         # model's own week"). A row each stays; a model's own week stays off. Both still read
         # from config.json.
+    ]),
+    # Colors of one's own (2026-11-23; they were only in config.json, where nobody would find
+    # them). The waiting mark's and the context arc's colors and the session palette (`colors`)
+    # are still only there.
+    ("Colors", [
+        color("overlay.working_color", "Working", "The light of a session at work.", LIGHT_SWATCHES),
+        color("overlay.needs_you_color", "Needs You", "A session waiting for an answer, and the edge and keys of its request.", LIGHT_SWATCHES),
+        color("overlay.done_color", "Done", "A session that has finished its turn.", LIGHT_SWATCHES),
+        color("overlay.failed_color", "Failed", "A session whose turn ended in an error.", LIGHT_SWATCHES),
+        color("overlay.idle_color", "Idle", "A session with nothing going on.", LIGHT_SWATCHES),
+        color("overlay.glass_color", "Glass", "The color of the glass. Dark ones keep the words readable.", [""] + GLASS_SWATCHES),
+        color("overlay.mic_color", "Microphone", "The light, bars and wave of the session you are talking to.", LIGHT_SWATCHES),
     ]),
     ("Terminal", [
         # Names agreed 2026-11-22 (were Tint, Tint Strength, Focus Follows the Terminal and
@@ -758,6 +788,13 @@ def _fit(item: dict, value):
                 raise ValueError(f"{item['key']} is on or off")
             return value.lower() in ("true", "on")
         return bool(value)
+    if kind == "color":
+        text = str(value or "").strip().upper()
+        if text and not text.startswith("#"):
+            text = "#" + text
+        if re.fullmatch(r"#[0-9A-F]{6}", text) or (text == "" and default(item["key"]) == ""):
+            return text
+        raise ValueError(f"{item['key']} is a color like #4FC3F7")
     if kind == "number":
         try:
             value = float(value)

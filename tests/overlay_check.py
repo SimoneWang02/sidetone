@@ -586,6 +586,11 @@ if not ONLY or "settings".startswith(ONLY) or "logo".startswith(ONLY):
 for section in SETTINGS:
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section=section["name"])
     shot("settings-" + section["name"].lower(), 0.7)
+# A color's list of ready colors, dropped down by a click on the Working dot: a window of its
+# own, whose place is reported with the settings window's.
+if not ONLY or "settings-colors-open".startswith(ONLY) or ONLY.startswith("settings-colors"):
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Colors", click=[644, 109])
+    shot("settings-colors-open", 0.8)
 # Voices at the height of the screen, with Chinese unfolded: the window maximized by its button.
 if not ONLY or "settings-voices-tall".startswith(ONLY) or ONLY.startswith("settings-voices"):
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[732, 24])

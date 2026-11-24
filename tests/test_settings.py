@@ -85,6 +85,8 @@ class Offered(SettingsCase):
                     self.assertTrue(item["min"] <= item["value"] <= item["max"], item["key"])
                 elif item["kind"] == "switch":
                     self.assertIsInstance(item["value"], bool, item["key"])
+                elif item["kind"] == "color":
+                    self.assertIn(item["value"], item["swatches"], item["key"])
                 else:
                     self.assertIsInstance(item["value"], str, item["key"])
 
@@ -239,7 +241,7 @@ class Chosen(SettingsCase):
         self.assertIsNone(hub.set_setting("reset", "overlay"))  # any case, as from the command line
         self.assertEqual(hub.cfg.overlay["layout"], overlay.DEFAULTS["layout"])
         self.assertEqual(self.window.of("settings"), [])  # the window was shut: nothing sent to it
-        self.assertIsNotNone(hub.set_setting("reset", "Colors"))
+        self.assertIsNotNone(hub.set_setting("reset", "Sounds"))
 
     def test_a_description_names_the_key_it_speaks_of(self):
         hub = self.make()
@@ -274,6 +276,30 @@ class Chosen(SettingsCase):
                     if i and i < len(words) - 1 and word in small:
                         continue
                     self.assertTrue(word[0].isupper() or not word[0].isalpha(), item["name"])
+
+    def test_a_color_is_taken_written_and_sent_to_the_overlay(self):
+        hub = self.make()
+        self.assertIsNone(hub.set_setting("overlay.working_color", "b388ff"))  # no "#", small letters
+        self.assertEqual(hub.cfg.overlay["working_color"], "#B388FF")
+        self.assertEqual(self.saved()["overlay"]["working_color"], "#B388FF")
+        self.assertGreater(self.window.reconfigured, 0)
+        self.assertIn("color like", hub.set_setting("overlay.working_color", "blue"))
+        self.assertIn("color like", hub.set_setting("overlay.working_color", ""))  # only the glass has a color of none
+        self.assertIsNone(hub.set_setting("overlay.glass_color", "#3A2E48"))
+        self.assertIsNone(hub.set_setting("overlay.glass_color", ""))
+        self.assertEqual(hub.cfg.overlay["glass_color"], "")
+
+    def test_colors_reset_to_what_they_always_were(self):
+        hub = self.make()
+        hub.set_setting("overlay.done_color", "#26C6DA")
+        hub.set_setting("overlay.glass_color", "#3A2E48")
+        colors = next(s for s in settings.describe(hub) if s["name"] == "Colors")
+        self.assertTrue(colors["changed"])
+        for item in colors["items"]:
+            self.assertEqual(item["swatches"][0], overlay.DEFAULTS[item["key"][8:]], item["key"])  # its own default first
+            self.assertLessEqual(len(item["swatches"]), 10)
+        self.assertIsNone(settings.reset(hub, "Colors"))
+        self.assertEqual((hub.cfg.overlay["done_color"], hub.cfg.overlay["glass_color"]), ("#66BB6A", ""))
 
     def test_the_voices_have_no_reset(self):
         hub = self.make()
@@ -420,7 +446,7 @@ class Shown(SettingsCase):
         hub.on_overlay({"type": "hotkey", "name": "settings"})
         opened = self.window.of("settings")[-1]
         self.assertTrue(opened["open"] and opened["toggle"])
-        self.assertEqual([s["name"] for s in opened["sections"]], ["Speech", "Talking", "Overlay", "Terminal", "Keys"])
+        self.assertEqual([s["name"] for s in opened["sections"]], ["Speech", "Talking", "Overlay", "Colors", "Terminal", "Keys"])
         hub.on_overlay({"type": "settings", "open": False})  # it was in front, so the window shut and said so
         self.assertFalse(hub._settings_open)
         hub.on_overlay({"type": "hotkey", "name": "settings"})  # behind another program it would only come forward

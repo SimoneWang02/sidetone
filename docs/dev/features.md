@@ -501,10 +501,21 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   is the dark slate (#3A4150 at the top of the blurred glass); a color of your own takes the
   top, and the bottom and the solid glass are made from it in the slate's proportions
   (`Ui.GlassFill`; 0.32 of it at the bottom, 0.74 and 0.35 for solid), so "#3A4150" looks as
-  "" does. Only in `config.json` so far: the settings window has no way to choose a color yet,
-  like `mic_color`, `waiting_color` and the context colors before them. Pictures `own-colors*.png`
-  (violet, orange-red, cyan, pink, grey on plum glass); a test checks every `*_color` default is
-  a color and is read by `Overlay.cs`. **Not seen by the author yet.**
+  "" does. Pictures `own-colors*.png` (violet, orange-red, cyan, pink, grey on plum glass); a
+  test checks every `*_color` default is a color and is read by `Overlay.cs`.
+  In the settings window the same day, section Colors (after Overlay): the five lights, Glass and
+  Microphone (`mic_color`). The author asked where the colors could be found (only in
+  `config.json`, so nobody would), then chose "swatches + hex" over themes only and a color
+  wheel. Kind `color` (`settings.color`, `SettingsWindow.ColorBox`): a dot of the color and its
+  code, typed over in place (Enter or a click elsewhere takes it, Esc puts it back; typed in the
+  window rather than in the list so the keys go where the window's keys go); a click on the dot
+  or the arrow drops down ten ready colors (`LIGHT_SWATCHES`, `GLASS_SWATCHES`, the setting's own
+  default first) and Reset when it is not the default. The glass's "" is drawn as the slate,
+  its code faint. The waiting mark's and the context arc's colors and the session palette are
+  still only in `config.json`. Pictures `settings-colors.png`, `settings-colors-open.png` (the
+  open list is reported with the settings window's place, `SettingsWindow.ListArea`). A swatch
+  clicked and a code typed are not tried by a test: the check's clicks reach only the window.
+  **Not seen or tried by the author yet.**
 - What a clear looks and sounds like (2026-11-21): no "sent" sign and no "sent" sound, which are
   for words that went to a session; its own sound once Claude Code has ended the conversation, a
   quick run down four notes (`sounds.TONES["cleared"]`); and the light stays through it with its
