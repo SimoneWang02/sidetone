@@ -135,6 +135,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   German), and the written reply has the line; the author: "yes that works for me". Kokoro
   1.0's espeak Chinese voices are no longer used (`_voices_of`). An engine with no `has` (the
   silent one) says every line as before.
+  In the settings window (the same day): a language not installed has a dim heading with
+  "Not installed, 428 MB" and an Install button where its switch is (`PackHead` in
+  `Overlay.cs`; `_pack_heading`, `install` in `settings.py`); the hub installs in a thread and
+  draws the window again at most about three times a second, the heading showing the step and
+  "141 MB of 428 MB" beside a bar; a failure shows why, in a soft red, and Try Again. Done, the
+  language is turned on (installed means on) and the engine reads its voices again. Once
+  installed, its card lists, after the ticked voices, the clearest not downloaded yet
+  (`fetchable`) with "0.5 MB" in their tag and no ▶; ticking one fetches it (its tag counts
+  the percent) and ticks it once it is there. Under the card, "Remove Chinese" with what it
+  frees, asking first as Reset does ("Click Again to Remove"); the package stays. Turning
+  Chinese on without its pack is refused. Pictures: `settings-pack-missing.png`,
+  `-installing`, `-failed`, `-installed`, `-remove` (`tests/overlay_check.py
+  --only=settings-pack`).
   A line with no `lang` (2026-11-22, `language.guess`, called from `Hub._voice_for` with the
   line itself). Seen 2026-11-19: a session answered in Italian without the mark, and the
   English voice read it. The author, offered it as the next thing: "just proceed"; asked

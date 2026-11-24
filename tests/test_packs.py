@@ -260,3 +260,128 @@ class NotInstalled(HubCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FromTheWindow(HubCase):
+    """Install on Chinese's heading, a voice ticked to be fetched, Remove under the card."""
+
+    class Engine:
+        def __init__(self, folder):
+            self.dir = self.piper_dir = folder
+            self.zh, self.spoken, self.voices, self.custom, self.piper = set(), [], {"af_heart", "am_michael"}, {}, {}
+            self.reloaded = 0
+
+        def zh_voices(self):
+            return set(self.zh)
+
+        def has(self, v):
+            return v in self.voices or (v.startswith("zh:") and v[3:] in self.zh)
+
+        def reload_zh(self):
+            self.reloaded += 1
+
+        def load(self):
+            pass
+
+        def arm(self):
+            pass
+
+        def speak(self, parts, voice):
+            self.spoken.append((" ".join(parts), voice))
+            return 0.0
+
+        def stop(self):
+            pass
+
+    def make(self, **cfg):
+        cfg.setdefault("whisper_model", "small")
+        cfg.setdefault("whisper_language", "en,it")
+        hub = super().make(**cfg)
+        hub.cfg.config_path = os.path.join(self.tmp, "config.json")
+        self.engine = hub.speech.engine = self.Engine(self.tmp)
+        return hub
+
+    def heading(self, hub):
+        import settings
+        return next(i for i in settings._voices(hub) if i.get("key") == "heading.zh")
+
+    def finish(self, hub):
+        import settings
+        for _ in range(200):
+            if not any(j.get("busy") for j in settings.jobs(hub).values()):
+                return
+            import time
+            time.sleep(0.01)
+        self.fail("the install did not finish")
+
+    def test_install_shows_its_size_then_how_far_then_turns_chinese_on(self):
+        hub = self.make()
+        self.assertEqual(self.heading(hub)["pack"], "missing")
+        self.assertTrue(self.heading(hub)["summary"].startswith("Not installed, "))
+        self.assertIsNotNone(hub.set_setting("speak.zh", True))  # not before it is installed
+        gate = threading.Event()
+
+        def install_zh(voices, folder, progress, step):
+            step("Chinese model")
+            progress(100, 400)
+            gate.wait(5)
+            self.engine.zh.update(voices)
+
+        with unittest.mock.patch.object(packs, "install_zh", install_zh):
+            self.assertIsNone(hub.set_setting("install.zh", True))
+            for _ in range(100):
+                if self.heading(hub).get("progress"):
+                    break
+                import time
+                time.sleep(0.01)
+            shown = self.heading(hub)
+            self.assertEqual((shown["pack"], shown["progress"]), ("installing", 0.25))
+            self.assertTrue(shown["summary"].startswith("Chinese model, "), shown["summary"])
+            gate.set()
+            self.finish(hub)
+        self.assertIn("zh", hub.cfg.whisper_language)
+        self.assertGreater(self.engine.reloaded, 0)
+        self.assertNotIn("install", self.heading(hub))
+        self.assertEqual(self.said_in_chinese(hub), "zh:zf_049")
+
+    def said_in_chinese(self, hub):
+        hub.on_display(ev("MessageDisplay", delta='<speak lang="zh">好了。</speak>'))
+        self.spoken()
+        return self.engine.spoken[-1][1]
+
+    def test_a_failed_install_says_why_and_can_be_tried_again(self):
+        hub = self.make()
+        with unittest.mock.patch.object(packs, "install_zh", side_effect=packs.Failed("could not download it: timed out")):
+            hub.set_setting("install.zh", True)
+            self.finish(hub)
+        shown = self.heading(hub)
+        self.assertEqual((shown["pack"], shown["summary"]), ("failed", "could not download it: timed out"))
+        self.assertNotIn("zh", hub.cfg.whisper_language)
+
+    def test_a_voice_not_downloaded_is_fetched_when_ticked_then_ticked(self):
+        import settings
+        hub = self.make(whisper_language="en,zh")
+        self.engine.zh = {"zf_049", "zf_006", "zm_056", "zm_057"}
+        line = next(i for i in settings._voices(hub) if i.get("voice") == "zh:zm_030")
+        self.assertEqual((line["tag"], line["preview"]), ("0.5 MB", False))
+        with unittest.mock.patch.object(packs, "add_zh_voices", lambda names, folder, progress: self.engine.zh.update(names)):
+            self.assertIsNone(hub.set_setting("voice_in.zh.zh:zm_030", True))
+            self.finish(hub)
+        self.assertIn("zh:zm_030", settings.in_use(hub, "zh"))
+        self.assertNotIn("fetch", next(i for i in settings._voices(hub) if i.get("voice") == "zh:zm_030"))
+
+    def test_remove_turns_it_off_and_frees_its_files(self):
+        import settings
+        hub = self.make(whisper_language="en,zh")
+        self.engine.zh = {"zf_049"}
+        for f in packs.ZH_FILES:
+            with open(os.path.join(self.tmp, f), "wb") as out:
+                out.write(b"x" * 1000)
+        remove = next(i for i in settings._voices(hub) if i.get("kind") == "pack")
+        self.assertEqual(remove["key"], "remove.zh")
+        self.assertIn("Frees", remove["help"])
+        self.engine.zh = set()  # what the engine reads once the files are gone
+        self.assertIsNone(hub.set_setting("remove.zh", True))
+        self.assertNotIn("zh", hub.cfg.whisper_language)
+        self.assertFalse(any(os.path.exists(os.path.join(self.tmp, f)) for f in packs.ZH_FILES))
+        self.assertEqual(self.heading(hub)["pack"], "missing")

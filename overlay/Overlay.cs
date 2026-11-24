@@ -1683,6 +1683,12 @@ namespace ClaudeSpeaks
                         {
                             bool spoken = !item.ContainsKey("spoken") || Convert.ToBoolean(item["spoken"], CultureInfo.InvariantCulture);
                             shut = !spoken || !openGroups.Contains(inGroup);
+                            if (Overlay.Str(item, "install").Length > 0)  // a language not installed: its size and Install
+                            {
+                                shut = true;
+                                list.Children.Add(PackHead(item));
+                                continue;
+                            }
                             list.Children.Add(FoldHead(inGroup, Overlay.Str(item, "name"), Overlay.Str(item, "summary"), !shut,
                                 Overlay.Str(item, "speak"), spoken, item.ContainsKey("last") && Convert.ToBoolean(item["last"], CultureInfo.InvariantCulture)));
                             continue;
@@ -1694,6 +1700,12 @@ namespace ClaudeSpeaks
                         continue;
                     }
                     if (shut) continue;  // under a closed heading
+                    if (Overlay.Str(item, "kind") == "pack")  // under a language's card: Remove, as Reset is under a section's
+                    {
+                        endCard();
+                        list.Children.Add(RemoveButton(Overlay.Str(item, "key"), Overlay.Str(item, "name"), Overlay.Str(item, "help")));
+                        continue;
+                    }
                     if (lines == null) lines = new StackPanel();
                     if (Folded(item) && !Kept(item))
                     {
@@ -1877,6 +1889,75 @@ namespace ClaudeSpeaks
             return head;
         }
 
+        // The heading of a language that is not installed (the author, 2026-11-23: "for chinese i
+        // want to install it from settings no?"): dim like a language that is off, with what it
+        // takes at the right and an Install button where the switch is; while it comes, a bar and
+        // how far; if it failed, why, and Try Again.
+        UIElement PackHead(Dictionary<string, object> item)
+        {
+            string state = Overlay.Str(item, "pack"), key = Overlay.Str(item, "install");
+            var row = new Grid();
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var chevron = new System.Windows.Shapes.Path { Data = Geometry.Parse("M0,0 L4.5,4.5 L0,9"), Stroke = Ui.Dim, StrokeThickness = 1.5, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, Width = 10, Height = 10, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0), Opacity = 0.4 };
+            row.Children.Add(chevron);
+            var title = new TextBlock { Text = Overlay.Str(item, "name"), FontSize = 14, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.4 };
+            Grid.SetColumn(title, 1);
+            row.Children.Add(title);
+            var holds = new TextBlock { Text = Overlay.Str(item, "summary"), FontSize = 12, Foreground = state == "failed" ? Ui.Paint("#FFE8A0A0") : Ui.Faint, TextTrimming = TextTrimming.CharacterEllipsis, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 0, 0), ToolTip = Overlay.Str(item, "summary") };
+            Grid.SetColumn(holds, 2);
+            row.Children.Add(holds);
+            FrameworkElement control;
+            if (state == "installing")
+            {
+                double done = item.ContainsKey("progress") ? Convert.ToDouble(item["progress"], CultureInfo.InvariantCulture) : 0;
+                var track = new Grid { Width = 96, Height = 6, VerticalAlignment = VerticalAlignment.Center };
+                track.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = Ui.Paint("#26FFFFFF") });
+                track.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = Ui.Alpha(Accent, 0.95), HorizontalAlignment = HorizontalAlignment.Left, Width = Math.Max(6, 96 * Math.Max(0, Math.Min(1, done))) });
+                control = track;
+            }
+            else
+            {
+                var button = new Border { CornerRadius = new CornerRadius(7), Padding = new Thickness(13, 4, 13, 5), Cursor = Cursors.Hand,
+                    Background = Ui.Alpha(Accent, 0.85),
+                    Child = new TextBlock { Text = state == "failed" ? "Try Again" : "Install", FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White } };
+                button.MouseEnter += delegate { button.Background = Ui.Alpha(Accent, 1.0); };
+                button.MouseLeave += delegate { button.Background = Ui.Alpha(Accent, 0.85); };
+                button.MouseLeftButtonUp += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; choose(key, true); };
+                control = button;
+            }
+            control.Margin = new Thickness(16, -3, -2, -3);
+            Grid.SetColumn(control, 3);
+            row.Children.Add(control);
+            return new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, 8), Background = Ui.Paint("#0AFFFFFF"), Child = row };
+        }
+
+        // Under an installed language's card: Remove, which frees its files. Asks first, the way
+        // Reset does: the first click asks, a second within 4 s removes.
+        UIElement RemoveButton(string key, string name, string help)
+        {
+            bool asking = confirming == key;
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 14) };
+            var button = new Border { CornerRadius = new CornerRadius(7), Padding = new Thickness(13, 6, 13, 7), Cursor = Cursors.Hand, HorizontalAlignment = HorizontalAlignment.Left };
+            button.Child = new TextBlock { Text = asking ? "Click Again to Remove" : name, FontSize = 12, FontWeight = asking ? FontWeights.SemiBold : FontWeights.Normal, Foreground = asking ? Brushes.White : Ui.Dim };
+            if (asking) button.Background = new SolidColorBrush(Color.FromArgb(0xB0, Accent.R, Accent.G, Accent.B));
+            else Lit(button, "#12FFFFFF", "#22FFFFFF");
+            button.MouseLeftButtonUp += delegate
+            {
+                if (confirming == key) { confirming = ""; choose(key, true); return; }
+                confirming = key;
+                var wait = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+                wait.Tick += delegate { wait.Stop(); if (confirming == key) { confirming = ""; Fill(); } };
+                wait.Start();
+                Fill();
+            };
+            row.Children.Add(button);
+            row.Children.Add(new TextBlock { Text = help, FontSize = 11.5, Foreground = Ui.Faint, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(12, 0, 0, 0) });
+            return row;
+        }
+
         // A round button with a triangle: the voice says a sentence, and nothing is changed. While
         // that sentence plays it shows a square, and a click on it stops it (the author,
         // 2026-11-21: "click it, the preview goes, and then there's the square to stop it").
@@ -2034,7 +2115,10 @@ namespace ClaudeSpeaks
             if (heard != null && heard.Length > 0)  // a voice: a button to hear it beside what sets it
             {
                 var both = new StackPanel { Orientation = Orientation.Horizontal };
-                var play = PlayButton(heard, item.ContainsKey("playing") && Convert.ToBoolean(item["playing"], CultureInfo.InvariantCulture));
+                // A voice not downloaded yet has nothing to play: room the size of the button, so the switches line up.
+                bool hearable = !item.ContainsKey("preview") || Convert.ToBoolean(item["preview"], CultureInfo.InvariantCulture);
+                FrameworkElement play = hearable ? (FrameworkElement)PlayButton(heard, item.ContainsKey("playing") && Convert.ToBoolean(item["playing"], CultureInfo.InvariantCulture))
+                                                 : new Border { Width = 28, Height = 28 };
                 play.Margin = new Thickness(0, 0, 10, 0);
                 if (kind == "pick") control.Width = 214;  // one width for every session's voice, so the buttons line up
                 both.Children.Add(play);

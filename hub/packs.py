@@ -140,7 +140,18 @@ def removable(lang: str, kokoro_dir: str = KOKORO_DIR) -> int:
 
 
 def megabytes(n: int) -> str:
-    return f"{n / 1e9:.1f} GB" if n >= 1e9 else f"{max(1, round(n / 1e6))} MB"
+    return f"{n / 1e9:.1f} GB" if n >= 1e9 else f"{n / 1e6:.1f} MB" if n < 950_000 else f"{round(n / 1e6)} MB"
+
+
+def voice_size(voice: str, piper_dir: str = PIPER_DIR) -> int:
+    """What fetching one more voice takes, its language's pack being installed: half a megabyte
+    for a Chinese voice, a Piper model (and the Piper program the first time)."""
+    if voice.startswith("zh:"):
+        return ZH_VOICE_BYTES
+    if voice in PIPER:
+        program = 0 if os.access(os.path.join(piper_dir, "piper", "piper"), os.X_OK) else PIPER_PROGRAM[1]
+        return program + sum(f[1] for f in PIPER[voice])
+    return 0
 
 
 # ---- fetching ----

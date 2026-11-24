@@ -30,6 +30,7 @@ import time
 
 import base
 import overlay as overlay_mod
+import packs
 import stt
 import terminal as terminal_mod
 import tts
@@ -586,6 +587,8 @@ def set_spoken(hub, lang: str, on: bool) -> str | None:
     ambiguous the words are"."""
     if lang not in SUMMARY_LANGUAGES:
         return f"no language {lang} here"
+    if on and not has_pack(hub, lang) and hasattr(hub.speech.engine, "zh_voices"):
+        return f"install {base.LANGUAGE_NAMES.get(lang, lang)} first"
     named = stt.codes(hub.cfg.whisper_language) or list(SUMMARY_LANGUAGES)
     wanted = [c for c in named if c != lang] + ([lang] if on else [])
     wanted = [c for c in SUMMARY_LANGUAGES if c in wanted] + [c for c in wanted if c not in SUMMARY_LANGUAGES]
@@ -598,6 +601,133 @@ def set_spoken(hub, lang: str, on: bool) -> str | None:
     hub.reload_languages()
     base.log(hub.cfg, "hub.log", f"setting speak.{lang} = {json.dumps(on)}")
     return None
+
+
+# ---- packs: a language or a voice installed from the window (hub/packs.py) ----
+# Agreed 2026-11-23 ("for chinese i want to install it from settings no?"): a language not
+# installed shows its size and an Install button on its heading, then a bar while it comes; a
+# voice not downloaded is listed with its size and fetched when it is ticked.
+
+def _dirs(hub) -> tuple:
+    engine = hub.speech.engine
+    return getattr(engine, "dir", hub.cfg.kokoro_dir) or packs.KOKORO_DIR, getattr(engine, "piper_dir", packs.PIPER_DIR)
+
+
+def has_pack(hub, lang: str) -> bool:
+    """Whether a language needing a pack (Chinese) is installed; every other one is."""
+    if lang != "zh":
+        return True
+    engine = hub.speech.engine
+    return bool(engine.zh_voices()) if hasattr(engine, "zh_voices") else False
+
+
+def fetchable(hub, lang: str) -> list:
+    """Voices of `lang` that are not here but can be fetched: the clearest Chinese ones once the
+    Chinese model is, Piper's Italian."""
+    have = set(catalog(hub).get(lang, []))
+    if lang == "zh":
+        if not has_pack(hub, "zh"):
+            return []
+        wanted = list(dict.fromkeys(list(tts.PREFERRED_VOICE["zh"]) + CHINESE_CLARITY[:MOST_VOICES]))
+    else:
+        wanted = [v for v in packs.PIPER if voice_language(v) == lang]
+    return [v for v in wanted if v not in have]
+
+
+def jobs(hub) -> dict:
+    """What is being installed, by language ("zh") or voice ("zh:zf_001"): how far, and the
+    error of one that failed (kept until it is tried again)."""
+    return hub.__dict__.setdefault("_packs", {})
+
+
+def _show(hub) -> None:
+    if getattr(hub, "_settings_open", False) and hub.overlay:
+        hub.overlay.send({"type": "settings", "open": True, "title": NAME, "sections": describe(hub)})
+
+
+def install(hub, what: str) -> str | None:
+    """Start installing a language's pack ("zh") or one voice ("zh:zf_001", "piper:..."), in
+    the background; the window follows it. Returns what is wrong, or None."""
+    if what != "zh" and what not in packs.PIPER and not (what.startswith("zh:") and what in fetchable(hub, "zh")):
+        return f"nothing to install called {what}"
+    job = jobs(hub).get(what)
+    if job and job.get("busy"):
+        return None
+    job = jobs(hub)[what] = {"busy": True, "done": 0, "total": 0, "step": "", "error": ""}
+    kokoro_dir, piper_dir = _dirs(hub)
+    engine = hub.speech.engine
+
+    def run():
+        shown = [0.0]
+
+        def progress(done, total):
+            job["done"], job["total"] = done, total
+            if time.monotonic() - shown[0] > 0.3:  # the window drawn again at most about three times a second
+                shown[0] = time.monotonic()
+                _show(hub)
+
+        def step(what_now):
+            job["step"] = what_now
+            _show(hub)
+
+        try:
+            if what == "zh":
+                packs.install_zh([v[3:] for v in tts.PREFERRED_VOICE["zh"]], kokoro_dir, progress, step)
+            elif what.startswith("zh:"):
+                packs.add_zh_voices([what[3:]], kokoro_dir, progress)
+            else:
+                packs.install_piper(what, piper_dir, progress)
+            if hasattr(engine, "reload_zh"):
+                engine.reload_zh()
+            if hasattr(engine, "reload_piper"):
+                engine.reload_piper()
+            jobs(hub).pop(what, None)
+            if what == "zh":
+                set_spoken(hub, "zh", True)  # installed means on
+            else:
+                lang = voice_language(what)
+                set_in_use(hub, lang, in_use(hub, lang) + [what])  # it was ticked to be fetched
+            base.log(hub.cfg, "hub.log", f"installed {what}")
+        except Exception as e:  # noqa: BLE001 - a failed download is said in the window, the hub goes on
+            job.update(busy=False, error=str(e) if isinstance(e, packs.Failed) else f"could not install it: {e}")
+            base.log(hub.cfg, "hub.log", f"installing {what} failed: {e}")
+        hub.publish()
+        _show(hub)
+
+    base.log(hub.cfg, "hub.log", f"installing {what}")
+    threading.Thread(target=run, daemon=True, name=f"install {what}").start()
+    return None
+
+
+def remove(hub, lang: str) -> str | None:
+    """Take a language's pack away (its files; Chinese then is off). Returns what is wrong, or None."""
+    if lang != "zh":
+        return f"{base.LANGUAGE_NAMES.get(lang, lang)} has nothing to remove"
+    kokoro_dir, _ = _dirs(hub)
+    if lang in spoken(hub) and len(spoken(hub)) > 1:
+        set_spoken(hub, lang, False)
+    freed = packs.remove_zh(kokoro_dir)
+    if hasattr(hub.speech.engine, "reload_zh"):
+        hub.speech.engine.reload_zh()
+    base.log(hub.cfg, "hub.log", f"removed Chinese, {packs.megabytes(freed)} freed")
+    hub.publish()
+    return None
+
+
+def _pack_heading(hub, lang: str, found: dict) -> None:
+    """A heading for a language not installed: its size and Install, a bar while it comes, or
+    what went wrong and Try Again."""
+    job = jobs(hub).get(lang) or {}
+    found.update(spoken=False, speak="", install=f"install.{lang}")
+    if job.get("busy"):
+        total = job.get("total") or 0
+        found.update(pack="installing", progress=round(job["done"] / total, 3) if total else 0.0,
+                     summary=f"{job.get('step') or 'Starting'}, {packs.megabytes(job['done'])} of {packs.megabytes(total)}" if total else "Starting")
+    elif job.get("error"):
+        found.update(pack="failed", summary=job["error"])
+    else:
+        size = packs.needs(lang, list(tts.PREFERRED_VOICE.get(lang, [])), *_dirs(hub)[:1])
+        found.update(pack="missing", summary=f"Not installed, {packs.megabytes(size)}")
 
 
 def _voices(hub) -> list:
@@ -622,6 +752,12 @@ def _voices(hub) -> list:
     speaking = spoken(hub)
     for lang in SUMMARY_LANGUAGES:
         chosen = in_use(hub, lang)
+        if not has_pack(hub, lang) and hasattr(hub.speech.engine, "zh_voices"):
+            heading = {"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
+                       "help": "", "fold": True, "last": False}
+            _pack_heading(hub, lang, heading)
+            found.append(heading)
+            continue
         if not voices.get(lang):
             continue
         # Each language's heading has a switch for whether you speak it (`spoken`); one that is
@@ -638,8 +774,9 @@ def _voices(hub) -> list:
         # while it counted only the ticked (the author, 2026-11-21: "might be misleading"), so it
         # said both, "4 of 12 ticked", which was "not very conventional"; "4 selected", as most
         # programs say it, was agreed the same day.
-        shown = listed(lang, chosen, voices[lang])
-        everyone += shown
+        coming = fetchable(hub, lang)
+        shown = listed(lang, chosen, voices[lang] + coming)
+        everyone += [v for v in shown if v not in coming]
         found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
                       "help": "", "fold": True, "summary": f"{len(chosen)} selected", "speak": f"speak.{lang}",
                       "spoken": True, "last": len(speaking) == 1})
@@ -648,8 +785,22 @@ def _voices(hub) -> list:
             found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
                           "group": lang, "more": v not in chosen, "playing": getattr(hub, "_previewing", "") == v})
             tag = voice_tag(hub, v)
+            if v in coming:  # not here yet: its size, fetched when ticked; nothing to hear yet
+                job = jobs(hub).get(v) or {}
+                size = packs.voice_size(v, _dirs(hub)[1])
+                if job.get("busy"):
+                    tag = (f"{int(100 * job['done'] / job['total']) if job.get('total') else 0} %", "Downloading it")
+                elif job.get("error"):
+                    tag = ("Failed", job["error"] + ". Tick it to try again.")
+                else:
+                    tag = (packs.megabytes(size), "Not downloaded yet. Ticking it downloads it.")
+                found[-1].update(fetch=True, preview=False)
             if tag:
                 found[-1].update(tag=tag[0], tag_help=tag[1])
+        if lang == "zh" and hasattr(hub.speech.engine, "zh_voices"):  # a pack: how to take it away again
+            found.append({"key": f"remove.{lang}", "kind": "pack", "name": f"Remove {base.LANGUAGE_NAMES[lang]}",
+                          "help": f"Frees {packs.megabytes(packs.removable(lang, _dirs(hub)[0]))}. You can install it again.",
+                          "group": lang})
     time_voices(hub, everyone)
     return found
 
@@ -709,7 +860,7 @@ def default(key: str):
     project's voice is handed out from the pool)."""
     if key == "mute":
         return False
-    if key.startswith(("voice_in.", "voices_order.", "heading.", "intro.", "speak.")):
+    if key.startswith(("voice_in.", "voices_order.", "heading.", "intro.", "speak.", "remove.")):
         return None
     if key.startswith("overlay.hotkeys."):
         return overlay_mod.DEFAULTS["hotkeys"].get(key[16:], "")
@@ -750,7 +901,7 @@ def describe(hub) -> list:
         listed = _voices(hub) if name == "Voices" else section
         if listed:
             values = [{**item, "help": _with_keys(hub, item["help"]),
-                       "value": None if item["kind"] in ("heading", "intro") else read(hub, item["key"])} for item in listed]
+                       "value": None if item["kind"] in ("heading", "intro", "pack") else read(hub, item["key"])} for item in listed]
             resettable = [i for i in values if default(i["key"]) is not None]
             sections.append({"name": name, "items": values, "resettable": bool(resettable),
                              "changed": any(not _same(i, i["value"], default(i["key"])) for i in resettable)})
@@ -856,6 +1007,14 @@ def apply(hub, key: str, value) -> str | None:
     """Change a setting: at once, and remembered. Returns what is wrong with it, or None."""
     if key.startswith("speak."):  # the switch on a language's heading: whether you speak it
         return set_spoken(hub, key[6:], bool(value))
+    if key.startswith("install."):  # Install on a language's heading (or Try Again)
+        return install(hub, key[8:])
+    if key.startswith("remove."):  # Remove at the end of a language's card
+        return remove(hub, key[7:])
+    if key.startswith("voice_in.") and value:  # a voice not downloaded, ticked: fetched first, ticked after
+        lang, voice = key[9:].split(".", 1)
+        if voice in fetchable(hub, lang):
+            return install(hub, voice)
     if key.startswith("voices_order."):  # a voice dragged to another place in its language's list
         error = set_in_use(hub, key[13:], [str(v) for v in value] if isinstance(value, list) else [])
         if not error:

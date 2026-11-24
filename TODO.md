@@ -261,9 +261,11 @@ the ones after it are done together with them, not by a session alone.
       to choose per session in the settings window, Voices.
 - [ ] Languages as packs you install, so each person chooses how much storage it takes
       (built 2026-11-23, not yet tried by the author: `hub/packs.py`, `sidetone languages`
-      fetching first, the reminder naming the languages on, the English notice. Left: the
-      settings window's Install and Remove with sizes and progress, ticking a voice fetching
-      it, the recorded samples, `reply_language` offering only languages installed)
+      fetching first, the reminder naming the languages on, the English notice, the settings
+      window's Install with its size and a bar, Remove, ticking a voice fetching it. Next: the
+      author installs Chinese from the window on the second machine. Left: the recorded
+      samples to hear a voice before it is downloaded, `reply_language` offering only
+      languages installed, Remove for a language that is installed but off)
       (agreed with the author 2026-11-23, from a second machine without Chinese: "for chinese
       i want to install it from settings no?"). Today `install.sh` fetches only English;
       Paola and Kokoro's Chinese model v1.1-zh with `misaki-fork[zh]` were put on the author's

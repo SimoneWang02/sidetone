@@ -633,7 +633,71 @@ if not ONLY or "settings-voices-tall".startswith(ONLY) or ONLY.startswith("setti
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[400, 208])
     shot("settings-voices-italian", 0.7)
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[400, 208])
-CHANGED = [{**s, "changed": s["name"] == "Speech"} for s in SETTINGS]  # one setting of Speech moved: its reset button lit
+# Chinese as a pack (2026-11-23): not installed with its size and Install, coming in, failed;
+# then installed and opened, with the voices not downloaded yet and Remove under its card.
+if not ONLY or "settings-pack".startswith(ONLY) or ONLY.startswith("settings-pack"):
+    import tempfile  # noqa: E402
+
+    import packs  # noqa: E402
+
+    class PackEngine:
+        dir = piper_dir = tempfile.mkdtemp(prefix="cs-pack-")
+
+        def __init__(self, zh):
+            self.zh = set(zh)
+
+        def zh_voices(self):
+            return self.zh
+
+    class PackHub(FakeHub):
+        def __init__(self, zh, languages="en,it"):
+            self.speech = type("Queue", (), {"engine": PackEngine(zh)})()
+            self.cfg = base.Config(run="", state="", whisper_model="small", whisper_language=languages)
+            self.zh = zh
+
+        def voices(self):
+            return {**FakeHub.voices(self), "zh": ["zh:" + v for v in self.zh]}
+
+    def pack_shot(name, hub, click=None):
+        sections = settings_mod.describe(hub)
+        send(type="settings", open=True, quiet=True, sections=sections, section="Voices")
+        if click:
+            send(type="settings", open=True, quiet=True, sections=sections, section="Voices", click=click)
+        shot(name, 0.7)
+        if click:
+            send(type="settings", open=True, quiet=True, sections=sections, section="Voices", click=click)
+
+    hub = PackHub([])
+    pack_shot("settings-pack-missing", hub)
+    settings_mod.jobs(hub)["zh"] = {"busy": True, "done": 141_000_000, "total": 428_000_000, "step": "Chinese model", "error": ""}
+    pack_shot("settings-pack-installing", hub)
+    settings_mod.jobs(hub)["zh"] = {"busy": False, "done": 0, "total": 0, "step": "", "error": "could not download kokoro-v1.1-zh.onnx: timed out"}
+    pack_shot("settings-pack-failed", hub)
+    for f, size in zip(packs.ZH_FILES, (packs.ZH_MODEL[1], 4 * 522_000, packs.ZH_CONFIG[1])):  # what Remove says it frees
+        with open(os.path.join(PackEngine.dir, f), "wb") as blank:
+            blank.truncate(size)
+    hub = PackHub(["zf_049", "zf_006", "zm_056", "zm_057"], "en,it,zh")
+    settings_mod.jobs(hub)["zh:zm_030"] = {"busy": True, "done": 200_000, "total": 523_500, "step": "", "error": ""}
+    # At the height of the screen, Chinese opened and its More Voices shown: the voices not
+    # downloaded, with their size, and Remove under the card.
+    sections = settings_mod.describe(hub)
+    send(type="settings", open=True, quiet=True, sections=sections, section="Voices")
+    normal = bounds()["pieces"][1]
+    scale = normal[2] / 790
+    # Maximized, the column is centered: the places below are read off a first picture.
+    for at in ([732, 24], [826, 229], [520, 506]):
+        send(type="settings", open=True, quiet=True, sections=sections, section="Voices", click=at)
+        time.sleep(0.3)
+    tall = shot("settings-pack-installed", 0.7)["pieces"][1]
+    # Remove under the card: with six voices listed, so that it fits on the screen.
+    most, settings_mod.MOST_VOICES = settings_mod.MOST_VOICES, 6
+    send(type="settings", open=True, quiet=True, sections=settings_mod.describe(hub), section="Voices")
+    settings_mod.MOST_VOICES = most
+    shot("settings-pack-remove", 0.7)
+    for at in ([520, 506], [826, 229], [round(tall[2] / scale) - 58, 24]):
+        send(type="settings", open=True, quiet=True, sections=sections, section="Voices", click=at)
+        time.sleep(0.3)
+CHANGED =[{**s, "changed": s["name"] == "Speech"} for s in SETTINGS]  # one setting of Speech moved: its reset button lit
 send(type="settings", open=True, quiet=True, sections=CHANGED, section="Speech")
 shot("settings-voice-changed", 0.7)
 # What is drawn answers to a click: one on a choice, a switch, a section at the left, a
