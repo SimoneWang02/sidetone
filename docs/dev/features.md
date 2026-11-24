@@ -572,8 +572,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   wheel. Kind `color` (`settings.color`, `SettingsWindow.ColorBox`): a dot of the color and its
   code, typed over in place (Enter or a click elsewhere takes it, Esc puts it back; typed in the
   window rather than in the list so the keys go where the window's keys go); a click on the dot
-  or the arrow drops down ten ready colors (`LIGHT_SWATCHES`, `GLASS_SWATCHES`, the setting's own
-  default first) and Reset when it is not the default. The glass's "" is drawn as the slate,
+  or the arrow drops down nine ready colors (`LIGHT_SWATCHES`, `GLASS_SWATCHES`, the setting's own
+  default first), a color wheel in the tenth place, and Reset when it is not the default. The
+  wheel (2026-11-24; the author asked whether a picker would be better, then: "remove one and
+  make it a color picker icon") swaps the ready colors for a picker of any color by eye
+  (`ColorPlane`): a square of the hue's shades (white to full color across, to black down) and
+  a bar of hues under it, 144 units wide like the row of dots. A drag shows the color at once in
+  the box's dot and code and on the overlay (`SettingsWindow.PreviewingColor`, as the Size slider
+  does); it is chosen when the list shuts (a click elsewhere), and the list opens on the ready
+  colors again next time. Picture `settings-colors-picker.png` (`click_list`, a click inside the
+  open list). A drag is not tried by a test: a made-up click has no place. The glass's "" is drawn as the slate,
   its code faint. The waiting mark's and the context arc's colors and the session palette are
   still only in `config.json`. Pictures `settings-colors.png`, `settings-colors-open.png` (the
   open list is reported with the settings window's place, `SettingsWindow.ListArea`). A swatch

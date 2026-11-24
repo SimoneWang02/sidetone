@@ -1289,6 +1289,102 @@ namespace ClaudeSpeaks
         }
     }
 
+    // Any color, chosen by eye (2026-11-24; the author: "remove one and make it a color picker
+    // icon"): a square of the hue's shades, white to the right's full color across and down to
+    // black, and a bar of the hues under it. A drag in either moves its mark; Moved hears each
+    // color on the way.
+    class ColorPlane : FrameworkElement
+    {
+        const double Square = 112, Gap = 10, Bar = 12;
+        double hue, sat, val;
+        int dragging;  // 0 none, 1 the square, 2 the bar
+        public Action<Color> Moved;
+
+        public ColorPlane(Color start)
+        {
+            ToHsv(start, out hue, out sat, out val);
+            Width = 144; Height = Square + Gap + Bar;
+            Cursor = Cursors.Hand;
+        }
+
+        public Color Now { get { return FromHsv(hue, sat, val); } }
+
+        static void ToHsv(Color c, out double h, out double s, out double v)
+        {
+            double r = c.R / 255.0, g = c.G / 255.0, b = c.B / 255.0;
+            double most = Math.Max(r, Math.Max(g, b)), least = Math.Min(r, Math.Min(g, b)), span = most - least;
+            h = 0;
+            if (span > 0)
+            {
+                if (most == r) h = 60 * (((g - b) / span) % 6);
+                else if (most == g) h = 60 * ((b - r) / span + 2);
+                else h = 60 * ((r - g) / span + 4);
+                if (h < 0) h += 360;
+            }
+            s = most > 0 ? span / most : 0;
+            v = most;
+        }
+
+        public static Color FromHsv(double h, double s, double v)
+        {
+            double c = v * s, x = c * (1 - Math.Abs((h / 60) % 2 - 1)), m = v - c;
+            double r = 0, g = 0, b = 0;
+            if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
+            else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+            return Color.FromRgb((byte)Math.Round((r + m) * 255), (byte)Math.Round((g + m) * 255), (byte)Math.Round((b + m) * 255));
+        }
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            dc.DrawRectangle(Brushes.Transparent, null, new Rect(0, 0, Width, Height));
+            var plane = new Rect(0, 0, Width, Square);
+            dc.DrawRoundedRectangle(new LinearGradientBrush(Colors.White, FromHsv(hue, 1, 1), 0), null, plane, 6, 6);
+            dc.DrawRoundedRectangle(new LinearGradientBrush(Color.FromArgb(0, 0, 0, 0), Colors.Black, 90), new Pen(Ui.Paint("#38FFFFFF"), 1), plane, 6, 6);
+            var at = new Point(sat * Width, (1 - val) * Square);
+            dc.DrawEllipse(null, new Pen(Ui.Paint("#80000000"), 1), at, 7.5, 7.5);
+            dc.DrawEllipse(new SolidColorBrush(Now), new Pen(Brushes.White, 2), at, 6, 6);
+
+            var hues = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 0) };
+            for (int i = 0; i <= 6; i++) hues.GradientStops.Add(new GradientStop(FromHsv(i * 60 % 360, 1, 1), i / 6.0));
+            double top = Square + Gap;
+            dc.DrawRoundedRectangle(hues, new Pen(Ui.Paint("#38FFFFFF"), 1), new Rect(0, top, Width, Bar), Bar / 2, Bar / 2);
+            var mark = new Point(Bar / 2 + hue / 360 * (Width - Bar), top + Bar / 2);
+            dc.DrawEllipse(null, new Pen(Ui.Paint("#80000000"), 1), mark, 8, 8);
+            dc.DrawEllipse(new SolidColorBrush(FromHsv(hue, 1, 1)), new Pen(Brushes.White, 2), mark, 6.5, 6.5);
+        }
+
+        void Take(Point p)
+        {
+            if (dragging == 1)
+            {
+                sat = Ui.Clamp(p.X / Width);
+                val = 1 - Ui.Clamp(p.Y / Square);
+            }
+            else if (dragging == 2) hue = Ui.Clamp((p.X - Bar / 2) / (Width - Bar)) * 359.99;
+            InvalidateVisual();
+            if (Moved != null) Moved(Now);
+        }
+
+        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            Point p = e.GetPosition(this);
+            dragging = p.Y <= Square + Gap / 2 ? 1 : 2;
+            CaptureMouse();
+            Take(p);
+            e.Handled = true;
+        }
+
+        protected override void OnMouseMove(MouseEventArgs e) { if (dragging != 0) Take(e.GetPosition(this)); }
+
+        protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
+        {
+            if (dragging == 0) return;
+            dragging = 0;
+            ReleaseMouseCapture();
+            e.Handled = true;
+        }
+    }
+
     // The settings window: sections down the left, the settings of one section on the right.
     // The only window of the overlay that takes the mouse and the keyboard. Like the rest it
     // decides nothing: the hub says what there is to set and what each thing is now (sections
@@ -1313,6 +1409,7 @@ namespace ClaudeSpeaks
         // at once, and the hub is told only on release (the author, 2026-11-21, of Glass: "it
         // updates only on release. Can you make it more responsive").
         public Action<string, double> Previewing;
+        public Action<string, string> PreviewingColor;  // a color being dragged in the picker
         readonly StackPanel nav = new StackPanel { Margin = new Thickness(10, 2, 10, 12) };
         readonly StackPanel list = new StackPanel { Margin = new Thickness(18, 0, 22, 20) };
         readonly ScrollViewer scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Focusable = false };
@@ -1554,6 +1651,18 @@ namespace ClaudeSpeaks
         {
             Window.UpdateLayout();
             HitTestResult hit = VisualTreeHelper.HitTest(Window.Panel, new Point(x, y));
+            var under = hit == null ? null : hit.VisualHit as UIElement;
+            if (under == null) return;
+            foreach (RoutedEvent step in new[] { Mouse.MouseDownEvent, Mouse.MouseUpEvent })
+                under.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, Environment.TickCount, MouseButton.Left) { RoutedEvent = step });
+        }
+
+        // The same in a list that has dropped down (tests/overlay_check.py), at a place in it.
+        public void ClickList(double x, double y)
+        {
+            if (List == null || !List.IsOpen || List.Child == null) return;
+            List.Child.UpdateLayout();
+            HitTestResult hit = VisualTreeHelper.HitTest(List.Child, new Point(x, y));
             var under = hit == null ? null : hit.VisualHit as UIElement;
             if (under == null) return;
             foreach (RoutedEvent step in new[] { Mouse.MouseDownEvent, Mouse.MouseUpEvent })
@@ -2306,6 +2415,12 @@ namespace ClaudeSpeaks
             Color seen = Ui.ColorOr(now.Length > 0 ? now : empty, Colors.Gray);
             string code = (now.Length > 0 ? now : empty).TrimStart('#');
 
+            var shown = new System.Windows.Shapes.Ellipse { Width = 16, Height = 16, Fill = new SolidColorBrush(seen), Stroke = Ui.Paint("#52FFFFFF"), StrokeThickness = 1, VerticalAlignment = VerticalAlignment.Center };
+            var typed = new TextBox {
+                Text = code, MaxLength = 7, Width = 58, Margin = new Thickness(-2, 0, 0, 0), FontSize = 12, CharacterCasing = CharacterCasing.Upper, VerticalAlignment = VerticalAlignment.Center,
+                Background = Brushes.Transparent, BorderThickness = new Thickness(0), Padding = new Thickness(0),
+                Foreground = now.Length > 0 ? Brushes.White : Ui.Faint, CaretBrush = Brushes.White, SelectionBrush = Ui.Alpha(Accent, 1),
+            };
             var popup = new System.Windows.Controls.Primitives.Popup { Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom, StaysOpen = false, AllowsTransparency = true, VerticalOffset = 4 };
             var grid = new WrapPanel { Width = 5 * 30 };
             foreach (object o in swatches)
@@ -2321,7 +2436,29 @@ namespace ClaudeSpeaks
                 dot.MouseLeftButtonUp += delegate { popup.IsOpen = false; if (!on) choose(key, mine); };
                 grid.Children.Add(dot);
             }
+            // The last place: any color, by eye. It swaps the ready colors for the picker; what is
+            // dragged shows at once in the box and on the overlay, and is chosen when the list shuts.
             var menu = new StackPanel();
+            var wheel = new Border {
+                Width = 24, Height = 24, CornerRadius = new CornerRadius(12), Margin = new Thickness(3), Cursor = Cursors.Hand,
+                Background = HueWheel(), BorderBrush = Ui.Paint("#38FFFFFF"), BorderThickness = new Thickness(1), ToolTip = "Any color",
+            };
+            string picked = null;
+            wheel.MouseLeftButtonUp += delegate
+            {
+                var plane = new ColorPlane(seen) { Margin = new Thickness(3, 3, 3, 4) };
+                plane.Moved = delegate(Color c)
+                {
+                    picked = "#" + c.R.ToString("X2") + c.G.ToString("X2") + c.B.ToString("X2");
+                    shown.Fill = new SolidColorBrush(c);
+                    typed.Text = picked.Substring(1);
+                    typed.Foreground = Brushes.White;
+                    if (PreviewingColor != null) PreviewingColor(key, picked);
+                };
+                menu.Children.RemoveAt(0);
+                menu.Children.Insert(0, plane);
+            };
+            grid.Children.Add(wheel);
             menu.Children.Add(grid);
             if (now != first.ToUpperInvariant())
             {
@@ -2338,13 +2475,8 @@ namespace ClaudeSpeaks
 
             var face = new StackPanel { Orientation = Orientation.Horizontal };
             var opener = new StackPanel { Orientation = Orientation.Horizontal, Background = Brushes.Transparent, Cursor = Cursors.Hand };
-            opener.Children.Add(new System.Windows.Shapes.Ellipse { Width = 16, Height = 16, Fill = new SolidColorBrush(seen), Stroke = Ui.Paint("#52FFFFFF"), StrokeThickness = 1, VerticalAlignment = VerticalAlignment.Center });
+            opener.Children.Add(shown);
             var hash = new TextBlock { Text = "#", FontSize = 12, Foreground = Ui.Faint, Margin = new Thickness(9, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
-            var typed = new TextBox {
-                Text = code, MaxLength = 7, Width = 58, Margin = new Thickness(-2, 0, 0, 0), FontSize = 12, CharacterCasing = CharacterCasing.Upper, VerticalAlignment = VerticalAlignment.Center,
-                Background = Brushes.Transparent, BorderThickness = new Thickness(0), Padding = new Thickness(0),
-                Foreground = now.Length > 0 ? Brushes.White : Ui.Faint, CaretBrush = Brushes.White, SelectionBrush = Ui.Alpha(Accent, 1),
-            };
             bool done = false;
             Action take = delegate
             {
@@ -2375,7 +2507,18 @@ namespace ClaudeSpeaks
             // As in Pick: a second click closes the list, which has already shut on the press.
             DateTime shut = DateTime.MinValue;
             System.ComponentModel.DependencyPropertyDescriptor.FromProperty(System.Windows.Controls.Primitives.Popup.IsOpenProperty, typeof(System.Windows.Controls.Primitives.Popup))
-                .AddValueChanged(popup, delegate { if (!popup.IsOpen) shut = DateTime.UtcNow; List = popup.IsOpen ? popup : null; });
+                .AddValueChanged(popup, delegate
+                {
+                    if (!popup.IsOpen)
+                    {
+                        shut = DateTime.UtcNow;
+                        // The picker's color is chosen as the list shuts; next time it opens on the ready colors.
+                        if (picked != null && picked != "#" + code) { done = true; choose(key, picked); }
+                        picked = null;
+                        if (!(menu.Children[0] is WrapPanel)) { menu.Children.RemoveAt(0); menu.Children.Insert(0, grid); }
+                    }
+                    List = popup.IsOpen ? popup : null;
+                });
             MouseButtonEventHandler open = delegate
             {
                 if (popup.IsOpen) popup.IsOpen = false;
@@ -2390,6 +2533,29 @@ namespace ClaudeSpeaks
             opener.MouseLeftButtonUp += open;
             arrowHit.MouseLeftButtonUp += open;
             return box;
+        }
+
+        // The picker's mark among the ready colors: the hues all around, as a color wheel.
+        static Brush HueWheel()
+        {
+            var drawing = new DrawingGroup();
+            const int parts = 36;
+            for (int i = 0; i < parts; i++)
+            {
+                double a = i * 2 * Math.PI / parts - Math.PI / 2, b = (i + 1.05) * 2 * Math.PI / parts - Math.PI / 2;
+                var figure = new PathFigure { StartPoint = new Point(12, 12), IsClosed = true };
+                figure.Segments.Add(new LineSegment(new Point(12 + 12 * Math.Cos(a), 12 + 12 * Math.Sin(a)), false));
+                figure.Segments.Add(new ArcSegment(new Point(12 + 12 * Math.Cos(b), 12 + 12 * Math.Sin(b)), new Size(12, 12), 0, false, SweepDirection.Clockwise, false));
+                var geometry = new PathGeometry();
+                geometry.Figures.Add(figure);
+                drawing.Children.Add(new GeometryDrawing(new SolidColorBrush(ColorPlane.FromHsv(i * 360.0 / parts, 1, 1)), null, geometry));
+            }
+            // Paler toward the middle, as a wheel of shades is.
+            var middle = new RadialGradientBrush(Color.FromArgb(0xE0, 0xFF, 0xFF, 0xFF), Color.FromArgb(0, 0xFF, 0xFF, 0xFF));
+            drawing.Children.Add(new GeometryDrawing(middle, null, new EllipseGeometry(new Point(12, 12), 12, 12)));
+            var brush = new DrawingBrush(drawing) { Stretch = Stretch.Fill };
+            brush.Freeze();
+            return brush;
         }
 
         // A list that has dropped down, for the pictures of tests/overlay_check.py: it is a window
@@ -3101,6 +3267,16 @@ namespace ClaudeSpeaks
                                 // (the author, 2026-11-22: "I'm wanting it to be more responsive").
                                 if (key == "overlay.size" && SetZoom(value)) { Render(); Place(); }
                             };
+                            // A color dragged in the picker shows on the overlay while it is dragged.
+                            settings.PreviewingColor = delegate(string key, string value)
+                            {
+                                if (!key.StartsWith("overlay.")) return;
+                                string name = key.Substring(8);
+                                if (name == "mic_color") Ui.Mic = Ui.ColorOr(value, Ui.Mic);
+                                else Ui.SetStateColors(new Dictionary<string, object> { { name, value } });
+                                if (name == "glass_color") SetGlass();
+                                Render();
+                            };
                             settings.Look(opaque ? "solid" : glass);
                         }
                         settings.Show(msg.ContainsKey("sections") && msg["sections"] is object[] ? (object[])msg["sections"] : new object[0], Str(msg, "section"), WorkArea(), msg.ContainsKey("quiet") && Convert.ToBoolean(msg["quiet"]), Str(msg, "title"));
@@ -3110,6 +3286,11 @@ namespace ClaudeSpeaks
                     {
                         var at = (object[])msg["click"];
                         settings.Click(Convert.ToDouble(at[0], CultureInfo.InvariantCulture), Convert.ToDouble(at[1], CultureInfo.InvariantCulture));
+                    }
+                    if (settings != null && msg.ContainsKey("click_list") && msg["click_list"] is object[])
+                    {
+                        var at = (object[])msg["click_list"];
+                        settings.ClickList(Convert.ToDouble(at[0], CultureInfo.InvariantCulture), Convert.ToDouble(at[1], CultureInfo.InvariantCulture));
                     }
                     break;
                 case "logo":  // the tool's mark, written to a file as a picture

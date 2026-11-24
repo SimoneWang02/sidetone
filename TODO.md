@@ -137,8 +137,10 @@ Roughly easiest first, the larger ones after.
       Colors: the five status lights and the glass's own color, built 2026-11-23
       (`overlay.working_color` ... `idle_color`, `glass_color`; defaults as before), pictures
       `own-colors*.png`. In the settings window the same day, a Colors section (the author chose
-      ready colors plus a typed code): the five lights, Glass, Microphone. **Not tried by the
-      author**: pick a ready color, type a code, Reset. Still only in `config.json`: the waiting
+      ready colors plus a typed code): the five lights, Glass, Microphone. On 2026-11-24 the
+      tenth ready color became a color wheel that opens a picker of any color, at their word.
+      **Not tried by the author**: pick a ready color, type a code, Reset, drag in the picker
+      (the overlay follows; chosen when the list shuts). Still only in `config.json`: the waiting
       mark's and the context arc's colors and the session palette. Next: which keys do what,
       what the rows show, and where the bubble goes.
 - [ ] More layouts as options. Three were built and removed on 2026-11-17 (lights sized by

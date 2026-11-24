@@ -297,7 +297,7 @@ class Chosen(SettingsCase):
         self.assertTrue(colors["changed"])
         for item in colors["items"]:
             self.assertEqual(item["swatches"][0], overlay.DEFAULTS[item["key"][8:]], item["key"])  # its own default first
-            self.assertLessEqual(len(item["swatches"]), 10)
+            self.assertLessEqual(len(item["swatches"]), 9)  # the tenth place is the picker
         self.assertIsNone(settings.reset(hub, "Colors"))
         self.assertEqual((hub.cfg.overlay["done_color"], hub.cfg.overlay["glass_color"]), ("#66BB6A", ""))
 

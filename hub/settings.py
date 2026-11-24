@@ -50,7 +50,9 @@ def number(key: str, name: str, help: str, low: float, high: float, step: float,
 
 
 # The ready colors a color setting drops down, after its own default (2026-11-23, the author
-# chose "swatches + hex" over themes only or a color wheel). Light enough to read on the dark
+# chose "swatches + hex" over themes only or a color wheel). Nine of them: the tenth place is
+# the picker, for any color by eye (2026-11-24, the author: "remove one and make it a color
+# picker icon"). Light enough to read on the dark
 # glass; the glass's own are dark, so white words stay readable on them.
 LIGHT_SWATCHES = ["#4FC3F7", "#FFB300", "#66BB6A", "#EF5350", "#B0B6C0", "#B388FF", "#FF7043", "#26C6DA",
                   "#F06292", "#FFEE58"]
@@ -63,7 +65,7 @@ def color(key: str, name: str, help: str, swatches: list) -> dict:
     slate) is drawn as `empty`."""
     first = overlay_mod.DEFAULTS[key[8:]]
     return {"key": key, "kind": "color", "name": name, "help": help, "empty": SLATE,
-            "swatches": ([first] + [c for c in swatches if c != first])[:10]}
+            "swatches": ([first] + [c for c in swatches if c != first])[:9]}
 
 
 def heading(key: str, name: str) -> dict:

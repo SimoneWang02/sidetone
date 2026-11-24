@@ -611,6 +611,11 @@ for section in SETTINGS:
 if not ONLY or "settings-colors-open".startswith(ONLY) or ONLY.startswith("settings-colors"):
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Colors", click=[644, 109])
     shot("settings-colors-open", 0.8)
+    # Its last place, the wheel, swaps the ready colors for the picker (row 2, column 5 of 30-unit
+    # places, inside the list's 6 units of edge). In the same message as the click that opens the
+    # list: the window is filled anew by each message, which shuts it.
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Colors", click=[644, 109], click_list=[141, 51])
+    shot("settings-colors-picker", 0.8)
 # Voices at the height of the screen, with Chinese unfolded: the window maximized by its button.
 if not ONLY or "settings-voices-tall".startswith(ONLY) or ONLY.startswith("settings-voices"):
     # The button that makes it as big as the screen, and then the same button again, which is
