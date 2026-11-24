@@ -361,6 +361,24 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
       while music plays (only claim it while a session is open?), and how bad the sound gets
       when Windows switches the AirPods to their microphone mode (playback drops to phone
       call quality while the microphone is open). Works only within Bluetooth range.
+      Asked for again on 2026-11-24 (the author was listening to a message while walking away
+      from the PC and wanted to answer), with their AirPods Pro 3 and Bose QC Ultra Headphones 2.
+      Read up that day by an agent, nothing tried here and neither headset tested in anything
+      found; the main source is one project's logged trials with a Shokz headset on Windows 11
+      (github.com/johnjuuljensen/GodMode, `tools/GodMode.HeadsetSpike/README.md`):
+      - the press went to Windows' current media session (SMTC), not to the keyboard hook; some
+        older reports do see a key (0xB3), perhaps when no media session exists. The overlay
+        would hold a media session of its own only while a session waits for a reply, since
+        the music player gets no button meanwhile, and takes the session when it starts.
+      - with the headset microphone open no press reached SMTC, so the second press (send) is
+        the hard part. There, reporting a VoIP call to Windows (24H2 or later) turned it into
+        "end call". AirPods may send mute instead. Otherwise: press to start, silence to send.
+      - the microphone took 0.7 to 1.1 s to open (so a tone says when to speak), and full
+        quality came back about 5 s after closing. Stray presses come during the switch.
+      - Bose pauses when taken off, which may look like a press.
+      - to check by hand first, with a small logging window: what the hook, SMTC and the VoIP
+        call see for a press with nothing open, with Spotify, and with the microphone open;
+        and whether Windows records from the headset at all (there is a Nuroum V11 microphone).
 - [ ] AirPods on the phone, PC out of range: the phone has to be the bridge, because the
       gestures cannot be given to another program there. Candidates:
       - a phone Shortcut ("Hey Siri, tell Claude ...", or the Action button) that dictates a
