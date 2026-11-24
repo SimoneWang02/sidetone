@@ -386,6 +386,17 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
       - the microphone took 0.7 to 1.1 s to open (so a tone says when to speak), and full
         quality came back about 5 s after closing. Stray presses come during the switch.
       - Bose pauses when taken off, which may look like a press.
+      - tried with the Bose on 2026-11-24 (a throwaway logging window, one press each; build
+        26300; Spotify paused but open): with a media session of ours, a press came as Play
+        while it said paused and Pause while it said playing, a double press as Next; the
+        hook saw none of them (without our session the press went to Spotify). Taking the
+        headphones off and on sent nothing, with nothing playing. With the Bose microphone
+        open (first audio after 0.8 s, the count from one to ten heard whole) no press
+        arrived, neither plainly nor with a VoIP call reported; that the author pressed then
+        is not certain, and the test said "Got it" wrongly in the call (two mute events of
+        the call's own start). So: press to start works, the second press does not, so far.
+        Windows' default microphone is the Nuroum on the desk: the hub would have to
+        open the headset's by name. Not tried: Spotify playing, AirPods, through a wall.
       - to check by hand first, with a small logging window: what the hook, SMTC and the VoIP
         call see for a press with nothing open, with Spotify, and with the microphone open;
         and whether Windows records from the headset at all (there is a Nuroum V11 microphone).
