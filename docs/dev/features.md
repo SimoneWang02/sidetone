@@ -1819,5 +1819,5 @@ a real Linux desktop yet**.
   `talk` then `talk_end`. On a Wayland session the X server sees keys only while an X window
   has the keyboard, so there a desktop shortcut can run `sidetone talk toggle` (new: once to
   start talking, again to send; `/talk` with `toggle`).
-- Not on Linux yet: the voice's loudness (made up, as on the Mac: PulseAudio's monitor is used
-  only where the hub already used it, and it is), reordering lights by dragging, a blur on KDE.
+- The voice's real loudness, sound and the microphone go through PulseAudio (or PipeWire's
+  stand-in for it) as under WSL. Not on Linux yet: reordering lights by dragging, a blur on KDE.
