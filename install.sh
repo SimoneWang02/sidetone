@@ -49,7 +49,7 @@ if [ $hooks_only = 0 ]; then
   echo "Python environment in $KOKORO_DIR/venv"
   mkdir -p "$KOKORO_DIR"
   [ -x "$KOKORO_DIR/venv/bin/python" ] || uv venv --python 3.12 "$KOKORO_DIR/venv"
-  packages=(kokoro-onnx faster-whisper); [ $mac = 1 ] && packages+=(sounddevice)
+  packages=(kokoro-onnx faster-whisper); [ $mac = 1 ] && packages+=(sounddevice soundfile)  # PortAudio and libsndfile come in their wheels
   uv pip install --quiet --python "$KOKORO_DIR/venv/bin/python" "${packages[@]}"
 
   # The overlay on a Mac is built here from overlay/mac with Apple's own compiler, as the hub

@@ -18,7 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Versions
-        run: sw_vers; swiftc --version; system_profiler SPDisplaysDataType | grep -i resolution || true
+        run: |
+          sw_vers; swiftc --version
+          system_profiler SPDisplaysDataType | grep -iE 'resolution|metal|chipset|model' || true
+          echo "reduce transparency: $(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
       - name: Build
         run: |
           mkdir -p build pictures
@@ -43,7 +46,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Packages
-        run: python -m pip install numpy sounddevice onnxruntime
+        run: python -m pip install numpy sounddevice soundfile onnxruntime faster-whisper
       - name: Tests
         run: |
           set -o pipefail

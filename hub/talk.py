@@ -584,8 +584,8 @@ class Talk:
                 # user's words, so: refused for now, its turn ended, and the words follow as
                 # the next message, which it builds on with all it knows of the task.
                 prompt.message = VOICE_AT_PROMPT
+                self._stop_turn(s)  # first: once refused, Claude Code goes on at once, and must find the stop
                 self._resolve(prompt, "deny", "voice: more details follow")
-                self._stop_turn(s)
             listener = self._deliver(s, text)
             if not listener:
                 self._talk("queued", s, text, seconds=max(3.5, shown))

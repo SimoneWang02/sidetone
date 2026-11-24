@@ -37,6 +37,9 @@ class WhatChanged(unittest.TestCase):
         for name in ("Overlay.cs", "overlay.ps1"):
             with open(os.path.join(folder, name), "w") as f:
                 f.write("x")
+        mac = mock.patch.object(overlay, "MAC", False)  # the Windows overlay's files, wherever this runs
+        mac.start()
+        self.addCleanup(mac.stop)
         window = overlay.Overlay(os.path.join(folder, "overlay.ps1"), {})
         self.assertFalse(window.outdated())  # not started: nothing is running
         window.proc, window._source = object(), stale.prints(folder, overlay.SOURCES)

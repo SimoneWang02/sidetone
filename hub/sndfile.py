@@ -1,7 +1,7 @@
 """Ogg Vorbis files read and written with libsndfile, through ctypes.
 
-libsndfile is already on every machine the voice runs on: paplay (pulseaudio-utils) is built on
-it. So the recorded samples of voices not downloaded yet (hub/samples/, played by the ▶ in the
+libsndfile is already on every Linux machine the voice runs on: paplay (pulseaudio-utils) is built
+on it. A Mac has none of its own; there it comes with the soundfile package. So the recorded samples of voices not downloaded yet (hub/samples/, played by the ▶ in the
 settings window) need no Python package of their own. Mono, 16-bit samples in and out.
 """
 from __future__ import annotations
@@ -22,10 +22,21 @@ class _Info(ctypes.Structure):
 _lib = None
 
 
+def _bundled() -> str | None:
+    """A Mac has no libsndfile of its own: the soundfile package's wheel carries one, which the
+    installer puts in the environment there."""
+    import glob
+    import importlib.util
+    spec = importlib.util.find_spec("_soundfile_data")
+    folders = list(spec.submodule_search_locations or []) if spec else []
+    found = [p for folder in folders for p in glob.glob(f"{folder}/libsndfile*")]
+    return found[0] if found else None
+
+
 def _sndfile():
     global _lib
     if _lib is None:
-        name = ctypes.util.find_library("sndfile") or "libsndfile.so.1"
+        name = ctypes.util.find_library("sndfile") or _bundled() or "libsndfile.so.1"
         lib = ctypes.CDLL(name)
         lib.sf_open.restype = ctypes.c_void_p
         lib.sf_open.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(_Info)]
