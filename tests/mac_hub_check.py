@@ -62,7 +62,7 @@ print("  hub up:", until(lambda: call("/health") is not None, 30), f"after {time
 for sid, cwd in (("b", "/work/web-app"), ("c", "/work/notes")):
     hook("report.sh", ev("SessionStart", sid, cwd), "--start")
 hook("report.sh", ev("UserPromptSubmit", "a", "/work/api-server", prompt="fix the login test"), "--start")
-built = until(lambda: "overlay ready" in logged() or "could not" in logged(), 300)
+built = until(lambda: any(w in logged() for w in ("overlay ready", "overlay could not", "overlay not built")), 400)
 print("  overlay:", "ready" if "overlay ready" in logged() else "NOT ready", f"after {time.time() - started:.0f} s")
 hook("speak.sh", ev("Stop", "b", "/work/web-app", last_assistant_message="<speak>The dark mode is done and pushed.</speak>"))
 time.sleep(1.5)
