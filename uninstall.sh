@@ -38,5 +38,7 @@ for name in sidetone st; do
   link=$HOME/.local/bin/$name
   if [ -L "$link" ] && [ "$(readlink -f "$link")" = "$ROOT/bin/sidetone" ]; then rm -f "$link"; fi
 done
+# On a Mac, the overlay program the hub built (it is made again from the source when needed).
+[ "$(uname -s)" = Darwin ] && rm -rf "$HOME/Library/Caches/sidetone"
 echo "Hooks removed from $SETTINGS (backup: $backup)"
 echo "Left in place: ~/.local/share/kokoro (models, Python environment), ~/.local/state/sidetone (logs)."

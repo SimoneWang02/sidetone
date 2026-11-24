@@ -48,7 +48,7 @@ extension Overlay {
         let wide = Overlay.panelWidth - 2 * Overlay.inner
         if let request = request { blocks.append(requestBlock(request, wide)); blocks.append(divider()) }
         if let banner = banner, hasBanner { blocks.append(bannerBlock(banner, wide)) }
-        let asked = !dragged && (listed || hover || peek)
+        let asked = !dragged && (listed || hover || keysOpen || peek)
         if muted && mutedLine && asked && !hasBanner {
             let key = wantedKeys["mute"] ?? ""
             blocks.append(voiceBlock(true, "Voice is muted", key.isEmpty ? "" : key + " turns it on"))

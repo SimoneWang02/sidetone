@@ -85,6 +85,12 @@ final class Overlay {
 
     // What the mouse and the keys are doing.
     var hoverBar = false, hoverPanel = false, peek = false
+    // Holding the details keys by themselves (focus_wheel, Control-Option) brings the details out,
+    // as on Windows. Read from the keyboard's state ten times a second: no permission needed.
+    var detailKeys: NSEvent.ModifierFlags = [.control, .option]
+    var heldSince: Double?
+    var keysOpen = false
+    var keyWatch: Timer?
     var hoverSince = 0.0, leftAt = 0.0
     var hotName: String?
     var dragFrom: CGPoint?
@@ -117,6 +123,9 @@ final class Overlay {
         keys.released = { name in
             if name == "talk" { IO.send(["type": "hotkey", "name": "talk_end"]) }
         }
+        let watch = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in self?.watchKeys() }
+        RunLoop.main.add(watch, forMode: .common)
+        keyWatch = watch
         NotificationCenter.default.addObserver(forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main) { [weak self] _ in
             self?.render()
         }
@@ -222,11 +231,39 @@ final class Overlay {
             registerKeys()
         }
         if msg["mode"] != nil { mode = Msg.str(msg, "mode", mode) }
+        if msg["focus_wheel"] != nil {
+            var flags: NSEvent.ModifierFlags = []
+            for part in Msg.str(msg, "focus_wheel").lowercased().split(separator: "+") {
+                switch part.trimmingCharacters(in: .whitespaces) {
+                case "ctrl", "control": flags.insert(.control)
+                case "alt", "option": flags.insert(.option)
+                case "shift": flags.insert(.shift)
+                case "win", "cmd", "command": flags.insert(.command)
+                default: break
+                }
+            }
+            detailKeys = flags
+        }
         let look = opaque ? "solid" : glass
         for w in [bar, panel, bubble] { w.setLook(look); w.retint() }
         settings?.look(look)
         if before != corner + layout { hotName = nil }
         render()
+    }
+
+    func watchKeys() {
+        let held = NSEvent.modifierFlags.intersection([.control, .option, .shift, .command])
+        let now = Ui.now
+        if !detailKeys.isEmpty && held == detailKeys {
+            if heldSince == nil { heldSince = now }
+        } else {
+            heldSince = nil
+        }
+        let open = heldSince.map { now - $0 >= 0.2 } ?? false && talkState.isEmpty
+        if open != keysOpen {
+            keysOpen = open
+            render()
+        }
     }
 
     func syncRows(_ list: [[String: Any]]) {
@@ -296,7 +333,7 @@ final class Overlay {
     var right: Bool { corner.hasSuffix("right") }
     var low: Bool { corner.hasPrefix("bottom") }
 
-    func isOpen() -> Bool { listed || (hover && hoverOpens) || peek || request != nil || hasBanner || dragged }
+    func isOpen() -> Bool { listed || (hover && hoverOpens) || keysOpen || peek || request != nil || hasBanner || dragged }
 
     // The session the card is about: the one under the mouse, else the one in focus.
     func chosen() -> Row? {

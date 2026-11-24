@@ -218,6 +218,11 @@ else:
         if msg:
             got.append(msg.get("name"))
     print("  keys: Ctrl+Alt+Space gave", got, "(talk, then talk_end, is right)")
+    # Control and Option held by themselves bring the details out.
+    subprocess.run(["osascript", "-e", 'tell application "System Events" to key down {control, option}'], capture_output=True, timeout=30)
+    shot("keys-held", 0.8)
+    subprocess.run(["osascript", "-e", 'tell application "System Events" to key up {control, option}'], capture_output=True, timeout=30)
+    shot("keys-let-go", 0.6)
 
 backdrop.kill()
 proc.stdin.close()
