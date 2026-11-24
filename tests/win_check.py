@@ -16,6 +16,7 @@ import time
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # the console here is not UTF-8
 home = tempfile.mkdtemp(prefix="cs-win-")
 # The runner's own profile (a throwaway machine): with another one, the C# compiler cannot sign.
 env = {**os.environ, "CS_STATE": os.path.join(home, "state"), "XDG_CONFIG_HOME": os.path.join(home, "config"),
