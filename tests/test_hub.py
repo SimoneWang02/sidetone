@@ -3023,6 +3023,15 @@ class ThroughTheHooks(HubCase):
         self.assertEqual(self.spoken(), ["Pushed and done."])
         self.assertEqual(self.session()["state"], "done")
 
+    def test_display_while_muted_still_rewrites_the_tag(self):
+        # The mute key stops the reminder, but a session keeps writing the tag it wrote before.
+        os.makedirs(os.path.join(self.tmp, ".claude"))
+        for path in (self.cfg.mute_file, os.path.join(self.tmp, ".claude", "voice-off")):
+            open(path, "w").close()
+        shown = self.hook("display.sh", ev("MessageDisplay", delta=tag("Read, not heard.") + "\n"))
+        self.assertEqual(json.loads(shown.stdout)["hookSpecificOutput"]["displayContent"], "🔊 Read, not heard.\n")
+        self.assertEqual(self.spoken(), [])
+
     def test_display_without_tag_prints_nothing(self):
         self.assertEqual(self.hook("display.sh", ev("MessageDisplay", delta="plain text\n")).stdout, "")
 

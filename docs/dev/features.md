@@ -1555,6 +1555,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 - `~/.local/state/sidetone/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
 - Toggle: voice is off while `~/.claude/voice-off` exists (the hub still tracks state).
+  Muted, `display.sh` still sends a speak line to the hub, which shows it at the session's light,
+  and still rewrites it as "🔊 …": the reminder stops at the mute, but a session goes on writing
+  the tag it wrote before (the author saw the raw tag, 2026-11-24).
 - Runtime files live outside the repo: `~/.local/state/sidetone/` (`voice.log` contains
   spoken summaries, `hub.log`, `.state/`, `.tts.pid`).
 - `hooks/settings-snippet.json`: the `hooks` block as registered in settings.json.
