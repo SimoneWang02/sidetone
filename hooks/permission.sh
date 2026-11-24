@@ -7,8 +7,8 @@
 main() {
   input=$(cat)
   . "${BASH_SOURCE[0]%/*}/lib.sh"
-  [ -S "$CS_SOCK" ] || exit 0
-  curl -sf -m 3600 --unix-socket "$CS_SOCK" -H 'Expect:' --data-binary @- http://hub/permission <<<"$input" &
+  hub_door || exit 0
+  curl -sf -m 3600 "${HUB[@]}" -H 'Expect:' --data-binary @- "$HUB_URL/permission" <<<"$input" &
   pid=$!
   trap 'kill "$pid" 2>/dev/null' TERM INT HUP   # Esc in Claude Code kills this hook: hang up on the hub
   wait "$pid"

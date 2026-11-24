@@ -15,10 +15,11 @@ import json
 import os
 import re
 import shutil
-import signal
 import subprocess
 import unicodedata
 from typing import NamedTuple
+
+import procs
 
 # Variables that tie a new Claude Code process to the session whose hook started the hub. The
 # same list as in hub.py, which cannot be imported from here; a test keeps the two alike.
@@ -63,10 +64,7 @@ def ask(program: str = "", timeout: float = 20.0, cwd: str = "") -> tuple[str, s
     try:
         out, err = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
-        try:
-            os.killpg(proc.pid, signal.SIGKILL)  # its own group, so what it started goes too
-        except OSError:
-            pass
+        procs.end_tree(proc)  # its own group, so what it started goes too
         proc.communicate()
         return "", f"no answer in {timeout:.0f}s"
     if proc.returncode != 0:

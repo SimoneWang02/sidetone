@@ -7,7 +7,6 @@ import glob
 import json
 import os
 import re
-import signal
 import subprocess
 import threading
 import time
@@ -15,6 +14,7 @@ import dataclasses
 from dataclasses import dataclass, field
 
 import overlay as overlay_mod
+import procs
 import terminal as terminal_mod
 from state import COLORS, VOICE_POOL, speech_from_message
 
@@ -461,12 +461,18 @@ class Config:
     def sock(self) -> str:
         return os.path.join(self.run, "hub.sock")
 
+    @property
+    def addr(self) -> str:
+        """Where a hub on a local port writes that port and its token (see server.serve)."""
+        return os.path.join(self.run, "hub.addr")
+
     @classmethod
     def load(cls) -> "Config":
         env, home = os.environ, os.path.expanduser("~")
         run = env.get("CS_RUN") or (
-            os.path.join(env["XDG_RUNTIME_DIR"], "sidetone")
-            if env.get("XDG_RUNTIME_DIR") else f"/tmp/sidetone-{os.getuid()}")
+            os.path.join(env["XDG_RUNTIME_DIR"], "sidetone") if env.get("XDG_RUNTIME_DIR")
+            else os.path.join(env.get("LOCALAPPDATA") or home, "sidetone", "run") if os.name == "nt"
+            else f"/tmp/sidetone-{os.getuid()}")
         cfg = cls(
             run=run,
             state=env.get("CS_STATE") or os.path.join(
@@ -652,10 +658,7 @@ def spoken_answer(reply: str, limit: int = 500) -> str:
 
 def _end(proc: subprocess.Popen) -> None:
     """End a process we started in a group of its own, with whatever it started."""
-    try:
-        os.killpg(proc.pid, signal.SIGKILL)
-    except OSError:
-        pass
+    procs.end_tree(proc)
 
 
 def _same_call(tool: str, asked: dict, ran: dict) -> bool:
@@ -756,6 +759,23 @@ def log(cfg: Config, name: str, line: str) -> None:
             f.write(f"{time.strftime('%F %T')} {line}\n")
     except OSError:
         pass
+
+
+def hold_lock(path: str):
+    """The file at `path` held for this process alone, so one hub runs at a time; None when
+    another holds it. Kept open for as long as it is held."""
+    f = open(path, "a+")
+    try:
+        if os.name == "nt":
+            import msvcrt
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        f.close()
+        return None
+    return f
 
 
 # --- HTTP over the Unix socket -----------------------------------------------------------------

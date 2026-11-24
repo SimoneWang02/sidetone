@@ -17,15 +17,16 @@ main() {
   # this hook runs, so there is no socket yet. Leaving at once left that session with no
   # listener until its first prompt, and words spoken to it before then only waited.
   for _ in $(seq $(( ${CS_WAIT:-10} * 5 ))); do
-    [ -S "$CS_SOCK" ] && break
+    hub_up && break
     sleep 0.2
   done
-  [ -S "$CS_SOCK" ] || exit 0   # no hub on this machine
+  hub_up || exit 0   # no hub on this machine
   reply=$(mktemp "$CS_RUN/listen.XXXXXX") || exit 0
   pid=
   trap '[ -n "$pid" ] && kill "$pid" 2>/dev/null; rm -f "$reply"; exit 0' TERM INT HUP
   while :; do
-    curl -sf -m 86400 --unix-socket "$CS_SOCK" -H 'Expect:' --data-binary @- http://hub/listen <<<"$input" >"$reply" &
+    hub_door || HUB=(--unix-socket "$CS_SOCK") HUB_URL=http://hub   # read again: a restarted hub may have a new door
+    curl -sf -m 86400 "${HUB[@]}" -H 'Expect:' --data-binary @- "$HUB_URL/listen" <<<"$input" >"$reply" &
     pid=$!
     wait "$pid" && break   # the hub answered: a follow-up, or "you are released"
     sleep "${CS_RETRY:-5}" & pid=$!   # the hub went away; an idle session should be reachable again once it is back

@@ -56,7 +56,7 @@ Usage: sidetone <command>
 EOF
 }
 
-hub_get() { [ -S "$CS_SOCK" ] && curl -sf -m 2 --unix-socket "$CS_SOCK" "http://hub$1"; }
+hub_get() { hub_door && curl -sf -m 2 "${HUB[@]}" "$HUB_URL$1"; }
 
 hub_wait() {  # wait until the hub answers, up to 10 s
   for _ in $(seq 100); do hub_get /health >/dev/null 2>&1 && return 0; sleep 0.1; done
@@ -65,7 +65,7 @@ hub_wait() {  # wait until the hub answers, up to 10 s
 
 hub_stop() {
   hub_post /shutdown </dev/null >/dev/null 2>&1 || return 0
-  for _ in $(seq 50); do [ -S "$CS_SOCK" ] || return 0; sleep 0.1; done
+  for _ in $(seq 50); do hub_up || return 0; sleep 0.1; done
 }
 
 case ${1:-} in
@@ -175,7 +175,7 @@ case ${1:-} in
     else
       "$py" -I "$CS_ROOT/hub/stt.py" languages "${XDG_CONFIG_HOME:-$HOME/.config}/sidetone/config.json" || exit 2
     fi
-    if [ $# -gt 0 ] && [ -S "$CS_SOCK" ]; then  # a running hub takes it up at once
+    if [ $# -gt 0 ] && hub_up; then  # a running hub takes it up at once
       hub_post /languages </dev/null >/dev/null 2>&1 || echo "The running hub is older than this command: 'sidetone hub restart' applies it."
     fi
     ;;

@@ -7,7 +7,6 @@ import math
 import os
 import re
 import shutil
-import signal
 import subprocess
 import threading
 import time
@@ -15,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Callable
 
 import audio
+import procs
 
 # Lower speaks first. "notice" is feedback to something the user just did; "progress" can wait.
 PRIORITY = {"needs_you": 0, "allowed": 0, "denied": 0, "notice": 0, "failed": 1, "done": 2, "progress": 3}
@@ -462,10 +462,7 @@ class CommandEngine:
         self._stop.set()
         proc = self._proc
         if proc and proc.poll() is None:
-            try:
-                os.killpg(proc.pid, signal.SIGTERM)
-            except OSError:
-                pass
+            procs.end_tree(proc, hard=False)
 
 
 class Meter:

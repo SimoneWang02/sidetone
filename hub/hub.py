@@ -7,7 +7,6 @@ speak. The client side is hooks/lib.sh.
 """
 from __future__ import annotations
 
-import fcntl
 import json
 import os
 import re
@@ -990,10 +989,8 @@ def main() -> int:
     cfg = Config.load()
     os.makedirs(cfg.run, mode=0o700, exist_ok=True)
     os.makedirs(cfg.state, exist_ok=True)
-    lock = open(os.path.join(cfg.run, "hub.lock"), "w")
-    try:
-        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
+    lock = base.hold_lock(os.path.join(cfg.run, "hub.lock"))
+    if lock is None:
         return 0  # another hub already owns the socket
 
     hub = Hub(cfg, make_engine(cfg.engine, cfg.kokoro_dir, cfg.speed, cfg.default_voice, cfg.voices_dir, cfg.voice_device))
@@ -1011,7 +1008,7 @@ def main() -> int:
         hub.recorder = stt.Recorder(cfg.mic_source)
         hub.recorder.on_chunk = hub._mic_heard
         hub.transcriber = stt.Transcriber(cfg.whisper_model, cfg.whisper_language, cfg.whisper_device, cfg.whisper_gpu_model)
-    server = serve(hub, cfg.sock)
+    server = serve(hub, cfg.sock, cfg.addr)
     stop = lambda *_: threading.Thread(target=server.shutdown, daemon=True).start()  # noqa: E731
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
@@ -1051,10 +1048,11 @@ def main() -> int:
         if hub.overlay:
             hub.overlay.stop()
         server.server_close()
-        try:
-            os.unlink(cfg.sock)
-        except OSError:
-            pass
+        for door in (cfg.sock, cfg.addr):
+            try:
+                os.unlink(door)
+            except OSError:
+                pass
         log(cfg, "hub.log", "hub stopped")
     return 0
 

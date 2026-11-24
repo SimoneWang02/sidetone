@@ -57,6 +57,12 @@ _SPEAK_LAST = re.compile(r".*<speak" + _ATTRS + r"\s*>(.*)</speak>")
 _ATTR = re.compile(r"""([A-Za-z]+)\s*=\s*(?:"([^"]*)"|'([^']*)')""")
 
 
+
+def leaf(path: str) -> str:
+    """The last part of a path, written the Linux or the Windows way (C:\\work\\api-server is
+    api-server: Claude Code on Windows hands over its paths with backslashes)."""
+    return re.split(r"[\\/]", path.rstrip("/\\"))[-1]
+
 def _attrs(text: str) -> dict:
     return {m.group(1).lower(): (m.group(2) if m.group(2) is not None else m.group(3)).strip() for m in _ATTR.finditer(text or "")}
 
@@ -148,7 +154,7 @@ def short_title(text: str, limit: int = 44) -> str:
 
 def describe(tool: str, tool_input: dict) -> str:
     """A short human line for what a tool call is doing."""
-    file = os.path.basename(str(tool_input.get("file_path") or tool_input.get("notebook_path") or ""))
+    file = leaf(str(tool_input.get("file_path") or tool_input.get("notebook_path") or ""))
     if tool == "Bash":
         return tool_input.get("description") or "Running a command"
     if tool in ("Edit", "Write", "NotebookEdit"):
@@ -172,9 +178,9 @@ def permission_summary(tool: str, tool_input: dict) -> tuple[str, str]:
     if tool == "Bash":
         return tool_input.get("description") or "run a command", str(tool_input.get("command") or "")
     if tool in ("Edit", "Write", "NotebookEdit"):
-        return f"{'write' if tool == 'Write' else 'edit'} {os.path.basename(path)}", path
+        return f"{'write' if tool == 'Write' else 'edit'} {leaf(path)}", path
     if tool == "Read":
-        return f"read {os.path.basename(path)}", path
+        return f"read {leaf(path)}", path
     if tool in ("WebFetch", "WebSearch"):
         target = str(tool_input.get("url") or tool_input.get("query") or "")
         return "use the web", target
@@ -290,7 +296,7 @@ class Sessions:
                             title=was["title"], named=was["named"], settled=was["settled"], given=was["given"],
                             state=was["state"], note=was["note"], order=was["order"])
             else:
-                name = self._unique_name(os.path.basename(cwd.rstrip("/")) or "session")
+                name = self._unique_name(leaf(cwd) or "session")
                 s = Session(id=sid, cwd=cwd, name=name, voice=self._voice_for(name), color=self._color_for(name),
                             order=1 + max([o.order for o in self.by_id.values()]
                                           + [k["order"] for k in self.kept.values()], default=0))

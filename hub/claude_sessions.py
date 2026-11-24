@@ -12,13 +12,8 @@ import subprocess
 
 
 def alive(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except OSError:
-        return True
-    return True
+    import procs  # here: this file is also imported where the hub's folder is not on the path yet
+    return procs.alive(pid)
 
 
 def read(directory: str) -> dict[str, dict]:

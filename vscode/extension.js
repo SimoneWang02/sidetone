@@ -31,20 +31,33 @@ const os = require("os");
 const path = require("path");
 const vscode = require("vscode");
 
-function socket() {  // the same place hooks/lib.sh looks
+function runDir() {  // the same place hooks/lib.sh and the hub look
   const env = process.env;
-  const run = env.CS_RUN || (env.XDG_RUNTIME_DIR
-    ? path.join(env.XDG_RUNTIME_DIR, "sidetone")
-    : `/tmp/sidetone-${os.userInfo().uid}`);
-  return path.join(run, "hub.sock");
+  if (env.CS_RUN) return env.CS_RUN;
+  if (env.XDG_RUNTIME_DIR) return path.join(env.XDG_RUNTIME_DIR, "sidetone");
+  if (process.platform === "win32") return path.join(env.LOCALAPPDATA || os.homedir(), "sidetone", "run");
+  return `/tmp/sidetone-${os.userInfo().uid}`;
+}
+
+// Where to send a request: the hub's Unix socket, or (Windows) the local port and token it
+// wrote to hub.addr. Read at every request: a hub that restarted has a new port.
+function door(options) {
+  const sock = path.join(runDir(), "hub.sock");
+  if (process.platform !== "win32" && fs.existsSync(sock)) return { ...options, socketPath: sock };
+  try {
+    const [port, token] = fs.readFileSync(path.join(runDir(), "hub.addr"), "utf8").trim().split(/\s+/);
+    return { ...options, host: "127.0.0.1", port: Number(port), headers: { ...options.headers, "X-Sidetone-Token": token } };
+  } catch (e) {
+    return { ...options, socketPath: sock };  // no hub yet: this fails, and the caller tries again later
+  }
 }
 
 function tell(body) {
   const data = JSON.stringify(body);
-  const request = http.request({
-    socketPath: socket(), path: "/terminal", method: "POST", timeout: 1000,
+  const request = http.request(door({
+    path: "/terminal", method: "POST", timeout: 1000,
     headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) },
-  });
+  }));
   request.on("error", () => {});  // no hub running: there is nobody to tell
   request.on("timeout", () => request.destroy());
   request.on("response", (response) => response.resume());
@@ -135,10 +148,10 @@ async function listen() {
   const pids = (await Promise.all(vscode.window.terminals.map((terminal) => terminal.processId))).filter(Boolean);
   if (closed || open) return;
   const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear", "open"], theme: theme() });  // what the hub may ask of us
-  const request = http.request({
-    socketPath: socket(), path: "/editor", method: "POST", timeout: 60000,
+  const request = http.request(door({
+    path: "/editor", method: "POST", timeout: 60000,
     headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) },
-  });
+  }));
   open = request;
   const next = (wait) => {  // once per request, however it ended
     if (open !== request) return;

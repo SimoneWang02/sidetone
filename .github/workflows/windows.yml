@@ -1,0 +1,20 @@
+# Sidetone on Windows itself (no WSL) on GitHub's Windows machines: the hook program built and
+# run as Claude Code runs it, starting the real hub, which is reached on a local port.
+name: windows
+on:
+  push:
+    branches: [mac-overlay]
+  workflow_dispatch:
+jobs:
+  native:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Packages
+        run: python -m pip install numpy sounddevice soundfile
+      - name: Check
+        run: python -I tests/win_check.py

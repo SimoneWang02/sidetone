@@ -211,6 +211,45 @@ def _windows_path(path: str) -> str:
     return subprocess.run(["wslpath", "-w", path], capture_output=True, text=True, check=True).stdout.strip()
 
 
+WINDOWS = os.name == "nt"  # the hub itself on Windows, not reaching it from WSL
+
+
+def build_native(source: str, log: Callable[[str], None] = lambda line: None) -> str | None:
+    """`build` for a hub running on Windows itself: the same compiler and the same place, with
+    Windows' own paths instead of WSL's way of reaching them."""
+    windows = os.environ.get("WINDIR", r"C:\Windows")
+    compiler = next((c for c in (os.path.join(windows, "Microsoft.NET", "Framework64", "v4.0.30319", "csc.exe"),
+                                 os.path.join(windows, "Microsoft.NET", "Framework", "v4.0.30319", "csc.exe")) if os.path.isfile(c)), None)
+    if not compiler:
+        return None
+    with open(source, "rb") as f:
+        version = hashlib.sha1(f.read()).hexdigest()[:10]
+    folder = os.path.join(os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "sidetone")
+    program = os.path.join(folder, f"sidetone-overlay-{version}.exe")
+    if os.path.isfile(program):
+        return program
+    os.makedirs(folder, exist_ok=True)
+    for old in os.listdir(folder):
+        if old.startswith("sidetone-overlay-") and old.endswith(".exe"):
+            try:
+                os.unlink(os.path.join(folder, old))
+            except OSError:
+                pass
+    framework = os.path.dirname(compiler)
+    try:
+        done = subprocess.run([compiler, "/nologo", "/target:winexe", "/optimize+", f"/out:{program}",
+                               f"/lib:{framework}\\WPF", *[f"/r:{name}.dll" for name in ASSEMBLIES], source],
+                              capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as e:
+        log(f"overlay could not be compiled: {e}")
+        return None
+    if done.returncode != 0 or not os.path.isfile(program):
+        log("overlay could not be compiled: " + " ".join((done.stdout + done.stderr).split())[:400])
+        return None
+    log(f"overlay program built: {program}")
+    return program
+
+
 def build(source: str, log: Callable[[str], None] = lambda line: None) -> str | None:
     """Compile Overlay.cs into a Windows program and return its path (as WSL sees it).
 
@@ -323,6 +362,9 @@ def command(script: str, log: Callable[[str], None] = lambda line: None) -> list
     if MAC:
         program = mac_program(os.path.join(os.path.dirname(script), "mac"))
         return [program] if os.path.isfile(program) else None
+    if WINDOWS:
+        program = build_native(os.path.join(os.path.dirname(script), "Overlay.cs"), log)
+        return [program] if program else ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script]
     if os.environ.get("SIDETONE_OVERLAY") != "script":
         program = build(os.path.join(os.path.dirname(script), "Overlay.cs"), log)
         if program:
@@ -356,6 +398,8 @@ class Overlay:
     def available() -> bool:
         if MAC:
             return _developer_tools()
+        if WINDOWS:
+            return True  # the compiler and PowerShell come with Windows
         return bool(shutil.which("powershell.exe") and shutil.which("wslpath"))
 
     def send(self, msg: dict) -> None:

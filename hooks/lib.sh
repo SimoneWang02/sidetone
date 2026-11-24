@@ -10,11 +10,23 @@ KOKORO_DIR=${KOKORO_DIR:-$HOME/.local/share/kokoro}
 
 voice_off() { [ -e "$HOME/.claude/voice-off" ]; }
 
+# A hub is there to talk to: its Unix socket, or the port and token of one on a local port.
+hub_up() { [ -S "$CS_SOCK" ] || [ -s "$CS_RUN/hub.addr" ]; }
+
+# How to reach the hub, for curl: HUB (its arguments) and HUB_URL. The Unix socket, or else a
+# hub on a local port (Windows, or SIDETONE_TRANSPORT=tcp) with the port and token in hub.addr.
+hub_door() {
+  if [ -S "$CS_SOCK" ]; then HUB=(--unix-socket "$CS_SOCK"); HUB_URL=http://hub; return 0; fi
+  local port token
+  read -r port token 2>/dev/null <"$CS_RUN/hub.addr" || return 1
+  HUB=(-H "X-Sidetone-Token: $token"); HUB_URL=http://127.0.0.1:$port
+}
+
 # POST stdin to the hub and print its reply. $1 = path, $2 = max seconds (default 1).
 # Fails fast when the hub is not running, so callers can fall back.
 hub_post() {
-  [ -S "$CS_SOCK" ] || return 1
-  curl -sf -m "${2:-1}" --unix-socket "$CS_SOCK" -H 'Expect:' --data-binary @- "http://hub$1"
+  hub_door || return 1
+  curl -sf -m "${2:-1}" "${HUB[@]}" -H 'Expect:' --data-binary @- "$HUB_URL$1"
 }
 
 # Start the hub in the background and return at once. A second hub exits by itself (it takes a lock).

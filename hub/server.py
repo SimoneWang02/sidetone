@@ -1,9 +1,17 @@
 """The hub's door: HTTP over a Unix socket, one small request per hook or command.
+
+Where there are no Unix sockets for Python (Windows), or when SIDETONE_TRANSPORT=tcp, the door
+is a port on 127.0.0.1 instead, which any program on the machine and any web page could reach:
+so every request must carry a token that only the user's own files hold (`hub.addr`, beside the
+lock, "PORT TOKEN"), a request a browser sends (it has an Origin header) is refused, and the Host
+must be this machine, against a web page that renames itself to 127.0.0.1.
 """
 from __future__ import annotations
 
+import hmac
 import json
 import os
+import secrets
 import select
 import socket
 import socketserver
@@ -19,6 +27,19 @@ from base import EDITOR_WAIT
 
 class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
+
+    def parse_request(self) -> bool:
+        if not super().parse_request():
+            return False
+        token = getattr(self.server, "token", "")
+        if not token:
+            return True  # the Unix socket: only the owner can open it at all
+        host = (self.headers.get("Host") or "").split(":")[0]
+        if (self.headers.get("Origin") is not None or host not in ("127.0.0.1", "localhost")
+                or not hmac.compare_digest(self.headers.get("X-Sidetone-Token", ""), token)):
+            self.send_error(403)
+            return False
+        return True
 
     def log_message(self, *args) -> None:  # the default logger assumes a TCP client address
         pass
@@ -240,19 +261,43 @@ class Handler(BaseHTTPRequestHandler):
             pass
 
 
-class Server(socketserver.ThreadingUnixStreamServer):
+UNIX = hasattr(socketserver, "ThreadingUnixStreamServer")
+
+
+class Server(socketserver.ThreadingUnixStreamServer if UNIX else socketserver.ThreadingTCPServer):
     daemon_threads = True
     hub: Hub
+    token = ""
 
 
-def serve(hub: Hub, sock: str) -> Server:
-    """Bind the socket (owner-only) and return the server; the caller runs serve_forever()."""
-    if os.path.exists(sock):
-        os.unlink(sock)
+class PortServer(socketserver.ThreadingTCPServer):
+    daemon_threads = True
+    allow_reuse_address = False
+    hub: Hub
+    token = ""
+
+
+def serve(hub: Hub, sock: str, addr: str = "") -> Server | PortServer:
+    """Bind the door and return the server; the caller runs serve_forever(). A Unix socket
+    (owner-only) where there are any; else a port on 127.0.0.1 and a token, written to `addr`."""
+    for old_door in (sock, addr):
+        if old_door and os.path.exists(old_door):
+            os.unlink(old_door)
+    if UNIX and os.environ.get("SIDETONE_TRANSPORT") != "tcp":
+        old = os.umask(0o077)
+        try:
+            server = Server(sock, Handler)
+        finally:
+            os.umask(old)
+        server.hub = hub
+        return server
+    server = PortServer(("127.0.0.1", 0), Handler)
+    server.hub, server.token = hub, secrets.token_urlsafe(32)
     old = os.umask(0o077)
-    try:
-        server = Server(sock, Handler)
+    try:  # written whole, then put in place, so a reader never sees half of it
+        with open(addr + ".part", "w") as f:
+            f.write(f"{server.server_address[1]} {server.token}\n")
+        os.replace(addr + ".part", addr)
     finally:
         os.umask(old)
-    server.hub = hub
     return server
