@@ -200,6 +200,25 @@ for section in SETTINGS:
 send(type="settings", open=False)
 time.sleep(0.3)
 subprocess.run(["screencapture", "-x", os.path.join(out, "full-screen.png")])
+# The hotkeys: Control-Option-Space pressed and let go by System Events, if this Mac lets a
+# script do that (it needs the Accessibility permission). Push-to-talk needs both halves.
+send(type="config", hotkeys=KEYS)
+time.sleep(0.5)
+while not heard.empty():
+    heard.get()
+pressed = subprocess.run(["osascript", "-e", 'tell application "System Events" to key code 49 using {control down, option down}'],
+                         capture_output=True, text=True, timeout=30)
+if pressed.returncode:
+    print("  keys: System Events could not press them here:", pressed.stderr.strip()[:200])
+else:
+    got = []
+    end = time.time() + 5
+    while time.time() < end and len(got) < 2:
+        msg = wait("hotkey", max(0.1, end - time.time()))
+        if msg:
+            got.append(msg.get("name"))
+    print("  keys: Ctrl+Alt+Space gave", got, "(talk, then talk_end, is right)")
+
 backdrop.kill()
 proc.stdin.close()
 try:

@@ -32,7 +32,7 @@ final class GlassPanel: NSPanel {
         hidesOnDeactivate = false
         isOpaque = false
         backgroundColor = .clear
-        hasShadow = false
+        hasShadow = true  // the soft shadow of the Mac's own floating panels, taken from the rounded shape
         ignoresMouseEvents = !takesMouse
         isMovable = false
         animationBehavior = .none
@@ -75,10 +75,37 @@ final class GlassPanel: NSPanel {
 
     func setLook(_ look: String) {
         self.look = look
-        effect.isHidden = look == "none" || look == "solid"
+        liquidView?.isHidden = true
+        let liquid = Ui.liquidGlass && look != "none" && look != "solid" && liquidReady()
+        effect.isHidden = look == "none" || look == "solid" || liquid
         effect.material = look == "acrylic" ? .popover : .hudWindow
         tint.needsDisplay = true
     }
+
+    // macOS 26's Liquid Glass (NSGlassEffectView), when the setting asks for it and the system has
+    // it; built only by a compiler that knows it (Xcode 26), so older ones still build the rest.
+    private var liquidView: NSView?
+
+    private func liquidReady() -> Bool {
+        #if compiler(>=6.2)
+        if #available(macOS 26.0, *) {
+            if liquidView == nil, let root = contentView {
+                let glass = NSGlassEffectView()
+                glass.cornerRadius = radius
+                glass.frame = root.bounds
+                glass.autoresizingMask = [.width, .height]
+                root.addSubview(glass, positioned: .below, relativeTo: tint)
+                liquidView = glass
+            }
+            (liquidView as? NSGlassEffectView)?.cornerRadius = radius
+            liquidView?.isHidden = false
+            return true
+        }
+        #endif
+        return false
+    }
+
+    var liquid: Bool { liquidView.map { !$0.isHidden } ?? false }
 
     // The tint over the blur: the glass color at the top, darker toward the bottom; more of it
     // the less see-through the glass is asked to be (glass_clear). Without blur it is solid.
@@ -92,6 +119,10 @@ final class GlassPanel: NSPanel {
         if look == "none" || look == "solid" {
             let a: CGFloat = look == "solid" ? 1 : 0.92
             colors = [shade(0.74, a), shade(0.35, a)]
+        } else if liquid {
+            // Liquid Glass makes its own light and depth: only enough of the color to keep white words readable.
+            let a = 0.55 - 0.45 * c
+            colors = [shade(1, a), shade(0.5, a + 0.08)]
         } else {
             // Over the blur, less tint than on Windows: macOS's own material is already dark.
             let topA = c <= 0.5 ? 0.80 + (0.48 - 0.80) * c * 2 : 0.48 + (0.12 - 0.48) * (c - 0.5) * 2
@@ -122,13 +153,32 @@ final class GlassPanel: NSPanel {
     }
 
     func redraw() { canvas.needsDisplay = true }
+
+    // Comes up with a quick fade, as the Mac's own popovers do (at once with Reduce Motion).
+    func appear() {
+        if isVisible { return }
+        if Ui.motionless {
+            alphaValue = 1
+            orderFrontRegardless()
+            return
+        }
+        alphaValue = 0
+        orderFrontRegardless()
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.14
+            animator().alphaValue = 1
+        }
+    }
     func retint() { tint.needsDisplay = true }
 
     // Places it by its top-left corner in screen points measured from the top of the main screen.
     func place(_ frame: CGRect) {
         let main = NSScreen.screens.first?.frame ?? .zero
         let mac = NSRect(x: frame.minX, y: main.maxY - frame.maxY, width: frame.width, height: frame.height)
-        if self.frame != mac { setFrame(mac, display: true) }
+        if self.frame != mac {
+            setFrame(mac, display: true)
+            invalidateShadow()
+        }
         track()
     }
 

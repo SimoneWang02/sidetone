@@ -206,6 +206,7 @@ final class Overlay {
         if msg["waiting_cover"] != nil { let c = Msg.str(msg, "waiting_cover"); Ui.waitingCover = c == "each" || c == "first" ? c : "never" }
         if msg["waiting_mark"] != nil { let m = Msg.str(msg, "waiting_mark"); Ui.waitingMark = m == "dot" || m == "clock" ? m : "number" }
         glass = Msg.str(msg, "glass", glass)
+        if msg["liquid_glass"] != nil { Ui.liquidGlass = Msg.bool(msg, "liquid_glass", true) }
         Ui.glassClear = Msg.num(msg, "glass_clear", Ui.glassClear)
         let wanted = Msg.str(msg, "layout", layout)
         layout = wanted == "island" ? "island" : "bar"
@@ -404,7 +405,7 @@ final class Overlay {
             box.origin.y = max(a.minY, min(box.minY, a.maxY - box.height))
             panel.place(box)
             panel.redraw()
-            if !panel.isVisible { panel.orderFrontRegardless() }
+            panel.appear()
         } else if panel.isVisible {
             panel.orderOut(nil)
         }
@@ -424,7 +425,7 @@ final class Overlay {
             box.origin.y = max(a.minY, min(box.minY, a.maxY - box.height))
             bubble.place(box)
             bubble.redraw()
-            if !bubble.isVisible { bubble.orderFrontRegardless() }
+            bubble.appear()
         } else if bubble.isVisible {
             bubble.orderOut(nil)
         }

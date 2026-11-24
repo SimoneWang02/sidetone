@@ -25,6 +25,7 @@ import dataclasses
 import json
 import os
 import re
+import sys
 import threading
 import time
 
@@ -48,6 +49,9 @@ def switch(key: str, name: str, help: str) -> dict:
 def number(key: str, name: str, help: str, low: float, high: float, step: float, unit: str = "") -> dict:
     return {"key": key, "kind": "number", "name": name, "help": help, "min": low, "max": high, "step": step, "unit": unit}
 
+
+MAC = sys.platform == "darwin"
+SYSTEM = "macOS" if MAC else "Windows"  # whose own settings the window's words name
 
 # The ready colors a color setting drops down, after its own default (2026-11-23, the author
 # chose "swatches + hex" over themes only or a color wheel). Nine of them: the tenth place is
@@ -208,10 +212,12 @@ SECTIONS = [
         # to one line so nothing shifts, and Selected Session shows the sentence in full. Rows that
         # grew pushed the lights apart; rows kept tall, a bubble, and a card floating over the rows
         # below were tried and not liked. Still read from config.json.
-        number("overlay.size", "Size", "How big the bar, the details and the bubble are drawn. Windows' own display scale "
+        *([switch("overlay.liquid_glass", "Liquid Glass", "The glass of macOS 26 and later in place of the blur, "
+                  "with Glass Effect still setting how much shows through.")] if MAC else []),
+        number("overlay.size", "Size", f"How big the bar, the details and the bubble are drawn. {SYSTEM}'s own display scale "
                "comes on top of this.", 75, 150, 5, "%"),
         switch("overlay.still", "Reduce Motion", "The overlay opens and changes at once, with no springs, slides or glints. "
-               "It is on by itself while Windows' animation effects are off."),
+               + ("It is on by itself while macOS's Reduce Motion is on." if MAC else "It is on by itself while Windows' animation effects are off.")),
         choice("overlay.history", "History Shows", "What was said last, when the mouse rests on the details: by this session, or by all of them.",
                ("session", "This Session"), ("all", "All Sessions")),
         choice("overlay.focus_history", "History in Selected Session", "In the Selected Session view, what it said last: always in its card, or only when the mouse rests on the details.",

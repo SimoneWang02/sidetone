@@ -51,6 +51,7 @@ enum Ui {
     static var rowLines = 1
     static var motionless = false
     static var zoom: CGFloat = 1
+    static var liquidGlass = true  // macOS 26's glass where there is one (overlay.liquid_glass)
 
     static let dim = NSColor.white.alpha(0.72)
     static let faint = NSColor.white.alpha(0.5)

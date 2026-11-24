@@ -7,7 +7,13 @@ on:
   workflow_dispatch:
 jobs:
   overlay:
-    runs-on: macos-15
+    # macOS 15, and macOS 26 for its Liquid Glass (a newer runner, which may not always be there).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, macos-26]
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.os == 'macos-26' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -20,10 +26,13 @@ jobs:
           swiftc -O -o build/sidetone-overlay overlay/mac/*.swift 2>&1 | tee pictures/compile.log
       - name: Pictures
         run: python3 tests/mac_check.py build/sidetone-overlay pictures
+      - name: The hub, started by a hook, building and starting the overlay itself
+        if: always()
+        run: python3 tests/mac_hub_check.py pictures
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: pictures
+          name: pictures-${{ matrix.os }}
           path: pictures
   hub:
     runs-on: macos-15
@@ -36,4 +45,6 @@ jobs:
       - name: Packages
         run: python -m pip install numpy sounddevice onnxruntime
       - name: Tests
-        run: python -I -m unittest discover -s tests 2>&1 | tail -150
+        run: |
+          set -o pipefail
+          python -I -m unittest discover -s tests 2>&1 | tail -150

@@ -41,6 +41,9 @@ DEFAULTS = {
     "opacity": 1.0,
     "list_opacity": 1.0,
     "glass_clear": 50,  # how see-through the glass is, 0 (plain dark, no blur) to 100; 50 is the look it had
+    # On macOS 26 and later: the system's Liquid Glass in place of the blur (Glass Effect still
+    # sets how much shows through). No effect elsewhere.
+    "liquid_glass": True,
     "glass": "blur",  # blur = Windows blurs what is behind | acrylic = its heavier blur (the same picture as blur on Windows 11, measured on build 26300) | none = plain dark glass
     "flash_seconds": 4,
     # Reduce motion (2026-11-22, for people who find it distracting): the panel and bubble change
