@@ -23,6 +23,12 @@ hub_start() {
   [ -x "$py" ] || py=$(command -v python3) || return 1   # no Kokoro: the hub uses a system voice
   [ -f "$CS_ROOT/hub/hub.py" ] || return 1
   mkdir -p "$CS_RUN" "$CS_STATE" && chmod 700 "$CS_RUN" || return 1
+  # In a session of its own, so it outlives the hook that started it. A Mac has no setsid
+  # command: perl, which every Mac has, does the same call (forking first, as setsid does, when
+  # it already leads a process group, which cannot start a session).
+  local own=(setsid)
+  command -v setsid >/dev/null 2>&1 ||
+    own=(perl -MPOSIX -e 'if (getpgrp() == $$) { exit 0 if fork() } POSIX::setsid() or die "setsid: $!"; exec @ARGV or die "$!"' --)
   CS_RUN=$CS_RUN CS_STATE=$CS_STATE KOKORO_DIR=$KOKORO_DIR \
-    setsid nohup "$py" -I "$CS_ROOT/hub/hub.py" </dev/null >>"$CS_STATE/hub.log" 2>&1 &
+    "${own[@]}" nohup "$py" -I "$CS_ROOT/hub/hub.py" </dev/null >>"$CS_STATE/hub.log" 2>&1 &
 }

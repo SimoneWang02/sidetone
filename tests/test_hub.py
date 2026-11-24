@@ -199,11 +199,11 @@ class Queue(HubCase):
             return text.encode()
         engine._pcm = pcm
         player = unittest.mock.MagicMock()
-        player.poll.return_value = 0
-        with unittest.mock.patch.object(tts.subprocess, "Popen", return_value=player):
+        player.alive.return_value = False
+        with unittest.mock.patch.object(tts.audio, "Player", return_value=player):
             first = engine.speak(["Done.", "✓", "Next."], "af_heart")
         self.assertIsNotNone(first)
-        written = b"".join(c.args[0] for c in player.stdin.write.call_args_list)
+        written = b"".join(c.args[0] for c in player.write.call_args_list)
         self.assertIn(b"Done.", written)
         self.assertIn(b"Next.", written)
 

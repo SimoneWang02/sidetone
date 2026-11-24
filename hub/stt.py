@@ -1,6 +1,6 @@
 """Push-to-talk: record the microphone while the key is held, then turn the recording into text.
 
-Both parts run locally: `parec` (PulseAudio) for the microphone, faster-whisper for the words.
+Both parts run locally: `parec` (PulseAudio, or PortAudio on a Mac: audio.py) for the microphone, faster-whisper for the words.
 """
 from __future__ import annotations
 
@@ -10,10 +10,9 @@ import importlib.util
 import inspect
 import json
 import os
-import shutil
-import subprocess
 import threading
 import time
+
 
 RATE = 16000  # what Whisper expects
 SIZES = ("tiny", "base", "small", "medium")  # the Whisper sizes that also come English-only (".en")
@@ -59,33 +58,30 @@ class Recorder:
     """Captures 16 kHz mono from the default microphone between start() and stop()."""
 
     def __init__(self, source: str = ""):
-        self.source = source  # PulseAudio source name; empty = the default one
+        self.source = source  # PulseAudio source name (or PortAudio device); empty = the default one
         self.on_chunk = None  # called with each 0.05 s of audio as it arrives (to show the voice)
-        self.proc: subprocess.Popen | None = None
+        self.proc = None  # an audio.Recording while recording
         self._chunks: list[bytes] = []
-        self._reader: threading.Thread | None = None
 
     @staticmethod
     def available() -> bool:
-        return bool(shutil.which("parec"))
+        import audio  # here, not at the top: this file also runs as a script (`sidetone languages`), with -I
+        return audio.can_record()
 
     def start(self) -> None:
-        cmd = ["parec", f"--rate={RATE}", "--channels=1", "--format=s16le", "--raw", "--latency-msec=50"]
-        if self.source:
-            cmd.append(f"--device={self.source}")
+        import audio
         self._chunks = []
-        self.proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
-        self._reader = threading.Thread(target=self._read, args=(self.proc,), daemon=True)
-        self._reader.start()
+        self.proc = None
+        recording = None
 
-    def _read(self, proc: subprocess.Popen) -> None:
-        while True:
-            chunk = proc.stdout.read(1600)  # 0.05 s
-            if not chunk:
-                return
+        def heard(chunk: bytes) -> None:
             self._chunks.append(chunk)
-            if self.on_chunk and self.proc is proc:
+            if self.on_chunk and self.proc is recording:
                 self.on_chunk(chunk)
+        try:  # parec where it is, else PortAudio (a Mac): see audio.py
+            recording = self.proc = audio.Recording(RATE, 1600, heard, self.source)  # 0.05 s at a time
+        except OSError:
+            self.proc = None
 
     def stop(self, tail: float = 0.0) -> bytes:
         """Stop recording and return what was captured (16-bit little-endian samples).
@@ -98,16 +94,7 @@ class Recorder:
             return b""
         if tail:
             time.sleep(tail)
-        proc.terminate()
-        if self._reader:
-            self._reader.join(2)
-        try:  # reaped, so a finished parec does not stay in the process list looking like a recording
-            proc.wait(2)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait()
-        if proc.stdout:
-            proc.stdout.close()
+        proc.stop()
         return b"".join(self._chunks)
 
 

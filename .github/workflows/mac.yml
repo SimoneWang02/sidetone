@@ -1,0 +1,39 @@
+# The macOS overlay built and pictured on GitHub's Macs, and the hub's tests run there, since the
+# author has no Mac at hand. Pictures: the run's "pictures" artifact (gh run download).
+name: mac
+on:
+  push:
+    branches: [mac-overlay]
+  workflow_dispatch:
+jobs:
+  overlay:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versions
+        run: sw_vers; swiftc --version; system_profiler SPDisplaysDataType | grep -i resolution || true
+      - name: Build
+        run: |
+          mkdir -p build pictures
+          set -o pipefail
+          swiftc -O -o build/sidetone-overlay overlay/mac/*.swift 2>&1 | tee pictures/compile.log
+      - name: Pictures
+        run: python3 tests/mac_check.py build/sidetone-overlay pictures
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pictures
+          path: pictures
+  hub:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Packages
+        run: python -m pip install numpy sounddevice
+      - name: Tests
+        run: python -I -m unittest discover -s tests 2>&1 | tail -150

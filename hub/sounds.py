@@ -1,15 +1,15 @@
 """Short sounds the hub answers with, made in code: there are no audio files.
 
-They are played by their own `paplay`, beside the voice and not through its queue, so a sound
+They are played by their own player (`audio.play`: paplay, or PortAudio on a Mac), beside the voice and not through its queue, so a sound
 is heard the moment something happens even while a session is speaking.
 """
 from __future__ import annotations
 
 import array
 import math
-import shutil
-import subprocess
 import threading
+
+import audio
 
 RATE = 24000
 # Silence after each sound, so its stream does not close while the last notes are still on the
@@ -68,7 +68,7 @@ class Sounds:
 
     @staticmethod
     def available() -> bool:
-        return bool(shutil.which("paplay"))
+        return audio.can_play()
 
     def play(self, name: str) -> bool:
         """Start the sound and return at once. False for a name that is not a sound."""
@@ -80,10 +80,4 @@ class Sounds:
         return True
 
     def _out(self, pcm: bytes) -> None:
-        try:
-            subprocess.run(["paplay", "--raw", f"--rate={RATE}", "--format=s16le", "--channels=1",
-                            f"--latency-msec={LATENCY_MS}", f"--volume={round(65536 * max(0.0, min(1.0, self.master)))}"],
-                           input=pcm, timeout=5,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except (OSError, subprocess.SubprocessError):
-            pass  # no sound is not worth failing over
+        audio.play(pcm, RATE, LATENCY_MS, self.master)  # no sound is not worth failing over

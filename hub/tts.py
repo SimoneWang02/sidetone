@@ -14,6 +14,8 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
+import audio
+
 # Lower speaks first. "notice" is feedback to something the user just did; "progress" can wait.
 PRIORITY = {"needs_you": 0, "allowed": 0, "denied": 0, "notice": 0, "failed": 1, "done": 2, "progress": 3}
 # The hub's own short answers ("Sent.", "Allowed."). They are said in a session's voice but are
@@ -98,7 +100,7 @@ class NullEngine:
 
 
 class KokoroEngine:
-    """Kokoro kept loaded in this process, played through paplay."""
+    """Kokoro kept loaded in this process, played through paplay (or PortAudio: audio.py)."""
 
     RATE = 24000
     GAP = b"\0" * int(RATE * 0.15) * 2  # silence between parts (16-bit mono)
@@ -379,13 +381,10 @@ class KokoroEngine:
         if voice.startswith("sample:"):
             parts = parts[:1]  # the recording is the whole sentence: once, not once a part
         started, first = time.monotonic(), None
-        proc = self._proc = subprocess.Popen(
-            # A small buffer: by default the player waits for more audio before it starts, which
-            # delayed a labelled line by about 0.3 s (measured on the speakers' output).
-            ["paplay", "--raw", f"--rate={self.RATE}", "--format=s16le", "--channels=1", f"--latency-msec={self.LATENCY_MS}",
-             f"--volume={round(65536 * max(0.0, min(1.0, self.volume)))}"],
-            stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        )
+        try:  # paplay where it is, else PortAudio (a Mac): see audio.py
+            proc = self._proc = audio.Player(self.RATE, self.LATENCY_MS, self.volume)
+        except OSError:
+            return None
         try:
             for i, part in enumerate(parts):
                 try:
@@ -400,18 +399,16 @@ class KokoroEngine:
                 # Taken before the write: the player takes a sentence about as fast as it plays it,
                 # so the write of a long one only returns seconds after its sound has started.
                 ready = time.monotonic() - started
-                proc.stdin.write(self.GAP + pcm if i else self.LEAD + pcm)
-                proc.stdin.flush()
+                proc.write(self.GAP + pcm if i else self.LEAD + pcm)
                 if first is None:
                     first = ready
             if first is not None:
-                proc.stdin.write(self.TAIL)
-            proc.stdin.close()
-            proc.wait()
+                proc.write(self.TAIL)
+            proc.finish()
         except OSError:  # the player was killed by stop()
             pass
         finally:
-            if proc.poll() is None:
+            if proc.alive():
                 proc.kill()
             self._proc = None
         return first
@@ -419,7 +416,7 @@ class KokoroEngine:
     def stop(self) -> None:
         self._stop.set()
         proc = self._proc
-        if proc and proc.poll() is None:
+        if proc and proc.alive():
             proc.kill()
 
 
@@ -547,7 +544,7 @@ class Meter:
 def make_engine(name: str, kokoro_dir: str, speed: float, fallback_voice: str, custom_dir: str = "", device: str = "cpu"):
     """`name` is kokoro, null, one of CommandEngine.COMMANDS, or auto (the best one installed)."""
     kokoro = os.path.isfile(f"{kokoro_dir}/kokoro-v1.0.onnx") and importlib.util.find_spec("kokoro_onnx")
-    if name in ("kokoro", "auto") and kokoro and shutil.which("paplay"):
+    if name in ("kokoro", "auto") and kokoro and audio.can_play():
         return KokoroEngine(kokoro_dir, speed, fallback_voice, custom_dir, device=device)
     for command, build in CommandEngine.COMMANDS.items():
         if name in (command, "auto", "kokoro") and shutil.which(command):
