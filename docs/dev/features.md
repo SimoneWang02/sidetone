@@ -1791,3 +1791,33 @@ refused by the session's safety check, so the PC was used only for what Windows 
   `%USERPROFILE%\.claude\settings.json` with a backup; `uninstall.ps1` takes them out).
   Run from scratch on GitHub's Windows machine: it works. No `sidetone` command on Windows yet
   (it is bash); the settings window covers most of it.
+
+## Linux desktops (2026-11-24, branch `mac-overlay`)
+
+The author, the same day: "you can do Linux, like you can do everything". The hub and the hooks
+already ran on Linux; what was missing was an overlay (WSL keeps the Windows one). Chosen: Qt,
+through PySide6 in the hub's own Python, over GTK (whose Python binding needs system libraries)
+(`~/.claude/holdup-log.md`). Proved on GitHub's Ubuntu machines on a virtual X display
+(`.github/workflows/linux.yml`) and drawn on WSL's own display while it was built; **not tried on
+a real Linux desktop yet**.
+
+- `overlay/linux/`: `overlay.py` the JSON link, the windows, the layout, the mouse;
+  `paint.py` the bar, details, requests, card, history and bubble; `draw.py` colors, motion,
+  the light and its signs; `keys.py` hotkeys; `settings_window.py` the settings window in Qt's
+  own widgets (a color: the ready colors, or any color from Qt's color dialog). A port of the
+  Mac overlay's Swift line for line, in the same units.
+- The hub starts it with its own Python where it is not WSL, there is a display, and PySide6 is
+  installed (`overlay.linux_desktop`); `install.sh` installs `PySide6-Essentials` and
+  `python-xlib` on such a desktop (about 150 MB).
+- Windows: frameless, kept on top, never taking the keyboard; the bubble lets clicks through.
+  Linux has no shared blur, so the glass is the overlay's own dark tint. Qt is asked for X11
+  first (`QT_QPA_PLATFORM=xcb;wayland`): on X11, and through XWayland on most Wayland desktops,
+  the windows go where they are put; on Wayland itself the desktop places them.
+- Hotkeys through the X server (`XGrabKey`, with Caps Lock and Num Lock variants), from one
+  thread that both grabs and reads; a held key's repeats (release and press at the same moment)
+  are not taken for letting go. Measured on GitHub's machine: Ctrl+Alt+Space from xdotool gave
+  `talk` then `talk_end`. On a Wayland session the X server sees keys only while an X window
+  has the keyboard, so there a desktop shortcut can run `sidetone talk toggle` (new: once to
+  start talking, again to send; `/talk` with `toggle`).
+- Not on Linux yet: the voice's loudness (made up, as on the Mac: PulseAudio's monitor is used
+  only where the hub already used it, and it is), reordering lights by dragging, a blur on KDE.

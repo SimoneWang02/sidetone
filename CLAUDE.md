@@ -64,8 +64,9 @@ the author's asking, and the rest was moved unchanged:
   offer the VS Code extension). Not yet a plugin, not yet public. A Mac port on the branch
   `mac-overlay` (2026-11-24: PortAudio sound, a Swift overlay the hub builds with Apple's
   compiler; `docs/dev/features.md`, "The Mac"), and Windows without WSL (a C# hook program,
-  the hub on a local port, `install.ps1`; "Windows without WSL"), tried only on GitHub's
-  machines so far.
+  the hub on a local port, `install.ps1`; "Windows without WSL") and Linux desktops (a Qt
+  overlay; "Linux desktops"), tried only on GitHub's machines so far. The first tries by the
+  author: `docs/testing/`.
 
 ## How it works
 

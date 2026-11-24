@@ -189,7 +189,7 @@ the ones after it are done together with them, not by a session alone.
 - [ ] The Mac, in the first version (the author, 2026-11-24: "we should make one for macOS as
       well because it's the most dominant operative system"; a native Swift overlay chosen over
       one shared toolkit). Built the night of 2026-11-24 on the branch `mac-overlay` by a session
-      on its own, at the author's word; how it works in `docs/dev/features.md`, "The Mac".
+      on its own, at the author's word; how it works in `docs/dev/features.md`, "The Mac"; the list for the first try: `docs/testing/mac.md`.
       Proved on GitHub's Macs (macOS 15 and 26): the overlay builds and draws every view, the
       hub's 429 tests pass, a hook starts the real hub, which builds and opens the overlay and
       speaks, and the talk key gives press and release. **Not tried on a real Mac by anyone**:
@@ -209,7 +209,13 @@ the ones after it are done together with them, not by a session alone.
       on Windows**: install it from PowerShell (`irm https://claude.ai/install.ps1 | iex`, then a
       login), run install.ps1, and try a session, push-to-talk, the voice. Not there yet: the
       `sidetone` command (bash), the terminal tint, a voice when the hub is down.
-- [ ] An overlay for Linux. Today there is none: the hub and hooks work there, without keys.
+- [ ] Linux desktops, in the first version (the author, 2026-11-24: "you can do Linux, like you can
+      do everything"). Built the same day on the branch `mac-overlay`: a Qt overlay
+      (`overlay/linux`), hotkeys through X, `sidetone talk toggle` for Wayland's own shortcuts;
+      `docs/dev/features.md`, "Linux desktops". Proved on GitHub's Ubuntu machines (every view,
+      the talk key, the real hub opening it). **Not tried on a real Linux desktop.**
+- [ ] The first try on each system, by the author: `docs/testing/mac.md`, `docs/testing/windows.md`,
+      `docs/testing/linux.md` (what to install, what to check, and room for what was found).
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.
       The author, 2026-11-18, by voice (the recording was cut twice, so only its gist):
