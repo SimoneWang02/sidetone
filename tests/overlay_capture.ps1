@@ -1,8 +1,8 @@
 # Takes the pictures for tests/overlay_check.py. One process for the whole check: it reads one
 # JSON request per line and answers each with one JSON line.
 #
-#   {"do":"window","path":P,"pieces":[[x,y,w,h],...]}
-#       Each piece is a window of the overlay under test. Its picture is asked from the window
+#   {"do":"window","path":P,"pieces":[[x,y,w,h],...],"process":N}
+#       Each piece is a window of the overlay under test (of process N, when given). Its picture is asked from the window
 #       itself (PrintWindow), not copied from the screen, so whatever lies over it there, the
 #       author's own overlay for one, is not in the picture.
 #   {"do":"screen","path":P,"pieces":[...],"pad":N,"ours":[[x,y,w,h],...]}
@@ -147,7 +147,9 @@ while ($null -ne ($line = [Console]::In.ReadLine())) {
     if ($ask.do -eq 'window') {
       $all = [Shots]::Windows()
       foreach ($p in $pieces) {
-        $found = @($all | Where-Object { Same $_ $p })
+        # Only the overlay's own when it is known: a maximized window has the place of the
+        # desktop itself (Progman) and of full-screen windows such as NVIDIA's overlay.
+        $found = @($all | Where-Object { (Same $_ $p) -and (-not $ask.process -or $_.Process -eq [uint32]$ask.process) })
         if ($found.Count -ne 1) { $answer = @{ ok = $false; error = "$($found.Count) windows are exactly at $($p -join ',')" }; break }
         $one = [Shots]::Of($found[0].Handle, $p[2], $p[3])
         if ($null -eq $one) { $answer = @{ ok = $false; error = "Windows gave no picture of the window at $($p -join ',')" }; break }

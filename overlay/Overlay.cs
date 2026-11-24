@@ -1562,6 +1562,7 @@ namespace ClaudeSpeaks
 
         public void Hide()
         {
+            if (List != null) List.IsOpen = false;  // a color's list is a window of its own: it would stay
             if (capturing.Length > 0) StopTyping();
             ForgetPlaces(null);
             if (Window.IsVisible) Window.Hide();
@@ -1607,6 +1608,7 @@ namespace ClaudeSpeaks
         // Draws the sections at the left and the settings of the one that is chosen.
         void Fill()
         {
+            if (List != null) List.IsOpen = false;  // its box is about to be drawn anew
             nav.Children.Clear();
             list.Children.Clear();
             foreach (object o in sections)
@@ -4833,6 +4835,7 @@ namespace ClaudeSpeaks
                 reply["moving"] = running;
                 reply["clock"] = Math.Round(Ui.Now, 3);  // with "frames": how many pictures a second it draws
                 reply["frames"] = frames;
+                reply["process"] = Process.GetCurrentProcess().Id;  // for tests/overlay_check.py, to tell its windows from others of the same place
             }
             Write(reply);
         }

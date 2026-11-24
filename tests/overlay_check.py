@@ -91,10 +91,10 @@ def ask(timeout=30, **request):
     return {"ok": False, "error": "the camera did not answer"}
 
 
-def capture(name, pieces):
+def capture(name, pieces, process=None):
     """Save a picture of the overlay's own windows at these rectangles (x, y, w, h), on black,
     in their real arrangement. Asked from the windows, so what covers them is not in it."""
-    answer = ask(do="window", path=f"{win(out)}\\{name}.png", pieces=pieces)
+    answer = ask(do="window", path=f"{win(out)}\\{name}.png", pieces=pieces, process=process)
     if not answer.get("ok"):
         print(f"  {name}: no picture, {answer.get('error')}")
     return bool(answer.get("ok"))
@@ -134,7 +134,7 @@ def shot(name, settle=0.9):
         if not b or not b.get("visible"):
             print(f"  {name}: not visible")
             return b
-        taken = capture(name, b["pieces"])
+        taken = capture(name, b["pieces"], b.get("process"))
         after = bounds()
         if taken and after and after.get("pieces") == b["pieces"]:
             break
@@ -152,9 +152,19 @@ def shot(name, settle=0.9):
 DECOY = "#FF00FF"
 COVER = r"""
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
+Add-Type -Namespace Place -Name Win -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int w, int h, uint flags); [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+[void][Place.Win]::SetProcessDPIAware()  # pixels mean the same here as in the overlay and the camera
 $w = New-Object System.Windows.Window
 $w.WindowStyle = 'None'; $w.ResizeMode = 'NoResize'; $w.ShowActivated = $false; $w.ShowInTaskbar = $false; $w.Topmost = $true
-$w.WindowStartupLocation = 'Manual'; $w.Left = %d; $w.Top = %d; $w.Width = %d; $w.Height = %d
+$x = %d; $y = %d; $wide = %d; $high = %d
+$w.WindowStartupLocation = 'Manual'; $w.Left = $x; $w.Top = $y; $w.Width = $wide; $w.Height = $high
+# The place is in the screen's own pixels, as the overlay reports it, and WPF's Left and Top are
+# in its own units (the screen's pixels over the display scale, 2.5 here): set again in pixels
+# once the window exists. Without it the window lay elsewhere and nothing was proved.
+$w.Add_SourceInitialized({
+  $h = (New-Object System.Windows.Interop.WindowInteropHelper $w).Handle
+  [void][Place.Win]::SetWindowPos($h, [IntPtr](-1), $x, $y, $wide, $high, 0x10)  # -1 on top of all, 0x10 without taking focus
+})
 $inside = New-Object System.Windows.Controls.Border  # a window with nothing in it never says it was drawn
 $inside.Background = '%s'
 $w.Content = $inside
@@ -190,7 +200,7 @@ def prove(name="proof", seconds=10):
         if up and cover.poll() is None:
             screen(f"{name}-screen", pieces)
             covered = ask(do="count", path=f"{win(out)}\\{name}-screen.png", color=DECOY).get("count", 0)
-            taken = capture(f"{name}-window", pieces)
+            taken = capture(f"{name}-window", pieces, b.get("process"))
             still_up = cover.poll() is None and bounds().get("pieces") == pieces
             inside = ask(do="count", path=f"{win(out)}\\{name}-window.png", color=DECOY) if taken else {}
             if not still_up:  # the cover left meanwhile: the copy of the screen may hold the screen itself
@@ -211,9 +221,19 @@ def prove(name="proof", seconds=10):
 # A striped card with text, shown behind the overlay for a few seconds without taking focus.
 BACKDROP = r"""
 Add-Type -AssemblyName PresentationFramework,PresentationCore,WindowsBase
+Add-Type -Namespace Place -Name Win -MemberDefinition '[DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int w, int h, uint flags); [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();'
+[void][Place.Win]::SetProcessDPIAware()  # pixels mean the same here as in the overlay and the camera
 $w = New-Object System.Windows.Window
 $w.WindowStyle = 'None'; $w.ResizeMode = 'NoResize'; $w.ShowActivated = $false; $w.ShowInTaskbar = $false; $w.Topmost = $true
-$w.WindowStartupLocation = 'Manual'; $w.Left = %d; $w.Top = %d; $w.Width = %d; $w.Height = %d
+$x = %d; $y = %d; $wide = %d; $high = %d
+$w.WindowStartupLocation = 'Manual'; $w.Left = $x; $w.Top = $y; $w.Width = $wide; $w.Height = $high
+# The place is in the screen's own pixels, as the overlay reports it, and WPF's Left and Top are
+# in its own units (the screen's pixels over the display scale, 2.5 here): set again in pixels
+# once the window exists. Without it the window lay elsewhere and nothing was proved.
+$w.Add_SourceInitialized({
+  $h = (New-Object System.Windows.Interop.WindowInteropHelper $w).Handle
+  [void][Place.Win]::SetWindowPos($h, [IntPtr](-1), $x, $y, $wide, $high, 0x10)  # -1 on top of all, 0x10 without taking focus
+})
 $p = New-Object System.Windows.Controls.WrapPanel
 $colors = '#FFFFFF','#F4F4F4','#1E88E5','#FFFFFF','#E53935','#FDD835','#FFFFFF','#43A047','#111111','#FFFFFF'
 for ($i = 0; $i -lt 60; $i++) {
@@ -593,9 +613,18 @@ if not ONLY or "settings-colors-open".startswith(ONLY) or ONLY.startswith("setti
     shot("settings-colors-open", 0.8)
 # Voices at the height of the screen, with Chinese unfolded: the window maximized by its button.
 if not ONLY or "settings-voices-tall".startswith(ONLY) or ONLY.startswith("settings-voices"):
+    # The button that makes it as big as the screen, and then the same button again, which is
+    # then at the screen's right edge: 58 of the window's own units from its right side (the
+    # window is 790 wide, SettingsWindow.Broad; Windows' display scale on top).
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices")
+    normal = bounds()["pieces"][1]
+    scale = normal[2] / 790
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[732, 24])
-    shot("settings-voices-tall", 0.7)
-    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[732, 24])
+    tall = shot("settings-voices-tall", 0.7)["pieces"][1]
+    send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[round(tall[2] / scale) - 58, 24])
+    time.sleep(0.5)
+    if bounds()["pieces"][1] != normal:
+        print("  !! the settings window did not come back to its size")
     # English opened by a click on its heading, then closed again.
     send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Voices", click=[400, 142])
     shot("settings-voices-open", 0.7)
