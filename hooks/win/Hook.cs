@@ -150,10 +150,13 @@ static class Hook
             using (var startup = new ManagementClass("Win32_ProcessStartup"))
             {
                 startup["ShowWindow"] = (ushort)0;
+                // The whole of this hook's environment, as a child would have it: what is given here
+                // takes the place of the usual one (without it the hub had no PATH, and the
+                // overlay's compiler could not sign).
                 var env = new List<string>();
-                foreach (string name in new[] { "CS_RUN", "CS_STATE", "CS_ROOT", "KOKORO_DIR", "XDG_CONFIG_HOME", "SIDETONE_TTS", "SIDETONE_OVERLAY" })
-                    if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable(name))) env.Add(name + "=" + Environment.GetEnvironmentVariable(name));
-                if (env.Count > 0) startup["EnvironmentVariables"] = env.ToArray();
+                foreach (System.Collections.DictionaryEntry pair in Environment.GetEnvironmentVariables())
+                    env.Add(pair.Key + "=" + pair.Value);
+                startup["EnvironmentVariables"] = env.ToArray();
                 var how = processes.GetMethodParameters("Create");
                 how["CommandLine"] = line;
                 how["CurrentDirectory"] = Root;
