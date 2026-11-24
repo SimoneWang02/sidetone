@@ -174,6 +174,18 @@ the ones after it are done together with them, not by a session alone.
       Not tied to Linux: the overlay program, Kokoro and `faster-whisper` (both run on
       Windows), and the hub's logic. A smaller step that was set aside for now: hooks in the
       Windows settings file that call into WSL and run the existing scripts.
+      Assessed 2026-11-24 by a Claude agent from the code (read-only; the day counts are rough
+      guesses): native Windows moderate to hard, 6 to 10 days (the hub imports `fcntl`, uses a
+      Unix socket, `os.killpg`, `/proc`; hooks need `jq` and `setsid`, missing from Git Bash;
+      Claude Code's `type: "http"` hooks could replace most scripts, `listen.sh` stays a
+      command; the overlay only loses its `wslpath` and `/mnt/c` code). Linux moderate, 8 to 12
+      days: the hub and hooks already work there, but there is no overlay and so no keys (a
+      keys-only helper first, 1 to 2 days, then a Qt overlay on the same JSON lines; Wayland
+      limits always-on-top, blur and global keys). macOS hard: no `setsid`, `paplay` or `parec`,
+      about 3 days for hub, hooks and sound plus 4 to 5 for the Qt overlay. Suggested first, about
+      2 to 3 days: a `hub/platform.py` (sound in and out through sounddevice, the loudness meter
+      fed from what the hub plays, process groups, the lock, folders), the transport behind one
+      function, the hub detaching itself in place of `setsid`. Order: Windows, Linux, macOS.
 - [ ] An overlay for Linux and macOS. Today it is Windows only.
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.
