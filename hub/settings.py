@@ -722,7 +722,9 @@ def _pack_heading(hub, lang: str, found: dict) -> None:
     if job.get("busy"):
         total = job.get("total") or 0
         found.update(pack="installing", progress=round(job["done"] / total, 3) if total else 0.0,
-                     summary=f"{job.get('step') or 'Starting'}, {packs.megabytes(job['done'])} of {packs.megabytes(total)}" if total else "Starting")
+                     # How far only: which part is coming ("Chinese model") was beside it, and was not
+                     # needed (the author, 2026-11-23).
+                     summary=f"{packs.megabytes(job['done'])} of {packs.megabytes(total)}" if total else "Starting")
     elif job.get("error"):
         found.update(pack="failed", summary=job["error"])
     else:

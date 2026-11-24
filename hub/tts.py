@@ -259,16 +259,22 @@ class KokoroEngine:
 
     def reload_zh(self) -> None:
         """Read the Chinese model's voices again, after its pack was installed, a voice added or
-        the pack removed (hub/packs.py); the model loads again on its next line."""
-        with self._zh_lock:
-            self._zh_names, self.zh, self._zh_g2p = None, None, None
+        the pack removed (hub/packs.py); the model loads again on its next line. Nothing is
+        let go of when the voices are the same (the hub asks after every change of languages)."""
         importlib.invalidate_caches()
+        was = self._zh_names
+        self._zh_names = None
+        if was is not None and self.zh_voices() == was:
+            return  # not waiting for the lock: the model may be loading under it, for seconds
+        with self._zh_lock:
+            self.zh, self._zh_g2p = None, None
 
     def _zh_pcm(self, text: str, voice: str):
         with self._zh_lock:  # loaded once, by the warm-up at start or by the first line
             self._zh_load()
-        phonemes, _ = self._zh_g2p(text)
-        samples, _ = self.zh.create(phonemes, voice=voice, speed=self.speed, is_phonemes=True)
+            model, g2p = self.zh, self._zh_g2p  # held here: reload_zh may let go of them meanwhile
+        phonemes, _ = g2p(text)
+        samples, _ = model.create(phonemes, voice=voice, speed=self.speed, is_phonemes=True)
         return samples
 
     def _zh_load(self) -> None:

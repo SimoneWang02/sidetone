@@ -262,8 +262,9 @@ the ones after it are done together with them, not by a session alone.
 - [ ] Languages as packs you install, so each person chooses how much storage it takes
       (built 2026-11-23, not yet tried by the author: `hub/packs.py`, `sidetone languages`
       fetching first, the reminder naming the languages on, the English notice, the settings
-      window's Install with its size and a bar, Remove, ticking a voice fetching it. Next: the
-      author installs Chinese from the window on the second machine. Left: the recorded
+      window's Install with its size and a bar, Remove, ticking a voice fetching it. The author
+      installed Chinese from the window on the second machine (2026-11-23, 20:02); not yet
+      heard speaking Chinese there. Left: the recorded
       samples to hear a voice before it is downloaded, `reply_language` offering only
       languages installed, Remove for a language that is installed but off)
       (agreed with the author 2026-11-23, from a second machine without Chinese: "for chinese

@@ -336,7 +336,7 @@ class FromTheWindow(HubCase):
                 time.sleep(0.01)
             shown = self.heading(hub)
             self.assertEqual((shown["pack"], shown["progress"]), ("installing", 0.25))
-            self.assertTrue(shown["summary"].startswith("Chinese model, "), shown["summary"])
+            self.assertEqual(shown["summary"], f"{packs.megabytes(100)} of {packs.megabytes(400)}")
             gate.set()
             self.finish(hub)
         self.assertIn("zh", hub.cfg.whisper_language)
@@ -385,3 +385,24 @@ class FromTheWindow(HubCase):
         self.assertNotIn("zh", hub.cfg.whisper_language)
         self.assertFalse(any(os.path.exists(os.path.join(self.tmp, f)) for f in packs.ZH_FILES))
         self.assertEqual(self.heading(hub)["pack"], "missing")
+
+
+class ReloadingChinese(unittest.TestCase):
+    """A change of languages asks the engine to read Chinese's voices again; while the model is
+    loading (seconds) that must not wait for it, nor drop it when nothing changed."""
+
+    def test_the_same_voices_keep_the_model_and_do_not_wait(self):
+        from tts import KokoroEngine
+        folder = tempfile.mkdtemp(prefix="cs-zh-")
+        engine = KokoroEngine(folder, 1.0, "af_heart")
+        engine._zh_names = {"zf_049"}
+        engine.zh, engine._zh_g2p = "model", "g2p"
+        engine.zh_voices = lambda: engine._zh_names if engine._zh_names is not None else {"zf_049"}
+        with engine._zh_lock:  # loading, in another thread
+            done = threading.Event()
+            threading.Thread(target=lambda: (engine.reload_zh(), done.set()), daemon=True).start()
+            self.assertTrue(done.wait(1), "reload_zh waited for the model to load")
+        self.assertEqual(engine.zh, "model")
+        engine.zh_voices = lambda: {"zf_049", "zm_030"} if engine._zh_names is None else engine._zh_names
+        engine.reload_zh()  # a voice added: loaded again with it
+        self.assertIsNone(engine.zh)

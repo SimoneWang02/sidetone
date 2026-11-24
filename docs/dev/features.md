@@ -138,14 +138,21 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   In the settings window (the same day): a language not installed has a dim heading with
   "Not installed, 428 MB" and an Install button where its switch is (a round and a square download icon were tried the same day; the author kept the word) (`PackHead` in
   `Overlay.cs`; `_pack_heading`, `install` in `settings.py`); the hub installs in a thread and
-  draws the window again at most about three times a second, the heading showing the step and
-  "141 MB of 428 MB" beside a bar; a failure shows why, in a soft red, and Try Again. Done, the
+  draws the window again at most about three times a second, the heading showing "141 MB of 428
+  MB" beside a bar (the part coming, "Chinese model", was before it; the author: not necessary); a failure shows why, in a soft red, and Try Again. Done, the
   language is turned on (installed means on) and the engine reads its voices again. Once
   installed, its card lists, after the ticked voices, the clearest not downloaded yet
   (`fetchable`) with "0.5 MB" in their tag and no ▶; ticking one fetches it (its tag counts
   the percent) and ticks it once it is there. Under the card, "Remove Chinese" with what it
   frees, asking first as Reset does ("Click Again to Remove"); the package stays. Turning
-  Chinese on without its pack is refused. Pictures: `settings-pack-missing.png`,
+  Chinese on without its pack is refused. The author installed Chinese this way on the second
+  machine the same evening (hub.log: "installed zh" at 20:02). Then Italian's switch lagged
+  ("why toggling on and off italian there's a lag"): every change of languages called
+  `reload_zh`, which dropped the Chinese model and waited for its lock while the model was
+  loading (several seconds, the first time after the install), so the clicks waited and came
+  in all at once. `reload_zh` now keeps the model, without waiting, when the voices are the
+  same, and `_zh_pcm` holds the model it loaded, so a reload meanwhile no longer breaks a line
+  being made (it broke the timing of zh:zf_049: "'NoneType' object has no attribute 'create'"). Pictures: `settings-pack-missing.png`,
   `-installing`, `-failed`, `-installed`, `-remove` (`tests/overlay_check.py
   --only=settings-pack`).
   A line with no `lang` (2026-11-22, `language.guess`, called from `Hub._voice_for` with the
