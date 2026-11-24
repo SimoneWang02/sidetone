@@ -660,7 +660,7 @@ class Talk:
         `--disallowedTools` both make the copy read everything anew, and so does plan mode
         for a part). Rules that make every acting tool ask keep the reuse, and asking is a
         refusal where nobody can answer: a copy told to run a command was refused."""
-        program = self.cfg.aside_claude or shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
+        program = self.cfg.aside_claude or shutil.which("claude") or os.path.expanduser("~/.local/bin/claude" + (".exe" if os.name == "nt" else ""))
         cmd = [program, "-p", "--resume", aside.session, "--fork-session", "--no-session-persistence"]
         env = {k: v for k, v in os.environ.items() if not OWN_SESSION.match(k)}
         if self.cfg.aside_model in ("", "session"):

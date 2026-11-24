@@ -1749,3 +1749,45 @@ no Mac at hand: every build, picture and test below ran on GitHub's Macs
   has the real hook start the real hub in an empty home, which builds and starts the overlay and
   speaks with the Mac's own voice (no Kokoro there). On macOS 15 GitHub's Macs draw the blur as
   plain dark, so how see-through the glass is can only be judged on a real Mac.
+
+## Windows without WSL (2026-11-24, branch `mac-overlay`)
+
+The author, the same morning: "If it's like other system, do it", after native Windows was
+proposed before a Linux overlay (most Windows users of Claude Code do not use WSL). Proved on
+GitHub's Windows machines (`.github/workflows/windows.yml`); **not tried with a real Claude Code
+on Windows yet**. Running the downloaded Windows Python and Git Bash on the author's PC was
+refused by the session's safety check, so the PC was used only for what Windows has built in.
+
+- **The hooks** are one program, `hooks/win/Hook.cs`, built by `install.ps1` with Windows' own
+  C# compiler into `%LOCALAPPDATA%\sidetone\sidetone-hook.exe` and run in exec form
+  (`"command": exe, "args": ["display"]`): no shell, so it needs no Git Bash (optional for
+  Claude Code on Windows; without it, shell-form hooks go to PowerShell). Measured on the
+  author's PC: PowerShell starts in 134 ms, cmd 9 ms, an empty .NET program 22 ms, this one 22 ms
+  on the batches and tool calls with nothing to do (it leaves before loading its JSON library).
+  Each bash hook has its word (`install_win.SCRIPTS`); the registered hooks are made from
+  `hooks/settings-snippet.json`, so the events, timeouts and async options stay the same.
+  Without a hub, a batch's line is not said (no fallback voice there yet); the hub is started
+  for the next one.
+- **Starting the hub** from a hook: through WMI (`Win32_Process.Create`), so it is not a child of
+  the hook, whose job Claude Code may close when the hook ends. The environment given there
+  replaces the whole of it, so the hook passes all of its own (with only a few, the hub had no
+  PATH and the overlay's compiler could not sign). 2.6 s from the hook to the hub answering.
+- **The door** (`hub/server.py`): Windows' Python has Unix sockets now, but on Windows the hub
+  always listens on 127.0.0.1, at a port it picks, with a token; both go in `hub.addr` in the
+  run folder (`%LOCALAPPDATA%\sidetone\run`). A request needs the token in `X-Sidetone-Token`,
+  is refused if it carries an Origin header (a browser) or a Host that is not this machine. The
+  same door is used on Linux with `SIDETONE_TRANSPORT=tcp` (`tests/test_transport.py`), and the
+  bash hooks (`hub_door` in `hooks/lib.sh`) and the VS Code extension read `hub.addr` where
+  there is no socket.
+- **The hub itself**: one hub at a time through `msvcrt` locking (`base.hold_lock`); processes
+  asked about with OpenProcess (`procs.alive`: `os.kill(pid, 0)` would send Ctrl+C there) and
+  ended with `taskkill /T` (`procs.end_tree`); sessions named from Windows paths
+  (`state.leaf`: `C:\work\api-server` is api-server); sound through PortAudio (`hub/audio.py`);
+  the overlay built from `Overlay.cs` with `%WINDIR%`'s compiler (`overlay.build_native`); a
+  crash at start written to hub.log, as there is no console. No terminal tint there (no
+  `/dev/pts`), and the voice's loudness is made up (no speakers' monitor to record).
+- **install.ps1** needs only uv: the environment, the voice model, the language question, then
+  `hub/install_win.py` (the hook program, the overlay, the hooks in
+  `%USERPROFILE%\.claude\settings.json` with a backup; `uninstall.ps1` takes them out).
+  Run from scratch on GitHub's Windows machine: it works. No `sidetone` command on Windows yet
+  (it is bash); the settings window covers most of it.

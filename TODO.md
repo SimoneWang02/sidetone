@@ -200,6 +200,15 @@ the ones after it are done together with them, not by a session alone.
       settings window's controls, Liquid Glass on macOS 26. Then merge the branch.
       Left out on the Mac so far: reordering lights by dragging, sharing keys other apps hold,
       the hold key for another program's push-to-mute, the glint on "Release to send".
+- [ ] Windows without WSL, in the first version (the author, 2026-11-24: "If it's like other
+      system, do it"). Built the same day on the branch `mac-overlay`: a hook program made with
+      Windows' own compiler, the hub on a local port with a token, install.ps1; how it works in
+      `docs/dev/features.md`, "Windows without WSL". Proved on GitHub's Windows machines (the
+      hook program starts the real hub, a line is rewritten, the listener wakes, a permission is
+      answered, the overlay builds, install.ps1 from scratch). **Not tried with a real Claude Code
+      on Windows**: install it from PowerShell (`irm https://claude.ai/install.ps1 | iex`, then a
+      login), run install.ps1, and try a session, push-to-talk, the voice. Not there yet: the
+      `sidetone` command (bash), the terminal tint, a voice when the hub is down.
 - [ ] An overlay for Linux. Today there is none: the hub and hooks work there, without keys.
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.
