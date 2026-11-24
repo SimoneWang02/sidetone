@@ -102,8 +102,9 @@ SECTIONS = [
          "options": [["spoken", "Match My Language"]] + [[code, base.LANGUAGE_NAMES.get(code, "English")] for code in SUMMARY_LANGUAGES]},
         choice("label", "Say the Session Name", "Its name as the overlay shows it, from its folder, said before each of its lines so you know who talks without looking.",
                ("always", "Always"), ("never", "Never")),
-        choice("voice_device", "Voice Made On", "Where the voice is made. The graphics card (NVIDIA) starts each line "
-               "sooner; Automatic uses it when there is one.", ("auto", "Automatic"), ("cpu", "Processor"), ("gpu", "Graphics Card")),
+        # Not on a Mac: there is no NVIDIA card to choose, and the voice is made on the processor.
+        *([] if MAC else [choice("voice_device", "Voice Made On", "Where the voice is made. The graphics card (NVIDIA) starts each line "
+               "sooner; Automatic uses it when there is one.", ("auto", "Automatic"), ("cpu", "Processor"), ("gpu", "Graphics Card"))]),
         # "When Your Words Go Out" (talk_feedback: sound, voice, nothing) left the window on
         # 2026-11-20, the author: "I think the sound is kind of necessary ... only to sound". It is
         # still read from config.json.
@@ -143,9 +144,9 @@ SECTIONS = [
         # name, which `large-v3-turbo` fits for nearly everyone with a card.
         switch("whisper_mixed", "Mixed Languages", "When one message goes from one of your languages to another, "
                "each part is written in its own. It splits where you pause."),
-        choice("whisper_device", "Transcribe On", "Where your words are written down. The graphics card (NVIDIA) is "
+        *([] if MAC else [choice("whisper_device", "Transcribe On", "Where your words are written down. The graphics card (NVIDIA) is "
                "faster and uses a larger model that gets more words right; Automatic uses it when there is one.",
-               ("auto", "Automatic"), ("cpu", "Processor"), ("gpu", "Graphics Card")),
+               ("auto", "Automatic"), ("cpu", "Processor"), ("gpu", "Graphics Card"))]),
         switch("keep_recordings", "Keep My Recordings", "Every recording is saved with the words it was heard as, "
                "to train a model of your own voice later. They stay on this computer."),
         # Discord's own name for it is "Push to Talk Release Delay" (the author, 2026-11-21: "Is this
@@ -921,6 +922,16 @@ def _same(item: dict, now, then) -> bool:
         return False
 
 
+MAC_SIGNS = {"ctrl": "\u2303", "alt": "\u2325", "shift": "\u21e7", "win": "\u2318", "plus": "+", "minus": "-"}
+
+
+def mac_keys(combo: str) -> str:
+    """A hotkey the way a Mac writes it: "Ctrl+Alt+M" is "\u2303\u2325M" (config.json keeps the
+    Windows names, so one file works on both; Alt is Option and Win is Command there)."""
+    parts = [p.strip() for p in combo.split("+") if p.strip()]
+    return "".join(MAC_SIGNS.get(p.lower(), p if len(p) > 1 else p.upper()) for p in parts)
+
+
 def _with_keys(hub, help: str) -> str:
     """"the mute key" in a sentence gets the key it is now, "the mute key (Ctrl+Alt+M)" (the
     author, 2026-11-20: "in the description ... include also the shortcut key"). A key left
@@ -929,7 +940,7 @@ def _with_keys(hub, help: str) -> str:
 
     def named(m):
         combo = keys.get({"details": "toggle"}.get(m.group(2).lower(), m.group(2).lower()), "")
-        return f"{m.group(0)} ({combo})" if combo else m.group(0)
+        return f"{m.group(0)} ({mac_keys(combo) if MAC else combo})" if combo else m.group(0)
     return re.sub(r"\b(the) (mute|talk|cancel|repeat|layout|clear|settings|details) key\b", named, help, flags=re.I)
 
 

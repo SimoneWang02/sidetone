@@ -138,6 +138,8 @@ final class GlassPanel: NSPanel {
         }
         g.restoreGState()
         // A hairline of light around the edge, brighter at the top left, as glass catches it.
+        // Liquid Glass draws its own.
+        if liquid { return }
         let edge = CGPath(roundedRect: box.insetBy(dx: 0.5, dy: 0.5), cornerWidth: radius - 0.5, cornerHeight: radius - 0.5, transform: nil)
         g.saveGState()
         g.addPath(edge)

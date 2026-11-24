@@ -357,7 +357,7 @@ extension Overlay {
             let x = r.minX + Overlay.inner
             Overlay.symbol(symbol, tint: Ui.working, in: CGRect(x: x, y: r.minY + 9, width: 16, height: 16))
             var words = Words(Msg.str(m, "text"), Ui.font(13, icon == "clear" || icon == "end" ? .regular : .semibold), icon.isEmpty ? .white : Ui.dim)
-            if !Msg.str(m, "hint").isEmpty { words.add("   " + Msg.str(m, "hint"), Ui.font(11.5), Ui.faint) }
+            if !Msg.str(m, "hint").isEmpty { words.add("   " + Keyboard.macText(Msg.str(m, "hint")), Ui.font(11.5), Ui.faint) }
             words.draw(in: CGRect(x: x + 24, y: r.minY + 8, width: wide - 24, height: 18))
         }
     }
@@ -368,7 +368,7 @@ extension Overlay {
             Overlay.symbol(muted ? "speaker.slash.fill" : "speaker.wave.2.fill", tint: muted ? Ui.dim : .white,
                            in: CGRect(x: x, y: r.minY + 8, width: 18, height: 16))
             var words = Words(text, Ui.font(12.5), Ui.dim)
-            if !hint.isEmpty { words.add("   " + hint, Ui.font(11.5), Ui.faint) }
+            if !hint.isEmpty { words.add("   " + Keyboard.macText(hint), Ui.font(11.5), Ui.faint) }
             words.draw(in: CGRect(x: x + 26, y: r.minY + 8, width: Overlay.panelWidth - 2 * Overlay.inner - 26, height: 17))
         }
     }

@@ -67,6 +67,15 @@ enum Keyboard {
         }
     }
 
+    // Hotkeys inside a sentence from the hub ("Ctrl+Alt+M turns it on") the way a Mac writes them.
+    static func macText(_ text: String) -> String {
+        var out = text
+        for (word, sign) in [("Ctrl+", "\u{2303}"), ("Alt+", "\u{2325}"), ("Shift+", "\u{21E7}"), ("Win+", "\u{2318}")] {
+            out = out.replacingOccurrences(of: word, with: sign)
+        }
+        return out
+    }
+
     // A key typed in the settings window, as config.json writes it (the Windows names).
     static func combo(_ event: NSEvent) -> String? {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
