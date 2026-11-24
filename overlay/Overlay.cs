@@ -1920,15 +1920,25 @@ namespace ClaudeSpeaks
             }
             else
             {
-                var button = new Border { CornerRadius = new CornerRadius(7), Padding = new Thickness(13, 4, 13, 5), Cursor = Cursors.Hand,
-                    Background = Ui.Alpha(Accent, 0.85),
-                    Child = new TextBlock { Text = state == "failed" ? "Try Again" : "Install", FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White } };
+                // A round button like a voice's play button, in the accent color: an arrow down to a
+                // line (download), or a circling arrow to try again (the author, 2026-11-23: "maybe
+                // instead of 'install' label use an icon no?"). The words are in its tooltip.
+                bool again = state == "failed";
+                var sign = new System.Windows.Shapes.Path {
+                    Data = Geometry.Parse(again ? "M10,5.5 A4.5,4.5 0 1 1 8.2,1.9 M8.6,0 L8.6,2.6 L6,2.6" : "M5,0 L5,8 M1.6,4.8 L5,8.2 L8.4,4.8 M0.5,11 L9.5,11"),
+                    Stroke = Brushes.White, StrokeThickness = 1.6, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round,
+                    Width = 11, Height = 12, Stretch = Stretch.None, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(again ? 0 : 1, again ? 1 : 0, 0, 0) };
+                var button = new Border { Width = 28, Height = 28, CornerRadius = new CornerRadius(14), Cursor = Cursors.Hand, Child = sign,
+                    Background = Ui.Alpha(Accent, 0.85), ToolTip = again ? "Try Again" : "Install" };
                 button.MouseEnter += delegate { button.Background = Ui.Alpha(Accent, 1.0); };
                 button.MouseLeave += delegate { button.Background = Ui.Alpha(Accent, 0.85); };
+                button.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; };
                 button.MouseLeftButtonUp += delegate(object sender, MouseButtonEventArgs e) { e.Handled = true; choose(key, true); };
                 control = button;
             }
-            control.Margin = new Thickness(16, -3, -2, -3);
+            // -6 above and below: the row as tall as one with a switch; 2 at the right: centered
+            // under the switches above (both measured in a picture, 2026-11-23).
+            control.Margin = new Thickness(16, -6, 2, -6);
             Grid.SetColumn(control, 3);
             row.Children.Add(control);
             return new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, 8), Background = Ui.Paint("#0AFFFFFF"), Child = row };

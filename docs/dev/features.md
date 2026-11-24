@@ -136,7 +136,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   1.0's espeak Chinese voices are no longer used (`_voices_of`). An engine with no `has` (the
   silent one) says every line as before.
   In the settings window (the same day): a language not installed has a dim heading with
-  "Not installed, 428 MB" and an Install button where its switch is (`PackHead` in
+  "Not installed, 428 MB" and a round download button where its switch is (an icon, not the word Install: the author asked for one; a circling arrow for Try Again) (`PackHead` in
   `Overlay.cs`; `_pack_heading`, `install` in `settings.py`); the hub installs in a thread and
   draws the window again at most about three times a second, the heading showing the step and
   "141 MB of 428 MB" beside a bar; a failure shows why, in a soft red, and Try Again. Done, the
