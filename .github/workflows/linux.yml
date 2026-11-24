@@ -1,0 +1,36 @@
+# The Linux desktop overlay (overlay/linux, Qt) on GitHub's Ubuntu machines, on a virtual X
+# display: its pictures, the talk key pressed with xdotool, and the real hub, started by a hook,
+# opening it by itself.
+name: linux
+on:
+  push:
+    branches: [mac-overlay]
+    paths: ['overlay/linux/**', 'hub/**', 'hooks/*.sh', 'tests/linux_check.py', 'tests/mac_hub_check.py', '.github/workflows/linux.yml']
+  workflow_dispatch:
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  desktop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Packages
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb xdotool imagemagick libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-keysyms1 \
+            libxcb-render-util0 libxcb-xinerama0 libxcb-image0 libegl1 jq curl > /dev/null
+          python -m pip install -q PySide6-Essentials python-xlib numpy
+      - name: Pictures and keys
+        run: xvfb-run -a -s "-screen 0 1440x900x24" python tests/linux_check.py "$(which python)" pictures
+      - name: The hub, started by a hook, opening the overlay itself
+        run: xvfb-run -a -s "-screen 0 1440x900x24" python tests/mac_hub_check.py pictures
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pictures-linux
+          path: pictures

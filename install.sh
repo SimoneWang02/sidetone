@@ -50,6 +50,12 @@ if [ $hooks_only = 0 ]; then
   mkdir -p "$KOKORO_DIR"
   [ -x "$KOKORO_DIR/venv/bin/python" ] || uv venv --python 3.12 "$KOKORO_DIR/venv"
   packages=(kokoro-onnx faster-whisper); [ $mac = 1 ] && packages+=(sounddevice soundfile)  # PortAudio and libsndfile come in their wheels
+  # A Linux desktop (not WSL, whose overlay is the Windows one): the Qt overlay (overlay/linux)
+  # and its hotkeys through the X server, about 150 MB.
+  desktop=0
+  if [ $mac = 0 ] && ! grep -qi microsoft /proc/version 2>/dev/null && [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; then
+    desktop=1; packages+=(PySide6-Essentials python-xlib)
+  fi
   uv pip install --quiet --python "$KOKORO_DIR/venv/bin/python" "${packages[@]}"
 
   # The overlay on a Mac is built here from overlay/mac with Apple's own compiler, as the hub

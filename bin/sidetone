@@ -26,7 +26,7 @@ Usage: sidetone <command>
   repeat                     say the last line of the session in focus again
   usage [say]                how much of the plan's five hours and week is used; "say" also speaks it
   follow-up [-s PROJECT] TEXT   send a follow-up to a session as if you had said it
-  talk start|stop|cancel     the talk key and the cancel key, from a shell
+  talk start|stop|toggle|cancel   the talk key and the cancel key, from a shell (toggle: once to talk, again to send)
   target [PROJECT]           show or choose which session a spoken follow-up goes to
   settings [close]           open the settings window (or close it)
   settings list              every setting and what it is now
@@ -144,7 +144,7 @@ case ${1:-} in
     ;;
   talk)
     case ${2:-} in
-      start|stop|cancel) jq -nc --arg a "$2" '{action: $a}' | hub_post /talk >/dev/null || { echo "hub is not running"; exit 1; } ;;
+      start|stop|toggle|cancel) jq -nc --arg a "$2" '{action: $a}' | hub_post /talk >/dev/null || { echo "hub is not running"; exit 1; } ;;
       *) usage; exit 2 ;;
     esac
     ;;

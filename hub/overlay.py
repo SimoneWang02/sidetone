@@ -22,6 +22,19 @@ import stale
 SOURCES = ("Overlay.cs", "overlay.ps1")  # what the window is made from
 MAC = sys.platform == "darwin"
 MAC_SOURCES = (".swift",)  # in overlay/mac
+LINUX_SOURCES = (".py",)  # in overlay/linux
+
+
+def wsl() -> bool:
+    """Linux inside Windows: the Windows overlay, reached through powershell.exe, is the one."""
+    return bool(shutil.which("powershell.exe") and shutil.which("wslpath"))
+
+
+def linux_desktop() -> bool:
+    """A Linux desktop the Qt overlay (overlay/linux) can draw on, with Qt in this Python."""
+    import importlib.util
+    return (sys.platform.startswith("linux") and not wsl() and bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+            and importlib.util.find_spec("PySide6") is not None)
 
 DEFAULTS = {
     "enabled": True,
@@ -362,6 +375,8 @@ def command(script: str, log: Callable[[str], None] = lambda line: None) -> list
     if MAC:
         program = mac_program(os.path.join(os.path.dirname(script), "mac"))
         return [program] if os.path.isfile(program) else None
+    if sys.platform.startswith("linux") and not wsl():
+        return [sys.executable, "-I", os.path.join(os.path.dirname(script), "linux", "overlay.py")]
     if WINDOWS:
         program = build_native(os.path.join(os.path.dirname(script), "Overlay.cs"), log)
         return [program] if program else ["powershell.exe", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", script]
@@ -388,6 +403,8 @@ class Overlay:
         """The folder the window is made from, and which of its files count."""
         if MAC:
             return os.path.join(os.path.dirname(self.script), "mac"), MAC_SOURCES
+        if sys.platform.startswith("linux") and not wsl():
+            return os.path.join(os.path.dirname(self.script), "linux"), LINUX_SOURCES
         return os.path.dirname(self.script), SOURCES
 
     def outdated(self) -> bool:
@@ -400,7 +417,7 @@ class Overlay:
             return _developer_tools()
         if WINDOWS:
             return True  # the compiler and PowerShell come with Windows
-        return bool(shutil.which("powershell.exe") and shutil.which("wslpath"))
+        return wsl() or linux_desktop()
 
     def send(self, msg: dict) -> None:
         """Deliver a message, starting the window if needed. State is kept for a later start."""

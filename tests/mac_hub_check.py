@@ -1,4 +1,4 @@
-"""The whole thing on a Mac, as a session would start it: python3 tests/mac_hub_check.py OUT_DIR
+"""The whole thing on a Mac (or a Linux desktop), as a session would start it: python3 tests/mac_hub_check.py OUT_DIR
 
 The real hook (hooks/report.sh --start) starts the real hub in an empty home, which builds the
 Swift overlay with Apple's compiler and starts it; then a few sessions' events go in, the hub
@@ -7,6 +7,7 @@ what the hub logged. For GitHub's Macs (.github/workflows/mac.yml), where nobody
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -68,9 +69,11 @@ hook("speak.sh", ev("Stop", "b", "/work/web-app", last_assistant_message="<speak
 time.sleep(1.5)
 state = call("/state") or {}
 print("  sessions:", [(s.get("name"), s.get("state")) for s in state.get("sessions", [])])
-subprocess.run(["screencapture", "-x", os.path.join(out, "hub-live.png")])
-time.sleep(4)
-subprocess.run(["screencapture", "-x", os.path.join(out, "hub-live-later.png")])
+camera = ["screencapture", "-x"] if shutil.which("screencapture") else ["import", "-window", "root"] if shutil.which("import") else None
+if camera:  # macOS's own, or ImageMagick's on Linux
+    subprocess.run(camera + [os.path.join(out, "hub-live.png")])
+    time.sleep(4)
+    subprocess.run(camera + [os.path.join(out, "hub-live-later.png")])
 print("  hub.log:")
 for line in logged().splitlines()[-25:]:
     print("    " + line)

@@ -27,6 +27,28 @@ class Named(HubCase):
         self.assertEqual(hub.snapshot()["sessions"][0]["name"], "api-server")
 
 
+class TalkToggle(HubCase):
+    def test_one_command_starts_talking_and_the_next_sends(self):
+        # For a desktop's own shortcut (Wayland), which sees no key being let go.
+        import threading
+        from hub import serve
+        from test_hub import FakeRecorder, FakeTranscriber
+        hub = self.make()
+        hub.recorder, hub.transcriber = FakeRecorder(), FakeTranscriber()
+        hub.on_event(ev("SessionStart"))
+        server = serve(hub, self.cfg.sock)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+
+        def toggle():
+            return subprocess.run(["curl", "-sf", "--unix-socket", self.cfg.sock, "-d", '{"action": "toggle"}', "http://hub/talk"],
+                                  capture_output=True, text=True, timeout=5).returncode
+        self.assertEqual(toggle(), 0)
+        self.assertTrue(hub.recorder.recording)
+        self.assertEqual(toggle(), 0)
+        self.assertFalse(hub.recorder.recording)
+
+
 class Processes(unittest.TestCase):
     def test_alive_and_ended(self):
         proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(30)"], start_new_session=True)

@@ -119,6 +119,8 @@ class Handler(BaseHTTPRequestHandler):
                                                  hub.cfg.followup_delay if delay is None else delay)})
         elif self.path == "/talk":  # the talk and cancel keys, for use without the overlay
             action = body.get("action")
+            if action == "toggle":  # one key for both, for a desktop's own shortcut (Wayland: no release to see)
+                action = "stop" if hub._talking else "start"
             if action == "start":
                 return self._reply({"ok": hub.talk_start()})
             hub.talk_end() if action == "stop" else hub.cancel()
