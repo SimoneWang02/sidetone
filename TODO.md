@@ -392,11 +392,18 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         hook saw none of them (without our session the press went to Spotify). Taking the
         headphones off and on sent nothing, with nothing playing. With the Bose microphone
         open (first audio after 0.8 s, the count from one to ten heard whole) no press
-        arrived, neither plainly nor with a VoIP call reported; that the author pressed then
-        is not certain, and the test said "Got it" wrongly in the call (two mute events of
-        the call's own start). So: press to start works, the second press does not, so far.
+        arrived, neither plainly nor with a VoIP call reported (the author pressed in both;
+        the test said "Got it" wrongly in the call, for two mute events of its own start). So: press to start works, the second press does not, so far.
         Windows' default microphone is the Nuroum on the desk: the hub would have to
         open the headset's by name. Not tried: Spotify playing, AirPods, through a wall.
+      - on hold since 2026-11-24 (the author: "I'll do it later"). Next: the second test, not
+        run yet: music on, `tests/headset/run.sh` (AirPods: `--mic=` and part of their name in
+        Windows), press Start, about three minutes, a voice says each step. With the microphone
+        open it asks for one press, two, and a hold, then the same in a reported call, then
+        with music playing. If nothing arrives: press to start, silence to send.
+      - where it goes, asked and not settled: the author thought of a repo of its own ("not
+        everybody has Bose"); advised here, off by default, in a file of its own, since
+        nothing in it is Bose's and it needs the hub's recording.
       - to check by hand first, with a small logging window: what the hook, SMTC and the VoIP
         call see for a press with nothing open, with Spotify, and with the microphone open;
         and whether Windows records from the headset at all (there is a Nuroum V11 microphone).
