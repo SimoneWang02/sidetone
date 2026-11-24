@@ -239,8 +239,9 @@ final class Orb {
     static func number(_ g: CGContext, _ text: String, _ at: CGPoint, _ size: CGFloat) {
         let font = NSFont.systemFont(ofSize: max(1, size), weight: .bold)
         let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: [.font: font, .foregroundColor: NSColor.white]))
-        let box = CTLineGetImageBounds(line, g)
         g.saveGState()
+        g.textMatrix = .identity  // the strokes' own box, measured upright
+        let box = CTLineGetImageBounds(line, g)
         // The view is flipped: the text is drawn the right way up by flipping it back.
         g.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
         g.textPosition = CGPoint(x: at.x - (box.minX + box.width / 2), y: at.y + (box.minY + box.height / 2))

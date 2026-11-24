@@ -64,11 +64,25 @@ def tty_of(pid: int) -> str:
             if path.startswith(("/dev/pts/", "/dev/tty")) and path != "/dev/tty":
                 return path
         return ""
-    try:  # no /proc (macOS): ask ps, which answers "ttys003" or "??"
+    try:  # no /proc (macOS): ask ps for its controlling terminal, which answers "ttys003" or "??"
         name = subprocess.run(["ps", "-o", "tty=", "-p", str(pid)], capture_output=True, text=True, timeout=2).stdout.strip()
     except (OSError, subprocess.SubprocessError):
+        name = ""
+    if name and "?" not in name:
+        for path in (f"/dev/{name}", f"/dev/tty{name}"):  # some versions of ps leave out the "tty"
+            if os.path.exists(path):
+                return path
+    # A process can read and write a terminal it does not control (as /proc's fds say on Linux):
+    # lsof names the files of its first three descriptors.
+    try:
+        listed = subprocess.run(["lsof", "-a", "-p", str(pid), "-d", "0,1,2", "-Fn"], capture_output=True, text=True,
+                                timeout=3).stdout
+    except (OSError, subprocess.SubprocessError):
         return ""
-    return f"/dev/{name}" if name and "?" not in name and os.path.exists(f"/dev/{name}") else ""
+    for line in listed.splitlines():
+        if line.startswith("n/dev/tty") and line != "n/dev/tty":
+            return line[1:]
+    return ""
 
 
 def mix(background: str, color: str, amount: float) -> str:

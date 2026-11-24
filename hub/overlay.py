@@ -1,4 +1,5 @@
-"""The Windows overlay: a child process the hub tells what to draw (see overlay/Overlay.cs).
+"""The overlay: a child process the hub tells what to draw (overlay/Overlay.cs on Windows, reached
+from WSL; overlay/mac/*.swift on a Mac).
 
 The two sides exchange one JSON object per line over the child's stdin and stdout, so there is
 no port to protect and the window disappears by itself when the hub exits.
@@ -10,6 +11,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import threading
 import time
 import traceback
@@ -18,6 +20,8 @@ from typing import Callable
 import stale
 
 SOURCES = ("Overlay.cs", "overlay.ps1")  # what the window is made from
+MAC = sys.platform == "darwin"
+MAC_SOURCES = (".swift",)  # in overlay/mac
 
 DEFAULTS = {
     "enabled": True,
@@ -252,8 +256,70 @@ def build(source: str, log: Callable[[str], None] = lambda line: None) -> str | 
         return None
 
 
-def command(script: str, log: Callable[[str], None] = lambda line: None) -> list[str]:
-    """How to start the overlay: the compiled program, or else the PowerShell script next to it."""
+def _developer_tools() -> bool:
+    """Apple's command line tools are there. Asked first, because without them `swiftc` is a
+    stand-in that opens a window offering to install them, which a background hub must not do."""
+    try:
+        return subprocess.run(["xcode-select", "-p"], capture_output=True, timeout=10).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _mac_sources(folder: str) -> list[str]:
+    return sorted(os.path.join(folder, n) for n in os.listdir(folder) if n.endswith(MAC_SOURCES)) if os.path.isdir(folder) else []
+
+
+def mac_program(folder: str) -> str:
+    """Where the Mac overlay built from these sources is kept (it may not be built yet)."""
+    sources = _mac_sources(folder)
+    digest = hashlib.sha1()
+    for path in sources:
+        with open(path, "rb") as f:
+            digest.update(os.path.basename(path).encode() + b"\0" + f.read())
+    cache = os.path.join(os.path.expanduser("~/Library/Caches"), "sidetone")
+    return os.path.join(cache, f"sidetone-overlay-{digest.hexdigest()[:10]}")
+
+
+def build_mac(folder: str, log: Callable[[str], None] = lambda line: None) -> str | None:
+    """Compile overlay/mac into a program with Apple's own compiler, once per version, as
+    `build` does on Windows with csc.exe. Nothing is downloaded and nothing needs signing: a
+    program made on the Mac itself is not one Gatekeeper asks about. Takes a minute the first
+    time; None when it cannot be done (no command line tools: `xcode-select --install`)."""
+    program = mac_program(folder)
+    if os.path.isfile(program):
+        return program
+    if not _developer_tools():
+        log("overlay not built: Apple's command line tools are missing (xcode-select --install)")
+        return None
+    cache = os.path.dirname(program)
+    os.makedirs(cache, exist_ok=True)
+    for old in os.listdir(cache):
+        if old.startswith("sidetone-overlay-") and os.path.join(cache, old) != program:
+            try:
+                os.unlink(os.path.join(cache, old))
+            except OSError:
+                pass
+    started = time.monotonic()
+    try:
+        done = subprocess.run(["xcrun", "swiftc", "-O", "-o", program + ".part", *_mac_sources(folder)],
+                              capture_output=True, text=True, timeout=900)
+    except (OSError, subprocess.SubprocessError) as e:
+        log(f"overlay could not be compiled: {e}")
+        return None
+    if done.returncode != 0 or not os.path.isfile(program + ".part"):
+        log("overlay could not be compiled: " + " ".join((done.stdout + done.stderr).split())[:600])
+        return None
+    os.replace(program + ".part", program)
+    log(f"overlay program built in {time.monotonic() - started:.0f} s: {program}")
+    return program
+
+
+def command(script: str, log: Callable[[str], None] = lambda line: None) -> list[str] | None:
+    """How to start the overlay: the compiled program, or else the PowerShell script next to it.
+    On a Mac, None while the program is not built yet (Overlay builds it in the background)."""
+    if MAC:
+        program = mac_program(os.path.join(os.path.dirname(script), "mac"))
+        return [program] if os.path.isfile(program) else None
     if os.environ.get("SIDETONE_OVERLAY") != "script":
         program = build(os.path.join(os.path.dirname(script), "Overlay.cs"), log)
         if program:
@@ -271,13 +337,22 @@ class Overlay:
         self._state: dict | None = None  # last state message, replayed when the window (re)starts
         self._started = NEVER
         self._source: dict = {}  # the overlay's source files as they were when the window was started
+        self._building = False  # the Mac program is being compiled
+
+    def _watched(self) -> tuple[str, tuple]:
+        """The folder the window is made from, and which of its files count."""
+        if MAC:
+            return os.path.join(os.path.dirname(self.script), "mac"), MAC_SOURCES
+        return os.path.dirname(self.script), SOURCES
 
     def outdated(self) -> bool:
         """The window on screen was started from an older source than is on disk now."""
-        return bool(self.proc and self._source and stale.changed(self._source, os.path.dirname(self.script), SOURCES))
+        return bool(self.proc and self._source and stale.changed(self._source, *self._watched()))
 
     @staticmethod
     def available() -> bool:
+        if MAC:
+            return _developer_tools()
         return bool(shutil.which("powershell.exe") and shutil.which("wslpath"))
 
     def send(self, msg: dict) -> None:
@@ -316,16 +391,30 @@ class Overlay:
         if self.proc or time.monotonic() - self._started < RETRY_AFTER:
             return
         self._started = time.monotonic()
-        self._source = stale.prints(os.path.dirname(self.script), SOURCES)
+        self._source = stale.prints(*self._watched())
+        how = command(self.script, self.log)
+        if how is None:  # a Mac, and the program is not built yet: built aside, then started
+            if not self._building:
+                self._building = True
+                threading.Thread(target=self._build, name="overlay-build", daemon=True).start()
+            return
         try:
             self.proc = subprocess.Popen(
-                command(self.script, self.log), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                how, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                 cwd="/mnt/c/Windows" if os.path.isdir("/mnt/c/Windows") else None,
             )
         except (OSError, subprocess.CalledProcessError) as e:
             self.log(f"overlay could not start: {e}")
             return
         threading.Thread(target=self._read, args=(self.proc,), name="overlay", daemon=True).start()
+
+    def _build(self) -> None:
+        built = build_mac(self._watched()[0], self.log)
+        with self._lock:
+            self._building = False
+            if built:
+                self._started = NEVER
+                self._start()
 
     def _write(self, msg: dict) -> None:
         try:

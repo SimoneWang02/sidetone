@@ -29,20 +29,43 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# A Mac plays and records through PortAudio (the sounddevice package, which brings it) where
+# Linux has PulseAudio's paplay and parec (hub/audio.py).
+mac=0; [ "$(uname -s)" = Darwin ] && mac=1
+listens=0; { [ $mac = 1 ] || command -v parec >/dev/null; } && listens=1
+
 if [ $hooks_only = 0 ]; then
   missing=()
-  for tool in jq curl paplay; do command -v "$tool" >/dev/null || missing+=("$tool"); done
+  tools="jq curl paplay"; [ $mac = 1 ] && tools="jq curl"
+  for tool in $tools; do command -v "$tool" >/dev/null || missing+=("$tool"); done
   if [ ${#missing[@]} -gt 0 ]; then
-    echo "Missing: ${missing[*]}. On Debian/Ubuntu: sudo apt install jq curl pulseaudio-utils" >&2
+    if [ $mac = 1 ]; then echo "Missing: ${missing[*]}. With Homebrew: brew install ${missing[*]}" >&2
+    else echo "Missing: ${missing[*]}. On Debian/Ubuntu: sudo apt install jq curl pulseaudio-utils" >&2; fi
     exit 1
   fi
   command -v uv >/dev/null || { echo "Missing: uv (https://docs.astral.sh/uv/). Install it, then run this again." >&2; exit 1; }
-  command -v parec >/dev/null || echo "Note: parec not found, so push-to-talk will be off."
+  [ $listens = 1 ] || echo "Note: parec not found, so push-to-talk will be off."
 
   echo "Python environment in $KOKORO_DIR/venv"
   mkdir -p "$KOKORO_DIR"
   [ -x "$KOKORO_DIR/venv/bin/python" ] || uv venv --python 3.12 "$KOKORO_DIR/venv"
-  uv pip install --quiet --python "$KOKORO_DIR/venv/bin/python" kokoro-onnx faster-whisper
+  packages=(kokoro-onnx faster-whisper); [ $mac = 1 ] && packages+=(sounddevice)
+  uv pip install --quiet --python "$KOKORO_DIR/venv/bin/python" "${packages[@]}"
+
+  # The overlay on a Mac is built here from overlay/mac with Apple's own compiler, as the hub
+  # would do on its first start (a minute or so), so the lights are there from the first session.
+  if [ $mac = 1 ]; then
+    if xcode-select -p >/dev/null 2>&1; then
+      echo "Building the overlay (about a minute the first time)"
+      "$KOKORO_DIR/venv/bin/python" -I -c 'import sys; sys.path.insert(0, sys.argv[1]); import overlay; sys.exit(0 if overlay.build_mac(sys.argv[2], print) else 1)' \
+        "$ROOT/hub" "$ROOT/overlay/mac" || echo "Note: the overlay could not be built now; the hub tries again when it starts."
+    else
+      echo "Note: the overlay is built with Apple's command line tools, which are not installed."
+      echo "      Run: xcode-select --install   (the voice works without them; the lights need them)"
+    fi
+    echo "Note: macOS asks once for the microphone the first time you hold the talk key, for the app"
+    echo "      Claude Code runs in (Terminal, iTerm, VS Code)."
+  fi
 
   if [ $models = 1 ]; then
     for file in kokoro-v1.0.onnx voices-v1.0.bin; do
@@ -74,7 +97,7 @@ fi
 
 # The speech model for push-to-talk. Without this it is fetched at the first hold of the talk
 # key, which then seems to do nothing for as long as the download takes.
-if [ $hooks_only = 0 ] && [ $models = 1 ] && command -v parec >/dev/null; then
+if [ $hooks_only = 0 ] && [ $models = 1 ] && [ $listens = 1 ]; then
   model=$(jq -r '.whisper_model // empty' "$CONFIG" 2>/dev/null) || model=
   echo "Fetching the speech model ${model:=small.en} for push-to-talk (several hundred MB the first time)"
   "$KOKORO_DIR/venv/bin/python" -I -c 'import sys; from faster_whisper import download_model; download_model(sys.argv[1])' "$model" >/dev/null 2>&1 ||
@@ -86,7 +109,7 @@ fi
 # (whisper_device and voice_device "auto" use the card once this is installed). It needs
 # NVIDIA's CUDA libraries and onnxruntime-gpu in the environment, about 2.9 GB, and the model,
 # 1.6 GB, so it is asked, and only where a card is found; with nobody to ask it is left out.
-if [ $hooks_only = 0 ] && [ $gpu != no ] && command -v parec >/dev/null; then
+if [ $hooks_only = 0 ] && [ $gpu != no ] && [ $mac = 0 ] && command -v parec >/dev/null; then
   py=$KOKORO_DIR/venv/bin/python
   stt() { "$py" -I -c "import sys; sys.path.insert(0, sys.argv[1]); import stt; $1" "$ROOT/hub"; }
   smi=$(command -v nvidia-smi || echo /usr/lib/wsl/lib/nvidia-smi)

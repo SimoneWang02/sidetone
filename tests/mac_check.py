@@ -109,6 +109,11 @@ SAID = "All forty two tests pass. The flaky one was a race in the login mock, wh
 KEYS = {"toggle": "Ctrl+Alt+F9", "talk": "Ctrl+Alt+Space", "allow": "Ctrl+Alt+Y", "deny": "Ctrl+Alt+N", "mute": "Ctrl+Alt+M"}
 DRINKS = ["Tea", "Coffee, with milk and one sugar, in the large cup that is still in the cupboard above the sink", "Water"]
 
+# Something busy behind the glass, and its windows up before the first picture.
+backdrop = subprocess.Popen(["swift", os.path.join(ROOT, "tests", "mac_backdrop.swift")], stdout=subprocess.PIPE, text=True)
+backdrop.stdout.readline()
+time.sleep(1)
+
 if not wait("ready", 30):
     print("  !! the overlay did not start")
     proc.kill()
@@ -180,6 +185,9 @@ send(type="config", layout="bar", glass_color="#3A2E48", working_color="#B388FF"
 shot("own-colors-size-125")
 send(type="config", glass_color="", working_color="#4FC3F7", size=100, glass_clear=90)
 shot("glass-clear-90")
+backdrop.kill()
+time.sleep(0.5)
+shot("on-black")
 send(type="config", glass_clear=50, opaque=True)
 shot("solid")
 send(type="config", opaque=False)
@@ -192,6 +200,7 @@ for section in SETTINGS:
 send(type="settings", open=False)
 time.sleep(0.3)
 subprocess.run(["screencapture", "-x", os.path.join(out, "full-screen.png")])
+backdrop.kill()
 proc.stdin.close()
 try:
     proc.wait(5)

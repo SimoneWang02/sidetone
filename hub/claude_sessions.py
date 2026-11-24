@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 
 
 def alive(pid: int) -> bool:
@@ -53,10 +54,22 @@ def tool_shells(pid: int) -> dict[int, str]:
 
     Claude Code runs each one in a shell of its own, a child of the session, which first reads
     the session's shell snapshot (`~/.claude/shell-snapshots/...`); that is how they are told
-    from the session's other children, the hooks. Linux only (it reads /proc), and as
-    undocumented as the session files: where it cannot be read, nothing is found.
+    from the session's other children, the hooks. Read from /proc on Linux and from `ps` where
+    there is none (a Mac); as undocumented as the session files: where it cannot be read,
+    nothing is found.
     """
     found: dict[int, str] = {}
+    if not os.path.isdir("/proc"):
+        try:
+            listed = subprocess.run(["ps", "-A", "-ww", "-o", "pid=,ppid=,command="], capture_output=True, text=True,
+                                    timeout=3).stdout
+        except (OSError, subprocess.SubprocessError):
+            return found
+        for line in listed.splitlines():
+            parts = line.split(None, 2)
+            if len(parts) == 3 and parts[1] == str(pid) and "/shell-snapshots/" in parts[2]:
+                found[int(parts[0])] = parts[2]
+        return found
     try:
         threads = os.listdir(f"/proc/{pid}/task")
     except OSError:
