@@ -3068,7 +3068,8 @@ class ThroughTheHooks(HubCase):
         self.assertIn("more details", decision["message"])
         self.assertEqual(hub.requests, [])
         self.assertTrue(os.path.exists(os.path.join(self.tmp, "stop", "s1")), "its turn goes on without the words")
-        self.assertEqual(hub.followups.get("s1"), ["Do not delete it, rename it instead"])
+        # The words are handed over just after the refusal went out (a slower machine sees the gap).
+        self.assertTrue(wait_for(lambda: hub.followups.get("s1") == ["Do not delete it, rename it instead"], 2))
         hub.on_event(ev("Stop", last_assistant_message=tag("I will wait for your details.")))  # the turn ended
         self.assertNotIn("I will wait for your details.", self.spoken())  # nothing to hear: the words are on their way
         self.assertEqual(hub.collect(hub.listen("s1")), "Do not delete it, rename it instead")

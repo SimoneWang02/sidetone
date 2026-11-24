@@ -267,6 +267,7 @@ class WhereItRuns(unittest.TestCase):
 
 
 class ChosenInTheWindow(HubCase):
+    @unittest.skipIf(sys.platform == "darwin", "a Mac has no graphics card to choose: the setting is not in its window")
     def test_choosing_it_in_the_window_loads_it_again_there(self):
         import settings
         hub = self.make()

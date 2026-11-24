@@ -1676,3 +1676,76 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   The ▶ shows a square while its preview plays, and a click on it stops it
   (`stop_preview`; `Hub._previewing` sends the window again when a preview starts or ends).
   The author asked for it ("then there's the square to stop it"), and said "yeah" to it.
+
+## The Mac (2026-11-24, branch `mac-overlay`)
+
+The author, 2026-11-24, before the first release: "we should make one for macOS as well because
+it's the most dominant operative system". Chosen over one cross-platform overlay (Avalonia) and
+Qt: a native Swift overlay for the Mac beside the WPF one for Windows ("it feels like a real Mac
+app ... on Mac it can be even better"); the decision is in `~/.claude/holdup-log.md`. Built in
+one night by a session on its own, at the author's word ("Okay, I would say you can go"), with
+no Mac at hand: every build, picture and test below ran on GitHub's Macs
+(`.github/workflows/mac.yml`, macOS 15.8 and 26.7). **Nobody has tried it on a real Mac yet.**
+
+- **Sound** (`hub/audio.py`). Linux and WSL keep PulseAudio's `paplay` and `parec`, whose buffer
+  sizes were measured against WSL's scratches. Where they are missing (a Mac) the same streams
+  go through PortAudio, by the `sounddevice` package, whose wheels carry PortAudio itself:
+  `audio.Player` (write, finish, kill from another thread, as the voice and `stop()` need),
+  `audio.play` (the short signals), `audio.Recording` (push-to-talk, 0.05 s pieces). The
+  voice's loudness meter records the speakers' own output (PulseAudio's monitor), which a Mac
+  does not offer: there the overlay's made-up motion is used (`Wave.synthetic`), as with any
+  engine the meter cannot hear. libsndfile (the voice samples before a download, `hub/sndfile.py`)
+  comes from the `soundfile` wheel there.
+- **Starting the hub** (`hooks/lib.sh`, `hub_start`). A Mac has no `setsid` command; perl, which
+  every Mac has, makes the same call (forking first when it leads a process group, as `setsid`
+  does). Measured on GitHub's Macs: a hook started the hub in 0.5 to 0.9 s.
+- **Processes and terminals** without `/proc`: `terminal.tty_of` asks `ps` for the controlling
+  terminal and else `lsof` for what descriptors 0 to 2 are; `claude_sessions.tool_shells` reads
+  `ps -A -ww -o pid=,ppid=,command=`. Both found by the hub's own tests failing on a Mac.
+- **The overlay** (`overlay/mac/*.swift`, about 2,500 lines). The same JSON lines as the Windows
+  one; it only draws. The hub compiles it with Apple's own compiler (`xcrun swiftc -O`) into
+  `~/Library/Caches/sidetone/sidetone-overlay-<hash of the sources>`, once per version, in the
+  background (`overlay.build_mac`; 13 to 18 s on GitHub's Macs), as Windows' csc.exe builds the
+  other: nothing to download and nothing to sign, since a program made on the Mac itself is not
+  one Gatekeeper asks about. Needs Apple's command line tools (`xcode-select --install`): asked
+  for first with `xcode-select -p`, because without them `swiftc` is a stand-in that opens an
+  install window. `install.sh` builds it at install time.
+  - `main.swift` the JSON link; `Theme.swift` colors, motion, words; `Orb.swift` the light, the
+    push-to-talk signs, the waiting marks, the history marks, drawn line for line after
+    Overlay.cs's `Orb`, `Badge`, `EndMark`; `Glass.swift` a borderless panel over every app and
+    Space that never takes the keyboard, with the Mac's own blur (`NSVisualEffectView`, HUD
+    material) and the glass color over it, a soft shadow and a 0.14 s fade like the Mac's
+    popovers; `Overlay.swift` and `Paint.swift` the bar, the island, the details (request,
+    banner, card of figures with usage, rows, history) and the bubble; `Keys.swift` hotkeys;
+    `Settings.swift` the settings window.
+  - **Liquid Glass** (`overlay.liquid_glass`, on; only in the Mac's settings window): on macOS 26
+    and later `NSGlassEffectView` takes the blur's place, with only enough of the glass color
+    over it to keep white words readable. Compiled only by Xcode 26's Swift (6.2), so older
+    compilers still build the rest. Pictures from macOS 26 show the colors behind through it.
+  - **Hotkeys** through Carbon's `RegisterEventHotKey`: from any app, pressed and let go (what
+    push-to-talk needs), and no permission. config.json keeps the Windows names, so one file
+    works on both: Ctrl is Control, Alt is Option, Win is Command; the overlay and the settings
+    window write them with the Mac's signs (⌃⌥M; `settings.mac_keys`, `Keyboard.macText`).
+    Measured on GitHub's Macs: Control-Option-Space pressed by System Events gave `talk` then
+    `talk_end`. Holding Control-Option by themselves brings the details out, read from the
+    keyboard's state ten times a second (no permission). A key another app holds is refused by
+    macOS and named in hub.log. The default keys are Control-Option ones, which VoiceOver also
+    uses while it is on.
+  - **The settings window** in SwiftUI: sections down the side and a grouped form, the Mac's own
+    switches, sliders, segmented choices and menus. A color is the Mac's own color well (the
+    system color panel: wheel, sliders, eyedropper) beside a menu of the ready colors and Reset;
+    the overlay follows a color or a slider while it is dragged. The graphics card settings are
+    left out on a Mac (no NVIDIA), and help texts say macOS where they said Windows.
+  - Dragging the bar moves it; let go, it takes the nearest corner and its distance from it
+    (`moved`), as on Windows. The wheel over the bar moves the focus.
+  - **Not on the Mac yet**: reordering lights by dragging; the keyboard hook's sharing of keys
+    another app holds (`share_taken_keys`) and keeping the talk key from other apps; the hold
+    key for another program's push-to-mute (`hold_key`); the wheel with Control-Option held
+    anywhere; the glint on "Release to send"; the springs of the panel; voices dragged into an
+    order in the settings window. The voice samples' tick re-orders as a plain switch.
+- **Tests on a Mac**: all 429 of the hub's tests pass on macOS 15 and 26 (`hub` job).
+  `tests/mac_check.py` takes the pictures (the Windows pictures' names, over a busy backdrop,
+  `tests/mac_backdrop.swift`, since GitHub's Macs have a black desktop); `tests/mac_hub_check.py`
+  has the real hook start the real hub in an empty home, which builds and starts the overlay and
+  speaks with the Mac's own voice (no Kokoro there). On macOS 15 GitHub's Macs draw the blur as
+  plain dark, so how see-through the glass is can only be judged on a real Mac.

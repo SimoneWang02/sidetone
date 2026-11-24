@@ -247,8 +247,9 @@ class Chosen(SettingsCase):
         hub = self.make()
         mute = settings.items(hub)["mute"]
         described = {i["key"]: i for s in settings.describe(hub) for i in s["items"]}
-        self.assertEqual(described["mute"]["help"], "No voice for any session. The mute key (Ctrl+Alt+M) does the same.")
-        self.assertIn("the talk key (Ctrl+Alt+Space)", described["followup_confirm"]["help"])
+        written = settings.mac_keys if settings.MAC else (lambda combo: combo)  # a Mac writes them with its signs
+        self.assertEqual(described["mute"]["help"], f"No voice for any session. The mute key ({written('Ctrl+Alt+M')}) does the same.")
+        self.assertIn(f"the talk key ({written('Ctrl+Alt+Space')})", described["followup_confirm"]["help"])
         self.assertEqual(mute["help"], "No voice for any session. The mute key does the same.")  # SECTIONS itself unchanged
         hub.set_setting("overlay.hotkeys.mute", "")
         described = {i["key"]: i for s in settings.describe(hub) for i in s["items"]}

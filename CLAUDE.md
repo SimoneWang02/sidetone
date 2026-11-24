@@ -61,7 +61,9 @@ the author's asking, and the rest was moved unchanged:
   (`hooks/settings-snippet.json` is that block). Rollback: `~/.claude/settings.json.bak-before-hub`.
 - `README.md`, `LICENSE` (MIT), `install.sh` / `uninstall.sh` (merge the hooks into an existing
   `settings.json`, link `sidetone` and `st` into `~/.local/bin`, ask which languages you speak,
-  offer the VS Code extension). Not yet a plugin, not yet public, Windows overlay only.
+  offer the VS Code extension). Not yet a plugin, not yet public. A Mac port on the branch
+  `mac-overlay` (2026-11-24: PortAudio sound, a Swift overlay the hub builds with Apple's
+  compiler; `docs/dev/features.md`, "The Mac"), tried only on GitHub's Macs so far.
 
 ## How it works
 

@@ -186,7 +186,21 @@ the ones after it are done together with them, not by a session alone.
       2 to 3 days: a `hub/platform.py` (sound in and out through sounddevice, the loudness meter
       fed from what the hub plays, process groups, the lock, folders), the transport behind one
       function, the hub detaching itself in place of `setsid`. Order: Windows, Linux, macOS.
-- [ ] An overlay for Linux and macOS. Today it is Windows only.
+- [ ] The Mac, in the first version (the author, 2026-11-24: "we should make one for macOS as
+      well because it's the most dominant operative system"; a native Swift overlay chosen over
+      one shared toolkit). Built the night of 2026-11-24 on the branch `mac-overlay` by a session
+      on its own, at the author's word; how it works in `docs/dev/features.md`, "The Mac".
+      Proved on GitHub's Macs (macOS 15 and 26): the overlay builds and draws every view, the
+      hub's 429 tests pass, a hook starts the real hub, which builds and opens the overlay and
+      speaks, and the talk key gives press and release. **Not tried on a real Mac by anyone**:
+      before release, an afternoon on one (borrowed, or bought: the author asked "Should I buy
+      one?", the answer was not before there is something to try): push-to-talk with the real
+      microphone and its permission, Kokoro's voice through PortAudio, the glass over real
+      windows (GitHub's Macs draw the blur as plain dark on macOS 15), hover, dragging, the
+      settings window's controls, Liquid Glass on macOS 26. Then merge the branch.
+      Left out on the Mac so far: reordering lights by dragging, sharing keys other apps hold,
+      the hold key for another program's push-to-mute, the glint on "Release to send".
+- [ ] An overlay for Linux. Today there is none: the hub and hooks work there, without keys.
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.
       The author, 2026-11-18, by voice (the recording was cut twice, so only its gist):
