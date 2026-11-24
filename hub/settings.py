@@ -265,6 +265,7 @@ SECTIONS = [
         switch("terminal.pulse", "Flash When the Focus Moves", "The terminal lights up for a moment when you move the focus to it."),
         switch("terminal.follow", "Clicking a Terminal Selects It", "Going to a terminal in the editor selects its session in the overlay."),
         switch("terminal.jump", "Switching Moves the Keyboard", "Moving between sessions with the keys or the wheel puts the keyboard in its terminal."),
+        switch("terminal.window", "Switching Brings Its Window", "With a VS Code window in front, moving to a session whose project is open in another one brings that one up."),
         # "Name in the Terminal's Title" (terminal.title) left the window on 2026-11-22, the
         # author after trying it: "I don't know how useful it is ... I don't usually look at
         # them". Still off by default, still read from config.json.

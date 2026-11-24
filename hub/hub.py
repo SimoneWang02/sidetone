@@ -85,6 +85,9 @@ class Hub(Permissions, Talk):
         self._shown_by: dict[str, float] = {}  # terminal -> when a request of an editor that can show it last ended
         self._show_wanted: tuple[str, float] = ("", base.NEVER)  # a terminal asked to the front while its editor was between two requests
         self._shown_at: dict[str, float] = {}  # terminal -> when it was last asked to the front
+        self._folders: dict[str, str] = {}  # terminal -> the folder its editor's window has open, as that window says it
+        self._window_timer: threading.Timer | None = None  # a window to be brought up once the focus has rested
+        self._window_wanted: tuple[str, float] = ("", base.NEVER)  # a window's folder, for editors between two requests
         self._clears_by: dict[str, float] = {}  # terminal -> when a request of an editor that can type /clear into it last ended
         self._clear_wanted: tuple[str, float] = ("", base.NEVER)  # a terminal to be cleared while its editor was between two requests
         self._opens_by: float = base.NEVER  # when a request of an editor that can open a terminal last ended

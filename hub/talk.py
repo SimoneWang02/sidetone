@@ -24,6 +24,8 @@ CLEAR_TWICE = 3.0  # seconds the clear key's question stays up for the second pr
 END_TWICE = 3.0  # the same for the end key
 NEW_WAIT = 60.0  # seconds after the new-session key in which the first session to start is the one it opened
 CLEAR_BUSY = "it is still working"  # why a clear cannot be typed yet, and waits
+WINDOW_REST = 0.25  # seconds the focus rests on a session before its window comes up: turning the wheel past it does not
+WINDOW_GAP = 1.0  # seconds a window asked for is handed to an editor between two requests; later, you may be elsewhere
 SHOWN_ECHO = 1.0  # seconds in which the editor's report of a terminal the hub asked to the front is only that
 
 
@@ -880,14 +882,15 @@ class Talk:
         return False
 
     def editor_waits(self, pids: list, shows: bool = False, clears: bool = False, opens: bool = False,
-                     theme: str = "") -> Editor:
+                     theme: str = "", windows: bool = False, folder: str = "") -> Editor:
         """An editor's window asks to be told when a key is wanted in one of its terminals,
         which it names by the process each one runs (its shell). `shows`: it can also bring
         one of them to the front. `clears`: it can also type /clear into one. `opens`: it can
         also open a terminal with a new session, end a session and close its terminal.
-        `theme`: "light" or "dark", what its terminals' tint is mixed into."""
+        `theme`: "light" or "dark", what its terminals' tint is mixed into. `windows`: it can
+        also bring up another window of the editor. `folder`: what its own window has open."""
         ttys = {tty: pid for pid in pids for tty in [terminal_mod.tty_of(pid)] if tty}
-        editor = Editor(ttys, shows=shows, clears=clears, opens=opens)
+        editor = Editor(ttys, shows=shows, clears=clears, opens=opens, windows=windows)
         repaint = False
         with self.lock:
             self.editors.append(editor)
@@ -896,6 +899,11 @@ class Talk:
                 now = (light | set(ttys)) if theme == "light" else (light - set(ttys))
                 repaint = now != light
                 self.terminals.light = now
+            for tty in ttys:
+                self._folders[tty] = folder
+            if windows and time.monotonic() - self._window_wanted[1] < WINDOW_GAP:  # asked for between two requests
+                editor.window = self._window_wanted[0]
+                editor.wake.set()
             if opens:
                 now, kept = time.monotonic(), []
                 for what, tty, since in self._editor_wanted:
@@ -976,6 +984,26 @@ class Talk:
                 return True
         self._show_wanted = (s.tty, time.monotonic())  # its editor is between two requests: the next one is handed it
         return True
+
+    def _bring_window(self, sid: str, tty: str) -> None:
+        """The focus has rested on this session: have the editor bring its window up. Every
+        window is told, and the one in front does it (it alone knows that it is; with another
+        program in front, none does). It is done by opening the folder that the session's
+        window has open, which VS Code answers by showing that window, so only a window that
+        is still there is asked for: one that is not would be opened anew."""
+        with self.lock:
+            s = self.sessions.by_id.get(sid)
+            folder = self._folders.get(tty, "")
+            if not s or s.tty != tty or self._target() is not s or not folder or not self._showable(s):
+                return
+            self._shown_at[tty] = time.monotonic()  # what that window then reports is only this
+            self._window_wanted = (folder, time.monotonic())
+            for editor in self.editors:
+                if editor.windows:
+                    editor.window = folder
+                    editor.wake.set()
+            name = s.name
+        log(self.cfg, "hub.log", f"window of {name} ({tty}) asked to the front")
 
     def _stop_words(self, sid: str) -> str:
         stopping = self._stopping.get(sid)
@@ -1144,8 +1172,16 @@ class Talk:
             s = self.sessions.by_id[ids[max(0, min(len(ids) - 1, ids.index(self._target().id) + step))]]
             self._focus_on(s)
             name, tty, color = s.name, s.tty, s.color
-            if self.cfg.terminal.get("jump") and self._ask_show(s):  # its terminal comes up in the editor
+            window = self.cfg.terminal.get("window")
+            if (self.cfg.terminal.get("jump") or window) and self._ask_show(s):  # its terminal comes up in the editor
                 log(self.cfg, "hub.log", f"terminal of {name} ({tty}) asked to the front: the focus moved to it")
+            if self._window_timer:
+                self._window_timer.cancel()
+                self._window_timer = None
+            if window and tty:
+                self._window_timer = threading.Timer(WINDOW_REST, self._bring_window, args=(s.id, tty))
+                self._window_timer.daemon = True
+                self._window_timer.start()
         self.publish()
         if tty:  # chosen by hand: its terminal lights up for a moment, so it can be found
             self.terminals.pulse(tty, color)

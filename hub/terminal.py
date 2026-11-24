@@ -38,6 +38,10 @@ DEFAULTS = {
     # terminal to the front, with the keyboard in it, for terminals kept as tabs, one in sight at a
     # time. Off by default: terminals side by side are all in sight already.
     "jump": False,
+    # And with a project in each of several windows of the editor, that session's window comes up
+    # too, with its terminal, as soon as the focus rests; only from another window of the editor,
+    # never over another program. Off by default: it covers the window you were in.
+    "window": False,
 }
 TINTS = ("focus", "all", "off")
 PULSE_SECONDS = 0.7

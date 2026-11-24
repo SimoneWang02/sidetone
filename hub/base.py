@@ -48,6 +48,8 @@ class Editor:
     opens: bool = False  # it can also open a terminal and start Claude Code in it, and close one (0.5.0 on)
     open: list = field(default_factory=list)  # new sessions asked of it: {"cwd": ..., "beside": a terminal's process id or None}
     close: list = field(default_factory=list)  # terminals it is asked to close, by process id
+    windows: bool = False  # it can also bring another of the editor's windows up (0.7.0 on)
+    window: str = ""  # the folder of the window it is asked to bring up, if it is the one in front
 
 
 EDITOR_WAIT = 25.0  # seconds an editor's request is held before it is sent back empty and asked again

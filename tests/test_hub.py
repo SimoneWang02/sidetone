@@ -1566,6 +1566,63 @@ class PushToTalk(HubCase):
         self.assertIsNone(hub.terminal_in_front(4002))
         self.assertEqual(hub.sessions.by_id[hub.talk_target].name, "a")
 
+    def two_windows(self):
+        """Sessions a and b, each in a window of the editor of its own."""
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41", 4002: "/dev/pts/42"}.get(pid)
+        hub.sessions.by_id["a"].tty, hub.sessions.by_id["b"].tty = "/dev/pts/41", "/dev/pts/42"
+        hub.talk_target = "a"
+        return (hub, hub.editor_waits([4001], shows=True, windows=True, folder="file:///a"),
+                hub.editor_waits([4002], shows=True, windows=True, folder="file:///b"))
+
+    def test_the_window_of_the_session_comes_up_where_the_focus_rests(self):
+        hub, one, two = self.two_windows()
+        hub.focus(1)
+        self.assertIsNone(hub._window_timer, "off by default: it covers the window you were in")
+        hub.focus(-1)
+        hub.set_terminal(window=True)
+        hub.focus(1)
+        self.assertEqual(two.show, [4002], "the terminal in it too, without Switching Moves the Keyboard")
+        self.assertEqual(one.window, "", "not while the wheel may still turn")
+        hub._window_timer.join(2)
+        self.assertEqual((one.window, one.wake.is_set()), ("file:///b", True))
+        hub.editor_done(one)
+        # The window that came up reports its terminal: that does not move the focus, also when
+        # the wheel has turned on since.
+        hub.focus(-1)
+        self.assertIsNone(hub.terminal_in_front(4002, switched=False))
+        self.assertEqual(hub.sessions.by_id[hub.talk_target].name, "a")
+
+    def test_turning_past_a_session_does_not_bring_its_window(self):
+        hub, one, two = self.two_windows()
+        hub.set_terminal(window=True)
+        hub.focus(1)
+        passed = hub._window_timer
+        hub.focus(-1)
+        passed.join(2)
+        hub._window_timer.join(2)
+        self.assertEqual((one.window, two.window), ("file:///a", "file:///a"))
+
+    def test_a_window_is_asked_for_between_two_requests_but_not_a_gone_one_or_an_old_extension(self):
+        hub, one, two = self.two_windows()
+        hub.set_terminal(window=True)
+        hub.editor_done(one)
+        hub.focus(1)
+        hub._window_timer.join(2)
+        again = hub.editor_waits([4001], shows=True, windows=True, folder="file:///a")
+        self.assertEqual((again.window, again.wake.is_set()), ("file:///b", True))
+        old = hub.editor_waits([4001], shows=True)
+        self.assertEqual(old.window, "")
+        hub._window_wanted = ("file:///b", time.monotonic() - 5)  # you may be elsewhere by now
+        self.assertEqual(hub.editor_waits([4001], windows=True).window, "")
+        # b's window was closed: opening its folder would make a new one
+        hub.editors.clear()
+        hub._shown_by.clear()
+        left = hub.editor_waits([4001], shows=True, windows=True, folder="file:///a")
+        hub._bring_window("b", "/dev/pts/42")
+        self.assertEqual(left.window, "")
+
     def test_escape_is_asked_for_once_and_only_of_a_session_in_a_turn(self):
         hub = self.got_the_words()  # "a" has the words and has begun on them
         self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
@@ -3471,6 +3528,7 @@ class HubProcess(unittest.TestCase):
             f.write("""
                 const went = [];
                 exports.went = went;
+                exports.workspace = { workspaceFolders: [], onDidChangeWorkspaceFolders: (f) => ({ dispose() {} }) };
                 exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
                 exports.window = {
                   state: { focused: true },
@@ -3491,6 +3549,54 @@ class HubProcess(unittest.TestCase):
             ["node", "-e", go], cwd=ext, env={**self.env, "SHELL_PID": str(pids["a"])}, timeout=10).returncode == 0
             and self.call("/target", {})["target"] == "alpha", 8), "the hub did not move the focus")
 
+
+    @unittest.skipUnless(__import__("shutil").which("node"), "needs node to run the editor extension")
+    def test_the_editor_extension_brings_up_another_window_only_from_the_one_in_front(self):
+        """The real extension code, with a stand-in for the editor and one for the hub, which
+        names the folder of a window to be brought up."""
+        import shutil
+        ext = os.path.join(self.tmp, "ext")
+        os.makedirs(os.path.join(ext, "node_modules", "vscode"))
+        shutil.copy(os.path.join(ROOT, "vscode", "extension.js"), ext)
+        with open(os.path.join(ext, "node_modules", "vscode", "index.js"), "w") as f:
+            f.write("""
+                const on = (f) => ({ dispose() {} });
+                const told = (what) => { console.log(JSON.stringify(what)); };
+                exports.Uri = { parse: (text) => ({ parsed: text }) };
+                exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
+                exports.commands = { executeCommand: (...args) => told({ did: args }) };
+                exports.workspace = { workspaceFolders: [{ uri: "file:///work/alpha" }], onDidChangeWorkspaceFolders: on };
+                exports.window = {
+                  state: { focused: process.env.FRONT === "1" }, terminals: [], activeTerminal: undefined,
+                  onDidChangeActiveTerminal: on, onDidChangeWindowState: on, onDidOpenTerminal: on,
+                  onDidCloseTerminal: on, onDidChangeActiveColorTheme: on, activeColorTheme: { kind: 2 },
+                };""")
+        go = """
+            const http = require('http'), path = require('path'), fs = require('fs');
+            const run = path.join(process.env.TMPRUN); fs.mkdirSync(run, { recursive: true });
+            process.env.CS_RUN = run;
+            let asked = 0;
+            http.createServer((q, r) => { let b = ''; q.on('data', (c) => { b += c; }); q.on('end', () => {
+              if (asked++) return;  // the first request is answered, the rest are held
+              console.log(JSON.stringify({ said: JSON.parse(b).folder, can: JSON.parse(b).can }));
+              r.end(JSON.stringify({ keys: [], window: process.env.WANTED })); }); })
+              .listen(path.join(run, 'hub.sock'), () => require('./extension.js').activate({ subscriptions: [] }));
+            setTimeout(() => process.exit(0), 700);"""
+
+        def run(n, front, wanted):
+            done = subprocess.run(["node", "-e", go], cwd=ext, capture_output=True, text=True, timeout=10,
+                                  env={**self.env, "TMPRUN": os.path.join(self.tmp, f"run{n}"), "FRONT": front, "WANTED": wanted})
+            lines = [json.loads(line) for line in done.stdout.splitlines()]
+            self.assertTrue(lines, done.stderr)
+            self.assertEqual(lines[0]["said"], "file:///work/alpha")
+            self.assertIn("window", lines[0]["can"])
+            return lines[1:]
+
+        self.assertEqual(run(1, "1", "file:///work/beta"),
+                         [{"did": ["vscode.openFolder", {"parsed": "file:///work/beta"}, {"forceNewWindow": True}]}])
+        self.assertEqual(run(2, "0", "file:///work/beta"), [], "another program is in front, or another window")
+        self.assertEqual(run(3, "1", "file:///work/alpha"), [], "its own window")
+        self.assertEqual(run(4, "1", ""), [])
 
     @unittest.skipUnless(__import__("shutil").which("node"), "needs node to run the editor extension")
     def test_the_editor_extension_types_escape_into_the_terminal_of_a_session_that_is_stopped(self):
@@ -3522,6 +3628,7 @@ class HubProcess(unittest.TestCase):
                   processId: Promise.resolve(pid),
                   sendText: (text, enter) => { typed.push([pid, text, enter]); fs.writeFileSync(process.env.TYPED, JSON.stringify(typed)); },
                 });
+                exports.workspace = { workspaceFolders: [], onDidChangeWorkspaceFolders: (f) => ({ dispose() {} }) };
                 exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
                 exports.window = {
                   state: { focused: true },
@@ -3576,6 +3683,7 @@ class HubProcess(unittest.TestCase):
                   processId: Promise.resolve(pid),
                   sendText: (text, enter) => { typed.push([pid, text, enter]); fs.writeFileSync(process.env.TYPED, JSON.stringify(typed)); },
                 });
+                exports.workspace = { workspaceFolders: [], onDidChangeWorkspaceFolders: (f) => ({ dispose() {} }) };
                 exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
                 exports.window = {
                   state: { focused: true },
@@ -3634,6 +3742,7 @@ class HubProcess(unittest.TestCase):
                   sendText: (text, enter) => note("typed", pid, text, enter),
                   show: (keepKeyboard) => note("shown", pid, keepKeyboard),
                 });
+                exports.workspace = { workspaceFolders: [], onDidChangeWorkspaceFolders: (f) => ({ dispose() {} }) };
                 exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
                 exports.window = {
                   state: { focused: true },

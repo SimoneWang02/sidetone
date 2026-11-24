@@ -220,11 +220,13 @@ class Handler(BaseHTTPRequestHandler):
         can = body.get("can")
         can = can if isinstance(can, list) else []
         editor = hub.editor_waits(pids, shows="show" in can, clears="clear" in can, opens="open" in can,
-                                  theme=str(body.get("theme") or ""))
+                                  theme=str(body.get("theme") or ""), windows="window" in can,
+                                  folder=str(body.get("folder") or ""))
         end = time.monotonic() + EDITOR_WAIT
         while not editor.wake.wait(0.5) and time.monotonic() < end and not self._client_gone():
             pass
-        self._reply({"keys": hub.editor_done(editor), "show": editor.show, "open": editor.open, "close": editor.close})
+        self._reply({"keys": hub.editor_done(editor), "show": editor.show, "open": editor.open, "close": editor.close,
+                     "window": editor.window})
 
     def _client_gone(self) -> bool:
         try:

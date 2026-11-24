@@ -124,17 +124,15 @@ Roughly easiest first, the larger ones after.
       shows a background subagent's dialog only once the hook returns, so the hub can answer it
       only in its first 9 s (docs/dev/facts.md).
 
-- [ ] The VS Code window of the session comes to the front (the author, by voice, 2026-11-24,
-      with three projects in three VS Code windows: "whenever I switch this session in the
-      overlay, I want the Visual Studio Code page to pop up in front"; whether it is on by
-      default was left to Claude: off proposed, as `terminal.jump`). Not built. `terminal.jump`,
-      on in their config, shows the terminal inside its window only, and does ask for it
-      (`hub.log`, 14:22 that day); nothing raises the window. Likely shape: the overlay raises it,
-      since only a Windows program can (to check: Windows lets it after a turn of the wheel),
-      and learns which window is which from the extension's "window" report, not from the
-      title, which a setting can change; only where the wheel stops, not each session it
-      passes. Asked them, not answered: whether it also comes up over another program
-      (a browser) and takes the keyboard there.
+- [ ] Try: the VS Code window of the session comes to the front (the author, by voice,
+      2026-11-24, with three projects in three VS Code windows: "whenever I switch this session
+      in the overlay, I want the Visual Studio Code page to pop up in front"; over a browser:
+      "No, another program, no. I have to have focus ... on one Visual Studio page"). Built the
+      same day: `terminal.window`, "Switching Brings Its Window", off by default (the default
+      was left to Claude), extension 0.7.0. Needs the extension restarted in each window
+      (Ctrl+Shift+P, Restart Extension Host). Not tried by the author; the switch between
+      windows itself was measured with `code --new-window` (80 ms, no reload), not yet through
+      the extension in the real VS Code.
 
 ### Larger extras
 

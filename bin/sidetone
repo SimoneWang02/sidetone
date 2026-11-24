@@ -46,6 +46,7 @@ Usage: sidetone <command>
   terminal title on|off      the session's name as the terminal's title
   terminal follow on|off     going to a terminal in VS Code gives its session the focus (needs: vscode install)
   terminal jump on|off       moving the focus by hand brings that session's terminal to the front in VS Code
+  terminal window on|off     from one VS Code window, moving to a session in another one brings that window up
   vscode install|uninstall   the small VS Code extension that tells the hub which terminal you are in
   terminal strength N        how strong the color is, 0 to 1
   terminal background COLOR  the terminal's own background (#RRGGBB) that the color is mixed into
@@ -235,7 +236,7 @@ case ${1:-} in
       find) request=$(jq -nc --arg p "${3:-}" '{find: $p}') ;;
       show) request=$(jq -nc --arg p "${3:-}" '{show: $p}') ;;
       tint) request=$(jq -nc --arg t "${3:-}" '{tint: $t}') ;;
-      pulse|title|follow|jump)
+      pulse|title|follow|jump|window)
         case ${3:-} in
           on|off) request=$(jq -nc --arg k "$2" --arg v "$3" '{($k): ($v == "on")}') ;;
           *) [ "$2" = pulse ] && request=$(jq -nc --arg n "${3:-}" '{pulse: true, pulse_strength: ($n | tonumber)}' 2>/dev/null) || { usage; exit 2; } ;;

@@ -98,8 +98,9 @@ Where the code is:
 - `overlay/Overlay.cs`: the Windows overlay (bar, panel, bubble, settings window), compiled by
   the hub with Windows' own `csc.exe` (C# 5 only, ASCII source); `overlay.ps1` is the fallback.
   It only draws; all logic is in the hub so it can be tested. JSON lines over stdin and stdout.
-- `vscode/`: the VS Code extension (0.6.0): the focus follows the terminal in front, and the
-  hub can have it type Escape (stop), `/clear`, or show a terminal. `sidetone vscode install`.
+- `vscode/`: the VS Code extension (0.7.0): the focus follows the terminal in front, and the
+  hub can have it type Escape (stop), `/clear`, show a terminal, or bring up another
+  of its windows. `sidetone vscode install`.
 - `bin/sidetone` (`st`): every command (`sidetone` with no arguments lists them).
 - `hooks/tts-lib.sh`: every hook still works without a hub, through a system voice.
 - Config: `~/.config/sidetone/config.json` (every setting; also `sidetone settings list`).

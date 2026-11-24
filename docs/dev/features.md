@@ -1184,6 +1184,22 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (side by side, all terminals are in sight); on in the author's config. Needs the
   extension 0.3.0 or newer running. Tried by the author minutes later: "it seems to be
   working good."
+- The window follows the focus (2026-11-24, `terminal.window`, `Talk._bring_window`, extension
+  0.7.0). The author, with three projects in three VS Code windows: "whenever I switch this
+  session in the overlay, I want the Visual Studio Code page to pop up in front", but not over
+  another program. Each window's held request now carries `folder`, what it has open (a saved
+  workspace file, or its one folder; else "", and it cannot be brought up) and `"window"` in
+  `can`. When the focus moved by hand has rested for `WINDOW_REST` (0.25 s; turning the wheel
+  past a session brings nothing), every window is told the folder of the session's window, and
+  the one in front (`vscode.window.state.focused`, which only the window knows) runs
+  `vscode.openFolder` on it, which VS Code answers by showing the window that has it open.
+  Always with `forceNewWindow`, so it can never replace what the window in front has open; only
+  for a window that is still there (`_showable`), as one that is gone would be opened anew. The
+  terminal is shown too, whether or not `jump` is on, or the window's report of its own active
+  terminal would move the focus to another session there. Measured with `code --new-window
+  FOLDER` (the same path in VS Code): the other window in front after 80 ms, the same three
+  windows, no reload. Chosen over raising it from the overlay: no Windows code, no matching of
+  window titles, and nothing about it is Windows only.
 - Session → terminal, the jump key (2026-11-18, `Talk.show_terminal`, `_showable`, hotkey
   `jump` = `Ctrl+Alt+T`, `sidetone terminal show [PROJECT]`, `vscode/extension.js`
   0.3.0; built while the author was away, **key and letter not agreed with them, not

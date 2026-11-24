@@ -23,6 +23,10 @@
 // `claude` into it (only that: the command is written here, not sent by the hub); "exit", typed
 // like the others; and close a terminal of ours once the hub has seen its session end.
 //
+// From 0.7.0 it can also bring up another of the editor's windows (a project each): it tells the
+// hub what its own window has open, and when this window is the one in front and the hub names
+// what another one has open, it opens that, which VS Code answers by showing that window.
+//
 // It runs where the terminals run (the remote side under WSL or SSH), which is where the
 // hub's socket is.
 const fs = require("fs");
@@ -128,13 +132,28 @@ async function close(pids) {
   }
 }
 
+// What this window has open, as it can be opened again. "" = no folder, or several without a file
+// that names them: such a window cannot be brought up.
+function folder() {
+  const { workspaceFile, workspaceFolders } = vscode.workspace;
+  if (workspaceFile) return workspaceFile.scheme === "untitled" ? "" : workspaceFile.toString();
+  return workspaceFolders && workspaceFolders.length === 1 ? workspaceFolders[0].uri.toString() : "";
+}
+
+// Bring up the window that has this open, if ours is the one in front: from another program,
+// nothing happens. Never in place of what this window has open (forceNewWindow).
+function bring(wanted) {
+  if (typeof wanted !== "string" || !wanted || wanted === folder() || !vscode.window.state.focused) return;
+  vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.parse(wanted), { forceNewWindow: true });
+}
+
 // One request, held by the hub until a key is wanted or about half a minute has passed;
 // then the next one. The hub knows our terminals only from the request it is holding.
 async function listen() {
   if (closed) return;
   const pids = (await Promise.all(vscode.window.terminals.map((terminal) => terminal.processId))).filter(Boolean);
   if (closed || open) return;
-  const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear", "open"], theme: theme() });  // what the hub may ask of us
+  const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear", "open", "window"], theme: theme(), folder: folder() });  // what the hub may ask of us
   const request = http.request({
     socketPath: socket(), path: "/editor", method: "POST", timeout: 60000,
     headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) },
@@ -159,6 +178,7 @@ async function listen() {
         show(asked.show);
         openNew(asked.open);
         close(asked.close);
+        bring(asked.window);
       } catch (e) { /* not ours to read */ }
       next(200);
     });
@@ -188,6 +208,7 @@ function activate(context) {
     vscode.window.onDidChangeWindowState((state) => { if (state.focused) report("window"); }),
     vscode.window.onDidOpenTerminal(() => relisten()),
     vscode.window.onDidCloseTerminal(() => relisten()),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => relisten()),
     vscode.window.onDidChangeActiveColorTheme(() => relisten()),  // the new theme goes with the next request
   );
   listen();
