@@ -669,6 +669,7 @@ if not ONLY or "settings-pack".startswith(ONLY) or ONLY.startswith("settings-pac
 
     hub = PackHub([])
     pack_shot("settings-pack-missing", hub)
+    pack_shot("settings-pack-listen", hub, click=[400, 244])  # opened: its voices, heard from recordings
     settings_mod.jobs(hub)["zh"] = {"busy": True, "done": 141_000_000, "total": 428_000_000, "step": "Chinese model", "error": ""}
     pack_shot("settings-pack-installing", hub)
     settings_mod.jobs(hub)["zh"] = {"busy": False, "done": 0, "total": 0, "step": "", "error": "could not download kokoro-v1.1-zh.onnx: timed out"}
@@ -676,6 +677,7 @@ if not ONLY or "settings-pack".startswith(ONLY) or ONLY.startswith("settings-pac
     for f, size in zip(packs.ZH_FILES, (packs.ZH_MODEL[1], 4 * 522_000, packs.ZH_CONFIG[1])):  # what Remove says it frees
         with open(os.path.join(PackEngine.dir, f), "wb") as blank:
             blank.truncate(size)
+    pack_shot("settings-pack-off", PackHub(["zf_049", "zf_006", "zm_056", "zm_057"], "en,it"))  # installed, off: Remove under it
     hub = PackHub(["zf_049", "zf_006", "zm_056", "zm_057"], "en,it,zh")
     settings_mod.jobs(hub)["zh:zm_030"] = {"busy": True, "done": 200_000, "total": 523_500, "step": "", "error": ""}
     # At the height of the screen, Chinese opened and its More Voices shown: the voices not

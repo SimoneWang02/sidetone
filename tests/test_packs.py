@@ -296,7 +296,7 @@ class FromTheWindow(HubCase):
     def make(self, **cfg):
         cfg.setdefault("whisper_model", "small")
         cfg.setdefault("whisper_language", "en,it")
-        hub = super().make(**cfg)
+        hub = HubCase.make(self, **cfg)  # not super(): Samples borrows this
         hub.cfg.config_path = os.path.join(self.tmp, "config.json")
         self.engine = hub.speech.engine = self.Engine(self.tmp)
         return hub
@@ -363,7 +363,7 @@ class FromTheWindow(HubCase):
         hub = self.make(whisper_language="en,zh")
         self.engine.zh = {"zf_049", "zf_006", "zm_056", "zm_057"}
         line = next(i for i in settings._voices(hub) if i.get("voice") == "zh:zm_030")
-        self.assertEqual((line["tag"], line["preview"]), ("0.5 MB", False))
+        self.assertEqual((line["tag"], line["preview"]), ("0.5 MB", True))  # heard from its recording
         with unittest.mock.patch.object(packs, "add_zh_voices", lambda names, folder, progress: self.engine.zh.update(names)):
             self.assertIsNone(hub.set_setting("voice_in.zh.zh:zm_030", True))
             self.finish(hub)
@@ -406,3 +406,66 @@ class ReloadingChinese(unittest.TestCase):
         engine.zh_voices = lambda: {"zf_049", "zm_030"} if engine._zh_names is None else engine._zh_names
         engine.reload_zh()  # a voice added: loaded again with it
         self.assertIsNone(engine.zh)
+
+
+class Samples(HubCase):
+    """Voices heard before they are downloaded, from the recordings in hub/samples/."""
+    Engine, make = FromTheWindow.Engine, FromTheWindow.make
+
+    def test_every_voice_listed_before_its_download_has_a_recording(self):
+        import settings
+        import tts
+        wanted = list(dict.fromkeys(tts.PREFERRED_VOICE["zh"] + settings.CHINESE_CLARITY[:settings.MOST_VOICES])) + list(packs.PIPER)
+        missing = [v for v in wanted if not os.path.isfile(tts.sample_path(v))]
+        self.assertEqual(missing, [], "record them: tests/record_samples.py")
+        import sndfile
+        for v in wanted:
+            samples, rate = sndfile.read(tts.sample_path(v))
+            self.assertGreater(len(samples) / rate, 1.0, v)  # said something
+            self.assertGreater(int(np.abs(samples.astype(np.int32)).max()), 3000, v)
+
+    def test_chinese_not_installed_lists_its_voices_to_hear_without_switches(self):
+        import settings
+        hub = self.make()
+        items = settings._voices(hub)
+        at = next(i for i, x in enumerate(items) if x.get("key") == "heading.zh")
+        voices = [x for x in items[at + 1:] if x.get("group") == "zh"]
+        self.assertEqual([v["voice"] for v in voices[:4]], ["zh:zf_049", "zh:zf_006", "zh:zm_056", "zh:zm_057"])
+        self.assertTrue(all(v["switch"] is False for v in voices))
+        self.assertEqual(voices[0]["tag"], "Comes with it")
+        self.assertGreater(len(voices), 4)
+
+    def test_play_uses_the_recording_until_the_voice_is_here(self):
+        import settings
+        import tts
+        hub = self.make()
+        self.engine.has = lambda v: v.startswith("sample:") and os.path.isfile(tts.sample_path(v[7:]))
+        played = []
+        hub.speech.put = played.append
+        settings.preview(hub, "zh:zm_030")
+        self.assertEqual(played[-1].voice, "sample:zh:zm_030")
+
+    def test_remove_shows_under_the_heading_while_chinese_is_off(self):
+        import settings
+        hub = self.make()  # en,it
+        self.engine.zh = {"zf_049"}
+        items = settings._voices(hub)
+        remove = [x for x in items if x.get("kind") == "pack"]
+        self.assertEqual([(r["key"], r["always"]) for r in remove], [("remove.zh", True)])
+
+    def test_the_summary_language_offers_only_languages_installed(self):
+        import settings
+
+        def offered(hub):
+            section = next(s for s in settings.describe(hub) if any(i["key"] == "reply_language" for i in s["items"]))
+            return [o[0] for o in next(i for i in section["items"] if i["key"] == "reply_language")["options"]]
+
+        hub = self.make()
+        self.assertNotIn("zh", offered(hub))
+        self.assertIsNotNone(hub.set_setting("reply_language", "zh"))
+        self.engine.zh = {"zf_049"}
+        self.assertIn("zh", offered(hub))
+        self.assertIsNone(hub.set_setting("reply_language", "zh"))
+        self.engine.zh = set()
+        self.assertIsNone(hub.set_setting("remove.zh", True))
+        self.assertEqual(hub.cfg.reply_language, "spoken")  # back to the language you used

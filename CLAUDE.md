@@ -92,7 +92,7 @@ Where the code is:
   clearing); `server.py` HTTP; `state.py` sessions, colors, tags; `tts.py` voices and the speech
   queue (Kokoro, Piper, Kokoro's Chinese model); `stt.py` push-to-talk with faster-whisper;
   `sounds.py` short signals; `packs.py` languages as packs to install (Chinese's model and
-  voices, Piper's); `overlay.py` starts and feeds the overlay; `terminal.py` tints terminals; `claude_sessions.py` reads `~/.claude/sessions/*.json`; `usage.py` plan usage and
+  voices, Piper's), with `samples/` to hear a voice before its download (`sndfile.py`); `overlay.py` starts and feeds the overlay; `terminal.py` tints terminals; `claude_sessions.py` reads `~/.claude/sessions/*.json`; `usage.py` plan usage and
   context; `settings.py` the settings window's sections; `stale.py` notices outdated code;
   `demo.py` made-up sessions.
 - `overlay/Overlay.cs`: the Windows overlay (bar, panel, bubble, settings window), compiled by

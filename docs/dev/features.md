@@ -152,7 +152,24 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   loading (several seconds, the first time after the install), so the clicks waited and came
   in all at once. `reload_zh` now keeps the model, without waiting, when the voices are the
   same, and `_zh_pcm` holds the model it loaded, so a reload meanwhile no longer breaks a line
-  being made (it broke the timing of zh:zf_049: "'NoneType' object has no attribute 'create'"). Pictures: `settings-pack-missing.png`,
+  being made (it broke the timing of zh:zf_049: "'NoneType' object has no attribute 'create'").
+  Then, agreed as a whole ("do all"): (1) a voice can be heard before it is downloaded. Each
+  voice the window can list before its download (the four Install brings, the clearest after
+  them up to `MOST_VOICES`, and Paola) says the window's sample sentence at the default speed
+  in a small Ogg file in `hub/samples/` (13 files, 220 KB; made by `tests/record_samples.py`,
+  which fetches what is missing into a folder of its own). They are read and written with
+  libsndfile through ctypes (`hub/sndfile.py`), which paplay already needs, so no package is
+  added. `KokoroEngine` speaks a `sample:<voice>` by playing the recording once;
+  `settings.preview` uses it while the voice is not here, and ▶ shows its square as for any
+  voice. A language not installed opens like the others: its voices with ▶, the four Install
+  brings tagged "Comes with it", and no switches (`_listen_only`; `switch: false` in
+  `Overlay.cs`). (2) The summary language lists only languages installed (and the one chosen,
+  if it is not), choosing one that is not is refused, and Remove puts "Match My Language"
+  back if Chinese was chosen. (3) Remove shows under the heading of a language that is
+  installed but off (`always`), as it has no card then. Recording Paola found that
+  rhasspy/piper-voices' main branch now writes phonemes of two letters ("aɪ") that Piper
+  2023.11.14-2 refuses ("Phonemes must be one codepoint"), so she said nothing: her files now
+  come from its tag v1.0.0. Pictures: `settings-pack-listen.png`, `settings-pack-off.png`. Pictures: `settings-pack-missing.png`,
   `-installing`, `-failed`, `-installed`, `-remove` (`tests/overlay_check.py
   --only=settings-pack`).
   A line with no `lang` (2026-11-22, `language.guess`, called from `Hub._voice_for` with the

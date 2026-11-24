@@ -51,14 +51,17 @@ ZH_FILES = ("kokoro-v1.1-zh.onnx", "voices-v1.1-zh.bin", "config-v1.1-zh.json")
 
 PIPER_PROGRAM = ("https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz",
                  26460462, "a50cb45f355b7af1f6d758c1b360717877ba0a398cc8cbe6d2a7a3a26e225992")
-PIPER_VOICES = "https://huggingface.co/rhasspy/piper-voices/resolve/e5349433ed883a32f893a434dc43a6c66b95ef7c/"
+# Piper's voices from tag v1.0.0 of rhasspy/piper-voices: the files on its main branch since then
+# write phonemes of two letters ("aɪ") that this Piper (2023.11.14-2) refuses ("Phonemes must be
+# one codepoint"), so Paola said nothing (found recording her sample, 2026-11-23).
+PIPER_VOICES = "https://huggingface.co/rhasspy/piper-voices/resolve/375a0fe641dea077c2a47b4e9a056d6da521eed3/"
 # Piper's voices that can be fetched: the model and its settings (sample rate), by the voice's name.
 PIPER = {
     "piper:it_IT-paola-medium": (
-        (PIPER_VOICES + "it/it_IT/paola/medium/it_IT-paola-medium.onnx", 63221984,
-         "f9b8658aa8c01f8280aa88488f6e7643a639b6225a81514c40440a01f6364a20"),
-        (PIPER_VOICES + "it/it_IT/paola/medium/it_IT-paola-medium.onnx.json", 6114,
-         "10e46e8534dd2d4051f1534ba6542f189f854454acea44a6d45ff464a83260fa")),
+        (PIPER_VOICES + "it/it_IT/paola/medium/it_IT-paola-medium.onnx", 63511038,
+         "6fc918b5a0ea6137382833dddfa567bffbe6a5060c02043c87192ee59c04210c"),
+        (PIPER_VOICES + "it/it_IT/paola/medium/it_IT-paola-medium.onnx.json", 7099,
+         "aea19c0a7fce29fbc359b93f10e7902854401e4c95ae2ea328ae516b15d296cf")),
 }
 
 # The multilingual speech model push-to-talk needs once any language but English is on (the

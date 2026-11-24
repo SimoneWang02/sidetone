@@ -1685,8 +1685,8 @@ namespace ClaudeSpeaks
                             shut = !spoken || !openGroups.Contains(inGroup);
                             if (Overlay.Str(item, "install").Length > 0)  // a language not installed: its size and Install
                             {
-                                shut = true;
-                                list.Children.Add(PackHead(item));
+                                shut = !openGroups.Contains(inGroup);  // opens to its voices, heard before Install
+                                list.Children.Add(PackHead(item, inGroup, !shut));
                                 continue;
                             }
                             list.Children.Add(FoldHead(inGroup, Overlay.Str(item, "name"), Overlay.Str(item, "summary"), !shut,
@@ -1699,8 +1699,9 @@ namespace ClaudeSpeaks
                         if (about.Length > 0) list.Children.Add(new TextBlock { Text = about, FontSize = 11.5, Foreground = Ui.Faint, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(6, 0, 0, 9) });
                         continue;
                     }
-                    if (shut) continue;  // under a closed heading
-                    if (Overlay.Str(item, "kind") == "pack")  // under a language's card: Remove, as Reset is under a section's
+                    bool always = item.ContainsKey("always") && Convert.ToBoolean(item["always"], CultureInfo.InvariantCulture);
+                    if (shut && !(always && Overlay.Str(item, "kind") == "pack")) continue;  // under a closed heading
+                    if (Overlay.Str(item, "kind") == "pack")  // under a language's card, or its heading while it is off: Remove
                     {
                         endCard();
                         list.Children.Add(RemoveButton(Overlay.Str(item, "key"), Overlay.Str(item, "name"), Overlay.Str(item, "help")));
@@ -1893,7 +1894,7 @@ namespace ClaudeSpeaks
         // want to install it from settings no?"): dim like a language that is off, with what it
         // takes at the right and an Install button where the switch is; while it comes, a bar and
         // how far; if it failed, why, and Try Again.
-        UIElement PackHead(Dictionary<string, object> item)
+        UIElement PackHead(Dictionary<string, object> item, string group, bool open)
         {
             string state = Overlay.Str(item, "pack"), key = Overlay.Str(item, "install");
             var row = new Grid();
@@ -1901,7 +1902,7 @@ namespace ClaudeSpeaks
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            var chevron = new System.Windows.Shapes.Path { Data = Geometry.Parse("M0,0 L4.5,4.5 L0,9"), Stroke = Ui.Dim, StrokeThickness = 1.5, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, Width = 10, Height = 10, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0), Opacity = 0.4 };
+            var chevron = new System.Windows.Shapes.Path { Data = Geometry.Parse(open ? "M0,0 L4.5,4.5 L9,0" : "M0,0 L4.5,4.5 L0,9"), Stroke = Ui.Dim, StrokeThickness = 1.5, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round, StrokeLineJoin = PenLineJoin.Round, Width = 10, Height = 10, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, open ? 3 : 0, 12, 0) };
             row.Children.Add(chevron);
             var title = new TextBlock { Text = Overlay.Str(item, "name"), FontSize = 14, FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center, Opacity = 0.4 };
             Grid.SetColumn(title, 1);
@@ -1935,7 +1936,12 @@ namespace ClaudeSpeaks
             control.Margin = new Thickness(16, -3, -2, -3);
             Grid.SetColumn(control, 3);
             row.Children.Add(control);
-            return new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, 8), Background = Ui.Paint("#0AFFFFFF"), Child = row };
+            // It opens and closes like an installed language's heading: its voices, to hear before
+            // Install. The name stays dim, as it is not installed.
+            var head = new Border { CornerRadius = new CornerRadius(10), Padding = new Thickness(16, 12, 16, 12), Margin = new Thickness(0, 0, 0, open ? 6 : 8), Cursor = Cursors.Hand, Child = row };
+            Lit(head, open ? "#12FFFFFF" : "#0AFFFFFF", "#1AFFFFFF");
+            head.MouseLeftButtonUp += delegate { if (open) openGroups.Remove(group); else openGroups.Add(group); Fill(); };
+            return head;
         }
 
         // Under an installed language's card: Remove, which frees its files. Asks first, the way
@@ -2075,7 +2081,9 @@ namespace ClaudeSpeaks
             line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             var words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            if (kind == "voice" && (!Folded(item) || Kept(item)))  // a ticked voice, or one just unticked: dragged by its grip
+            // A voice of a language not installed is only heard: no switch, nothing to drag.
+            bool switchable = kind != "voice" || !item.ContainsKey("switch") || Convert.ToBoolean(item["switch"], CultureInfo.InvariantCulture);
+            if (kind == "voice" && switchable && (!Folded(item) || Kept(item)))  // a ticked voice, or one just unticked: dragged by its grip
             {
                 line.ColumnDefinitions.Insert(0, new ColumnDefinition { Width = GridLength.Auto });
                 var grip = Grip();
@@ -2107,9 +2115,10 @@ namespace ClaudeSpeaks
             else if (kind == "key") control = KeyBox(key, Convert.ToString(value, CultureInfo.InvariantCulture) ?? "", typing);
             else if (kind == "pick") control = Pick(key, options, value);
             else if (kind == "color") control = ColorBox(key, item, value);
+            else if (kind == "voice" && !switchable) control = new Border { Width = 36, Height = 20 };
             else if (kind == "voice") control = new Toggle(value != null && Convert.ToBoolean(value, CultureInfo.InvariantCulture));
             else control = Segments(key, options, value);
-            if (kind == "voice")
+            if (kind == "voice" && switchable)
             {
                 bool on = ((Toggle)control).On;
                 string group = Overlay.Str(item, "group"), voice = Overlay.Str(item, "voice");

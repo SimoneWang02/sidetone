@@ -542,7 +542,10 @@ def set_in_use(hub, lang: str, voices: list) -> str | None:
 
 def preview(hub, voice: str) -> None:
     """A voice says a sentence in its language, and nothing is changed (the ▶ in the window)."""
-    if voice and hasattr(hub.speech.engine, "has") and hub.speech.engine.has(voice):
+    engine = hub.speech.engine
+    if voice and hasattr(engine, "has") and not engine.has(voice) and engine.has("sample:" + voice):
+        voice = "sample:" + voice  # not downloaded yet: its recording (tts.SAMPLES_DIR)
+    if voice and hasattr(engine, "has") and engine.has(voice):
         hub.speech.drop_src("preview")  # pressed again, or another one: the last press is heard
         hub.speech.put(tts.Utterance(text=SAMPLES.get(voice_language(voice), SAMPLES["en"]), voice=voice,
                                      kind="notice", src="preview"))
@@ -706,6 +709,8 @@ def remove(hub, lang: str) -> str | None:
     kokoro_dir, _ = _dirs(hub)
     if lang in spoken(hub) and len(spoken(hub)) > 1:
         set_spoken(hub, lang, False)
+    if base.fixed_language(hub.cfg) == lang:  # the summary language can only be one installed
+        apply(hub, "reply_language", "spoken")
     freed = packs.remove_zh(kokoro_dir)
     if hasattr(hub.speech.engine, "reload_zh"):
         hub.speech.engine.reload_zh()
@@ -730,6 +735,30 @@ def _pack_heading(hub, lang: str, found: dict) -> None:
     else:
         size = packs.needs(lang, list(tts.PREFERRED_VOICE.get(lang, [])), *_dirs(hub)[:1])
         found.update(pack="missing", summary=f"Not installed, {packs.megabytes(size)}")
+
+
+def _listen_only(hub, lang: str) -> list:
+    """The voices of a language not installed, to hear from their recordings before Install
+    (agreed 2026-11-23): those Install brings first, then the clearest; no switches yet."""
+    voices = list(dict.fromkeys(list(tts.PREFERRED_VOICE.get(lang, [])) + CHINESE_CLARITY[:MOST_VOICES]))
+    found = []
+    for v in voices:
+        if not os.path.isfile(tts.sample_path(v)):
+            continue
+        name, what = voice_label(v)
+        found.append({"key": f"voice_in.{lang}.{v}", "kind": "voice", "name": name, "help": what, "voice": v,
+                      "group": lang, "more": False, "switch": False,
+                      "playing": getattr(hub, "_previewing", "") == v})
+        if v in tts.PREFERRED_VOICE.get(lang, []):
+            found[-1].update(tag="Comes with it", tag_help="Install brings this voice; the others are half a megabyte each, once it is installed.")
+    return found
+
+
+def _remove_item(hub, lang: str, always: bool = False) -> dict:
+    """Remove, under a language's card, or under its heading while it is off."""
+    return {"key": f"remove.{lang}", "kind": "pack", "name": f"Remove {base.LANGUAGE_NAMES[lang]}",
+            "help": f"Frees {packs.megabytes(packs.removable(lang, _dirs(hub)[0]))}. You can install it again.",
+            "group": lang, "always": always}
 
 
 def _voices(hub) -> list:
@@ -759,6 +788,7 @@ def _voices(hub) -> list:
                        "help": "", "fold": True, "last": False}
             _pack_heading(hub, lang, heading)
             found.append(heading)
+            found += _listen_only(hub, lang)
             continue
         if not voices.get(lang):
             continue
@@ -768,6 +798,8 @@ def _voices(hub) -> list:
             found.append({"kind": "heading", "key": f"heading.{lang}", "name": base.LANGUAGE_NAMES.get(lang, "English"),
                           "help": "", "fold": True, "summary": "", "speak": f"speak.{lang}", "spoken": False,
                           "last": False})
+            if lang == "zh" and hasattr(hub.speech.engine, "zh_voices"):  # installed but off: it can still go
+                found.append(_remove_item(hub, lang, always=True))
             continue
         # A heading that opens and closes its card (the author, 2026-11-21: "for each language
         # making a drop-down list so I can quickly scroll between the languages"), with how many
@@ -796,13 +828,11 @@ def _voices(hub) -> list:
                     tag = ("Failed", job["error"] + ". Tick it to try again.")
                 else:
                     tag = (packs.megabytes(size), "Not downloaded yet. Ticking it downloads it.")
-                found[-1].update(fetch=True, preview=False)
+                found[-1].update(fetch=True, preview=os.path.isfile(tts.sample_path(v)))
             if tag:
                 found[-1].update(tag=tag[0], tag_help=tag[1])
         if lang == "zh" and hasattr(hub.speech.engine, "zh_voices"):  # a pack: how to take it away again
-            found.append({"key": f"remove.{lang}", "kind": "pack", "name": f"Remove {base.LANGUAGE_NAMES[lang]}",
-                          "help": f"Frees {packs.megabytes(packs.removable(lang, _dirs(hub)[0]))}. You can install it again.",
-                          "group": lang})
+            found.append(_remove_item(hub, lang))
     time_voices(hub, everyone)
     return found
 
@@ -904,6 +934,10 @@ def describe(hub) -> list:
         if listed:
             values = [{**item, "help": _with_keys(hub, item["help"]),
                        "value": None if item["kind"] in ("heading", "intro", "pack") else read(hub, item["key"])} for item in listed]
+            for item in values:
+                if item["key"] == "reply_language":  # only languages installed (and the one chosen, if it is not)
+                    item["options"] = [o for o in item["options"] if has_pack(hub, o[0]) or o[0] == item["value"]
+                                       or not hasattr(hub.speech.engine, "zh_voices")]
             resettable = [i for i in values if default(i["key"]) is not None]
             sections.append({"name": name, "items": values, "resettable": bool(resettable),
                              "changed": any(not _same(i, i["value"], default(i["key"])) for i in resettable)})
@@ -1009,6 +1043,8 @@ def apply(hub, key: str, value) -> str | None:
     """Change a setting: at once, and remembered. Returns what is wrong with it, or None."""
     if key.startswith("speak."):  # the switch on a language's heading: whether you speak it
         return set_spoken(hub, key[6:], bool(value))
+    if key == "reply_language" and not has_pack(hub, str(value)) and hasattr(hub.speech.engine, "zh_voices"):
+        return f"install {base.LANGUAGE_NAMES.get(str(value), value)} first"
     if key.startswith("install."):  # Install on a language's heading (or Try Again)
         return install(hub, key[8:])
     if key.startswith("remove."):  # Remove at the end of a language's card

@@ -35,6 +35,16 @@ KOKORO_LANG = {"a": "en-us", "b": "en-gb", "e": "es", "f": "fr-fr", "h": "hi", "
 # ear on 2026-11-19 (zf_001, zm_009, zf_002, zm_010), which ranked 33, 34, 88 and 98 of 100.
 PREFERRED_VOICE = {"it": ["if_sara", "im_nicola", "piper:it_IT-paola-medium"],
                    "zh": ["zh:zf_049", "zh:zf_006", "zh:zm_056", "zh:zm_057"]}
+# A short recording of each voice the settings window lists before it is downloaded, saying the
+# window's sample sentence, so ▶ can be heard before the download (agreed with the author
+# 2026-11-23). Made by tests/record_samples.py; named after the voice, ":" written "_".
+SAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples")
+
+
+def sample_path(voice: str) -> str:
+    return os.path.join(SAMPLES_DIR, voice.replace(":", "_") + ".ogg")
+
+
 LANG_LETTER = {"en": "a", "es": "e", "fr": "f", "hi": "h", "it": "i", "ja": "j", "pt": "p", "zh": "z", "cmn": "z"}
 
 
@@ -236,6 +246,8 @@ class KokoroEngine:
         return array
 
     def has(self, voice: str) -> bool:
+        if voice.startswith("sample:"):  # a voice not downloaded yet, heard from its recording
+            return os.path.isfile(sample_path(voice[7:]))
         if voice.startswith("zh:"):
             return voice[3:] in self.zh_voices()
         return voice in self.voices or voice in self.custom or voice in self.piper
@@ -328,6 +340,14 @@ class KokoroEngine:
     def _make(self, text: str, voice: str) -> bytes:
         import numpy as np
 
+        if voice.startswith("sample:"):  # the recording, whatever the text
+            import sndfile
+
+            samples, rate = sndfile.read(sample_path(voice[7:]))
+            samples = samples.astype(np.float32)
+            if rate != self.RATE and len(samples):
+                samples = np.interp(np.arange(0, len(samples), rate / self.RATE), np.arange(len(samples)), samples)
+            return np.clip(samples, -32768, 32767).astype("<i2").tobytes()
         if voice in self.piper:
             return self._piper_pcm(text, *self.piper[voice])
         if voice.startswith("zh:"):
@@ -356,6 +376,8 @@ class KokoroEngine:
             return None
         if not self.has(voice):
             voice = self.fallback_voice
+        if voice.startswith("sample:"):
+            parts = parts[:1]  # the recording is the whole sentence: once, not once a part
         started, first = time.monotonic(), None
         proc = self._proc = subprocess.Popen(
             # A small buffer: by default the player waits for more audio before it starts, which

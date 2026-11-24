@@ -264,9 +264,10 @@ the ones after it are done together with them, not by a session alone.
       fetching first, the reminder naming the languages on, the English notice, the settings
       window's Install with its size and a bar, Remove, ticking a voice fetching it. The author
       installed Chinese from the window on the second machine (2026-11-23, 20:02); not yet
-      heard speaking Chinese there. Left: the recorded
-      samples to hear a voice before it is downloaded, `reply_language` offering only
-      languages installed, Remove for a language that is installed but off)
+      heard speaking Chinese there. Also built
+      the same night, not yet tried by the author: recorded samples to hear a voice before it
+      is downloaded (and Chinese's voices listed before Install), the summary language
+      offering only languages installed, Remove for a language that is installed but off)
       (agreed with the author 2026-11-23, from a second machine without Chinese: "for chinese
       i want to install it from settings no?"). Today `install.sh` fetches only English;
       Paola and Kokoro's Chinese model v1.1-zh with `misaki-fork[zh]` were put on the author's
