@@ -259,10 +259,32 @@ the ones after it are done together with them, not by a session alone.
       for [a] session, and I'll train the model that uses my voice". So the first
       recording is the author's own (their consent is given), and their voice becomes one
       to choose per session in the settings window, Voices.
-- [ ] `install.sh` fetching the voices of the languages chosen: Piper's
-      `it_IT-paola-medium` when Italian is chosen (`tts.PREFERRED_VOICE` asks for it), and
-      Kokoro's Chinese model v1.1-zh with `misaki-fork[zh]` when Chinese is. Both were put on
-      the author's machine by hand on 2026-11-19; a new install gets neither.
+- [ ] Languages as packs you install, so each person chooses how much storage it takes
+      (agreed with the author 2026-11-23, from a second machine without Chinese: "for chinese
+      i want to install it from settings no?"). Today `install.sh` fetches only English;
+      Paola and Kokoro's Chinese model v1.1-zh with `misaki-fork[zh]` were put on the author's
+      main machine by hand on 2026-11-19, and nothing fetches them.
+      - One switch per language in the settings window's Voices page, the same as now
+        (`speak.<lang>`), but it now means installed and on: it listens for it and speaks it.
+        A language not installed shows its size and an Install button, then a progress bar,
+        then "Remove (frees N MB)". `install.sh` asks the same, with the sizes, and
+        `sidetone languages` does the same thing, so all three install the same packs.
+      - Only the voices ticked are fetched (the author: "i dont need all 100 chinese
+        voices"): Hugging Face has each v1.1-zh voice on its own (`voices/zf_001.pt`, about
+        0.5 MB), so a voice ticked later is half a megabyte. The 325 MB model is shared by
+        all Chinese voices. Piper voices are a model each (Paola 63 MB, the Piper program
+        26 MB once). Italian's two Kokoro voices are already in the English model.
+      - ▶ before installing plays a short recorded sample of each listed voice, shipped with
+        sidetone (about 15 KB each).
+      - The size shown counts the multilingual Whisper model (about 480 MB) when the first
+        language other than English is turned on.
+      - A language not installed is never spoken (the author: "people who doesnt have
+        installed chinese, are not expecting chinese responses"): the voice reminder lists
+        the languages that are on, and a line written in another one comes in English;
+        Kokoro 1.0's espeak Chinese voices are no longer used. A line still tagged with a
+        language that is off (Claude not following) says a short English notice instead.
+      - A language off is not listened for, so spoken Chinese cannot come in; only typed
+        Chinese, or someone asking for a Chinese answer, gets there.
 
 ## 6. Release
 
