@@ -186,7 +186,11 @@ the ones after it are done together with them, not by a session alone.
       2 to 3 days: a `hub/platform.py` (sound in and out through sounddevice, the loudness meter
       fed from what the hub plays, process groups, the lock, folders), the transport behind one
       function, the hub detaching itself in place of `setsid`. Order: Windows, Linux, macOS.
-- [ ] An overlay for Linux and macOS. Today it is Windows only.
+- [ ] An overlay for Linux and macOS. Today it is Windows only on main. The Mac was built the
+      night of 2026-11-24 on the branch `mac-overlay` (a native Swift overlay, sound through
+      PortAudio), proved on GitHub's Macs but not tried on a real one; that branch's TODO.md and
+      docs/dev/features.md ("The Mac") have the details. Report:
+      https://claude.ai/artifact/JbET3SN5962skmzHzPwt7j
 - [ ] An adapter so other coding agents (Codex, Cursor and so on) get a light in the bar. The
       hub already takes plain events from anything that can send them.
       The author, 2026-11-18, by voice (the recording was cut twice, so only its gist):
