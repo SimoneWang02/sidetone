@@ -276,6 +276,8 @@ class ReplyLanguage(HubCase):
     VOICES = {"af_heart", "am_michael", "if_sara", "im_nicola", "ef_dora", "em_alex", "em_santa"}
 
     def make(self, **cfg):
+        cfg.setdefault("whisper_model", "small")  # every language on (tests/test_packs.py: one that is off)
+        cfg.setdefault("whisper_language", "auto")
         hub = super().make(**cfg)
         self.engine.voices = set(self.VOICES)
         return hub
@@ -311,7 +313,11 @@ class ReplyLanguage(HubCase):
         hub.cfg.reply_language = "spoken"
         hub.on_display(ev("MessageDisplay", delta='<speak lang="de">Hallo.</speak>'))  # no German voice
         self.spoken()
-        self.assertEqual(self.engine.spoken[-1][1], self.session()["voice"])
+        self.assertEqual(self.engine.spoken[-1], ("Hallo.", self.session()["voice"]))  # an engine that cannot tell
+        self.engine.has = lambda v: v in self.engine.voices
+        hub.on_display(ev("MessageDisplay", delta='<speak lang="de">Hallo wieder.</speak>'))
+        self.spoken()
+        self.assertEqual(self.engine.spoken[-1][0], "Answered in German, which has no voice here.")
 
     def test_a_better_voice_for_the_language_comes_first(self):
         hub = self.make()
@@ -360,7 +366,7 @@ class ReplyLanguage(HubCase):
         self.assertEqual(language.guess("Listo, ya está hecho.", mine), "")  # not one of theirs
         self.assertEqual(language.guess("Listo, ya está hecho.", ["en"]), "es")  # none named: all
 
-    def test_chinese_takes_the_chinese_model_and_falls_back_to_kokoros_own(self):
+    def test_chinese_takes_the_chinese_model_and_not_kokoros_own(self):
         hub = self.make()
         self.engine.voices |= {"zf_xiaoxiao", "zm_yunxi"}
         self.engine.has = lambda v: v in self.engine.voices or v in ("zh:zf_049", "zh:zf_006")
@@ -369,8 +375,8 @@ class ReplyLanguage(HubCase):
         self.assertEqual(self.engine.spoken[-1][1], "zh:zf_049")
         self.engine.has = lambda v: v in self.engine.voices  # the Chinese model is not installed
         hub.on_display(ev("MessageDisplay", sid="b", cwd="/work/beta", delta='<speak lang="zh">好了。</speak>'))
-        self.spoken()
-        self.assertTrue(self.engine.spoken[-1][1].startswith("z") and ":" not in self.engine.spoken[-1][1])
+        self.spoken()  # Kokoro 1.0's Chinese, through espeak, is not used (agreed 2026-11-23)
+        self.assertEqual(self.engine.spoken[-1][0], "Answered in Chinese, which is not installed.")
 
     def test_without_its_files_the_chinese_model_has_no_voices(self):
         from tts import KokoroEngine

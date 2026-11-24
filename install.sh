@@ -57,14 +57,17 @@ fi
 # Which languages push-to-talk listens for. The speech model is told which ones to expect, so
 # a short recording is not taken for a language you never speak. Asked once, of a person at a
 # terminal: a choice already in config.json (or --languages) is kept.
+# Each language's voices are fetched when it is chosen (Chinese about 430 MB), not before.
+nofetch=; [ $models = 1 ] || nofetch=--no-download
 if [ -n "$languages" ]; then
-  "$ROOT/bin/sidetone" languages "$languages" || exit 2
+  "$ROOT/bin/sidetone" languages "$languages" $nofetch || exit 2
 elif [ $hooks_only = 0 ] && [ -t 0 ] && [ -t 1 ] &&
      ! jq -e 'has("whisper_model") or has("whisper_language")' "$CONFIG" >/dev/null 2>&1; then
   echo "Which languages will you speak to it? Name only those, so a short recording is not taken for another language."
+  echo "Its spoken lines are in these languages only. English and Italian come with it; Chinese is about 430 MB more."
   for _ in 1 2 3; do
     read -r -p "Language codes, for example en or en,it (Enter = en): " languages || languages=
-    "$ROOT/bin/sidetone" languages "${languages:-en}" && break
+    "$ROOT/bin/sidetone" languages "${languages:-en}" $nofetch && break
   done
   echo "Change it any time with: sidetone languages en,it"
 fi

@@ -210,6 +210,9 @@ class Permissions:
                 saved = json.load(f)
         except (OSError, ValueError):
             saved = {}
+        engine = self.speech.engine
+        if hasattr(engine, "reload_zh"):  # `sidetone languages` may have just installed Chinese
+            engine.reload_zh()
         model = saved.get("whisper_model") or self.cfg.whisper_model
         language = saved.get("whisper_language") or self.cfg.whisper_language
         if (model, language) != (self.cfg.whisper_model, self.cfg.whisper_language):

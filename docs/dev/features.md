@@ -109,6 +109,32 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   0.9.6 in the hub's environment, `whisper_language` `en,it,zh`. Heard through the hub.
   The model was copied by hand into the author's Piper folder; `install.sh` does not
   fetch it yet.
+  Languages as packs (2026-11-23, agreed from a second machine without Chinese: "for chinese
+  i want to install it from settings no?"; "i dont need all 100 chinese voices"): a language is
+  on or off, and on means installed. `hub/packs.py` fetches a pack from pinned versions
+  (kokoro-onnx's release for the ONNX model, hexgrad/Kokoro-82M-v1.1-zh at one commit for
+  `config.json` and the voices, rhasspy's for Piper and Paola), each file checked against its
+  size and SHA-256 before it is moved in place (a cut download leaves nothing). Chinese is the
+  325 MB model, `misaki-fork[zh]==0.9.6` (about 100 MB installed, through `uv`) and only the
+  voices ticked, one `voices/<name>.pt` each (about 0.5 MB), read without PyTorch
+  (`voice_from_pt`: the zip's `data/0` is the 510 x 256 floats; its pickle is never loaded)
+  and written into `voices-v1.1-zh.bin` beside those already there; zf_049 and zm_056 fetched
+  this way equal kokoro-onnx's own `voices-v1.1-zh.bin` to the last bit. 428 MB with the four
+  default voices. Italian's two Kokoro voices are in the English model, so Italian is free;
+  Paola is 63 MB plus the Piper program, 26 MB (`install_piper`). `sidetone languages en,zh`
+  (and install.sh's question, which calls it) fetches first and saves the choice after, so a
+  language whose pack did not come is not turned on; `--no-download` with `install.sh
+  --no-models`. The running hub takes up a new Chinese at `/languages` (`reload_zh`).
+  The languages that are on (`base.languages_on`: those push-to-talk listens for, plus
+  `reply_language`; "auto" all) are the only ones spoken (the author: "people who doesnt have
+  installed chinese, are not expecting chinese responses"). The voice reminder names them
+  ("when its two-letter code is one of en, it, and in English otherwise"; English alone, "plain
+  spoken English whatever language I used"). A line still tagged with a language that is off,
+  or that has no voice here, is not read in another language's voice: `Hub._say_line` says
+  "Answered in Chinese, which is not installed." (or "..., which has no voice here." for
+  German), and the written reply has the line; the author: "yes that works for me". Kokoro
+  1.0's espeak Chinese voices are no longer used (`_voices_of`). An engine with no `has` (the
+  silent one) says every line as before.
   A line with no `lang` (2026-11-22, `language.guess`, called from `Hub._voice_for` with the
   line itself). Seen 2026-11-19: a session answered in Italian without the mark, and the
   English voice read it. The author, offered it as the next thing: "just proceed"; asked

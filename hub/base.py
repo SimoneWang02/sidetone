@@ -133,6 +133,26 @@ def fixed_language(cfg) -> str:
     return "" if chosen == "spoken" else "en" if chosen == "english" else chosen
 
 
+def languages_on(cfg) -> list:
+    """The languages that are on: the ones push-to-talk listens for, which are also the only ones
+    spoken lines may be in (the author, 2026-11-23: "people who doesnt have installed chinese, are
+    not expecting chinese responses"). Empty means any ("auto"). A summary language chosen in
+    the settings (`reply_language`) is on as well."""
+    model = str(cfg.whisper_model or "")
+    on = ["en"] if model.endswith(".en") else [c.lower() for c in str(cfg.whisper_language or "en").replace(",", " ").split()]
+    if any(c in ("auto", "any", "all") for c in on):
+        return []
+    fixed = fixed_language(cfg)
+    return on + ([fixed] if fixed and fixed not in on else [])
+
+
+def not_spoken(lang: str, installable: bool) -> str:
+    """What is said in place of a line in a language that is off or has no voice here (agreed
+    2026-11-23: the written reply has the line; this says why nothing else was heard)."""
+    name = LANGUAGE_NAMES.get(lang, "another language")
+    return f"Answered in {name}, which is not installed." if installable else f"Answered in {name}, which has no voice here."
+
+
 def aside_prompt(question: str, lang: str = "") -> str:
     """What the copy is asked. It is told the day and the time, which it cannot look up (that
     first real question got "I can't read the clock from a side question"). `lang`: the

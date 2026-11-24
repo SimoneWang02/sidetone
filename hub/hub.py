@@ -324,7 +324,7 @@ class Hub(Permissions, Talk):
                 s.note = speech or "done"
                 self._title_from(s, reply=speech, given=title_from_message(message))
                 if speech and speech != s.spoken and not self._spoken_without_hub(sid, speech):
-                    self._say(s, speech, "done", "stop", self._voice_for(s, lang_from_message(message), speech))
+                    self._say_line(s, speech, lang_from_message(message), "stop")
                 elif not speech:
                     self._flash(s, "done")  # nothing is spoken for this turn, so show it instead
                 self._unstop(sid, "its turn ended by itself")
@@ -515,7 +515,7 @@ class Hub(Permissions, Talk):
             s.spoken = speech
             self._title_from(s, reply=speech, given=title)
             if not late:
-                self._say(s, speech, "done", "stream", self._voice_for(s, lang, speech))
+                self._say_line(s, speech, lang, "stream")
         self.publish()
         return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
 
@@ -525,28 +525,56 @@ class Hub(Permissions, Talk):
         one, and always the same for a session. None = the session's own voice, for English,
         for a language Kokoro has no voice for, and with `reply_language: en`. `text`: the
         line itself, whose language is guessed when its tag has no `lang` (see language.py)."""
-        if lang == "en" or base.fixed_language(self.cfg) == "en":
-            return None
-        if not lang and text:
-            lang = language.guess(text, stt.codes(self.cfg.whisper_language))
-            if lang:
-                log(self.cfg, "hub.log", f"[{s.id[:8]}] a line with no lang, guessed {lang}: {text[:80]}")
+        lang = self._line_language(s, lang, text)
         if not lang:
             return None
-        engine = self.speech.engine
-        for wanted in (self.cfg.language_voices.get(lang), PREFERRED_VOICE.get(lang)):
-            pool = [v for v in ([wanted] if isinstance(wanted, str) else wanted or [])
-                    if isinstance(v, str) and hasattr(engine, "has") and engine.has(v)]
-            if pool:
-                return self._share(s, lang, pool)
-        letter = LANG_LETTER.get(lang)
-        known = getattr(self.speech.engine, "voices", None) or ()
-        choices = sorted(v for v in known if letter and re.fullmatch(letter + r"[fm]_\w+", v))
+        pool, choices = self._voices_of(lang)
+        if pool:
+            return self._share(s, lang, pool)
         if not choices:
             return None
         kind = s.voice[1:2] if re.fullmatch(r"[a-z][fm]_\w+", s.voice or "") else ""
         same = [v for v in choices if v[1] == kind] or choices
         return same[zlib.crc32(s.name.encode()) % len(same)]
+
+    def _line_language(self, s, lang: str, text: str = "") -> str:
+        """The language a spoken line is in: its tag's, else guessed from its words; "" for
+        English, and for every line with `reply_language: en`."""
+        if lang == "en" or base.fixed_language(self.cfg) == "en":
+            return ""
+        if not lang and text:
+            lang = language.guess(text, stt.codes(self.cfg.whisper_language))
+            if lang:
+                log(self.cfg, "hub.log", f"[{s.id[:8]}] a line with no lang, guessed {lang}: {text[:80]}")
+        return lang
+
+    def _voices_of(self, lang: str) -> tuple:
+        """The voices a language can be said in here: the chosen or preferred ones installed (to
+        share out in order), else Kokoro 1.0's own for it. Kokoro 1.0's Chinese goes through
+        espeak and is not used (agreed 2026-11-23: Chinese is spoken only once installed)."""
+        engine = self.speech.engine
+        for wanted in (self.cfg.language_voices.get(lang), PREFERRED_VOICE.get(lang)):
+            pool = [v for v in ([wanted] if isinstance(wanted, str) else wanted or [])
+                    if isinstance(v, str) and hasattr(engine, "has") and engine.has(v)]
+            if pool:
+                return pool, []
+        letter = LANG_LETTER.get(lang)
+        known = getattr(engine, "voices", None) or ()
+        return [], sorted(v for v in known if letter and letter != "z" and re.fullmatch(letter + r"[fm]_\w+", v))
+
+    def _say_line(self, s, speech: str, lang: str, src: str) -> None:
+        """A session's spoken line, in its language's voice. A line in a language that is off, or
+        that has no voice here, is not read out in a voice of another language: a short English
+        notice says so, and the written reply has the line (agreed with the author 2026-11-23)."""
+        lang = self._line_language(s, lang, speech)
+        if lang and hasattr(self.speech.engine, "has"):  # an engine that cannot tell has every voice
+            on = base.languages_on(self.cfg)
+            pool, choices = self._voices_of(lang)
+            if (on and lang not in on) or not (pool or choices):
+                log(self.cfg, "hub.log", f"[{s.id[:8]}] a line in {lang}, which is off or has no voice: {speech[:80]}")
+                self._say(s, base.not_spoken(lang, lang == "zh" or bool(pool or choices)), "done", src)
+                return
+        self._say(s, speech, "done", src, self._voice_for(s, lang))
 
     def _share(self, s, lang: str, pool: list) -> str:
         """A voice of `pool` for this session's lines in `lang`: the one it had, else the first
