@@ -1,10 +1,16 @@
 # The macOS overlay built and pictured on GitHub's Macs, and the hub's tests run there, since the
 # author has no Mac at hand. Pictures: the run's "pictures" artifact (gh run download).
 name: mac
+# Only for changes the Mac can see, and only the newest push: GitHub's Macs are few, and a queue
+# of runs for every push ended in "not acquired by a runner" failures (2026-11-24).
 on:
   push:
     branches: [mac-overlay]
+    paths: ['overlay/mac/**', 'hub/**', 'hooks/*.sh', 'install.sh', 'tests/**', '.github/workflows/mac.yml']
   workflow_dispatch:
+concurrency:
+  group: mac-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   overlay:
     # macOS 15, and macOS 26 for its Liquid Glass (a newer runner, which may not always be there).

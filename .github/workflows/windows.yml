@@ -4,7 +4,11 @@ name: windows
 on:
   push:
     branches: [mac-overlay]
+    paths: ['hooks/win/**', 'hub/**', 'overlay/Overlay.cs', 'install.ps1', 'uninstall.ps1', 'tests/win_check.py', 'tests/mac_voice_check.py', '.github/workflows/windows.yml']
   workflow_dispatch:
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   native:
     runs-on: windows-latest
