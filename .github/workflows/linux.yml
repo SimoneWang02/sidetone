@@ -22,10 +22,14 @@ jobs:
       - name: Packages
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb xdotool imagemagick libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-keysyms1 \
-            libxcb-render-util0 libxcb-xinerama0 libxcb-image0 libegl1 jq curl > /dev/null
+          # What Qt's X11 plugin needs; a desktop has these already, a bare server does not.
+          sudo apt-get install -y -qq xvfb xdotool imagemagick jq curl libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 \
+            libxcb-keysyms1 libxcb-render-util0 libxcb-xinerama0 libxcb-image0 libxcb-randr0 libxcb-shape0 libxcb-xfixes0 \
+            libxcb-xkb1 libxcb-sync1 libxcb-shm0 libegl1 libgl1 libfontconfig1 libdbus-1-3 fonts-dejavu-core
           python -m pip install -q PySide6-Essentials python-xlib numpy
       - name: Pictures and keys
+        env:
+          QT_DEBUG_PLUGINS: '0'
         run: xvfb-run -a -s "-screen 0 1440x900x24" python tests/linux_check.py "$(which python)" pictures
       - name: The hub, started by a hook, opening the overlay itself
         run: xvfb-run -a -s "-screen 0 1440x900x24" python tests/mac_hub_check.py pictures
