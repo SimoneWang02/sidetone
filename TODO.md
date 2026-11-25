@@ -194,8 +194,11 @@ Roughly easiest first, the larger ones after.
       the lights stay, a plushie beside the words in the bubble, the request and the details
       (`plushie-bubble.html`, real size): "I like the idea. I really do"; Bobble's neck looked cut
       (mended); but the plushies "seem very AI generated ... I want alternatives": an agent found
-      twelve (2026-11-25), sketched moving in all six states at real size (`alternatives.html`, **not
-      seen by them yet**); its favorite, an ink hand in the margin, needs a person to draw it. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      twelve (2026-11-25), sketched moving in all six states at real size (`alternatives.html`): "I like none of
+      them". Their taste, same day: "I personally like plushies, they're good. I love pixel art. I
+      play a lot of League of Legends ... a lot of games". Then six more in the bubble, each to
+      compare (`six-looks.html`, **not seen by them yet**): living glass, one fish, own photos, an
+      animatic for an illustrator, plushies in 3D fur, original pixel familiars. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
