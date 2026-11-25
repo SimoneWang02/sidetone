@@ -173,6 +173,12 @@ author: "this is the next step ... I don't have time right now to follow you. An
 want you to do it autonomously. I want to follow you in this progress." So this step and
 the ones after it are done together with them, not by a session alone.
 
+The author, by voice, 2026-11-25: "first version I would say compatibility across all platforms,
+all the features that we've done". Told in reply: the Mac, native Windows and Linux desktop are on
+`mac-overlay`, which has gone apart from main (19 and 21 commits), and nobody has used them on a
+real machine; proposed: all platforms in it, Windows with WSL as the finished one and the others
+called previews until a person has followed `docs/testing/` (on that branch) on each. Not answered yet.
+
 - [ ] Packaging as a Claude Code plugin, so it installs in one step.
 - [ ] A version that runs on Windows itself, without WSL (the author, 2026-11-17, on learning
       that Claude Code started from PowerShell or cmd does not start any of this: it reads
