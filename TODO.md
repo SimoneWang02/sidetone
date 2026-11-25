@@ -161,7 +161,9 @@ Roughly easiest first, the larger ones after.
       ("they all look good. We can improve in the future"; no trouble running it). Needs you: no
       circle but "a golden aura behind them" and a cartoon exclamation mark by the mouth; seen:
       "too much aura. It should be just a slight glow", and the mark "might be too cartoonish".
-      Now a slight glow and a small plain mark, **not seen by them yet**. Previews only: "don't
+      A slight glow ("the glow is good") on the outline
+      or, their wish, as a circle behind: both to compare; the small mark "might be too small":
+      larger, or inside a bubble, or none. **Not chosen yet**. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
