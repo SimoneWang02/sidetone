@@ -199,7 +199,10 @@ Roughly easiest first, the larger ones after.
       play a lot of League of Legends ... a lot of games". Then six more in the bubble, each to
       compare (`six-looks.html`): living glass ("very confusing"), one fish ("not good"), own photos (no),
       an animatic for an illustrator ("we can work on that"), plushies in 3D fur ("quite scary"),
-      original pixel familiars (**not judged yet**). 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      original pixel familiars. Kept: the pixel ones and the commissioned character ("we can
+      definitely improve those"), without the rectangle around them ("occupy much more space"):
+      free, inside or on the bubble's edge, and the operator in pixels too
+      (`pixel-companions.html`, **not seen by them yet**). 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
