@@ -396,11 +396,15 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         the test said "Got it" wrongly in the call, for two mute events of its own start). So: press to start works, the second press does not, so far.
         Windows' default microphone is the Nuroum on the desk: the hub would have to
         open the headset's by name. Not tried: Spotify playing, AirPods, through a wall.
-      - on hold since 2026-11-24 (the author: "I'll do it later"). Next: the second test, not
-        run yet: music on, `tests/headset/run.sh` (AirPods: `--mic=` and part of their name in
-        Windows), press Start, about three minutes, a voice says each step. With the microphone
-        open it asks for one press, two, and a hold, then the same in a reported call, then
-        with music playing. If nothing arrives: press to start, silence to send.
+      - second test with the Bose, the same evening (`tests/headset/run.sh`; AirPods: `--mic=`
+        and part of their name in Windows), one try of each: microphone closed, a press came
+        as Play again. Microphone open: one press, two, and a hold all sent nothing. In a
+        reported VoIP call: one press nothing (as in the first test), **two quick presses "end
+        requested"** (1 s after the tone), a hold nothing. So press to start, double
+        press to send can work on this headset; seen once, not yet repeated. The part with
+        music playing was skipped by the test (nothing was playing when Start was pressed).
+        Next: repeat the double press several times; music playing; AirPods; silence to send
+        as the way for headsets where no press arrives.
       - where it goes, asked and not settled: the author thought of a repo of its own ("not
         everybody has Bose"); advised here, off by default, in a file of its own, since
         nothing in it is Bose's and it needs the hub's recording.
