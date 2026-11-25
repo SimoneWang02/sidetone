@@ -12,6 +12,7 @@ import time
 
 import base
 import claude_sessions
+import headset
 import usage
 import stt
 import terminal as terminal_mod
@@ -36,10 +37,12 @@ class Talk:
 
     # --- push-to-talk ------------------------------------------------------------------------
 
-    def talk_start(self) -> bool:
-        """The talk key went down: go quiet and record."""
+    def talk_start(self, mic=None) -> bool:
+        """The talk key went down, or a headset's button was pressed (`mic`: its own microphone):
+        go quiet and record."""
+        mic = mic or self.recorder
         with self.lock:
-            if self._talking or not self.recorder:
+            if self._talking or not mic:
                 return False
             s = self._target()
             before, since = self._focus_lost
@@ -51,7 +54,7 @@ class Talk:
             if not s:
                 self._talk("failed", None, "No Claude session to talk to", seconds=2)
                 return False
-            self._talking = time.monotonic()
+            self._talking, self._mic = time.monotonic(), mic
             self._sent = None  # speaking again: what went out before stays out
             self.talk_target = s.id  # the session shown as listening is the one that gets it
             if not (self._pending and self._pending.confirm):  # that one may be about to get its confirming tap
@@ -59,7 +62,7 @@ class Talk:
                 self._talk("listening", s)
         self.speech.pause()
         self._push_to_mute(True)  # first, so the call hears none of the first word
-        self.recorder.start()
+        mic.start()
         if self.transcriber:  # load the model while the user is still speaking
             threading.Thread(target=self.transcriber.load, daemon=True).start()
         self.publish()
@@ -73,7 +76,9 @@ class Talk:
                 return
             held, self._talking = time.monotonic() - self._talking, None
             confirming = self._pending if self._pending and self._pending.confirm else None
-            tap, said_to, heard = held < base.TAP, None, None
+            by_headset = self._mic is self.headset_mic
+            self._headset = None
+            tap, said_to, heard = held < base.TAP and not by_headset, None, None
             if not tap:
                 # Who was listening when the key came up gets the words. Decided here, before
                 # the tail of the recording and the second or two of turning it into text:
@@ -84,14 +89,14 @@ class Talk:
                 heard = self._heard = object()
                 self._talk("transcribing", said_to)
         try:
-            pcm = self.recorder.stop(tail=0 if tap else self.cfg.talk_tail)
+            pcm = self._mic.stop(tail=0 if tap else self.cfg.talk_tail)
         except Exception:
             self._transcribing, self._heard = False, None
             raise
         finally:
             self._push_to_mute(False)
         # A line cut by the key is said again, unless you held the key to answer that very session.
-        self.speech.resume(answering=said_to.id if said_to else "")
+        self._speak_again(by_headset, said_to.id if said_to else "")
         if tap and confirming:
             self._send(confirming)
         elif tap:
@@ -108,6 +113,33 @@ class Talk:
         else:
             threading.Thread(target=self._transcribe, args=(pcm, said_to.id if said_to else None, heard),
                              daemon=True).start()
+        self.publish()
+
+    def _speak_again(self, by_headset: bool, answering: str = "") -> None:
+        """The voice goes on after a recording: at once, or when the headphones are back from
+        their microphone, as what is played before that is lost."""
+        if not by_headset:
+            return self.speech.resume(answering=answering)
+
+        def back():
+            if not self._talking:
+                self.speech.resume(answering=answering)
+        timer = threading.Timer(headset.BACK, back)
+        timer.daemon = True
+        timer.start()
+
+    def talk_drop(self, words: str) -> None:
+        """A recording is given up by itself, and why (one through the headset that went wrong)."""
+        with self.lock:
+            if not self._talking:
+                return
+            self._talking = None
+            by_headset = self._mic is self.headset_mic
+            self._talk("failed", self._target(), words, seconds=3)
+            self._signal("failed")
+        self._mic.stop()
+        self._push_to_mute(False)
+        self._speak_again(by_headset)
         self.publish()
 
     def _keep_recording(self, pcm: bytes, text: str, language: str, session: str | None) -> None:
@@ -1050,6 +1082,7 @@ class Talk:
         stopped = dropped = False
         with self.lock:
             talking, self._talking = self._talking, None
+            by_headset, self._headset = bool(talking) and self._mic is self.headset_mic, None
             about = self.sessions.by_id.get(self._pending.session) if self._pending else self._target()
             had_pending = self._cancel_pending()
             # Let go already, the words not out of the speech model yet: they are dropped when they come.
@@ -1074,9 +1107,11 @@ class Talk:
                     self._signal("failed")
                     log(self.cfg, "hub.log", f"stop [{s.id[:8]}] asked for with the cancel key")
         if talking:
-            self.recorder.stop()
+            if by_headset:
+                self._mic.sent = False
+            self._mic.stop()
             self._push_to_mute(False)
-            self.speech.resume()
+            self._speak_again(by_headset)
         elif not (had_pending or took_back or hearing or stopped or dropped):
             self.speech.skip()
         self.publish()

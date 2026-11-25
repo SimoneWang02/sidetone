@@ -1003,6 +1003,26 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the bar. Holding the same keys for 0.2 s also brings the panel out while they are held (the
   author: "ctrl+alt should open the details"), except during push-to-talk, which shows in its
   bubble. AltGr (right Alt, which Windows reports as Ctrl+Alt) is ignored for both.
+- A headset's button to talk (2026-11-24, `headset_button`, `headset_seconds`, `headset_send`;
+  `hub/headset.py`, `headset/Headset.cs`). The author was listening to a message while walking
+  away from the PC and wanted to answer. What was measured with their Bose is in `TODO.md`
+  ("AirPods paired with the PC"); the test for it is `tests/headset`. While a session speaks and
+  for `headset_seconds` (60) after, the Windows program holds a media session of its own, so a
+  press comes to it and not to the music; the rest of the time it holds none. With no music
+  playing it says paused: a press is Play, and a Pause (headphones that pause when taken off) is
+  ignored. With music it has to appear anew saying playing to get the press, which then is a
+  Pause and does not stop the music. It looks once a second whether that changed. A media key of
+  the keyboard (seen by a keyboard hook just before) and a double press are passed on to the
+  music. A press opens the microphone whose name in brackets is that of the headphones in use
+  (Windows' default microphone may be on the desk), reports a call to Windows (`CALLS`, 11 24H2;
+  compiled without where that is missing) and plays a tone; the audio comes to the hub as it
+  is recorded and takes the place of `parec`'s (`talk_start(mic)`). Two quick presses come back
+  as the call's end (or, not seen, a mute) and send. `headset_send: auto` also sends after 4 s of
+  silence, until the presses have once worked on those headphones (`headsets.json` in the state
+  folder), and never over music, where it may have been headphones taken off. Dropped, with a
+  lower tone and why on the light: 8 s without the microphone, 10 s with nothing said, 120 s
+  without an end. The voice waits 5.5 s after it (`BACK`), as the headphones take about five
+  to switch back. A press also confirms words that wait for a tap. No code for a brand.
 - Discord muted while you talk (2026-11-20, `push_to_mute`, true; `push_to_mute_key`, `F24`;
   `Talk._push_to_mute`, `HoldKey` in `Overlay.cs`, `sidetone discord-key`). The author, by
   voice: "is it possible that when talking I don't speak to Discord?", then "yes and make it a
@@ -1574,7 +1594,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`always`/`never`, `never` by default; `auto`, said only with several sessions and no overlay, dropped 2026-11-20: "make it two choices ... I want to reduce [friction]"), `titles` (`ask`/`auto`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `headset_button`, `headset_seconds`, `headset_send`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `SIDETONE_OVERLAY=off` disables the overlay.
 - `~/.local/state/sidetone/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).

@@ -419,12 +419,15 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         alarms. Left on, it probably comes as Pause, which is also what a press is while our
         session says playing. While it says paused a press is Play, so a Pause can be ignored:
         say paused when no music plays, and have a recording without words send nothing. Not tried: AirPods, distance, a press while a reply is being spoken.
-      - to decide: how long a press belongs to Sidetone. Proposed: for a minute after a session
-        has spoken, a setting, else to the music. Then build it, off by default, with silence
-        to send as the way for headsets where no press arrives in a call.
-      - where it goes, asked and not settled: the author thought of a repo of its own ("not
-        everybody has Bose"); advised here, off by default, in a file of its own, since
-        nothing in it is Bose's and it needs the hub's recording.
+      - built the same night on the author's word ("we can proceed"; a minute after a session
+        speaks was proposed and not objected to), in this repo in files of its own
+        (`headset/Headset.cs`, `hub/headset.py`): `headset_button`, "Headset Button", off by
+        default, on in their config; the auto pause is in the setting's description ("we can
+        notify this to users"). **To try by them**: nobody has pressed the button with it yet.
+        Seen live without a press: it took the button from Chrome while that played and gave
+        it back, and opened the Bose microphone in 0.6 s, in a call. Keyboard media keys in that
+        minute are passed on to the music, also not pressed by anyone. Not built: wired
+        headsets, Mac and Linux.
       - to check by hand first, with a small logging window: what the hook, SMTC and the VoIP
         call see for a press with nothing open, with Spotify, and with the microphone open;
         and whether Windows records from the headset at all (there is a Nuroum V11 microphone).
