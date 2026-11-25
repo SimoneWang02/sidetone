@@ -156,7 +156,8 @@ Roughly easiest first, the larger ones after.
       backgrounds first, then ... the fishes". Background redone (stone, wood, plants, sand, light
       by the hour); then "remove the lily pads", "less details and smaller", "otherwise ... a
       setting": Background Bare (no rocks, their word), Calm (the default) or Full. Then the fish: "the
-      Koi ... its mouth is not very detailed": mouths, heads, scales and fins of all six redone,
+      Koi ... its mouth is not very detailed": mouths, heads, scales and fins of all six redone; then
+      koi patches, a round spined puffer, room for 20, and a bare overlay size with fewer names,
       **not seen by them yet**. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
