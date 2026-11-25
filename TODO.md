@@ -155,7 +155,9 @@ Roughly easiest first, the larger ones after.
       evening and night "I love it"; the rocks showed their triangles; "polish better the
       backgrounds first, then ... the fishes". Background redone (stone, wood, plants, sand, light
       by the hour); then "remove the lily pads", "less details and smaller", "otherwise ... a
-      setting": Background Bare, Calm (the default) or Full, **not seen by them yet**; fish next. Previews only: "don't
+      setting": Background Bare (no rocks, their word), Calm (the default) or Full. Then the fish: "the
+      Koi ... its mouth is not very detailed": mouths, heads, scales and fins of all six redone,
+      **not seen by them yet**. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
