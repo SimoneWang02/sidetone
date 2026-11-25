@@ -173,7 +173,8 @@ Roughly easiest first, the larger ones after.
       1200 by 900 on the RTX 5070, over a 10 % / 46.6 W desktop: 200 pictures a second (their
       screen's rate, as it ran until then) +8 % and +10.8 W, 60 +5 % and +6 W, resting (25, one
       fish working) +1 % and +2.5 W; 3. working,
-      idle and done told apart; 4. size; 5. counts and labels at 20; 6. small flaws. Open: the
+      idle and done told apart: idle low with folded fins, working higher with a thin trail of
+      bubbles (built, **not seen by them yet**); 4. size; 5. counts and labels at 20; 6. small flaws. Open: the
       overlay itself, or (Claude's advice) what opens from the bar. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
