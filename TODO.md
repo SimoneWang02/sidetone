@@ -403,8 +403,17 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         requested"** (1 s after the tone), a hold nothing. So press to start, double
         press to send can work on this headset; seen once, not yet repeated. The part with
         music playing was skipped by the test (nothing was playing when Start was pressed).
-        Next: repeat the double press several times; music playing; AirPods; silence to send
-        as the way for headsets where no press arrives.
+      - the rehearsal with the Bose (`tests/headset/run.sh --rehearse`), the same night: press
+        once, microphone and reported call, a tone, talk, two quick presses. **5 of 5 rounds
+        started and were sent**; the tone came 0.73 to 0.84 s after the press. Spotify playing:
+        with our session saying paused the press went to Spotify (it paused); with ours
+        closed and back saying playing, it came to us (Pause) and Spotify played on. Taking
+        the headphones off and on with music sent nothing and Spotify played on. So our session
+        has to say playing while it wants the press, and then the press does not pause the
+        music. Not tried: AirPods, distance, a press while a reply is being spoken.
+      - to decide: how long a press belongs to Sidetone. Proposed: for a minute after a session
+        has spoken, a setting, else to the music. Then build it, off by default, with silence
+        to send as the way for headsets where no press arrives in a call.
       - where it goes, asked and not settled: the author thought of a repo of its own ("not
         everybody has Bose"); advised here, off by default, in a file of its own, since
         nothing in it is Bose's and it needs the hub's recording.
