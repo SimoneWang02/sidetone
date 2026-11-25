@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# The quick tests (about 4 seconds) on what is being committed. Documentation alone skips them.
+# Turned on in a clone with: git config core.hooksPath .githooks
+. "$(dirname "$0")/check.sh"
+
+main() {
+    local files tmp
+    files=$(git diff --cached --name-only)
+    if [ -z "$files" ] || only_documentation <<<"$files"; then return 0; fi
+    tmp=$(mktemp -d) || return 1
+    trap "rm -rf '$tmp'" EXIT
+    git checkout-index -a --prefix="$tmp/tree/" || return 1
+    if ! run_tests quick "$tmp/tree"; then
+        echo "sidetone: not committed. Fix the tests; do not skip them with --no-verify." >&2
+        return 1
+    fi
+}
+
+main; exit

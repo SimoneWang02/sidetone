@@ -114,6 +114,9 @@ Where the code is:
 
 - `~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests` (silent engine,
   fake microphone, the real hook scripts over a socket, a real hub killed and restarted).
+- `.githooks/` runs the quick tests on each commit (4 s) and all of them on each push (52 s), on a
+  clean copy of what is committed, not the shared folder; documentation alone skips them. Never
+  use `--no-verify`. A new clone turns it on with `git config core.hooksPath .githooks`.
 - `tests/overlay_check.py OUT_DIR [--glass] [--only=NAME]`: a picture of every overlay view,
   taken from the overlay's own windows. `tests/keys_check.py`: the keyboard hook with a spare key.
 - A real session without the author: `claude --model haiku` in a detached tmux session (unset

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Every test (about 52 seconds) on the commit being pushed. Documentation alone skips them.
+. "$(dirname "$0")/check.sh"
+
+main() {
+    local ref sha remote_ref remote_sha tmp tested=""
+    while read -r ref sha remote_ref remote_sha; do
+        case $sha in *[!0]*) ;; *) continue ;; esac  # a branch being deleted
+        case " $tested " in *" $sha "*) continue ;; esac
+        if git cat-file -e "$remote_sha^{commit}" 2>/dev/null \
+            && git diff --name-only "$remote_sha" "$sha" | only_documentation; then continue; fi
+        tmp=$(mktemp -d) || return 1
+        mkdir "$tmp/tree"
+        if ! git archive "$sha" | tar -x -C "$tmp/tree" || ! run_tests all "$tmp/tree"; then
+            rm -rf "$tmp"
+            echo "sidetone: not pushed (${sha:0:7}). Fix the tests; do not skip them with --no-verify." >&2
+            return 1
+        fi
+        rm -rf "$tmp"
+        tested="$tested $sha"
+    done
+}
+
+main; exit
