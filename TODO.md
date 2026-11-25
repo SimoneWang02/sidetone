@@ -163,7 +163,8 @@ Roughly easiest first, the larger ones after.
       "too much aura. It should be just a slight glow", and the mark "might be too cartoonish".
       A slight glow ("the glow is good") on the outline
       or, their wish, as a circle behind: both to compare; the small mark "might be too small":
-      larger, or inside a bubble, or none. **Not chosen yet**. Previews only: "don't
+      larger, or inside a bubble ("I like the exclamation mark", its yellow border taken out), or
+      none. **The glow is not chosen yet**. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
