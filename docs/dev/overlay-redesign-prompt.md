@@ -21,6 +21,12 @@ anyone need me, who, and who is speaking?
   "api-server" (working: "Running the tests", 6m, context 56%, tasks 3/5), "web-app" (needs you:
   "Which drink would you like?", context 83%), "data-pipeline" (failed: "error: rate limit"),
   "notes" (idle). Each has its own color, a name and a short title. One is selected.
+- Those five are only a sample with one session per state. Every design must work from 1 to 20
+  sessions (draw 5 and 12 in the rough round, 1 and 20 as well in later ones): several can be in the same state, three can need me at
+  once, and two can share a project name. Say what happens as they grow (shrink, fold, group,
+  page) and where it breaks. Sessions that need me, speak or are selected never fold away; folded
+  ones keep their place and a count by state. The footprint may not grow in step with the number.
+  Past about 8 sessions color cannot identify them, so name, place or shape must.
 - Speaking: api-server says "All forty two tests pass." with a voice-reactive element.
 - A permission request: web-app wants to push to the remote, `git push origin main`, with
   Ctrl+Alt+Y allow and Ctrl+Alt+N deny, and "2 more waiting". Keep allow and deny well apart.
@@ -65,11 +71,11 @@ Anthropic logos. Must read at 24 px (body, two eyes, one state change), 32 (one 
    each, think of several and take one you would not have reached for first. If a combination
    clashes, use the clash; change a value only if it is impossible, and say so. Then stop.
 2. When I say "batch N", draw rows 5N-4 to 5N, each on its own artboard, rough: the idle overlay
-   on a desktop, all five sessions, the permission request, listening, and a gray 64 px
+   on a desktop, all five sessions, a crowded 12, the permission request, listening, and a gray 64 px
    silhouette. Animate one moment per design in code. Before drawing, list the forms already used.
 3. After each batch, score every design 1 to 5 on: difference from all the others, one-second
-   glance, small footprint, motion with meaning, can be built in WPF, charm. Redo any with less
-   than 3 on difference. This round, a low WPF score is fine: just say why.
+   glance, still clear with 20 sessions, small footprint, motion with meaning, can be built in
+   WPF, charm. Redo any with less than 3 on difference or on 20 sessions. This round, a low WPF score is fine: just say why.
 
 **The table** (form / a session is a / material / world / state shown by / motion / density / characters)
 
