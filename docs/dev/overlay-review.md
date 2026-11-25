@@ -224,13 +224,14 @@ The smallest change, and the one felt all day.
 - A tick of the session's color on every light in the bar layout: about 3 by 14 px at the edge
   of the row, on the side where the details come out, so it meets the name when they do. The
   island layout already has such a dash (`Pip`, `:2668`, hidden in the bar at `:3487`).
-- A name tag at the light of every session that needs you, staying until it is answered. Three
-  waiting are then three names, where today the request names one and says "2 more waiting"
-  (`:4808`). Among twenty lights, three tags standing out of the column are found at once; the
-  living aquarium's pills showed that.
+- The color is also the faint tint of the session's terminal (`hub/terminal.py`), so the tick
+  ties a light to the window it belongs to.
+- Dropped on checking the code: a name tag at each light that needs you. While a request waits
+  the details are out with every name beside its light (`IsOpen`, `:3421`), so the tag would say
+  what is already on the screen.
 - Risk: api-server's orange next to the amber of "needs you". The tick is small and at the edge,
   never on the disc, so place tells the two apart. To check in a picture.
-- Setting: Session Color On The Bar, on or off; Name Tags, on or off.
+- Setting: Session Color On The Bar, on or off.
 
 ### 3. Fit twenty (problem 1)
 
@@ -242,8 +243,16 @@ The smallest change, and the one felt all day.
   about 30 px on a 768 px laptop. The disc goes from 26 to about 18 px there.
 - Guess: the five shapes still read at 18 px; the context arc and the waiting number get tight.
   `tests/overlay_check.py` with twenty sessions would show it.
-- No fold and no count by state: both move lights or add a thing to read, and the name tags
-  already answer "does anyone need me" in a crowd.
+- The cost, not drawn: a row of 30 px holds one line of text where today's holds two. In the
+  details the second line (what the session is doing) would have to go when rows are squeezed,
+  or show only for the session in focus. To decide before building.
+- No fold and no count by state: both move lights or add a thing to read.
+
+### The preview
+
+A drawn page, not the overlay: today's bar beside the proposed one for each step, with the
+overlay's own sizes, colors and speeds, the twenty at real size on a 768 px screen. Published
+for the author as a private artifact on 2026-11-25; its source was a temporary file.
 
 ### What these three do not fix
 
