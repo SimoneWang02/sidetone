@@ -168,7 +168,11 @@ Roughly easiest first, the larger ones after.
       `docs/dev/overlay-review.md` scored it 17 of 30 to today's 21 (before the mouths and the
       glow). Its points "one by one" (the author): 1. done leaves a mark: a pearl held in the
       mouth ("I don't quite like it"), now a tick in a bubble, or the fish stays at the surface, to
-      compare (**not chosen yet**); 2. nearly still when nothing changes; 3. working,
+      compare (**not chosen yet**); 2. nearly still when nothing changes: rests after
+      10 s without news (setting), built, **not seen by them yet**. Measured in headless Edge at
+      1200 by 900 on the RTX 5070, over a 10 % / 46.6 W desktop: 200 pictures a second (their
+      screen's rate, as it ran until then) +8 % and +10.8 W, 60 +5 % and +6 W, resting (25, one
+      fish working) +1 % and +2.5 W; 3. working,
       idle and done told apart; 4. size; 5. counts and labels at 20; 6. small flaws. Open: the
       overlay itself, or (Claude's advice) what opens from the bar. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
