@@ -146,7 +146,7 @@ Roughly easiest first, the larger ones after.
       Clawd, as one theme among several, one per session and small ones for subagents; the bar,
       panel and bubble first; any idea in the first 50, buildable ones after. It reopens the
       "left out: animation" of the next item, if the author likes what comes back.
-      What came back: nothing "crazy" (they named Table Setting and Paperflies, why not asked yet).
+      What came back: nothing "crazy" (they named Table Setting and Paperflies; asked why, not answered yet).
       Then twelve plush families drawn in code (`docs/dev/looks/plushies.html`: "I love these
       plushies", which ones not said) and, their idea, an aquarium with a fish for each session
       (`aquarium.html`, **not seen by them yet**): looks as themes that answer the same states.
