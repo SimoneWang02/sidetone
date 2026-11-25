@@ -430,6 +430,9 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         (`tests/headset` needs `--mic=Leviathan` now.) Paired again since, it gives
         sound. The music is left playing while you talk, in call quality: pausing it was offered,
         the author: "we can move on ... It's not a big deal" (2026-11-25).
+        **Used by them** at 00:01 that night, start to end: pressed, open after 0.77 s, two
+        presses, 4.5 s heard as "Is there a fix to that?" and sent to this session. Left to
+        try: from the kitchen, over music, the keyboard's media keys, AirPods.
         Seen live without a press: it took the button from Chrome while that played and gave
         it back, and opened the Bose microphone in 0.6 s, in a call. Keyboard media keys in that
         minute are passed on to the music, also not pressed by anyone. Not built: wired
