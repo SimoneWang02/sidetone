@@ -76,7 +76,7 @@ class App : Form {
         lock (gate) { log.WriteLine(line); log.Flush(); Console.WriteLine(line); }
         if (me != null && me.IsHandleCreated) try { me.BeginInvoke((Action)(() => me.box.AppendText(line + "\r\n"))); } catch { }
     }
-    static volatile bool armed; static string last = "";
+    readonly ManualResetEvent pressed = new ManualResetEvent(false), ended = new ManualResetEvent(false); static bool rehearse; static volatile bool armed; static string last = "";
     static void Event(string tag, string text) { Log(tag, text + (armed ? "" : "   (not counted)")); if (!armed) return; heard++; last = text; if (!check) Beep(1320, 90); }
     public static byte[] Wav(byte[] pcm, int rate) {
         var m = new MemoryStream(); var w = new BinaryWriter(m);
@@ -96,7 +96,7 @@ class App : Form {
         go.Text = "Start (put the headphones on, then you can walk to the kitchen)"; go.Dock = DockStyle.Top; go.Height = 64; go.Font = new Font("Segoe UI", 13);
         box.Multiline = true; box.Dock = DockStyle.Fill; box.ReadOnly = true; box.ScrollBars = ScrollBars.Vertical; box.Font = new Font("Consolas", 10);
         Controls.Add(box); Controls.Add(go);
-        go.Click += delegate { go.Enabled = false; var t = new Thread(Run); t.IsBackground = true; t.Start(); };
+        go.Click += delegate { go.Enabled = false; var t = new Thread(rehearse ? (ThreadStart)Rehearse : Run); t.IsBackground = true; t.Start(); };
         Shown += delegate {
             proc = OnKey; hook = SetWindowsHookEx(13, proc, GetModuleHandle(null), 0); Log("HOOK", "installed " + (hook != IntPtr.Zero));
             if (check) { var t = new Thread(Check); t.IsBackground = true; t.Start(); }
@@ -118,7 +118,7 @@ class App : Form {
                 if (smtc == null) {
                     var f = (ISmtcInterop)WindowsRuntimeMarshal.GetActivationFactory(typeof(SystemMediaTransportControls));
                     var iid = new Guid("99FA3FF4-1742-42A6-902E-087D41F965EC"); smtc = f.GetForWindow(Handle, ref iid);
-                    smtc.ButtonPressed += (s, e) => Event("SMTC", e.Button.ToString());
+                    smtc.ButtonPressed += (s, e) => { Event("SMTC", e.Button.ToString()); pressed.Set(); };
                 }
                 smtc.IsEnabled = true; smtc.IsPlayEnabled = smtc.IsPauseEnabled = smtc.IsStopEnabled = smtc.IsNextEnabled = smtc.IsPreviousEnabled = true;
                 smtc.DisplayUpdater.Type = MediaPlaybackType.Music; smtc.DisplayUpdater.MusicProperties.Title = "Sidetone headset test"; smtc.DisplayUpdater.Update();
@@ -155,7 +155,7 @@ class App : Form {
         try {
             coord.MuteStateChanged += (s, e) => Event("VOIP", "mute changed, muted " + e.Muted);
             call = coord.RequestNewOutgoingCall("sidetone-test", "Sidetone", "Sidetone headset test", VoipPhoneCallMedia.Audio);
-            call.EndRequested += (s, e) => { Event("VOIP", "end requested"); EndCall(); };
+            call.EndRequested += (s, e) => { Event("VOIP", "end requested"); ended.Set(); EndCall(); };
             call.HoldRequested += (s, e) => Event("VOIP", "hold requested"); call.ResumeRequested += (s, e) => Event("VOIP", "resume requested");
             call.AnswerRequested += (s, e) => Event("VOIP", "answer requested"); call.RejectRequested += (s, e) => Event("VOIP", "reject requested");
             if (ids.Count > 0) call.NotifyCallActive(ids); else call.NotifyCallActive();
@@ -201,6 +201,44 @@ class App : Form {
         } catch (Exception e) { Log("ERROR", e.ToString()); }
         Cleanup(); ResumeMusic(); if (!quit) Ui(Close);
     }
+    bool Await(ManualResetEvent e, double seconds) { var w = Stopwatch.StartNew(); while (!quit && w.Elapsed.TotalSeconds < seconds) if (e.WaitOne(50)) return true; return false; }
+    // One round as the feature would do it: press once, the microphone opens, a tone, talk, press twice.
+    string Round(int n) {
+        Say("Round " + n + ". Press once when you like."); pressed.Reset(); Log("ROUND", n + " waiting for the press");
+        if (!Await(pressed, 25)) { Say("No press arrived."); return "no start"; }
+        var t = Stopwatch.StartNew(); bool stop = false; var ready = new ManualResetEvent(false); ended.Reset();
+        var m = new Thread(() => Mic.Record(match, Path.Combine(dir, "round" + n + ".wav"), () => stop || quit, delegate { ready.Set(); })); m.IsBackground = true; m.Start();
+        if (!Await(ready, 8)) { stop = true; m.Join(3000); Say("The microphone did not open."); return "no microphone"; }
+        StartCall(); Beep(660, 400); Log("ROUND", n + " tone " + t.ElapsedMilliseconds + " ms after the press");
+        bool sent = Await(ended, 20); Log("ROUND", n + (sent ? " ended by the headset after " : " NOT ended, gave up after ") + t.ElapsedMilliseconds + " ms");
+        EndCall(); stop = true; m.Join(5000); Beep(sent ? 880 : 330, 400); Wait(7);
+        Say(sent ? "Sent." : "The two presses did not arrive."); return sent ? "sent" : "not sent";
+    }
+    void Rehearse() {
+        GlobalSystemMediaTransportControlsSession music = null; bool started = false;
+        try {
+            voice = new SpeechSynthesizer(); voice.SetOutputToDefaultAudioDevice(); Sessions(); PauseMusic();
+            try { ids = Devices(); } catch (Exception e) { ids = new List<string>(); Log("VOIP", e.Message); }
+            Say("Rehearsal. Five rounds. In each one: press once, wait for the tone, say a short sentence, then press twice quickly. I start in ten seconds."); Wait(10);
+            Claim(); Wait(1); armed = true; var got = new List<string>();
+            for (int n = 1; n <= 5 && !quit; n++) got.Add(Round(n));
+            armed = false; Log("ROUND", "results: " + string.Join(", ", got)); Say(got.Count(x => x == "sent") + " of 5 were sent.");
+            music = paused.FirstOrDefault() ?? Get(GlobalSystemMediaTransportControlsSessionManager.RequestAsync()).GetSessions().FirstOrDefault(x => !x.SourceAppUserModelId.StartsWith("HeadsetTest"));
+            if (music == null) { Say("No music program is open, so I skip the music part."); }
+            else {
+                started = true; Say("Now with music. I start it."); Log("MEDIA", "playing " + music.SourceAppUserModelId + ": " + Get(music.TryPlayAsync())); Wait(3); Sessions();
+                Ask("After the tone: press once.", 8); Sessions();
+                Log("MEDIA", "playing again: " + Get(music.TryPlayAsync())); Wait(2); Playing();
+                Ask("After the tone: press once more.", 8); Sessions();
+                Log("MEDIA", "playing again: " + Get(music.TryPlayAsync())); Wait(2);
+                Ui(delegate { smtc.PlaybackStatus = MediaPlaybackStatus.Paused; }); Sessions();
+                Ask("After the tone: take the headphones off, wait three seconds, put them back on.", 15); Sessions();
+            }
+            Say("Finished. Claude will read the result.");
+        } catch (Exception e) { Log("ERROR", e.ToString()); }
+        Cleanup(); if (started && !paused.Contains(music)) try { Log("MEDIA", "pausing again: " + Get(music.TryPauseAsync())); } catch (Exception e) { Log("MEDIA", e.Message); }
+        ResumeMusic(); if (!quit) Ui(Close);
+    }
     void Check() {
         try { Sessions(); foreach (var n in Mic.Names()) Log("MIC", "have " + n); Claim(); Wait(1); Sessions(); Devices();
             voice = new SpeechSynthesizer(); foreach (var v in voice.GetInstalledVoices()) Log("SAY", "voice " + v.VoiceInfo.Name);
@@ -209,7 +247,7 @@ class App : Form {
         Cleanup(); Ui(Close);
     }
     [STAThread] static void Main(string[] a) {
-        dir = AppDomain.CurrentDomain.BaseDirectory; check = a.Contains("--check");
+        dir = AppDomain.CurrentDomain.BaseDirectory; check = a.Contains("--check"); rehearse = a.Contains("--rehearse");
         foreach (var x in a) if (x.StartsWith("--mic=")) match = x.Substring(6);
         log = new StreamWriter(Path.Combine(dir, check ? "check.log" : "headset-" + DateTime.Now.ToString("HHmmss") + ".log"));
         Application.EnableVisualStyles(); var f = new App(); if (check) f.WindowState = FormWindowState.Minimized; Application.Run(f); log.Close();

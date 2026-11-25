@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Builds the headset test with Windows' own compiler and opens it; press Start in its window.
-# --mic=NAME: part of the headset microphone's name in Windows (Bose when left out). --check: a dry run
-# without the headset. The logs and recordings stay in %LOCALAPPDATA%\sidetone-headset-test.
+# --mic=NAME: part of the headset microphone's name in Windows (Bose when left out). --rehearse: press
+# to talk and two presses to send, five times, then with music.
+# --check: a dry run without the headset. The logs and recordings stay in
+# %LOCALAPPDATA%\sidetone-headset-test.
 set -e
 here=$(cd "$(dirname "$0")" && pwd)
 source=$(wslpath -w "$here/HeadsetTest.cs")
