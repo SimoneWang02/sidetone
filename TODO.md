@@ -140,6 +140,16 @@ Roughly easiest first, the larger ones after.
       windows itself was measured with `code --new-window` (80 ms, no reload), not yet through
       the extension in the real VS Code.
 
+- [ ] Subagents in the overlay (the author's yes by voice, 2026-11-25, to the list only; from
+      Savvy Progress, a user-made Claude Code mod, github.com/JohnnyVizz/claude-kit, MIT: the
+      idea, not its code). The overlay shows nothing of them today. As a setting: an "Agents"
+      figure ("2 Running"), and in the panel a quiet row for each running subagent with its task
+      and time, gone when it finishes. To test first: whether the subagent start and stop hooks
+      give enough, and how to match a subagent to its task's description (their events may carry
+      only an id and a type). Left out: cost, animation, and anything spoken (spoken progress was
+      built and removed at the author's word, docs/dev/features.md). Worth it only if a long turn
+      often leaves you wondering whether it is stuck; not to hold up the first public version.
+
 ### Larger extras
 
 - [ ] Make more of the overlay a setting: sizes, colors (session palette, status colors, glass
