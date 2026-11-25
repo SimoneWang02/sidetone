@@ -200,11 +200,17 @@ skip this overlay, like the current one, and we're gonna improve this." The word
 the speech model; they were taken as: leave the 50 designs, keep today's overlay, improve it.
 The 50 were never scored here.
 
-## Improving today's overlay: a plan, not yet agreed
+## Improving today's overlay: the plan
 
-Three fixes, one for each of the three biggest problems, in the order to build them. Each is a
-setting with a default, as the project's rule asks, and none of them touches what must not be
-lost. Nothing here is built; every number is a first guess to be judged on the screen.
+Three fixes, one for each of the three biggest problems, in the order to build them. None of
+them touches what must not be lost. Every number is a first guess to be judged on the screen.
+
+Agreed and built on 2026-11-25: the author, shown the preview, said "all three steps look
+good", and to the question of building them "you can do that". How each was built is in
+`docs/dev/features.md` ("Three fixes from the review of the overlay"). Compiled and in the unit
+tests; not seen on a screen by anyone yet. What differs from the plan below: the third step
+shrinks the whole overlay (bar, details and bubble, as the Size setting does) and has no
+setting, where the plan had rows of one line.
 
 ### 1. Calm the working light (problem 3)
 

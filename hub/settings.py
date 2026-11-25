@@ -222,6 +222,12 @@ SECTIONS = [
                "comes on top of this.", 75, 150, 5, "%"),
         switch("overlay.still", "Reduce Motion", "The overlay opens and changes at once, with no springs, slides or glints. "
                "It is on by itself while Windows' animation effects are off."),
+        # Both 2026-11-25, from the review of the overlay (docs/dev/overlay-review.md).
+        choice("overlay.working_motion", "Working Light", "How the light of a session at work moves: a slow turn, so that "
+               "only a session that needs you moves fast, or the quick spin it had at first.",
+               ("calm", "Calm"), ("lively", "Lively")),
+        switch("overlay.session_tick", "Session Color on the Bar", "A small tick of each session's color beside its light: "
+               "the color of its name in the details and of its terminal."),
         choice("overlay.history", "History Shows", "What was said last, when the mouse rests on the details: by this session, or by all of them.",
                ("session", "This Session"), ("all", "All Sessions")),
         choice("overlay.focus_history", "History in Selected Session", "In the Selected Session view, what it said last: always in its card, or only when the mouse rests on the details.",

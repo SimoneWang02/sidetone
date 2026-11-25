@@ -24,6 +24,18 @@ these come before anything new.
       **Not heard by the author yet**: listen for an unmarked Italian or Chinese line read by
       the right voice, and an English one never read by the Italian voice.
 
+- [ ] Three fixes to the bar (2026-11-25, from the review in `docs/dev/overlay-review.md`; the
+      author chose to improve today's overlay over the 50 designs, and of a drawn preview said
+      "all three steps look good"). A calm working light (`overlay.working_motion`, "Working
+      Light": one turn in 5 s, where it spun as fast as "needs you" pulses); a tick of each
+      session's color beside its light (`overlay.session_tick`, "Session Color on the Bar");
+      and the whole overlay drawn smaller when the bar would pass the end of the screen (no
+      setting). Compiled and in the unit tests, **not seen on a screen by anyone yet**: no
+      pictures, and the live overlay was not restarted. To see the first two:
+      `sidetone overlay restart`; the two settings are in the window after
+      `sidetone hub restart`. The third needs more sessions than the screen holds (14 to 21),
+      or a picture from `tests/overlay_check.py` with made-up ones, which has no such view yet.
+
 - [ ] Clearing progress (2026-11-24, `clear_progress`): a turning ring and "Clearing sidetone 2…"
       until it is done, and no second /clear typed meanwhile. Tests and pictures only, **not yet
       tried by the author**; best tried with VS Code's window covered for some minutes too.

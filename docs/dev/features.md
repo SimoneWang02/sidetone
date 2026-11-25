@@ -271,6 +271,38 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   not move, and "Release to send" does not glint. The live voice levels still move. It is
   also on while Windows' "Animation effects" are off (`SystemParameters.ClientAreaAnimation`,
   read when the settings come). Seen in the settings window's picture.
+- Three fixes from the review of the overlay (2026-11-25, `docs/dev/overlay-review.md`: the
+  author chose to improve today's overlay over the 50 designs, and of a drawn preview of the
+  three said "all three steps look good"). Compiled and in the unit tests; **no pictures and
+  not seen live yet**.
+  - Working Light (`overlay.working_motion`, calm; "Working Light" in the Overlay section,
+    Calm or Lively). The review found the working arc at 0.73 turns a second beside the
+    pulse of "needs you" at 0.72: the commonest state and the urgent one at one tempo. Calm:
+    one turn in 5 s, the arc of one length (1.6 rad), the dot at rest (`Ui.WorkingCalm`, in
+    `Orb.OnRender`). Lively is the motion it had. The frames still run while a session works.
+  - Session Color on the Bar (`overlay.session_tick`, on). A closed bar said what each
+    session was doing and not which session it was. `Row.Tick`: 3 by 18 px in the session's
+    color, 2 px inside the bar's edge on the side the details come out (1 px clear of the
+    frame round the light in focus), in the bar layout only; the island keeps its dash
+    (`Pip`). It is the color of the name in the details and of the terminal's tint. Not drawn
+    and not built: a name beside a light that needs you, because the details are out with
+    every name while a request waits (`IsOpen`).
+  - Every light on the screen (`Fit`, no setting: a bar that runs off the screen is a fault,
+    not a taste; the author: "if the size goes over the monitor size, yeah, they should
+    shrink"). The author doubted anyone opens twenty sessions and asked whether to limit
+    them; not limited, since the overlay does not open sessions and could only hide one that
+    needs you. `zoom` is now the size in use: `overlay.size` (`asked`), or as much less as it
+    takes for the lights (44 px each and 8 for the edge) to fit the room from the bar's
+    place to the end of the screen (the width, for the island), never under 40 %. Checked at
+    each `Render`. The details and the bubble shrink with the bar, so rows stay level with
+    their lights; their words get smaller too, which at twenty sessions on a 768 px screen
+    (68 %) is small. With the default place and a 48 px taskbar nothing changes up to 21
+    sessions on a 1080p screen at 100 %, 16 at 125 %, 12 at 150 %, 14 on a 768 px laptop.
+    It counts lights of the usual height: rows grown by `row_lines` 2 or 3 can still pass
+    the screen.
+  - Both settings have their new-install values built into the window, so an overlay
+    started by a hub from before them shows the new look; the settings window lists them
+    once the hub is restarted.
 - The terminal tint on a light theme (2026-11-22, `terminal.light_background`, `#F8F8F8`,
   VS Code's Light Modern; the author, offered it: "Yes, so you're basically [doing] light mode
   and dark mode, right?"). The extension (0.6.0) sends `theme: "light" | "dark"` with each

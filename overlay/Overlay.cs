@@ -94,6 +94,9 @@ namespace ClaudeSpeaks
         // or a color of your own (waiting_color, "#RRGGBB").
         public static Color Waiting = Color.FromRgb(0xFF, 0x3B, 0x30);
         public static string WaitingMark = "number";  // or "clock", "dot"
+        // How a working light moves (`working_motion`): calm = its arc goes round once in five
+        // seconds, at one length | lively = round in 1.4 s, breathing, its dot beating.
+        public static bool WorkingCalm = true;
         // How see-through the glass is, 0 to 100 (`glass_clear`): 0 plain dark glass with no blur,
         // 50 the look it always had (a tint of 55 to 65 % over the blur), 100 the clearest (20 to
         // 30 %). The author, 2026-11-21, of Blur and Plain: "both are glass-like ... percentage like
@@ -461,8 +464,12 @@ namespace ClaudeSpeaks
                 case "working":
                 {
                     dc.DrawEllipse(Ui.Alpha(tint, 0.14), Ui.Line(tint, 0.28, 2), c, 12, 12);
-                    // The arc runs round and breathes between short and long.
-                    double a = t * 4.6, b = a + 1.5 + 0.9 * Math.Sin(t * 2.1);
+                    // The arc runs round. Calm: once in five seconds, at one length, the dot at rest, so
+                    // that the pulse of "needs you" is the only thing on the bar that moves fast. Lively
+                    // (as it was until 2026-11-25): once in 1.4 s, as fast as that pulse, breathing
+                    // between short and long, the dot beating.
+                    bool calm = Ui.WorkingCalm;
+                    double a = calm ? t * 2 * Math.PI / 5 : t * 4.6, b = a + (calm ? 1.6 : 1.5 + 0.9 * Math.Sin(t * 2.1));
                     var arc = new StreamGeometry();
                     using (StreamGeometryContext g = arc.Open())
                     {
@@ -470,7 +477,7 @@ namespace ClaudeSpeaks
                         g.ArcTo(new Point(c.X + 12 * Math.Cos(b), c.Y + 12 * Math.Sin(b)), new Size(12, 12), 0, false, SweepDirection.Clockwise, true, false);
                     }
                     dc.DrawGeometry(null, Ui.Line(tint, 1, 2.2), arc);
-                    double beat = 3 + 0.5 * Math.Sin(t * 4.2);
+                    double beat = calm ? 3 : 3 + 0.5 * Math.Sin(t * 4.2);
                     dc.DrawEllipse(Ui.Alpha(tint, 0.95), null, c, beat, beat);
                     break;
                 }
@@ -2669,6 +2676,13 @@ namespace ClaudeSpeaks
             Width = 16, Height = 3, CornerRadius = new CornerRadius(1.5), VerticalAlignment = VerticalAlignment.Bottom,
             Margin = new Thickness(0, 0, 0, 1), Visibility = Visibility.Collapsed,
         };
+        // In the bar: a tick of its color at the bar's edge, on the side the details come out, so
+        // that a closed bar says which session a light is (`session_tick`). The color of its name
+        // in the details and of its terminal's tint. Clear of the frame round the light in focus.
+        public readonly Border Tick = new Border {
+            Width = 3, Height = 18, CornerRadius = new CornerRadius(1.5), VerticalAlignment = VerticalAlignment.Center,
+            Visibility = Visibility.Collapsed, IsHitTestVisible = false,
+        };
         public string Name = "", Color = "", Title = "", State = "", FlashText, TalkKind, TalkText = "";  // TalkKind: null unless push-to-talk is about this session
         public readonly Badge Badge = new Badge { Visibility = Visibility.Collapsed };
         Brush talkInk = Brushes.White;  // white for your words, dim for a note, the microphone's color for what to do
@@ -2682,6 +2696,9 @@ namespace ClaudeSpeaks
             Strip.NewestRight = right;
             Light.Children.Add(Orb);
             Light.Children.Add(Pip);
+            Tick.HorizontalAlignment = right ? HorizontalAlignment.Left : HorizontalAlignment.Right;
+            Tick.Margin = right ? new Thickness(-2, 0, 0, 0) : new Thickness(0, 0, -2, 0);
+            Light.Children.Add(Tick);
             Light.RenderTransform = Shift;
             Text.RenderTransform = TextShift;
             Strip.Margin = right ? new Thickness(8, 0, 0, 0) : new Thickness(0, 0, 8, 0);
@@ -2716,7 +2733,7 @@ namespace ClaudeSpeaks
             string before = State;
             Name = Overlay.Str(s, "name");
             Color = Overlay.Str(s, "color");
-            Pip.Background = Ui.Named(Color);
+            Pip.Background = Tick.Background = Ui.Named(Color);
             Title = Overlay.Str(s, "title");
             State = Orb.State = Overlay.Str(s, "state", "idle");
             Speaking = Orb.Speaking = s.ContainsKey("speaking") && Convert.ToBoolean(s["speaking"]);
@@ -2961,12 +2978,33 @@ namespace ClaudeSpeaks
         int historyTicks = 3;  // looks of 30 ms the mouse rests on the details before the history shows (`history_after`)
         int monitor, insideTicks, outsideTicks;  // monitor: 0 = primary, 1.. = the others in Windows' order
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still, stillAsked;
-        double zoom = 1;  // overlay.size: the bar, the details and the bubble drawn this much bigger or smaller
+        double zoom = 1;  // the bar, the details and the bubble drawn this much bigger or smaller: overlay.size, or less (Fit)
+        double asked = 1;  // overlay.size as it was set
+        bool sessionTick = true;  // `session_tick`: each light in the bar has a tick of its session's color
 
         // A new size, in percent; true if it changed anything.
         bool SetZoom(double percent)
         {
-            double size = Math.Max(0.5, Math.Min(2, percent / 100));
+            asked = Math.Max(0.5, Math.Min(2, percent / 100));
+            return Fit();
+        }
+
+        // The size in use: the one asked for, or as much smaller as it takes for every light to
+        // be on the screen (2026-11-25; before, a bar with more lights than the screen is tall ran
+        // off its end: past 21 sessions on a 1080p screen at 100 %, past 14 on a 768 px laptop).
+        // The details and the bubble shrink with the bar, so rows stay level with their lights.
+        // Never under 40 %. It counts lights of the usual height (`row_lines` 1). True if it
+        // changed anything.
+        bool Fit()
+        {
+            double size = asked;
+            if (order.Count > 0 && hwnd != IntPtr.Zero)
+            {
+                Rect work = WorkArea();
+                double natural = order.Count * Row.High + 8;  // the lights and the bar's own edge, at 100 %
+                double room = Island ? work.Width - 8 : work.Height - offsetY - 4;
+                if (natural * size > room) size = Math.Max(Math.Min(0.4, asked), room / natural);
+            }
             if (size == zoom) return false;
             zoom = size;
             foreach (Glass g in new[] { rail, panel, bubble, muteChip }) g.Zoom(zoom);
@@ -3161,6 +3199,8 @@ namespace ClaudeSpeaks
                     stillAsked = msg.ContainsKey("still") && Convert.ToBoolean(msg["still"]);
                     still = Ui.Motionless = stillAsked || !SystemParameters.ClientAreaAnimation;
                     SetZoom(Num(msg, "size", 100));
+                    if (msg.ContainsKey("working_motion")) Ui.WorkingCalm = Str(msg, "working_motion") != "lively";
+                    if (msg.ContainsKey("session_tick")) sessionTick = Convert.ToBoolean(msg["session_tick"]);
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
@@ -3425,6 +3465,7 @@ namespace ClaudeSpeaks
         {
             bool isList = Listed, open = IsOpen();
             SyncRows();
+            Fit();  // a session more or less, the bar in another place: every light on the screen
             requestBox.Visibility = hasRequest ? Visibility.Visible : Visibility.Collapsed;
             bannerBox.Visibility = hasBanner ? Visibility.Visible : Visibility.Collapsed;
             emptyLine.Visibility = sessions.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -3485,6 +3526,7 @@ namespace ClaudeSpeaks
             foreach (Row row in order)
             {
                 row.Pip.Visibility = Island ? Visibility.Visible : Visibility.Collapsed;
+                row.Tick.Visibility = !Island && sessionTick ? Visibility.Visible : Visibility.Collapsed;
                 row.Light.Height = !Island && goal > 0 && chosen == null && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
             }
             UpdateBubble(show);

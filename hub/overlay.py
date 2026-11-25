@@ -47,6 +47,16 @@ DEFAULTS = {
     # "let the user pick ... You decide"): 75 to 150 in the window, as Windows' own display scale,
     # which already sizes everything, overlay too. The settings window is not changed by it.
     "size": 100,
+    # How the light of a session at work moves: calm = its arc goes round once in five seconds, at
+    # one length | lively = round in 1.4 seconds, breathing between short and long, its dot beating
+    # (as it was until 2026-11-25). Calm, so that the pulse of "needs you" is the only thing on
+    # the bar that moves fast: a review found the two at one tempo (docs/dev/overlay-review.md),
+    # and the author, shown both side by side: "all three steps look good".
+    "working_motion": "calm",
+    # A tick of each session's color beside its light in the bar, on the side the details come
+    # out: a closed bar then says which session a light is, in the color of its name and of its
+    # terminal's tint. The island has its dash under the light instead.
+    "session_tick": True,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
     # Held to take hold of the bar with the mouse: drag it, or turn the wheel on it. "" (the
