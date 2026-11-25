@@ -140,6 +140,12 @@ Roughly easiest first, the larger ones after.
       windows itself was measured with `code --new-window` (80 ms, no reload), not yet through
       the extension in the real VS Code.
 
+- [ ] A redesign of the overlay (the author, by voice, 2026-11-25: about 50 designs, "very very
+      creative", with animation and customizable plushies): a prompt for Claude Design is in
+      `docs/dev/overlay-redesign-prompt.md`. **Not run yet.** Agreed: an original plushie, not
+      Clawd, as one theme among several, one per session and small ones for subagents; the bar,
+      panel and bubble first; any idea in the first 50, buildable ones after. It reopens the
+      "left out: animation" of the next item, if the author likes what comes back.
 - [ ] Subagents in the overlay (the author's yes by voice, 2026-11-25, to the list only; from
       Savvy Progress, a user-made Claude Code mod, github.com/JohnnyVizz/claude-kit, MIT: the
       idea, not its code). The overlay shows nothing of them today. As a setting: an "Agents"
