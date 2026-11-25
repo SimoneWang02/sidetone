@@ -3,7 +3,8 @@
 A critical review of today's overlay and of the three looks in `docs/dev/looks/`, written
 2026-11-25 by a session opened for it (the author asked the session making the aquarium to open
 one). Analysis only: nothing was changed, restarted or run on the author's screen. The 50 designs
-from Claude Design are not in here yet; their part is at the end, waiting for screenshots.
+from Claude Design were skipped at the author's word after the scores; the end of this file is
+a plan for improving today's overlay, which is what they chose.
 
 ## How it was scored
 
@@ -179,7 +180,7 @@ default background helps and moves no score).
   installed) it is a 1.
 - **Charm, 5.** Seen: beautiful. Six real species, light through the water, waves to stir.
 
-## What this says before the 50 arrive
+## What the scores say
 
 - The structure is worth more than the skin. Today's fixed column, closed by default, is right;
   its three problems are what a redesign should spend itself on.
@@ -192,9 +193,67 @@ default background helps and moves no score).
 - Worth taking whatever wins: the plushies' motion rules, the aquarium's state ideas (glasses,
   pearl, plaster, the leap), and the living aquarium's amber pill that names who needs you.
 
-## The 50 designs
+## The 50 designs: skipped
 
-Waiting for the author's screenshots. For each: the idle overlay with five sessions, the crowded
-twelve, and the permission request, at full size, with the design's number in view. They will be
-scored on the same six plus difference from the others, then the best five, the parts worth
-combining, and whether any beats today's 21 on the six shared scores.
+On 2026-11-25, after hearing the scores, the author said by voice: "let's skip these 50s. Let's
+skip this overlay, like the current one, and we're gonna improve this." The words came through
+the speech model; they were taken as: leave the 50 designs, keep today's overlay, improve it.
+The 50 were never scored here.
+
+## Improving today's overlay: a plan, not yet agreed
+
+Three fixes, one for each of the three biggest problems, in the order to build them. Each is a
+setting with a default, as the project's rule asks, and none of them touches what must not be
+lost. Nothing here is built; every number is a first guess to be judged on the screen.
+
+### 1. Calm the working light (problem 3)
+
+The smallest change, and the one felt all day.
+
+- Today (code): the working arc turns 0.73 times a second (`Overlay.cs:465`) and "needs you"
+  pulses 0.72 times a second (`:479`).
+- Proposed: working turns once in about 5 seconds and loses its beat. "Needs you" keeps its
+  pulse and becomes the only thing on the bar that moves at that tempo, so motion alone says
+  "look here".
+- Setting: Working Motion, Calm or Lively. Calm as the default changes what the author sees
+  every day, so the default is theirs to choose.
+- Check: live, for a working day. No picture shows it.
+
+### 2. Say who (problem 2)
+
+- A tick of the session's color on every light in the bar layout: about 3 by 14 px at the edge
+  of the row, on the side where the details come out, so it meets the name when they do. The
+  island layout already has such a dash (`Pip`, `:2668`, hidden in the bar at `:3487`).
+- A name tag at the light of every session that needs you, staying until it is answered. Three
+  waiting are then three names, where today the request names one and says "2 more waiting"
+  (`:4808`). Among twenty lights, three tags standing out of the column are found at once; the
+  living aquarium's pills showed that.
+- Risk: api-server's orange next to the amber of "needs you". The tick is small and at the edge,
+  never on the disc, so place tells the two apart. To check in a picture.
+- Setting: Session Color On The Bar, on or off; Name Tags, on or off.
+
+### 3. Fit twenty (problem 1)
+
+- One squeeze for all rows: row height is 44 px while there is room and shrinks with the count
+  so that the bar never passes the screen, down to about 28 px; below that, a second column.
+  All rows keep one height and their order, and the details take the same height, so rows stay
+  level with their lights and the details stop outgrowing the screen too.
+- Worked out, not seen: twenty rows come to about 35 px each on a 1080p screen at 125 %, and
+  about 30 px on a 768 px laptop. The disc goes from 26 to about 18 px there.
+- Guess: the five shapes still read at 18 px; the context arc and the waiting number get tight.
+  `tests/overlay_check.py` with twenty sessions would show it.
+- No fold and no count by state: both move lights or add a thing to read, and the name tags
+  already answer "does anyone need me" in a crowd.
+
+### What these three do not fix
+
+Charm. It was 2 and would be 3 at most, from the session colors. The redesign began because the
+author wanted something far more creative and loved the plushies; choosing to improve today's
+overlay leaves that wish open. The way to meet it without losing the glance is a later setting,
+Light Style, where a plushie sits inside today's state ring and the state stays as large as it
+is now.
+
+### What the scores would be
+
+A guess, to be checked when built: glance 4 to 5, twenty sessions 2 to 4, footprint 5, motion 3
+to 4 or 5, buildable 5, charm 2 to 3. About 25 of 30, against 21 today.
