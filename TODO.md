@@ -167,7 +167,8 @@ Roughly easiest first, the larger ones after.
       none. **The glow is not chosen yet**.
       `docs/dev/overlay-review.md` scored it 17 of 30 to today's 21 (before the mouths and the
       glow). Its points "one by one" (the author): 1. done leaves a mark: a pearl held in the
-      mouth (built, **not seen by them yet**); 2. nearly still when nothing changes; 3. working,
+      mouth ("I don't quite like it"), now a tick in a bubble, or the fish stays at the surface, to
+      compare (**not chosen yet**); 2. nearly still when nothing changes; 3. working,
       idle and done told apart; 4. size; 5. counts and labels at 20; 6. small flaws. Open: the
       overlay itself, or (Claude's advice) what opens from the bar. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
