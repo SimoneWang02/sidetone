@@ -1702,14 +1702,53 @@ class PushToTalk(HubCase):
         self.assertEqual((asked["icon"], asked["text"], asked["hint"], asked["seconds"]),
                          ("clear", "Clear a?", "Ctrl+Alt+C to confirm", 3.0))  # as the mute key's banner
         hub.on_overlay({"type": "hotkey", "name": "clear"})
-        self.assertEqual(self.overlay.of("banner")[-1], {"type": "banner"})  # the question goes
+        under_way = self.overlay.of("banner")[-1]
+        self.assertEqual((under_way["icon"], under_way["text"]), ("clearing", "Clearing a\u2026"))  # in the question's place
         self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])
         editor = hub.editor_waits([4001], shows=True, clears=True)
-        hub._clearing.pop("a", None)
+        for timer in hub._clearing.pop("a")[1]:
+            timer.cancel()
         hub.on_overlay({"type": "hotkey", "name": "clear"})
         hub._clear_armed = ("a", time.monotonic() - 4)  # the second press came too late
         hub.on_overlay({"type": "hotkey", "name": "clear"})
         self.assertFalse(editor.wake.is_set())
+
+    def test_a_clear_shows_its_progress_and_is_never_typed_twice(self):
+        """2026-11-24: VS Code's window was hidden, so it typed nothing for 18 s; the key pressed
+        again after 10 s had a second /clear typed, and both came at once."""
+        hub = self.make()
+        self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
+        hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41"}.get(pid)
+        self.addCleanup(setattr, hub_module.base, "CLEAR_SLOW", hub_module.base.CLEAR_SLOW)
+        hub_module.base.CLEAR_SLOW = 0.2
+        hub.sessions.by_id["a"].tty = "/dev/pts/41"
+        hub.talk_target = "a"
+        last = lambda: self.overlay.of("banner")[-1]  # noqa: E731
+        press = lambda: hub.on_overlay({"type": "hotkey", "name": "clear"})  # noqa: E731
+        editor = hub.editor_waits([4001], clears=True)
+        press(), press()
+        hub.editor_done(editor)
+        self.assertTrue(wait_for(lambda: last().get("hint") == "waiting for the editor", 3))
+        self.assertEqual((last()["icon"], last()["text"]), ("clearing", "Clearing a\u2026"))
+        again = hub.editor_waits([4001], clears=True)
+        press(), press(), press()  # shown again, not asked and not typed
+        self.assertEqual((again.wake.is_set(), last()["icon"], last()["hint"]), (False, "clearing", "waiting for the editor"))
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="clear"))
+        self.assertEqual((last()["icon"], last()["text"]), ("cleared", "Cleared a"))
+        # Another banner that took its place is left alone; and with the progress off, nothing shows.
+        hub.on_event(ev("SessionStart", sid="c", cwd="/w/a", source="clear"))
+        hub.sessions.by_id["c"].tty, hub.talk_target = "/dev/pts/41", "c"
+        press(), press()
+        hub.toggle_mute()
+        hub.on_event(ev("SessionEnd", sid="c", cwd="/w/a", reason="clear"))
+        self.assertIn(last()["icon"], ("muted", "voice"))
+        hub.toggle_mute()
+        hub.cfg.clear_progress = False
+        hub.on_event(ev("SessionStart", sid="d", cwd="/w/a", source="clear"))
+        hub.sessions.by_id["d"].tty, hub.talk_target = "/dev/pts/41", "d"
+        hub.editor_waits([4001], clears=True)
+        press(), press()
+        self.assertEqual(last(), {"type": "banner"})
 
     def test_a_cleared_chat_is_confirmed_when_claude_code_ends_it(self):
         """No sound when the order goes to the editor; the end of the conversation with the
@@ -1755,7 +1794,8 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "clear"}])
         again = hub.editor_waits([4001], clears=True)
         self.said(hub, "clear the context", "a")
-        self.assertEqual((again.wake.is_set(), self.talks()[-1]), (False, ("sent", "a", "Already clearing")))
+        self.assertEqual((again.wake.is_set(), self.talks()[-1]), (False, (None, "", "")))
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], "Clearing a\u2026")
         hub.editor_done(again)
         hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="clear"))
         self.assertNotIn("a", hub.sessions.by_id)

@@ -609,6 +609,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   take the clear question's place, drop it (and the clear key's drops the end key's). The author,
   2026-11-22, lost a conversation to Ctrl+Alt+C, Ctrl+Alt+Minus, Ctrl+Alt+C: the third press
   cleared with "End …?" on screen.
+  Clearing shows its progress (2026-11-24, `clear_progress`, on; `Talk._show_clearing`,
+  `_hide_clearing`; pictures `clear-under-way`, `clear-slow`, `clear-done`): the question's row
+  becomes a turning ring and "Clearing sidetone 2…", after `base.CLEAR_SLOW` (5 s) with "waiting
+  for the editor", then a check and "Cleared sidetone 2" for 1.5 s. Pressed meanwhile the key only
+  shows it again. The same for a clear by voice. The author had pressed "many times, it didn't
+  work": the hub had both, the extension sent both, and VS Code typed neither for 18 s, its window
+  being hidden (`docs/dev/facts.md`). Given up after 10 s before, so the second press typed a second
+  /clear, and both came at once; a clear is now under way for `base.CLEAR_CONFIRM` (75 s) before it
+  counts as not done. Known: words spoken to the session while its clear waits in VS Code can be
+  stopped and cleared by it. Keys for stopping (Escape) and ending (/exit) wait in VS Code the same.
   Bug hunt in a lab, 2026-11-22 (a hub of its own run inside a script, keys handed to it as the
   overlay hands them, haiku sessions in tmux, a stand-in for the extension typing into the
   panes): clear, end and new session in every order, and the clear key next to mute, cancel,
@@ -1594,7 +1604,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`always`/`never`, `never` by default; `auto`, said only with several sessions and no overlay, dropped 2026-11-20: "make it two choices ... I want to reduce [friction]"), `titles` (`ask`/`auto`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `headset_button`, `headset_seconds`, `headset_send`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `headset_button`, `headset_seconds`, `headset_send`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_progress`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `SIDETONE_OVERLAY=off` disables the overlay.
 - `~/.local/state/sidetone/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).

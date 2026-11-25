@@ -762,6 +762,37 @@ namespace ClaudeSpeaks
         }
     }
 
+    // A ring turning while something is under way (the clear's banner).
+    class SpinMark : FrameworkElement
+    {
+        readonly RotateTransform turn = new RotateTransform();
+
+        public SpinMark(double size)
+        {
+            Width = Height = size;
+            IsHitTestVisible = false;
+            RenderTransformOrigin = new Point(0.5, 0.5);
+            RenderTransform = turn;
+            if (!Ui.Motionless)
+                turn.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(0, 360, TimeSpan.FromSeconds(0.9)) { RepeatBehavior = RepeatBehavior.Forever });
+        }
+
+        public void Stop() { turn.BeginAnimation(RotateTransform.AngleProperty, null); }  // it would go on, unseen
+
+        protected override void OnRender(DrawingContext dc)
+        {
+            double c = Width / 2, r = c - 1.2;
+            dc.DrawEllipse(null, Ui.Line(Colors.White, 0.16, 1.7), new Point(c, c), r, r);
+            var arc = new StreamGeometry();
+            using (StreamGeometryContext g = arc.Open())
+            {
+                g.BeginFigure(new Point(c, c - r), false, false);
+                g.ArcTo(new Point(c + r, c), new Size(r, r), 0, false, SweepDirection.Clockwise, true, false);
+            }
+            dc.DrawGeometry(null, Ui.Line(Ui.Tint("working"), 1, 1.7), arc);
+        }
+    }
+
     // A small sign for where push-to-talk stands: a microphone while it listens, three moving
     // dots while the words are worked out or wait to go, a paper plane once they are sent, a
     // cross when nothing went out. It is drawn inside the session's light (see Orb), or by
@@ -2877,6 +2908,7 @@ namespace ClaudeSpeaks
         readonly DispatcherTimer hoverTimer = new DispatcherTimer();
         readonly DispatcherTimer moveTimer = new DispatcherTimer();
         readonly DispatcherTimer bannerTimer = new DispatcherTimer();
+        SpinMark bannerSpin;
         readonly DispatcherTimer holdTimer = new DispatcherTimer();
         readonly DispatcherTimer topTimer = new DispatcherTimer();
         readonly Dictionary<int, string> hotkeys = new Dictionary<int, string>();        // registered id -> name
@@ -3027,7 +3059,7 @@ namespace ClaudeSpeaks
             bubble.Body = layers;
 
             rail.SizeChanged += delegate { Place(); };
-            bannerTimer.Tick += delegate { bannerTimer.Stop(); hasBanner = false; Render(); };
+            bannerTimer.Tick += delegate { bannerTimer.Stop(); StopSpin(); hasBanner = false; Render(); };
             // Clicks pass through, so "the mouse is on me" is found by watching where the cursor is.
             hoverTimer.Interval = TimeSpan.FromMilliseconds(30);
             hoverTimer.Tick += delegate { WatchWheelKeys(); WatchTalkKeys(); WatchCursor(); };
@@ -4553,6 +4585,7 @@ namespace ClaudeSpeaks
             rail.CatchMouse(true);
             Edge();
             bannerTimer.Stop();
+            StopSpin();
             hasBanner = true;
             bannerTitle.Inlines.Clear();
             bannerTitle.Inlines.Add(new Run("Drag it to where you want it") { FontWeight = FontWeights.SemiBold });
@@ -4863,10 +4896,17 @@ namespace ClaudeSpeaks
             if (hint.Length > 0) row.Inlines.Add(new Run("   " + hint) { Foreground = Ui.Faint, FontSize = 11.5 });
         }
 
+        void StopSpin()
+        {
+            if (bannerSpin != null) bannerSpin.Stop();
+            bannerSpin = null;
+        }
+
         // Push-to-talk feedback: who is being recorded for, the transcript about to be sent, and so on.
         void ShowBanner(Dictionary<string, object> msg)
         {
             bannerTimer.Stop();
+            StopSpin();
             hasBanner = msg.ContainsKey("text") && msg["text"] != null;
             if (hasBanner)
             {
@@ -4876,6 +4916,22 @@ namespace ClaudeSpeaks
                 if (icon == "muted" || icon == "voice")
                 {
                     VoiceRow(bannerTitle, icon == "muted", Str(msg, "text"), Str(msg, "hint"));
+                    bannerHint.Text = "";
+                }
+                else if (icon == "clearing")  // asked for and not yet done
+                {
+                    bannerSpin = new SpinMark(14) { Margin = new Thickness(0, 0, 8, -2) };
+                    bannerTitle.Inlines.Add(new InlineUIContainer(bannerSpin) { BaselineAlignment = BaselineAlignment.Center });
+                    bannerTitle.Inlines.Add(new Run(Str(msg, "text")) { Foreground = Ui.Dim });
+                    string wait = Str(msg, "hint");
+                    if (wait.Length > 0) bannerTitle.Inlines.Add(new Run("   " + wait) { Foreground = Ui.Faint, FontSize = 11.5 });
+                    bannerHint.Text = "";
+                }
+                else if (icon == "cleared")
+                {
+                    bannerTitle.Inlines.Add(new Run("\uE73E") { FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 14,
+                        Foreground = Ui.Alpha(Ui.Tint("done"), 1), BaselineAlignment = BaselineAlignment.Center });
+                    bannerTitle.Inlines.Add(new Run("  " + Str(msg, "text")) { Foreground = Ui.Dim });
                     bannerHint.Text = "";
                 }
                 else if (icon == "clear" || icon == "end")  // the clear key asks, as the mute key's row says what it did; a bin (an eraser was first: "I don't like it much"); the end key the same, with a power sign

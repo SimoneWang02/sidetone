@@ -98,7 +98,8 @@ class Hub(Permissions, Talk, Headset):
         self._end_armed: tuple[str, float] | None = None  # the session the end key asked about, and when
         self._ending: dict[str, str] = {}  # session -> its terminal, for a session ended with the end key: closed once it has ended
         self._editor_wanted: list = []  # (what, terminal, when) asked while the editor was between two requests: "close"
-        self._clearing: dict[str, tuple] = {}  # session -> (its voice, timer) while /clear has been asked for and not yet seen done
+        self._clearing: dict[str, tuple] = {}  # session -> (its voice, timers) while /clear has been asked for and not yet seen done
+        self._clear_shown = ""  # the session whose clearing the banner is about
         self._clear_after: dict[str, float] = {}  # session -> when "clear the chat" was said while it was busy: cleared once its turn ends
         self._ended: dict[str, float] = {}  # session -> when Claude Code said it ended: its listener must not bring it back
         self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last

@@ -596,3 +596,12 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
 - The main turn usually ends (Stop) while the background agent runs on, so a subagent's request
   can still be open when its session's turn ends.
 
+## VS Code types late while its window is hidden (read from its logs, 2026-11-24)
+
+`terminal.sendText` of an extension goes through the editor's window. The extension logged both
+/clear sent at 23:57:29 and 23:57:40; Claude Code got both at 23:57:47.0. In those minutes that
+window's `renderer.log` (`%APPDATA%\Code\logs`, window2) has the remote extension host responsive
+and unresponsive once a minute, at second 46.95 and 50.9, from 23:35 on, and the agent host's
+connection reopened at the same second: timers run once a minute, as Chromium does for a window
+that has been hidden a while. So what is typed through it can wait up to a minute. Read from the
+logs; not reproduced on purpose, and no Chromium switch against it tried.

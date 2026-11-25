@@ -284,6 +284,7 @@ class Permissions:
             # The same row as the details show while muted (Overlay.VoiceRow), the key beside the words.
             # It takes the place of a clear or end question, which no longer counts.
             self._clear_armed = self._end_armed = None
+            self._clear_shown = ""
             self.overlay.send({"type": "banner", "icon": "muted" if muted else "voice",
                                "text": "Voice is muted" if muted else "Voice is on",
                                "hint": f"{key} turns it on" if muted and key else "",

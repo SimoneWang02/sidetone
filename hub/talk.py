@@ -280,7 +280,10 @@ class Talk:
         if s.id in self._clearing:
             # Typed already and not yet seen done: a second /clear would land in the next
             # conversation and clear that one too (the author said it twice, 2026-11-19).
-            self._talk("sent", s, "Already clearing", seconds=2.5)
+            if self._show_clearing(s):
+                self._talk(None)  # the words leave the light: the banner says it
+            else:
+                self._talk("sent", s, "Already clearing", seconds=2.5)
             log(self.cfg, "hub.log", f"clear [{s.id[:8]}] already asked for, not typed again: {text[:80]}")
             return
         self._type_clear(s, text)
@@ -298,17 +301,19 @@ class Talk:
             if not s:
                 return
             now, armed = time.monotonic(), self._clear_armed
-            if armed and armed[0] == s.id and now - armed[1] < CLEAR_TWICE:
+            if s.id in self._clearing and self._show_clearing(s):  # nothing to ask: it is under way
+                log(self.cfg, "hub.log", f"clear [{s.id[:8]}] already asked for, not typed again: the clear key")
+            elif armed and armed[0] == s.id and now - armed[1] < CLEAR_TWICE:
                 self._clear_armed = None
-                if self.overlay:
-                    self.overlay.send({"type": "banner"})
                 log(self.cfg, "hub.log", f"clear [{s.id[:8]}] asked for with the clear key")
                 self._clear_chat(s, "the clear key")
+                if self.overlay and self._clear_shown != s.id:  # else its progress took the question's place
+                    self.overlay.send({"type": "banner"})
             else:
                 # Only the question on screen counts: the end key's, which this banner replaces, is
                 # dropped (the author, 2026-11-22: clear asked, end asked, and the clear key again
                 # cleared with no question on screen).
-                self._clear_armed, self._end_armed = (s.id, now), None
+                self._clear_armed, self._end_armed, self._clear_shown = (s.id, now), None, ""
                 key = self.cfg.overlay.get("hotkeys", {}).get("clear", "")
                 if self.overlay:
                     self.overlay.send({"type": "banner", "icon": "clear", "text": f"Clear {s.name}?",
@@ -358,7 +363,7 @@ class Talk:
                 self._ending[s.id] = s.tty
                 log(self.cfg, "hub.log", f"end [{s.id[:8]}] /exit asked of the editor for its terminal ({s.tty}): the end key")
             else:
-                self._end_armed, self._clear_armed = (s.id, now), None  # as the clear key's question
+                self._end_armed, self._clear_armed, self._clear_shown = (s.id, now), None, ""  # as the clear key's question
                 key = self.cfg.overlay.get("hotkeys", {}).get("end_session", "")
                 if self.overlay:
                     self.overlay.send({"type": "banner", "icon": "end", "text": f"End {s.name}?",
@@ -453,12 +458,46 @@ class Talk:
             self._talk(None)
         log(self.cfg, "hub.log", f"clear [{s.id[:8]}] /clear asked of the editor for its terminal ({s.tty}): {text[:80]}")
         old = self._clearing.pop(s.id, None)
-        if old:
-            old[1].cancel()
-        timer = threading.Timer(base.CLEAR_CONFIRM, self._clear_late, args=(s.id,))
-        timer.daemon = True
-        self._clearing[s.id] = (s.voice, timer)
-        timer.start()
+        timers = (threading.Timer(base.CLEAR_SLOW, self._clear_slow, args=(s.id,)),
+                  threading.Timer(base.CLEAR_CONFIRM, self._clear_late, args=(s.id,)))
+        self._clearing[s.id] = (s.voice, timers)
+        for timer in (old[1] if old else ()):
+            timer.cancel()
+        for timer in timers:
+            timer.daemon = True
+            timer.start()
+        if not (late and self._talk_held()):
+            self._show_clearing(s)
+
+    def _show_clearing(self, s, slow: bool = False) -> bool:
+        """The banner that a clear is under way (`clear_progress`), up until `_hide_clearing`.
+        False: it is switched off, or there is no overlay. Call with the lock held."""
+        if not (self.overlay and self.cfg.clear_progress):
+            return False
+        asked = self._clearing.get(s.id)
+        slow = slow or bool(asked and not asked[1][0].is_alive())
+        self._clear_shown = s.id
+        self._clear_armed = self._end_armed = None  # it takes the place of a question, which no longer counts
+        self.overlay.send({"type": "banner", "icon": "clearing", "text": f"Clearing {s.name}\u2026",
+                           "hint": "waiting for the editor" if slow else "", "seconds": base.CLEAR_CONFIRM + 5})
+        return True
+
+    def _hide_clearing(self, sid: str, done: str = "") -> None:
+        """The clear is over: its banner goes, or says `done` for a moment. Another banner that
+        took its place stays. Call with the lock held."""
+        if self._clear_shown != sid:
+            return
+        self._clear_shown = ""
+        if self.overlay:
+            self.overlay.send({"type": "banner", "icon": "cleared", "text": done, "hint": "", "seconds": 1.5} if done
+                              else {"type": "banner"})
+
+    def _clear_slow(self, sid: str) -> None:
+        """Not done yet, when a clear usually is: its progress, if it is still up, says why."""
+        with self.lock:
+            s = self.sessions.by_id.get(sid)
+            if s and sid in self._clearing and self._clear_shown == sid:
+                self._show_clearing(s, slow=True)
 
     def _cleared(self, sid: str, by_clear: bool) -> None:
         """The conversation of `sid` ended. If /clear had been typed for it, that is the proof
@@ -467,7 +506,10 @@ class Talk:
         asked = self._clearing.pop(sid, None)
         if not asked:
             return
-        asked[1].cancel()
+        for timer in asked[1]:
+            timer.cancel()
+        s = self.sessions.by_id.get(sid)
+        self._hide_clearing(sid, f"Cleared {s.name}" if s and by_clear else "")
         if not by_clear:
             log(self.cfg, "hub.log", f"clear [{sid[:8]}] its session ended otherwise, not cleared")
             return
@@ -484,6 +526,7 @@ class Talk:
         with self.lock:
             if not self._clearing.pop(sid, None):
                 return
+            self._hide_clearing(sid)
             s = self.sessions.by_id.get(sid)
             log(self.cfg, "hub.log", f"clear [{sid[:8]}] not seen done in {base.CLEAR_CONFIRM:.0f}s")
             if s and not self._talk_held():

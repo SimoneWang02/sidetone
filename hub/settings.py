@@ -135,6 +135,8 @@ SECTIONS = [
                "the work of the session in focus. The session stays open."),
         switch("clear_by_voice", "Clear the Chat by Voice", "Say \"clear the chat\" and /clear is typed into that session's terminal "
                "once it is at its prompt. Needs the VS Code extension."),
+        switch("clear_progress", "Show Clearing Progress", "While a chat is being cleared, the overlay says so until it is done. "
+               "With the editor's window hidden it can take up to a minute."),
         # The model on the card (whisper_gpu_model) is left out, like whisper_model: a model's
         # name, which `large-v3-turbo` fits for nearly everyone with a card.
         switch("whisper_mixed", "Mixed Languages", "When one message goes from one of your languages to another, "

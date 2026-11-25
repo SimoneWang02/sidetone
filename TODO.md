@@ -24,11 +24,17 @@ these come before anything new.
       **Not heard by the author yet**: listen for an unmarked Italian or Chinese line read by
       the right voice, and an English one never read by the Italian voice.
 
+- [ ] Clearing progress (2026-11-24, `clear_progress`): a turning ring and "Clearing sidetone 2…"
+      until it is done, and no second /clear typed meanwhile. Tests and pictures only, **not yet
+      tried by the author**; best tried with VS Code's window covered for some minutes too.
+
 ## 2. To decide
 
 Questions for the author; nothing to build until they answer.
 
-Nothing open.
+- [ ] VS Code types up to a minute late while its window is hidden (`docs/dev/facts.md`): start
+      it with `--disable-background-timer-throttling` (to be tried) so that clear, stop and end act
+      at once?
 
 ## 3. Speech in the author's languages
 
