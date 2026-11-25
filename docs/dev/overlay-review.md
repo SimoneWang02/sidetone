@@ -235,6 +235,16 @@ The smallest change, and the one felt all day.
 
 ### 3. Fit twenty (problem 1)
 
+The author, 2026-11-25, having seen the preview: all three steps look good, but "I don't think
+people are gonna open up like 20 sessions", and should the number of sessions be limited?
+Answered: no limit. The overlay does not open sessions, so a limit could only hide some, and a
+hidden session that needs you is the one failure this tool must not have. But they are right
+that twenty is rare, so this step is a safety net and comes last: it changes nothing until the
+bar would pass the screen. Worked out with a 48 px taskbar and the default place: today's bar
+holds 21 sessions on a 1080p screen at 100 %, 16 at 125 %, 12 at 150 %, and 14 on a 768 px
+laptop. Below those counts step 3 does nothing, and its cost (one line of text a row) is not
+paid.
+
 - One squeeze for all rows: row height is 44 px while there is room and shrinks with the count
   so that the bar never passes the screen, down to about 28 px; below that, a second column.
   All rows keep one height and their order, and the details take the same height, so rows stay
