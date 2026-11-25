@@ -409,8 +409,12 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         with our session saying paused the press went to Spotify (it paused); with ours
         closed and back saying playing, it came to us (Pause) and Spotify played on. Taking
         the headphones off and on with music sent nothing and Spotify played on. So our session
-        has to say playing while it wants the press, and then the press does not pause the
-        music. Not tried: AirPods, distance, a press while a reply is being spoken.
+        has to say playing while it wants the press over music, and then the press does not
+        pause the music. The taking off (here and in the first test) says nothing about other
+        people's headsets: the author has Bose's pause on taking off turned off, for its false
+        alarms. Left on, it probably comes as Pause, which is also what a press is while our
+        session says playing. While it says paused a press is Play, so a Pause can be ignored:
+        say paused when no music plays, and have a recording without words send nothing. Not tried: AirPods, distance, a press while a reply is being spoken.
       - to decide: how long a press belongs to Sidetone. Proposed: for a minute after a session
         has spoken, a setting, else to the music. Then build it, off by default, with silence
         to send as the way for headsets where no press arrives in a call.
