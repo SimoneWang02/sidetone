@@ -181,8 +181,9 @@ Roughly easiest first, the larger ones after.
       what plushies or fish would do for the overlay's charm (2 of 5). Claude's idea, to be judged:
       the lights stay, a plushie beside the words in the bubble, the request and the details
       (`plushie-bubble.html`, real size): "I like the idea. I really do"; Bobble's neck looked cut
-      (mended); but the plushies "seem very AI generated ... I want alternatives": an agent looks
-      for them (2026-11-25). 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      (mended); but the plushies "seem very AI generated ... I want alternatives": an agent found
+      twelve (2026-11-25), sketched moving in all six states at real size (`alternatives.html`, **not
+      seen by them yet**); its favorite, an ink hand in the margin, needs a person to draw it. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
