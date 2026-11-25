@@ -176,8 +176,9 @@ Roughly easiest first, the larger ones after.
       idle and done told apart: idle low with folded fins, working higher with a thin trail of
       bubbles (built, **not seen by them yet**); 4. size: a strip of 340 by 64 px with only the fish
       that have news, the rest counted, open under the mouse; seen: "incredibly small ... it might not be worth
-      continuing down this path of the aquarium". Work on it stopped there (2026-11-25); Claude
-      advised parking it. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      continuing down this path of the aquarium". Work on it stopped there (2026-11-25): "cut
+      aquarium, or keep the fishes as assets ... for the future". The author's question now is
+      what plushies or fish would do for the overlay's charm (2 of 5). 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
