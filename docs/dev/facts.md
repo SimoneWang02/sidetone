@@ -542,6 +542,10 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   newer driver (now Realtek 18.4032.2510.901, USB 13D3:3616, board ASRock Z890-C) would do it.
   The pairing also renamed the headset in Windows from "Bose QC Ultra 2 HP" to "Leviathan" (same
   address), so anything that finds it by "Bose" in its name misses it.
+  After that its microphone gave nothing (23:56 and twice after): `waveInOpen` succeeds in 0.74 s
+  and no sound comes in 15 s, in the same test code that had recorded it 5 times out of 5 an hour
+  earlier, and in `Headset.cs`. Why is not known; what changed between is LE Audio on in the Bose
+  app and the new pairing.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.

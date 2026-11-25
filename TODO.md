@@ -424,7 +424,10 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         speaks was proposed and not objected to), in this repo in files of its own
         (`headset/Headset.cs`, `hub/headset.py`): `headset_button`, "Headset Button", off by
         default, on in their config; the auto pause is in the setting's description ("we can
-        notify this to users"). **To try by them**: nobody has pressed the button with it yet.
+        notify this to users"). **To try by them**: their first press
+        arrived (2026-11-24, 23:56) but the Bose's microphone gave no sound, since it was paired
+        again with LE Audio on (see `docs/dev/facts.md`); talking and sending are not tried yet.
+        (`tests/headset` needs `--mic=Leviathan` now.)
         Seen live without a press: it took the button from Chrome while that played and gave
         it back, and opened the Bose microphone in 0.6 s, in a call. Keyboard media keys in that
         minute are passed on to the music, also not pressed by anyone. Not built: wired
