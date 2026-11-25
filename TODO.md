@@ -175,8 +175,9 @@ Roughly easiest first, the larger ones after.
       fish working) +1 % and +2.5 W; 3. working,
       idle and done told apart: idle low with folded fins, working higher with a thin trail of
       bubbles (built, **not seen by them yet**); 4. size: a strip of 340 by 64 px with only the fish
-      that have news, the rest counted, open under the mouse (built, **not seen by them yet**); 5. counts and labels at 20; 6. small flaws. Open: the
-      overlay itself, or (Claude's advice) what opens from the bar. Previews only: "don't
+      that have news, the rest counted, open under the mouse; seen: "incredibly small ... it might not be worth
+      continuing down this path of the aquarium". Work on it stopped there (2026-11-25); Claude
+      advised parking it. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
