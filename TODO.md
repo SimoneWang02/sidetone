@@ -197,8 +197,9 @@ Roughly easiest first, the larger ones after.
       twelve (2026-11-25), sketched moving in all six states at real size (`alternatives.html`): "I like none of
       them". Their taste, same day: "I personally like plushies, they're good. I love pixel art. I
       play a lot of League of Legends ... a lot of games". Then six more in the bubble, each to
-      compare (`six-looks.html`, **not seen by them yet**): living glass, one fish, own photos, an
-      animatic for an illustrator, plushies in 3D fur, original pixel familiars. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      compare (`six-looks.html`): living glass ("very confusing"), one fish ("not good"), own photos (no),
+      an animatic for an illustrator ("we can work on that"), plushies in 3D fur ("quite scary"),
+      original pixel familiars (**not judged yet**). 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
