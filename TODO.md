@@ -150,6 +150,9 @@ Roughly easiest first, the larger ones after.
       Then twelve plush families drawn in code (`docs/dev/looks/plushies.html`: "I love these
       plushies", which ones not said) and, their idea, an aquarium with a fish for each session
       (`aquarium.html`, **not seen by them yet**): looks as themes that answer the same states.
+      The author, same day: keep the plushies as an option and work on the aquarium, with real fish
+      and waves (`living-aquarium.html`, WebGL, **not seen by them yet**). Previews only: "don't
+      influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
 - [ ] Subagents in the overlay (the author's yes by voice, 2026-11-25, to the list only; from
