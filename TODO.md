@@ -202,7 +202,9 @@ Roughly easiest first, the larger ones after.
       original pixel familiars. Kept: the pixel ones and the commissioned character ("we can
       definitely improve those"), without the rectangle around them ("occupy much more space"):
       free, inside or on the bubble's edge, and the operator in pixels too
-      (`pixel-companions.html`, **not seen by them yet**). 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      (`pixel-companions.html`). "Could you improve them": redrawn at 40 pixels, each with its own
+      temper and acting, a level-up for done (`familiars-and-operators.html`, **not seen by them
+      yet**). 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
