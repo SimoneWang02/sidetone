@@ -146,6 +146,12 @@ Roughly easiest first, the larger ones after.
       Clawd, as one theme among several, one per session and small ones for subagents; the bar,
       panel and bubble first; any idea in the first 50, buildable ones after. It reopens the
       "left out: animation" of the next item, if the author likes what comes back.
+      What came back: nothing "crazy" (they named Table Setting and Paperflies, why not asked yet).
+      Then twelve plush families drawn in code (`docs/dev/looks/plushies.html`: "I love these
+      plushies", which ones not said) and, their idea, an aquarium with a fish for each session
+      (`aquarium.html`, **not seen by them yet**): looks as themes that answer the same states.
+      Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
+      can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
 - [ ] Subagents in the overlay (the author's yes by voice, 2026-11-25, to the list only; from
       Savvy Progress, a user-made Claude Code mod, github.com/JohnnyVizz/claude-kit, MIT: the
       idea, not its code). The overlay shows nothing of them today. As a setting: an "Agents"

@@ -1,0 +1,156 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Sidetone Plushies</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Nunito+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: a live overlay bar first, the state switch under it, then a toy shelf of twelve. */
+:root{--bg:#e6edf0;--shelf:#f6f9fa;--fg:#14242c;--soft:#526670;--line:#c5d2d8;--accent:#006896;--on:#fff;
+--display:"Bricolage Grotesque",system-ui,sans-serif;--body:"Nunito Sans",system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10191e;--shelf:#19262d;--fg:#e8f0f3;--soft:#9db1bb;--line:#2e414b;--accent:#58b4dc;--on:#08161d;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10191e;--shelf:#19262d;--fg:#e8f0f3;--soft:#9db1bb;--line:#2e414b;--accent:#58b4dc;--on:#08161d;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:400 15px/1.5 var(--body)}
+main{max-width:1180px;margin:0 auto;padding-block:32px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:24px}
+h1{font:700 clamp(28px,4vw,40px)/1.1 var(--display);margin:0;text-wrap:balance}
+h2{font:700 19px/1.2 var(--display);margin:0}
+p{margin:0;max-width:65ch}
+.lead{color:var(--soft);margin-top:8px}
+.desk{border-radius:14px;padding:22px;background:linear-gradient(160deg,#3d6473,#24404d 55%,#1b2f3a);color:#f2f7f9;display:grid;gap:14px}
+.desk small{color:#c4d6de;font-size:13px}
+.bar{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.seat{background:rgba(12,22,28,.55);border-radius:12px;padding:10px 8px 10px;text-align:center;min-width:0}
+.seat .plush{margin:0 auto}
+.seat b{display:block;font:700 13px/1.3 var(--body);overflow-wrap:anywhere}
+.seat span{font-size:12px;color:#c9d8df}
+.ctl{display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center}
+.set{display:flex;flex-wrap:wrap;gap:6px}
+button{font:600 14px/1 var(--body);padding:10px 14px;border-radius:9px;border:1px solid var(--line);background:var(--shelf);color:var(--fg);cursor:pointer}
+.set button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on)}
+button:focus-visible,.toy:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+label{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px}
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:20px 16px}
+button.toy{all:unset;font:400 15px/1.5 var(--body);box-sizing:border-box;cursor:pointer;background:var(--shelf);color:var(--fg);border-radius:16px;padding:16px 16px 18px;display:flex;flex-direction:column;gap:10px;min-width:0;border:2px solid transparent}
+button.toy[aria-pressed="true"]{border-color:var(--accent)}
+.stage{height:212px;display:flex;align-items:flex-end;justify-content:center;position:relative;border-bottom:6px solid var(--line);border-radius:0 0 4px 4px}
+.name{display:flex;gap:9px;align-items:baseline}
+.name i{font:700 19px/1 var(--display);color:var(--accent);font-style:normal;font-variant-numeric:tabular-nums}
+.toy p{font-size:14px;color:var(--soft)}
+.sizes{display:flex;gap:14px;align-items:flex-end;margin-top:auto;color:var(--soft);font-size:12px}
+.sizes div{display:grid;justify-items:center;gap:3px}
+/* a plushie: ground shadow, then a body that moves as one */
+.plush{position:relative;width:var(--px);height:var(--px)}
+.plush::before{content:"";position:absolute;left:16%;right:16%;bottom:4%;height:9%;border-radius:50%;background:rgba(8,18,24,.28);filter:blur(5px)}
+.mv,.mv>*{position:absolute;inset:0;width:100%;height:100%}
+.mv{transform-origin:50% 92%}
+.limb{transform-origin:var(--lo)}
+.kid{position:absolute;width:38%;height:38%;bottom:1%;left:-19%;display:none}
+.kid.b{left:auto;right:-19%}
+.kids .kid{display:block}
+.f{opacity:0}
+.s-idle .f-open,.s-working .f-open,.s-speaking .f-open,.s-idle .f-smile,.s-working .f-smile,.s-needs .f-wide,.s-needs .f-o,.s-done .f-happy,.s-done .f-smile,.s-failed .f-sad,.s-failed .f-frown,.s-speaking .f-talk{opacity:1}
+.prop{opacity:0}
+.s-working .p-task,.s-needs .p-sign,.s-done .p-star,.s-failed .p-thread{opacity:1}
+.p-sign{transform-origin:82% 62%}.p-task{transform-origin:50% 70%}
+.s-failed .mv{transform:rotate(13deg) scale(1.04,.88);transition:transform .3s ease-out}
+.s-failed .limb{transform:rotate(28deg);transition:transform .3s}
+.s-needs .mv{transform:scale(.98,1.05)}
+.s-needs .limb{transform:rotate(-9deg) scale(1.08)}
+.s-idle .f-open{animation:blink 7s infinite}
+.s-working .mv{animation:lean 5s ease-in-out infinite}
+.s-working .p-task{animation:work 2.5s ease-in-out infinite}
+.s-speaking .limb{animation:chat .42s ease-in-out infinite alternate}
+.s-speaking .f-talk{animation:talk .31s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:50% 50%}
+.s-needs .mv{animation:sway 1s ease-in-out 5}
+.s-done .mv{animation:settle .4s ease-out 1}
+.s-done .p-star{animation:pop .4s ease-out 1}
+@keyframes blink{0%,96%,100%{opacity:1}97.5%{opacity:.05}}
+@keyframes lean{50%{transform:rotate(2deg) translateY(1%)}}
+@keyframes work{50%{transform:rotate(-7deg)}}
+@keyframes chat{from{transform:scale(1,.94)}to{transform:scale(1.04,1.13) rotate(2deg)}}
+@keyframes talk{from{transform:scale(.8,.45)}to{transform:scale(1.1,1.25)}}
+@keyframes sway{0%,100%{transform:scale(.98,1.05)}25%{transform:scale(.98,1.05) rotate(6deg)}75%{transform:scale(.98,1.05) rotate(-6deg)}}
+@keyframes settle{0%{transform:translateY(-7%) scale(.97,1.05)}60%{transform:scale(1.07,.92)}100%{transform:none}}
+@keyframes pop{from{transform:scale(.5)}}
+@media (prefers-reduced-motion:reduce){.plush *{animation:none!important;transition:none!important}}
+@media (max-width:620px){.bar{grid-template-columns:repeat(auto-fit,minmax(96px,1fr))}.desk{padding:16px}}
+</style>
+<main>
+<header><h1>Twelve plushies for Sidetone</h1><p class="lead">Original characters, drawn in code. Press one to seat its family in the overlay. The six states are animated; the notes under each are ideas for its own tricks. Say the numbers you like, or the parts: the fur of 6, the ear of 3.</p></header>
+<section class="desk" aria-label="Example overlay"><div><h2 id="seatname"></h2><small>Five example sessions, each in its session color</small></div><div class="bar" id="bar"></div></section>
+<div class="ctl"><div class="set" id="states" role="group" aria-label="State of the twelve"></div><label for="kids"><input type="checkbox" id="kids"> Subagents</label></div>
+<section class="shelf" id="shelf" aria-label="Plushies"></section>
+</main>
+<script>
+const COLORS=["#8AB4FF","#B07CFF","#7FDBCA","#B9F27C","#FF8FA3","#F9E27D","#FF7FD9","#FFA24D","#8AB4FF","#7FDBCA","#B07CFF","#FF8FA3"];
+const circ=(x,y,r,q=r)=>`M${x-r} ${y}a${r} ${q} 0 1 0 ${2*r} 0a${r} ${q} 0 1 0 ${-2*r} 0Z`;
+// part: d path, m material, k brightness of the color, c own color, w stroke width, s softness
+const TOYS=[
+{n:"Pouch",t:"A drawstring bag. Its gathered mouth opens as it speaks.",f:[100,132,25],lo:"50% 38%",b:[{d:"M62 76C28 108 24 178 62 184L138 184C176 178 172 108 138 76Z",m:"felt",s:.1}],l:[{d:"M66 76C50 54 44 38 58 32C70 42 76 26 88 30C94 40 106 40 112 30C124 26 130 42 142 32C156 38 150 54 134 76Z",m:"felt",k:1.06,s:.05},{d:"M62 76C80 86 120 86 138 76",w:9,m:"knit",c:"#f4ead8",s:.02},{d:"M134 78C150 84 150 98 146 110",w:6,m:"knit",c:"#f4ead8",s:.02}]},
+{n:"Wobble",t:"A weighted teardrop that always rocks back upright.",f:[100,122,24],lo:"50% 22%",b:[{d:"M100 22C112 62 168 92 164 140C160 182 130 187 100 187C70 187 40 182 36 140C32 92 88 62 100 22Z",m:"fleece",s:.13},{d:circ(100,164,34,19),m:"fleece",k:1.3,s:.06}],l:[{d:"M94 44C88 18 112 4 130 14C118 20 120 38 106 50Z",m:"fleece",k:.9,s:.03}]},
+{n:"Dogear",t:"A corduroy beanbag. The folded corner lifts when it listens.",f:[96,126,26],lo:"60% 27%",b:[{d:"M42 66C42 48 54 42 72 42L132 46C158 48 160 60 160 78L166 158C166 180 154 185 136 185L62 185C42 185 32 178 36 156Z",m:"cord",s:.1}],l:[{d:"M106 40C128 28 168 40 172 84C164 98 146 92 134 82C118 70 108 58 106 40Z",m:"felt",k:.72,s:.05}]},
+{n:"Knot",t:"One fat cord tied round itself. The loose end waves.",f:[100,134,24],lo:"62% 48%",b:[{d:circ(100,132,62,54),m:"knit",s:.1},{d:"M48 100C80 84 130 88 156 118",w:27,m:"knit",k:1.08,s:.04},{d:"M46 168C80 186 128 184 156 158",w:27,m:"knit",k:.94,s:.04}],l:[{d:"M122 94C150 82 160 60 146 34",w:25,m:"knit",k:1.12,s:.035}]},
+{n:"Pod",t:"A seed pod that unzips. The seeds are its subagents.",f:[100,92,23],lo:"50% 16%",b:[{d:"M100 22C154 52 172 112 150 162C138 188 62 188 50 162C28 112 46 52 100 22Z",m:"felt",s:.12},{d:"M100 118C128 130 128 164 100 180C72 164 72 130 100 118Z",m:"felt",k:.42,s:.03},{d:circ(90,142,11),m:"fur",c:"#f6e3a8",s:.03},{d:circ(110,148,11),m:"fur",c:"#f6e3a8",s:.03},{d:circ(98,164,11),m:"fur",c:"#f6e3a8",s:.03}],l:[{d:"M98 30C98 8 122 -2 144 8C136 28 118 36 102 34Z",m:"felt",k:.75,s:.03}]},
+{n:"Bobble",t:"A shaggy pom-pom in a knitted collar.",f:[100,108,23],lo:"50% 32%",b:[{d:"M58 150C58 146 142 146 142 150L148 187L52 187Z",m:"knit",k:.7,s:.04},{d:circ(100,106,60),m:"shag",s:.14}],l:[{d:circ(100,36,17),m:"shag",k:1.15,s:.05}]},
+{n:"Spool",t:"A reel of thread. The loose end becomes its arm.",f:[100,122,22],lo:"68% 55%",b:[{d:"M60 72L140 72C148 92 148 148 140 166L60 166C52 148 52 92 60 72Z",m:"thread",s:.12},{d:"M54 52C54 46 146 46 146 52L148 72C148 80 52 80 52 72Z",m:"felt",c:"#dcb98a",s:.04},{d:"M52 164C52 158 148 158 148 164L150 180C150 188 50 188 50 180Z",m:"felt",c:"#dcb98a",s:.04}],l:[{d:"M138 108C164 102 170 84 160 66C154 54 168 44 178 52",w:8,m:"thread",k:1.1,s:.015}]},
+{n:"Bell",t:"A felt bell on two clapper feet. It rings without a sound.",f:[100,108,24],lo:"50% 24%",b:[{d:circ(76,172,15),m:"felt",k:.65,s:.05},{d:circ(124,172,15),m:"felt",k:.65,s:.05},{d:"M100 38C138 38 146 72 150 112C152 136 172 144 172 158C172 168 28 168 28 158C28 144 48 136 50 112C54 72 62 38 100 38Z",m:"felt",s:.11},{d:"M34 156C70 166 130 166 166 156",w:8,m:"knit",c:"#f4ead8",s:.02}],l:[{d:circ(100,30,11),w:8,m:"felt",k:.75,s:.02,hollow:1}]},
+{n:"Cosy",t:"A quilted tea cosy with a tuft. It puffs while it works.",f:[100,122,25],lo:"50% 25%",b:[{d:"M36 178C30 92 60 48 100 48C140 48 170 92 164 178C150 188 50 188 36 178Z",m:"quilt",s:.12},{d:"M34 176C70 186 130 186 166 176",w:17,m:"knit",k:1.2,s:.04}],l:[{d:circ(100,44,19),m:"shag",k:1.2,s:.06}]},
+{n:"Patch",t:"A lopsided cushion, mended often. A failure shows its stitches.",f:[92,130,25],lo:"81% 33%",b:[{d:"M38 70C60 50 130 42 160 64C180 96 160 138 172 168C142 191 72 185 40 178C24 140 48 110 38 70Z",m:"fleece",s:.12},{d:"M112 64L150 60L156 94L118 98Z",m:"felt",c:"#f2e4c9",s:.02,st:"#8c4a5c"}],l:[{d:"M158 66C166 48 184 44 190 32C194 52 184 68 166 76Z",m:"shag",k:1.15,s:.03}]},
+{n:"Muffs",t:"Two puffs on one band, one eye each. They tilt together.",f:[100,130,37],lo:"50% 56%",b:[{d:circ(60,136,45),m:"fur",s:.12},{d:circ(140,136,45),m:"fur",s:.12}],l:[{d:"M56 100C54 44 146 44 144 100",w:17,m:"knit",k:.7,s:.04}]},
+{n:"Comma",t:"A pause with a tail. It straightens when it needs you.",f:[104,94,24],lo:"46% 22%",b:[{d:"M72 36C134 20 178 68 166 126C156 172 108 192 58 184C88 176 104 160 98 144C60 150 30 120 34 84C38 58 54 42 72 36Z",m:"fur",s:.11}],l:[{d:"M84 42C76 22 92 6 110 10C112 26 104 40 94 46Z",m:"fur",k:1.2,s:.03}]}];
+const TASKS=["search","edit","test","research"];
+const rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function blur(src,S,r){let a=src,b=new Float32Array(S*S);const n=2*r+1;for(let p=0;p<3;p++){for(let y=0;y<S;y++){let s=0;for(let x=-r;x<=r;x++)s+=a[y*S+Math.min(S-1,Math.max(0,x))];for(let x=0;x<S;x++){b[y*S+x]=s/n;s+=a[y*S+Math.min(S-1,x+r+1)]-a[y*S+Math.max(0,x-r)]}}const c=new Float32Array(S*S);for(let x=0;x<S;x++){let s=0;for(let y=-r;y<=r;y++)s+=b[Math.min(S-1,Math.max(0,y))*S+x];for(let y=0;y<S;y++){c[y*S+x]=s/n;s+=b[Math.min(S-1,y+r+1)*S+x]-b[Math.max(0,y-r)*S+x]}}a=c}return a}
+const fr=v=>v-Math.floor(v);
+function weave(m,x,y,R){const n=R()-.5;
+if(m==="felt")return 1+n*.15;
+if(m==="cord")return .84+.24*Math.abs(Math.sin(x*.42))+n*.07;
+if(m==="knit"){const u=fr(x/9),v=fr(y/7+Math.abs(u-.5)*1.3);return .78+.34*Math.sin(v*Math.PI)*(1-.35*Math.abs(u-.5))-(u<.08?.12:0)+n*.06}
+if(m==="thread")return .82+.27*Math.abs(Math.sin(y*.62+x*.03))+n*.06;
+if(m==="quilt"){const a=Math.abs(fr((x+y)/34)-.5),b=Math.abs(fr((x-y)/34)-.5),e=Math.min(a,b);return .78+.28*Math.min(1,e*5)+n*.07}
+return 1+n*.08}
+// Soft-toy shading: the blurred outline is taken as height, its slope as the surface.
+function paint(parts,S,color,seed){const out=document.createElement("canvas");out.width=out.height=S;const o=out.getContext("2d"),z=S/200,R=rng(seed);
+for(const p of parts){const c=document.createElement("canvas");c.width=c.height=S;const g=c.getContext("2d");g.scale(z,z);g.lineCap=g.lineJoin="round";const P=new Path2D(p.d);if(p.w){g.lineWidth=p.w;g.stroke(P)}else g.fill(P);
+const im=g.getImageData(0,0,S,S),D=im.data,M=new Float32Array(S*S);for(let i=0;i<M.length;i++)M[i]=D[i*4+3]/255;
+const r=Math.max(1,Math.round(p.s*S*.55)),h=blur(M,S,r),H=new Float32Array(S*S);for(let i=0;i<H.length;i++)H[i]=Math.sqrt(Math.max(0,(h[i]-.3)/.7));
+const base=rgb(p.c||color),k=p.k||1,hairs=[],fz={fleece:[.06,3.4],fur:[.1,7],shag:[.13,13]}[p.m];
+for(let y=1;y<S-1;y++)for(let x=1;x<S-1;x++){const i=y*S+x;if(!M[i])continue;const dx=(H[i+1]-H[i-1])*r*.9,dy=(H[i+S]-H[i-S])*r*.9,l=Math.hypot(dx,dy,1),dot=(dx*.42+dy*.62+.66)/l;
+let s=(.5+.6*Math.max(0,dot))*(1-.16*y/S)*weave(p.m,x/z,y/z,R)*k;const spec=Math.max(0,dot-.86)*1.1;
+const q=s<1?1:0;for(let j=0;j<3;j++){let v=base[j]*s;if(q)v=v*(1-.16*(1-s))+(j===2?18:6)*(1-s);D[i*4+j]=Math.min(255,v+255*spec*.35)}
+if(fz&&R()<fz[0]*(360/S)*.9)hairs.push([x,y,-dx/l,-dy/l,s])}
+g.putImageData(im,0,0);
+o.save();o.globalCompositeOperation="source-atop";o.shadowColor="rgba(18,12,34,.5)";o.shadowBlur=S*.035;o.shadowOffsetY=S*.014;o.drawImage(c,0,0);o.restore();o.drawImage(c,0,0);
+if(fz){o.lineCap="round";for(const[x,y,nx,ny,s]of hairs){const L=fz[1]*z*(.6+R()*.8),j=.86+R()*.36,a=(R()-.5)*1.1;o.strokeStyle=`rgb(${base.map(v=>Math.min(255,v*s*j)|0)})`;o.lineWidth=Math.max(.6,z*(.55+R()*.5));o.beginPath();o.moveTo(x,y);o.quadraticCurveTo(x+(nx+a*.3)*L*.6,y+ny*L*.6,x+(nx+a)*L,y+(ny+.28)*L);o.stroke()}}
+if(p.st){o.save();o.scale(z,z);o.strokeStyle=p.st;o.lineWidth=2.4;o.setLineDash([5,4]);o.stroke(P);o.restore()}}
+return out}
+const PROPS={search:'<circle cx="158" cy="132" r="15" fill="#cfeaf6" fill-opacity=".75" stroke="#5a4632" stroke-width="6"/><path d="M148 144L134 162" stroke="#5a4632" stroke-width="8" stroke-linecap="round"/>',
+edit:'<path d="M132 168L172 120" stroke="#cdd6dc" stroke-width="5" stroke-linecap="round"/><path d="M170 123C188 130 176 152 190 164" fill="none" stroke="#e2506e" stroke-width="3"/>',
+test:'<path d="M150 172c-14-4 20-8 4-12s18-8 4-12 18-8 4-12 16-8 4-12" fill="none" stroke="#8b98a1" stroke-width="5" stroke-linecap="round"/>',
+research:'<path d="M112 152C126 144 138 146 146 152C154 146 168 144 182 152L182 182C168 176 154 176 146 182C138 176 126 176 112 182Z" fill="#fdf6e6" stroke="#7d5a3c" stroke-width="4" stroke-linejoin="round"/><path d="M146 152V182" stroke="#7d5a3c" stroke-width="3"/>'};
+function face([x,y,g]){const a=x-g,b=x+g,e=(q,r)=>`<circle cx="${q}" cy="${y}" r="${r}" fill="#1b1620"/><circle cx="${q-r*.3}" cy="${y-r*.36}" r="${r*.33}" fill="#fff"/>`;
+const ln=(d,w=4)=>`<path d="${d}" fill="none" stroke="#2a1c2a" stroke-width="${w}" stroke-linecap="round"/>`;
+return `<ellipse cx="${a-9}" cy="${y+14}" rx="9" ry="5.5" fill="#f0506e" opacity=".3"/><ellipse cx="${b+9}" cy="${y+14}" rx="9" ry="5.5" fill="#f0506e" opacity=".3"/>
+<g class="f f-open">${e(a,8)}${e(b,8)}</g><g class="f f-wide">${e(a,10.5)}${e(b,10.5)}</g>
+<g class="f f-happy">${ln(`M${a-9} ${y+3}Q${a} ${y-9} ${a+9} ${y+3}`,5)}${ln(`M${b-9} ${y+3}Q${b} ${y-9} ${b+9} ${y+3}`,5)}</g>
+<g class="f f-sad">${e(a,7)}${e(b,7)}${ln(`M${a-11} ${y-10}L${a+7} ${y-17}`)}${ln(`M${b+11} ${y-10}L${b-7} ${y-17}`)}</g>
+<g class="f f-smile">${ln(`M${x-8} ${y+14}Q${x} ${y+22} ${x+8} ${y+14}`)}</g><g class="f f-frown">${ln(`M${x-8} ${y+22}Q${x} ${y+13} ${x+8} ${y+22}`)}</g>
+<ellipse class="f f-o" cx="${x}" cy="${y+18}" rx="5" ry="6.5" fill="#3a1626"/><ellipse class="f f-talk" cx="${x}" cy="${y+18}" rx="9" ry="8" fill="#3a1626"/>`}
+const svg=(inner,cls="")=>`<svg viewBox="0 0 200 200" class="${cls}" aria-hidden="true">${inner}</svg>`;
+function make(i,color,px,state){const t=TOYS[i],el=document.createElement("div");el.className="plush s-"+state;el.style.setProperty("--px",px+"px");el.style.setProperty("--lo",t.lo);
+const S=Math.max(96,Math.round(px*2)),b=paint(t.b,S,color,i*97+5),l=paint(t.l,S,color,i*97+71);l.className="limb";
+const mv=document.createElement("div");mv.className="mv";mv.append(b,l);
+mv.insertAdjacentHTML("beforeend",svg(face(t.f))+svg(PROPS[TASKS[i%4]],"prop p-task")+svg('<path d="M166 128L174 62" stroke="#6b4b2e" stroke-width="6" stroke-linecap="round"/><path d="M152 10L196 14L192 64L148 60Z" fill="#fff7dc" stroke="#e79a00" stroke-width="5" stroke-linejoin="round"/><path d="M163 28c1-12 20-12 19 1c0 8-9 8-10 15" fill="none" stroke="#b56a00" stroke-width="6" stroke-linecap="round"/><circle cx="171.500" cy="53" r="3.600" fill="#b56a00"/>',"prop p-sign")+svg('<path d="M160 138l7 14 16 2-12 11 3 16-14-8-14 8 3-16-12-11 16-2Z" fill="#ffd75a" stroke="#b98713" stroke-width="3" stroke-linejoin="round"/>',"prop p-star")+svg('<path d="M52 164l10 10m-2-14l10 10m-2-14l10 10" stroke="#40233a" stroke-width="3.500" stroke-linecap="round"/><path d="M52 164C32 164 36 188 20 184" fill="none" stroke="#40233a" stroke-width="3" stroke-linecap="round"/>',"prop p-thread"));
+for(const c of["kid","kid b"]){const k=document.createElement("div");k.className=c;const d=document.createElement("canvas");d.width=d.height=Math.round(S*.5);flat(d,b,l,t,d.width);d.style.cssText="width:100%;height:100%";k.append(d);el.append(k)}
+el.prepend(mv);el._b=b;el._l=l;return el}
+function flat(cv,b,l,t,S){const g=cv.getContext("2d"),z=S/200;g.imageSmoothingQuality="high";g.drawImage(b,0,0,S,S);g.drawImage(l,0,0,S,S);g.fillStyle="#1b1620";const r=Math.max(10,180/S*2.6);for(const q of[-1,1]){g.beginPath();g.arc((t.f[0]+q*t.f[2])*z,t.f[1]*z,r*z,0,7);g.fill()}}
+const STATES=[["idle","Idle"],["working","Working"],["speaking","Speaking"],["needs","Needs you"],["done","Done"],["failed","Failed"]];
+const SEATS=[["sidetone","Done","done","#8AB4FF"],["api-server","Speaking","speaking","#FFA24D"],["web-app","Needs you","needs","#B07CFF"],["data-pipeline","Failed","failed","#7FDBCA"],["notes","Working","working","#FF8FA3"]];
+const bar=document.getElementById("bar"),shelf=document.getElementById("shelf"),sets=document.getElementById("states"),kids=document.getElementById("kids");let now="idle",seated=5;
+function seat(i){seated=i;document.getElementById("seatname").textContent=TOYS[i].n+" in the overlay";bar.replaceChildren(...SEATS.map(([n,s,k,c])=>{const d=document.createElement("div");d.className="seat";d.append(make(i,c,84,k));d.insertAdjacentHTML("beforeend",`<b>${n}</b><span>${s}</span>`);return d}));document.querySelectorAll(".toy").forEach((b,j)=>b.setAttribute("aria-pressed",j===i))}
+function setState(s){now=s;sets.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===s));shelf.querySelectorAll(".stage .plush").forEach(p=>{const k=p.classList.contains("kids");p.className="plush";void p.offsetWidth;p.className="plush s-"+s+(k?" kids":"")})}
+STATES.forEach(([k,n])=>{const b=document.createElement("button");b.type="button";b.id="state-"+k;b.dataset.s=k;b.textContent=n;b.onclick=()=>setState(k);sets.append(b)});
+kids.onchange=()=>shelf.querySelectorAll(".stage .plush").forEach(p=>p.classList.toggle("kids",kids.checked));
+TOYS.forEach((t,i)=>{const b=document.createElement("button");b.type="button";b.className="toy";b.id="toy-"+(i+1);b.innerHTML=`<span class="stage"></span><span class="name"><i>${i+1}</i><span style="font:700 19px/1.2 var(--display)">${t.n}</span></span><p>${t.t}</p><span class="sizes"></span>`;b.onclick=()=>seat(i);shelf.append(b);
+setTimeout(()=>{const p=make(i,COLORS[i],184,now);if(kids.checked)p.classList.add("kids");b.querySelector(".stage").append(p);for(const s of[24,32,48]){const d=document.createElement("div"),c=document.createElement("canvas");c.width=c.height=s*2;c.style.cssText=`width:${s}px;height:${s}px`;flat(c,p._b,p._l,t,s*2);d.append(c,s+" px");b.querySelector(".sizes").append(d)}},10*i)});
+seat(seated);setState("idle");
+</script>
