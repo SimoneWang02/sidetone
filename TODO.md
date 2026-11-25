@@ -154,7 +154,8 @@ Roughly easiest first, the larger ones after.
       and waves (`living-aquarium.html`, WebGL). Their first words on it: the light through day,
       evening and night "I love it"; the rocks showed their triangles; "polish better the
       backgrounds first, then ... the fishes". Background redone (stone, wood, plants, sand, light
-      by the hour), **not seen by them yet**; the fish come next. Previews only: "don't
+      by the hour); then "remove the lily pads", "less details and smaller", "otherwise ... a
+      setting": Background Bare, Calm (the default) or Full, **not seen by them yet**; fish next. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
