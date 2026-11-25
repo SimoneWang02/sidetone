@@ -177,7 +177,8 @@ The author, by voice, 2026-11-25: "first version I would say compatibility acros
 all the features that we've done". Told in reply: the Mac, native Windows and Linux desktop are on
 `mac-overlay`, which has gone apart from main (19 and 21 commits), and nobody has used them on a
 real machine; proposed: all platforms in it, Windows with WSL as the finished one and the others
-called previews until a person has followed `docs/testing/` (on that branch) on each. Not answered yet.
+called previews until a person has followed `docs/testing/` (on that branch) on each. The author, of trying
+them: "before releasing, I'll try them"; whether any is called a preview is open.
 
 - [ ] Packaging as a Claude Code plugin, so it installs in one step.
 - [ ] A version that runs on Windows itself, without WSL (the author, 2026-11-17, on learning
