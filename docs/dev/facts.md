@@ -525,15 +525,23 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   own: opening it puts the headset in call mode (hands-free, 16 kHz mono here, against 48 kHz
   stereo). WSLg shows one microphone, `RDPSource`, so `mic_source` cannot pick another one.
   Measured 2026-11-24: default recording device (all three roles) the Bose hands-free, and with
-  `parec` open `msrdc` held a capture session on it. Whether it follows a change of the
-  default without a restart, and that the sound stays good with the Nuroum, is not yet tried. Earlier that day the default was the Nuroum;
+  `parec` open `msrdc` held a capture session on it. Earlier that day the default was the Nuroum;
   what switched it is not known (nothing in `hub/`, `overlay/` or `tests/headset` sets a default).
+  Pairing again made the Nuroum the default (calls: the Bose), and `msrdc` then recorded from it
+  with nothing restarted.
   The Nuroum is the webcam (a Camera device of the same name), so it does not follow the author to
   another room. Read, not tried: over Bluetooth LE Audio, Windows (26100.4484 or later, and a
   driver that does it) can keep stereo with the microphone open ("Format when microphone is
   active", Microsoft). Bose's LE Audio is a beta in firmware 10.12.12 (What Hi-Fi: Android and
   Windows; ecoustics: Bose lists only Android; nothing found on its microphone over LE Audio).
-  Here the radio's driver is "Realtek Bluetooth LEAI Driver" and the Bose is connected by classic.
+  Tried the same day with LE Audio on in the Bose app (the author's word; firmware 10.12.14) and
+  paired again: Windows now lists the headset's LE Audio services (184E, 1850, ...), but with the
+  null driver (`UmPass`), no LE Audio driver was found running, and all its sound devices still
+  come from the classic A2DP and hands-free drivers. So sound is not going over LE Audio here. Not
+  known: whether Windows has the "Use LE Audio when available" switch on this PC, and whether a
+  newer driver (now Realtek 18.4032.2510.901, USB 13D3:3616, board ASRock Z890-C) would do it.
+  The pairing also renamed the headset in Windows from "Bose QC Ultra 2 HP" to "Leviathan" (same
+  address), so anything that finds it by "Bose" in its name misses it.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.

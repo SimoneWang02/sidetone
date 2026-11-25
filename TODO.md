@@ -398,8 +398,9 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         open the headset's by name. (Later that day the default was the Bose's own, which
         distorted playback while talking, as the author noticed; see `docs/dev/facts.md`. Not
         yet set back: changing it from a session was refused. The Nuroum is the webcam and does
-        not follow them to another room, the author objected; to try first: the Bose over LE
-        Audio.) Not tried: Spotify playing, AirPods, through a wall.
+        not follow them to another room, the author objected; tried: the Bose over LE
+        Audio, which Windows does not carry the sound over, so far. Paired again, Windows calls
+        the headset "Leviathan", and the default is the Nuroum again.) Not tried: Spotify playing, AirPods, through a wall.
       - second test with the Bose, the same evening (`tests/headset/run.sh`; AirPods: `--mic=`
         and part of their name in Windows), one try of each: microphone closed, a press came
         as Play again. Microphone open: one press, two, and a hold all sent nothing. In a
