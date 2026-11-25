@@ -397,7 +397,9 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         Windows' default microphone is the Nuroum on the desk: the hub would have to
         open the headset's by name. (Later that day the default was the Bose's own, which
         distorted playback while talking, as the author noticed; see `docs/dev/facts.md`. Not
-        yet set back: changing it from a session was refused, the author has to do it or allow it.) Not tried: Spotify playing, AirPods, through a wall.
+        yet set back: changing it from a session was refused. The Nuroum is the webcam and does
+        not follow them to another room, the author objected; to try first: the Bose over LE
+        Audio.) Not tried: Spotify playing, AirPods, through a wall.
       - second test with the Bose, the same evening (`tests/headset/run.sh`; AirPods: `--mic=`
         and part of their name in Windows), one try of each: microphone closed, a press came
         as Play again. Microphone open: one press, two, and a hold all sent nothing. In a

@@ -528,6 +528,12 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   `parec` open `msrdc` held a capture session on it. Whether it follows a change of the
   default without a restart, and that the sound stays good with the Nuroum, is not yet tried. Earlier that day the default was the Nuroum;
   what switched it is not known (nothing in `hub/`, `overlay/` or `tests/headset` sets a default).
+  The Nuroum is the webcam (a Camera device of the same name), so it does not follow the author to
+  another room. Read, not tried: over Bluetooth LE Audio, Windows (26100.4484 or later, and a
+  driver that does it) can keep stereo with the microphone open ("Format when microphone is
+  active", Microsoft). Bose's LE Audio is a beta in firmware 10.12.12 (What Hi-Fi: Android and
+  Windows; ecoustics: Bose lists only Android; nothing found on its microphone over LE Audio).
+  Here the radio's driver is "Realtek Bluetooth LEAI Driver" and the Bose is connected by classic.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
