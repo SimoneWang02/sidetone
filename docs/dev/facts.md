@@ -546,6 +546,8 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   and no sound comes in 15 s, in the same test code that had recorded it 5 times out of 5 an hour
   earlier, and in `Headset.cs`. Why is not known; what changed between is LE Audio on in the Bose
   app and the new pairing.
+  Paired again after the author was told to turn LE Audio off ("Done and connected"): the
+  microphone opened in 0.66 s with sound and the call, 2026-11-25, 00:00.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
