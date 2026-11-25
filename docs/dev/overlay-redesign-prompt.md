@@ -22,19 +22,43 @@ anyone need me, who, and who is speaking?
   "Which drink would you like?", context 83%), "data-pipeline" (failed: "error: rate limit"),
   "notes" (idle). Each has its own color, a name and a short title. One is selected.
 - Those five are only a sample with one session per state. Every design must work from 1 to 20
-  sessions (draw 5 and 12 in the rough round, 1 and 20 as well in later ones): several can be in the same state, three can need me at
-  once, and two can share a project name. Say what happens as they grow (shrink, fold, group,
+  sessions (draw 5 and 12 in the rough round, 1 and 20 as well in later ones): several can be in
+  the same state, three can need me at once, and two can share a project name. Say what happens as they grow (shrink, fold, group,
   page) and where it breaks. Sessions that need me, speak or are selected never fold away; folded
   ones keep their place and a count by state. The footprint may not grow in step with the number.
   Past about 8 sessions color cannot identify them, so name, place or shape must.
 - Speaking: api-server says "All forty two tests pass." with a voice-reactive element.
 - A permission request: web-app wants to push to the remote, `git push origin main`, with
   Ctrl+Alt+Y allow and Ctrl+Alt+N deny, and "2 more waiting". Keep allow and deny well apart.
-- A question with four options and, separately, one with boxes to tick.
+- A question with four options and, separately, one with boxes to tick. Requests are answered
+  with keys (Ctrl+Alt+1 to 4 for the options), not only the mouse.
 - Push-to-talk: listening, transcribing, sent, didn't catch that, and one message waiting for a
   busy session. A session being stopped.
 - Two subagents of api-server: appearing, working, finishing. Context emptying after a clear.
 - History of the last spoken lines, some missed. Plan usage: 5-hour and week.
+- Three amounts of detail: closed (signs only), every session, and the selected session alone with
+  its figures (context, tokens, time, tasks) and history. The details come out when the mouse
+  rests on the overlay or while Ctrl+Alt is held, or stay out.
+
+**Cases designs usually forget.** In the rough round, one line each on how the design copes; draw
+them all in the next round.
+- Several things at once: api-server is speaking, web-app needs me and I start to talk. The voice
+  is cut as I talk; what shows first, and where does the rest wait?
+- No session at all; one that has just started (no title, no figures yet); one that ends.
+- Muted: plain at a glance, with the spoken line still shown as text.
+- A side question ("by the way...") answered while its session goes on working.
+- 1, 3 and 12 messages waiting for one busy session.
+- Actions pressed twice to confirm: clearing a chat (asks, under way, done), ending a session.
+- Context from 80% is a warning, apart from "needs you". A figure may be unknown.
+- Long words: a 40-character title, a four-line sentence, a question with a long option, the
+  second of two questions, a long command cut short. Text in English, Italian and Chinese.
+- Placed at any edge or corner, on either of two monitors, at 75% to 150% size; over a
+  full-screen video or game. It is dragged to move, and sessions can be put in another order.
+- Clicks pass through to the program behind wherever nothing is clickable.
+- Color blindness and high contrast. Session colors are identity, state colors are status: they
+  must not be mistaken for each other (a red session is not a failed one).
+- Cheap to run all day: nothing animates while nothing changes, except a rare blink.
+- The customization screen: one picture of where a person changes all this (finalists only).
 
 **Characters.** Many rows use an original plushie family: one per session in that session's
 color, smaller ones (60%) for subagents, with props per task (magnifier to search, needle and
@@ -71,11 +95,15 @@ Anthropic logos. Must read at 24 px (body, two eyes, one state change), 32 (one 
    each, think of several and take one you would not have reached for first. If a combination
    clashes, use the clash; change a value only if it is impossible, and say so. Then stop.
 2. When I say "batch N", draw rows 5N-4 to 5N, each on its own artboard, rough: the idle overlay
-   on a desktop, all five sessions, a crowded 12, the permission request, listening, and a gray 64 px
-   silhouette. Animate one moment per design in code. Before drawing, list the forms already used.
+   on a desktop, all five sessions, a crowded 12, the permission request, listening, and a gray
+   64 px silhouette. Animate one moment per design in code. Before drawing, list the forms already used.
 3. After each batch, score every design 1 to 5 on: difference from all the others, one-second
    glance, still clear with 20 sessions, small footprint, motion with meaning, can be built in
-   WPF, charm. Redo any with less than 3 on difference or on 20 sessions. This round, a low WPF score is fine: just say why.
+   WPF, charm. Redo any with less than 3 on difference or on 20 sessions. This round, a low WPF
+   score is fine: just say why.
+
+If the table and a rule disagree, the rule wins: "peripheral only" and "on demand" still bring
+requests out by themselves, and a lively motion style still moves only when something changes.
 
 **The table** (form / a session is a / material / world / state shown by / motion / density / characters)
 
@@ -133,6 +161,11 @@ Anthropic logos. Must read at 24 px (body, two eyes, one state change), 32 (one 
 ## After it
 
 - `batch 1` up to `batch 10`.
+- A batch in a conversation of its own, beside the first: paste the whole prompt, then
+  `Other conversations draw the other rows. Skip step 1 except for rows 11 to 15, then draw batch 3.`
+  (rows 5N-4 to 5N for batch N). The table keeps rows apart whoever draws them.
+- For a conversation begun with the first version of the prompt: paste "Cases designs usually
+  forget", the lines about 1 to 20 sessions and "If the table and a rule disagree".
 - `Put all 50 side by side as gray silhouettes and name the pairs that look alike.`
 - `Take numbers A, B, C, D and E further, and make two blends: the form of X with the characters
   of Y. These must be buildable in WPF (.NET Framework, C# 5): vector shapes, transforms and
