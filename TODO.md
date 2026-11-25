@@ -395,7 +395,9 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
         arrived, neither plainly nor with a VoIP call reported (the author pressed in both;
         the test said "Got it" wrongly in the call, for two mute events of its own start). So: press to start works, the second press does not, so far.
         Windows' default microphone is the Nuroum on the desk: the hub would have to
-        open the headset's by name. Not tried: Spotify playing, AirPods, through a wall.
+        open the headset's by name. (Later that day the default was the Bose's own, which
+        distorted playback while talking, as the author noticed; see `docs/dev/facts.md`. Not
+        yet set back: changing it from a session was refused, the author has to do it or allow it.) Not tried: Spotify playing, AirPods, through a wall.
       - second test with the Bose, the same evening (`tests/headset/run.sh`; AirPods: `--mic=`
         and part of their name in Windows), one try of each: microphone closed, a press came
         as Play again. Microphone open: one press, two, and a hold all sent nothing. In a

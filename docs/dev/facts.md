@@ -521,6 +521,13 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   (1 to 3% of the peak); the key's click arrives 0.1 to 0.15 s after release (30 to 100% of the
   peak, one or two 50 ms chunks), then quiet, so stopping at the first quiet after the click
   would save only about 0.15 s of the 0.4.
+- A Bluetooth headset sounds bad while we record if Windows' default microphone is the headset's
+  own: opening it puts the headset in call mode (hands-free, 16 kHz mono here, against 48 kHz
+  stereo). WSLg shows one microphone, `RDPSource`, so `mic_source` cannot pick another one.
+  Measured 2026-11-24: default recording device (all three roles) the Bose hands-free, and with
+  `parec` open `msrdc` held a capture session on it. Whether it follows a change of the
+  default without a restart, and that the sound stays good with the Nuroum, is not yet tried. Earlier that day the default was the Nuroum;
+  what switched it is not known (nothing in `hub/`, `overlay/` or `tests/headset` sets a default).
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
