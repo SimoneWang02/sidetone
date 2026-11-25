@@ -164,7 +164,12 @@ Roughly easiest first, the larger ones after.
       A slight glow ("the glow is good") on the outline
       or, their wish, as a circle behind: both to compare; the small mark "might be too small":
       larger, or inside a bubble ("I like the exclamation mark", its yellow border taken out), or
-      none. **The glow is not chosen yet**. Previews only: "don't
+      none. **The glow is not chosen yet**.
+      `docs/dev/overlay-review.md` scored it 17 of 30 to today's 21 (before the mouths and the
+      glow). Its points "one by one" (the author): 1. done leaves a mark: a pearl held in the
+      mouth (built, **not seen by them yet**); 2. nearly still when nothing changes; 3. working,
+      idle and done told apart; 4. size; 5. counts and labels at 20; 6. small flaws. Open: the
+      overlay itself, or (Claude's advice) what opens from the bar. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
