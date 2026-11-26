@@ -159,7 +159,8 @@ def frame(kind: int, color: str, s: str, T: float, A: float, V: float) -> bytear
     # The scarf, in the session's color, and its end hanging down.
     scarf = [(28, 66)] + _quad((28, 66), (50, 58), (74, 66)) + [(72, 76)] + _quad((72, 76), (50, 69), (30, 76))
     paper.fill([body(p) for p in scarf], c, .92)
-    paper.fill([body(p) for p in ((34, 72), (28, 95), (40, 96), (43, 74))], c, .92)
+    # its end stops above the feet's line when the body sinks (failed): nothing below where it stands
+    paper.fill([body(p) for p in ((34, 72), (28, 95 - dy), (40, 96 - dy), (43, 74))], c, .92)
     # Legs: from the body, which jumps and sinks, to feet that stay on the ground unless it jumps.
     for top, foot in (((30, 74 + dy), (22, 99 + min(dy, 0))), ((70, 74 + dy), (78, 99 + min(dy, 0)))):
         line([top, foot], at=lambda p: body(p, lift=False))

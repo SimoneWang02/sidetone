@@ -364,7 +364,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     jumpy whenever I switch session ... their body is cut off from the bottom side"). Nor when
     done ("when they're done, they're jumping"): they raise their arms and smile, feet down.
     When another session's figure takes the same place in the same moment, it shows that
-    moment's repeating part, not its start (needs you waving, done cheering). The
+    moment's repeating part, not its start (needs you waving, done cheering). Since a review on
+    2026-11-26 (two subagents, at the author's asking: "run sub-agents to check everything"):
+    every motion makes whole turns within its row (`Frame.wave`, `cycle`, `turns`; slower ones
+    hold still in the 1 s rows), so no row jumps where it repeats; the eyes blink only in idle,
+    never on a row's first frame (the details hold that frame still, and every figure looked
+    asleep there); needs you moves for 5 s and then settles (`Frame.lively`), only the mark
+    still bobbing; every figure stands on row 42; nothing reaches the cell's top or sides.
+    Tests check the feet, the edges and the repeats of every row (`tests/test_characters.py`). The
     cells are 44 px with the 40 px drawing 4 rows down (`OFF`), so raised leaves and hair are
     not cut flat at the top. Edge: in a window
     of its own (`perch`, see-through, click-through, no blur) on the bubble's top edge, at

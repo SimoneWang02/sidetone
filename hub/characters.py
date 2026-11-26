@@ -209,7 +209,7 @@ def FLAME(x, y, a, b, ph, t):
             return None
         up = v < 0
         w = a * (1 + v) ** .8 if up else a * math.sqrt(1 - v * v)
-        X = x + (math.sin(v * 3.4 + t * 7 + ph) * 1.7 * -v if up else 0)
+        X = x + (math.sin(v * 3.4 + t * TAU + ph) * 1.7 * -v if up else 0)  # once a second: every row repeats
         return ((p - X) / (w or 1) * .8, v * .8) if abs(p - X) <= w else None
     return f, (x - a - 2, y - b, x + a + 2, y + b)
 
@@ -230,7 +230,8 @@ class Canvas:
     """One frame: parts in flat bands of tone, a contact shadow where a part lies on another, an
     outline in the darkest tone of the part it surrounds, then single pixels and soft glows."""
 
-    def __init__(self):
+    def __init__(self, off: int = OFF):
+        self.off = off  # how far down the cell the drawing sits
         self.g = [[None] * N for _ in range(N)]  # [ramp, tone, shaded]
         self.dots: list = []
         self.under: list = []
@@ -238,9 +239,9 @@ class Canvas:
     def part(self, shape, R, k=0, flat=None, cast=1):
         f, (x0, y0, x1, y1) = shape
         inn = []
-        for y in range(max(0, math.floor(y0) + OFF - 1), min(N, math.ceil(y1) + OFF + 2)):
+        for y in range(max(0, math.floor(y0) + self.off - 1), min(N, math.ceil(y1) + self.off + 2)):
             for x in range(max(0, math.floor(x0) - 1), min(N, math.ceil(x1) + 2)):
-                u = f(x + .5, y + .5 - OFF)
+                u = f(x + .5, y + .5 - self.off)
                 if u:
                     inn.append((x, y, u))
         if cast:
@@ -255,10 +256,10 @@ class Canvas:
             self.g[y][x] = [R, int(_clamp(z + k, 1, 5)), 0]
 
     def dot(self, x, y, c, w=1, h=1, a=1.0):
-        self.dots.append((_round(x), _round(y) + OFF, _rgb(c), w, h, a))
+        self.dots.append((_round(x), _round(y) + self.off, _rgb(c), w, h, a))
 
     def glow(self, x, y, r, c, a):
-        self.under.append((x, y + OFF, r, _rgb(c), a))
+        self.under.append((x, y + self.off, r, _rgb(c), a))
 
     def pixels(self) -> bytearray:
         """The frame as RGBA, row by row."""
@@ -300,13 +301,41 @@ class Canvas:
 
 # ---- what every figure shares: the level-up, the stars, the mark, the smoke, eyes and mouths ----
 
+# How many seconds each moment's row lasts before it repeats; the others repeat each second
+# (speaking's four rows, and needs you and done, whose start leads into a row of one second).
+LOOP = {"idle": 4, "working": 2, "failed": 2, "listen": 2}
+
+
 class Frame:
     """The moment being drawn: s (idle, working, speaking, needs, done, failed, listen), T the time
-    in seconds, A the time since the moment began, V how loud the voice is (0 to 1)."""
+    in seconds, A the time since the moment began, V how loud the voice is (0 to 1).
 
-    def __init__(self, s: str, T: float, A: float, V: float):
+    Anything that moves with time goes through `wave` or `cycle`, which round its period so that it
+    goes round a whole number of times in the row: the rows repeat in the overlay, and a motion
+    that does not fit them jumps where they start again."""
+
+    def __init__(self, s: str, T: float, A: float, V: float, off: int = OFF):
         self.s, self.T, self.A, self.V = s, T, A, V
-        self.c = Canvas()
+        self.L = LOOP.get(s, 1)
+        # Needs you settles: the body's big motions (a swing, a wave, a hop) play in its first
+        # five seconds, fading out in the last, then only the mark keeps bobbing.
+        self.lively = _clamp(5 - A) if s == "needs" else 1.0
+        self.c = Canvas(off)
+
+    def turns(self, period: float) -> int:
+        """How many times a motion of about this period goes round in the row: none (it holds
+        still) when the row is far too short for it, so a slow drift does not race in a short row."""
+        if period > 2 * self.L:
+            return 0
+        return max(1, round(self.L / period))
+
+    def wave(self, period: float, ph: float = 0.0) -> float:
+        """A sine that goes round about once in `period` seconds (exactly, a whole number of times a row)."""
+        return math.sin(TAU * self.T * self.turns(period) / self.L + ph)
+
+    def cycle(self, period: float, ph: float = 0.0) -> float:
+        """From 0 up to 1 about once in `period` seconds, for things that rise and fade."""
+        return (self.T * self.turns(period) / self.L + ph) % 1
 
     def common(self, color: str, top: int):
         R, c, A = ramp(color), self.c, self.A
@@ -316,12 +345,12 @@ class Frame:
                 H = _round(34 * (1 - (1 - k) ** 2))
                 for i in range(4):
                     c.dot(12 + i * 4, FLOOR - H, R[4], 4, H, (1 - k) * (.18, .3, .3, .18)[i])
-                for i in range(7):
-                    y = FLOOR - ((k * 46 + i * 9) % 38)
+                for i in range(7):  # above the line it stands on
+                    y = FLOOR - 2 - ((k * 46 + i * 9) % 36)
                     c.dot(10 + ((i * 11) % 21), y, WH if i % 2 else R[5], 1, 2, 1 - k)
             if A > .5:
                 for i in range(4):
-                    q = (math.floor(A * 7) + i) % 5
+                    q = (math.floor(A * 6) + i) % 5  # 6 a second: an even two frames each
                     X, Y = ((4, 10), (35, 12), (6, 25), (34, 27))[i]
                     if A < 4 and q < 3:
                         if q == 1:
@@ -329,7 +358,7 @@ class Frame:
                             c.dot(X, Y - 1, GOLD, 1, 3)
                         c.dot(X, Y, "#fff6b8")
         if self.s == "needs":
-            b = _round(abs(math.sin(A * TAU / 2)) * 2) if A < 5 else 0
+            b = _round(abs(math.sin(A * TAU / 2)) * 2)  # a hop a second, on after the first five
             y = top - b
             c.dot(34, y, "#3a2000", 4, 11)
             c.dot(33, y + 1, "#3a2000", 6, 9)
@@ -338,15 +367,18 @@ class Frame:
             c.dot(35, y + 8, GOLD, 2, 2)
             c.dot(34, y + 1, "#fff3a8", 1, 3)
 
-    def smoke(self, x, y):
+    def smoke(self, x, y, rise=13):
+        rise = min(rise, y + self.c.off - 1)  # it fades out below the cell's top
         for i in range(3):
-            k = (self.T * .55 + i / 3) % 1
-            self.c.dot(x + math.sin(k * 6 + i) * 2, y - k * 13, "#aab2c2", 2 if k < .5 else 1, 2 if k < .5 else 1, 1 - k)
+            k = self.cycle(2, i / 3)
+            self.c.dot(x + math.sin(k * 6 + i) * 2, y - k * rise, "#aab2c2", 2 if k < .5 else 1, 2 if k < .5 else 1, 1 - k)
 
     def eyes(self, xs, y, kind, h=3):
         c = self.c
         for i, x in enumerate(xs):
-            blink = kind == "open" and math.floor(self.T * 10) % 41 < 2
+            # once in the idle row's four seconds, away from its first frame (the list holds that
+            # one still: shut eyes there look asleep); never while it talks, listens or works
+            blink = kind == "open" and self.s == "idle" and 2 <= self.T % 4 < 2.15
             if kind == "x":
                 for a, b in ((-1, 0), (1, 0), (0, 1), (-1, 2), (1, 2)):
                     c.dot(x + a, y + b, K)
@@ -378,16 +410,17 @@ class Frame:
 def lantern(F: Frame, col: str):
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
     C, W, H = ramp(col), ramp("#c9a45c"), ramp("#ffd27a")
-    sw = (math.sin(A * TAU) * 2.6 if A < 5 else 1.5) if s == "needs" else math.sin(T * 1.5) * .5
-    f = .35 + .1 * math.sin(T * 9)
+    # it swings on its ring: slowly, or hard once a second while it starts needing you
+    sw = math.sin(A * TAU) * 2.6 * F.lively if s == "needs" else F.wave(4) * .5
+    f = .35 + .1 * F.wave(.5)
     if s == "speaking":
         f = .2 + V * .95
     if s == "listen":
-        f = .25
+        f = .25 + .05 * F.wave(1)
     if s == "done":
-        f = 1
+        f = .95 + .05 * F.wave(1, TAU / 4)  # it glows on, breathing a little
     if s == "working":
-        f = .45 + .15 * math.sin(T * 5)
+        f = .45 + .15 * F.wave(1)
     dead = s == "failed"
     tx, y = 20 + sw, (1 if dead else 0)
     if not dead:
@@ -417,8 +450,8 @@ def lantern(F: Frame, col: str):
             c.dot(x, 19 if s == "needs" else 20, WH, 2, 5 if s == "needs" else 4)
     if s == "speaking" and V > .2:
         for i in range(5):
-            a, r = i * TAU / 5 + T, 13 + V * 4
-            c.dot(tx + math.cos(a) * r, 24 + math.sin(a) * r * .9, "#ffe6a0", 1, 1, .9)
+            a, r = (i + T) * TAU / 5, 13 + V * 4  # one place round a second: as it started
+            c.dot(tx + math.cos(a) * r, 24 + math.sin(a) * r * .75, "#ffe6a0", 1, 1, .9)
 
 
 def ember(F: Frame, col: str):
@@ -427,14 +460,14 @@ def ember(F: Frame, col: str):
     dead = s == "failed"
     H = ramp("#6a6470" if dead else "#ffd55e")
     Q = ramp("#57505c") if dead else C
-    h, by, la, ra = 1.0, 0, 0.0, 0.0
+    h, la, ra = 1.0, 0.0, 0.0
     if s == "speaking":
         h, la, ra = .94 + V * .2, V * 4, V * 4
     if s == "needs":
-        by = -_round(abs(math.sin(A * TAU / 2)) * 5) if A < 5 else 0
-        ra, h = 9, 1.06
+        # it bounces in place, feet down: the flame stretches up once a second and the arm waves
+        h, ra = 1.04 + abs(math.sin(A * TAU / 2)) * .14 * F.lively, 9 + F.wave(1) * 1.5 * F.lively
     if s == "working":
-        k = math.floor(T * 7) % 4
+        k = math.floor(T * 6) % 4
         la, ra = (5, 0) if k < 2 else (0, 5)
     if s == "done":
         # no jump: the author, 2026-11-26, "when they're done, they're jumping"
@@ -442,14 +475,14 @@ def ember(F: Frame, col: str):
     if dead:
         h = .62
     if s == "idle":
-        h = 1 + math.sin(T * 2) * .02
+        h = 1 + F.wave(2) * .03
     if not dead:
-        c.glow(20, 27 + by, 15, col, .16 + (V * .12 if s == "speaking" else 0))
-    lift = by * .6 if by < -1 else 0
-    c.part(ELL(15, 36.4 + lift, 2.8, 1.8), Q, k=-1)
-    c.part(ELL(25, 36.4 + lift, 2.8, 1.8), Q, k=-1)
+        c.glow(20, 27, 15, col, .16 + (V * .12 if s == "speaking" else 0))
+    c.part(ELL(15, 36.4, 2.8, 1.8), Q, k=-1)
+    c.part(ELL(25, 36.4, 2.8, 1.8), Q, k=-1)
     b = 14 * h
-    y = 36 - b * .92 + by
+    y = 36 - b * .92
+    by = -max(0.0, b - 14) * .6  # the shoulders ride up a little as it stretches
     c.part(FLAME(20, y, 9.6, b, 0, 0 if dead else T), Q)
     c.part(FLAME(20, y + 3.2, 6.4, b * .66, .8, 0 if dead else T), H, cast=0)
     c.part(LIMB(11.5, 29 + by, 8, 31 - la + by, 1.9, 1.7), Q)
@@ -461,34 +494,34 @@ def ember(F: Frame, col: str):
     else:
         F.eyes([14, 24], ey, "happy" if s == "done" else "wide" if s in ("needs", "listen") else "open", 4)
         F.mouth(20, ey + 6, V if s == "speaking" else .7 if s in ("needs", "done") else 0 if s == "listen" else .12)
-        for i in range(5 if s == "speaking" else 6 if s == "done" else 2):
-            k = (T * .8 + i * .37) % 1
+        for i in range(5 if s == "speaking" and V > .08 else 6 if s == "done" else 2):
+            k = F.cycle(1, i * .37)
             c.dot(13 + ((i * 7) % 15) + math.sin(k * 5 + i) * 2, 24 - k * 22, "#fff0a0" if k < .4 else C[4], 1, 1, 1 - k)
 
 
 def sprout(F: Frame, col: str):
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
     C, L = ramp(col), ramp("#8c8a4c" if s == "failed" else "#79c95f")
-    a, sq, by, up, bl = .32 + math.sin(T * 1.3) * .06, 1.0, 0, 0, 0.0
+    a, sq, by, up, bl, wv = .32 + F.wave(4) * .06, 1.0, 0, 0, 0.0, 0.0
     if s == "speaking":
-        a, sq = .15 + V * .75, 1 - V * .04
+        a, sq = .15 + V * .75 + F.wave(.5) * .06 * V, 1 - V * .04  # the leaves flutter with the voice
     if s == "needs":
-        a, up = 1.25, 3
-        by = -_round(abs(math.sin(A * TAU / 2)) * 2) if A < 5 else 0
+        a, up, wv = 1.25, 3, F.wave(1) * 1.5 * F.lively  # it hops on the spot, feet down, and waves
+        by = -_round(abs(math.sin(A * TAU / 2)) * 2 * F.lively)
     if s == "failed":
-        a, sq = -.75, .9
+        a, sq = -.75 + F.wave(2) * .05, .9 + F.wave(2, 1) * .015  # a slow sigh
     if s == "done":
-        bl, a = _ease((A - .3) / .5), .5
+        bl, a = _ease((A - .3) / .5), .5 + F.wave(1) * .05  # in flower, the leaves breathing
     if s == "working":
-        a = .3 + .25 * math.sin(T * 8)
+        a = .3 + .25 * F.wave(.67)
     if s == "listen":
-        a, up = .95, 1
+        a, up = .95 + F.wave(1) * .08, 1
     y = 28.5 + by + (1 - sq) * 8
     c.part(ELL(15.5, 36.6, 3, 1.8), C, k=-1)
     c.part(ELL(24.5, 36.6, 3, 1.8), C, k=-1)
     c.part(ELL(20, y, 9.8, 8.8 * sq), C)
     sy = y - 8 * sq
-    tx = 20 + (3 if s == "failed" else math.sin(T * 1.3) * .6)
+    tx = 20 + (3 if s == "failed" else F.wave(4) * .6)
     c.part(LIMB(20, sy + 1, tx, sy - 4 - up, 1.1), L)
     c.part(RE(tx - 6.2 * math.cos(a), sy - 5 - up - 6 * math.sin(a), 6.4, 2.9, a), L)
     c.part(RE(tx + 6.2 * math.cos(a), sy - 5 - up - 6 * math.sin(a) - .5, 6.4, 2.9, -a), L)
@@ -499,7 +532,7 @@ def sprout(F: Frame, col: str):
             c.part(ELL(tx + math.cos(q) * 4 * bl, sy - 6 + math.sin(q) * 4 * bl, 2.6 * bl, 2.6 * bl), P)
         c.part(ELL(tx, sy - 6, 2.2 * bl, 2.2 * bl), ramp("#ffd95a"))
     c.part(LIMB(11.5, 30 + by, 10, 33 + by - (3 if s == "working" and math.floor(T * 6) % 2 else 0), 1.8), C, k=-1)
-    c.part(LIMB(28.5, 30 + by, 30, 33 + by - (8 if s == "needs" else 9 if s == "listen" else 0), 1.8), C, k=-1)
+    c.part(LIMB(28.5, 30 + by, 30 + wv, 33 + by - (8 if s == "needs" else 9 if s == "listen" else 0), 1.8), C, k=-1)
     ey = _round(y - 3)
     if s == "failed":
         F.eyes([14, 23], ey, "shut")
@@ -517,10 +550,10 @@ def sprout(F: Frame, col: str):
         c.dot(17, ey + 6, K)
         c.dot(18, ey + 5, K, 3, 1)
         c.dot(21, ey + 6, K)
-    if s == "idle" and math.floor(T) % 3:
+    if s == "idle":  # z z: each rises and fades in two seconds
         for i in range(2):
-            k = (T * .4 + i * .5) % 1
-            c.dot(29 + k * 4, 20 - k * 9, "#dfe7f5", 3 if i else 2, 1, 1 - k)
+            k = F.cycle(2, i * .5)
+            c.dot(29 + k * 4, 20 - k * 9, "#dfe7f5", 3 if i else 2, 1, min(1, k * 5, (1 - k) * 1.6))
 
 
 def shellback(F: Frame, col: str):
@@ -528,23 +561,23 @@ def shellback(F: Frame, col: str):
     C, W, D = ramp(col), ramp("#e3d3a4"), ramp(tint(col, -.3))
     hx, hy, by, leg, hide, jaw = 0.0, 0.0, 0, 0, 0, 0.0
     if s == "speaking":
-        hx, hy, jaw = 1, -1 - V * 2, V
+        hx, hy, jaw = 1, -1 - V * 2 + F.wave(.5) * .6 * (.4 + V), V  # it nods as it talks
     if s == "needs":
-        hx, hy, leg, jaw = 1, -8 + (math.sin(A * TAU) * 1.2 if A < 5 else 0), 5, .4
+        hx, hy, leg, jaw = 1, -8 + math.sin(A * TAU) * 1.2 * F.lively, 5 + F.wave(1, 1) * 1.5 * F.lively, .4
     if s == "working":
         hx, hy, leg = -.5, 2 + math.floor(T * 6) % 2, math.floor(T * 6) % 2 * 2
     if s == "done":
         # no jump: the author, 2026-11-26, "when they're done, they're jumping"
-        hy, jaw = -4, .4
+        hy, jaw = -4 + F.wave(1) * .5, .4
     if s == "failed":
         hide = 1
     if s == "listen":
-        hx, hy = 1, -5
+        hx, hy = 1 + F.wave(1, 1) * .4, -5 + F.wave(1) * .6
     if s == "idle":
-        hy = 1 + math.sin(T * 1.2) * .4
+        hy = 1 + F.wave(4) * .4
     c.part(ELL(5.5, 33.5 + by, 2.6, 1.4), W, k=-1)
-    c.part(LIMB(10, 34 + by, 9.5, 37 + by * .5, 2.4), W, k=-1)
-    c.part(LIMB(22, 34 + by, 22.5, 37 + by * .5, 2.4), W, k=-1)
+    c.part(LIMB(10, 34 + by, 9.5, 36 + by * .5, 2.4), W, k=-1)  # feet on the familiars' row
+    c.part(LIMB(22, 34 + by, 22.5, 36 + by * .5, 2.4), W, k=-1)
     if not hide:
         c.part(LIMB(24, 31 + by, 29 + hx, 27 + hy + by, 2.7, 2.4), W)
         c.part(ELL(30.5 + hx, 25.5 + hy + by, 4.9, 4.4), W)
@@ -556,7 +589,7 @@ def shellback(F: Frame, col: str):
         c.part(LIMB(26, 33 + by, 30, 34 - leg + by, 2), W)
     if hide:
         c.dot(25, 31, K, 4, 3)
-        if math.floor(T * 2) % 5:
+        if math.floor(T * 2) % 4 != 3:  # it peeks out, and blinks once in the row
             c.dot(26, 32, WH)
             c.dot(28, 32, WH)
         F.smoke(16, 18)
@@ -578,21 +611,21 @@ def toadstool(F: Frame, col: str):
     C, W, G = ramp(col), ramp("#ead9b6"), ramp("#c9b28a")
     cy, ct, by, ra, br = 0.0, 0.0, 0, 0, 1
     if s == "speaking":
-        cy = -_round(V * 3)
+        cy = -_round(V * 3) + F.wave(.5) * .4 * V  # the cap nods as it talks, not at all in silence
     if s == "needs":
-        cy, ct, ra, br = -2 + (_round(math.sin(A * TAU) * .9) if A < 5 else 0), 3.5, 9, 0
+        cy, ct, ra, br = -2 + _round(math.sin(A * TAU) * .9 * F.lively), 3.5, 9 + F.wave(1, 1) * 1.5 * F.lively, 0
     if s == "done":
         cy = -_round(math.sin(_clamp(A / .8) * math.pi) * 3) if A < .8 else 0
-        ra, br = 9, -1
+        ra, br = 9 + F.wave(1) * .8, -1
     if s == "failed":
         cy, ct = 5, -1.5
     if s == "working":
         by = math.floor(T * 6) % 2
         ra = 3 if by else 0
     if s == "listen":
-        cy, ct, ra, br = -2, 3, 10, 0
+        cy, ct, ra, br = -2 + F.wave(1) * .5, 3, 10 + F.wave(1, 1) * .8, 0
     if s == "idle":
-        cy = math.sin(T * 1.4) * .4
+        cy = F.wave(4) * .4
     c.part(ELL(16, 36.8, 2.8, 1.6), W, k=-1)
     c.part(ELL(24, 36.8, 2.8, 1.6), W, k=-1)
     c.part(ELL(20, 30.5 + by * .5, 7, 6.8), W)
@@ -629,7 +662,7 @@ def toadstool(F: Frame, col: str):
             c.dot(21, 33, K)
     if s == "speaking" and V > .3:
         for i in range(4):
-            k = (T * .9 + i * .25) % 1
+            k = F.cycle(1, i * .25)
             c.dot(X + (-12, -5, 6, 12)[i] * (1 + k * .2), y - 6 - k * 9, "#fff0d8", 1, 1, 1 - k)
 
 
@@ -637,6 +670,7 @@ FAMILIARS = [lantern, ember, sprout, shellback, toadstool]
 
 # ---- the operators: one job, five people --------------------------------------------------------
 
+LAG = .68 ** (8 / FPS)  # how much of the hair's lag behind the head is left after a frame
 HAIR = ["#4a3f78", "#7a3e2a", "#3b4257", "#3a2a2a", "#a03a5e"]
 SKIN = ["#f2c9a4", "#c58a5e", "#f5d6b6", "#8f5d3e", "#e7b48e"]
 
@@ -646,19 +680,19 @@ def operator(F: Frame, col: str, i: int, lag: list):
     C, H, KS, B, P2 = ramp(col), ramp(HAIR[i]), ramp(SKIN[i]), ramp(tint(col, -.48)), ramp("#3a3f58")
     hx, hy, by, L1, R1, eye, m, slip = 0.0, 0.0, 0, (11, 33.5), (29, 33.5), "open", 0.0, 0
     if s == "idle":
-        hy = math.sin(T * 1.6) * .5
+        hy = F.wave(4) * .5
     if s == "speaking":
-        m, hy = V, -_round(V * 1.4)
+        m, hy = V, -_round(V * 1.4) + F.wave(.5) * .5 * V  # a nod with the voice, none in silence
         R1, L1 = (30 + V * 1.5, 30 - V * 5), (11, 33 - V * 2)
     if s == "working":
-        k = math.floor(T * 8) % 4
+        k = math.floor(T * 6) % 4  # typing, two frames a key
         L1, R1, eye, hy = (14, 33 - (2 if k < 2 else 0)), (26, 33 - (0 if k < 2 else 2)), "down", 1
     if s == "needs":
-        k = math.sin(A * TAU * 1.5) if A < 5 else .4
+        k = math.sin(A * TAU) * F.lively  # waving, once a second, then the hand held up
         R1, eye, m, hy = (32.5 + k * 2, 17), "wide", .45, (-1 if A < .3 else 0)
     if s == "done":
         # no jump: the author, 2026-11-26, "when they're done, they're jumping"
-        L1, R1, eye, m = (7.5, 20), (32.5, 20), "happy", .5
+        L1, R1, eye, m = (7.5, 20 + F.wave(1) * .6), (32.5, 20 + F.wave(1) * .6), "happy", .5  # cheering, gently
     if s == "failed":
         hy, hx, eye, slip, L1, R1 = 2.5, -.5, "sad", 1, (12, 35), (28, 35)
     if s == "listen":
@@ -667,9 +701,11 @@ def operator(F: Frame, col: str, i: int, lag: list):
 
     def Y(v):
         return v + by
-    lag[0] = cy if lag[0] is None else lag[0] + (cy - lag[0]) * (1 - .68 ** (8 / FPS))  # the hair lands a moment after the head
-    hc = cy + _clamp(lag[0] - cy, -1.6, 1.6)
-    sw = math.sin(T * 2.3 + i) * .6 + ((V - .3) * 1.6 if s == "speaking" else 0) + (math.sin(A * TAU * 1.5) * 1.4 if s == "needs" and A < 5 else 0)
+    lag[0] = cy if lag[0] is None else lag[0] + (cy - lag[0]) * (1 - LAG)  # the hair lands a moment after the head
+    if len(lag) > 1:  # only following the head, for row_frames: nothing to draw
+        return
+    hc = cy + round(_clamp(lag[0] - cy, -1.6, 1.6), 6)  # rounded: a rounding error must not move a pixel
+    sw = F.wave(2.7, i) * .6 + ((V - .3) * 1.6 if s == "speaking" else 0) + (math.sin(A * TAU) * 1.4 * F.lively if s == "needs" else 0)
     head = (cx - 13, cy - 14, cx + 13, cy + 12)
     if i == 1:
         def bob(p, q):
@@ -745,7 +781,7 @@ def operator(F: Frame, col: str, i: int, lag: list):
         cup(-1, 2.6, 4)
         cup(1, 2.6, 4)
         c.part(LIMB(cx + 11, cy - 2, cx + 12.5 + sw * .6, cy - 9, .7), ramp("#9aa3b8"))
-    fl = math.sin(T * 3) * .7 + sw * .6
+    fl = F.wave(2.1) * .7 + sw * .6
     if i == 0:
         c.part(ELL(20 + hx * .3, Y(26.2), 7.6, 2.4), ramp(tint(col, -.3)))
         for d in (-1.6, 1.6):
@@ -776,15 +812,17 @@ def operator(F: Frame, col: str, i: int, lag: list):
             c.dot(x2 + (1 if q else 0), E - 2, H[0])
             c.dot(x2 + (0 if q else 1), E - 2, H[0])
             c.dot(x2 + (-1 if q else 2), E - 3, H[0])
-    elif eye == "down":
+    elif eye == "down":  # open, looking down at the work: a heavy lid over the eye, its shine low
         for x2 in xs:
-            c.dot(x2 - 1, E + 2, K, 3, 1)
+            c.dot(x2 - 1, E, K, 4, 1)
+            c.dot(x2, E + 1, K, 2, 2)
+            c.dot(x2 + 1, E + 2, WH)
     elif eye == "shut":
         for x2 in xs:
             c.dot(x2 - 1, E + 1, K, 3, 1)
     else:
         F.eyes(xs, E - 1, eye, 4)
-    if eye in ("open", "wide"):
+    if eye in ("open", "wide", "down"):
         for q, x2 in enumerate(xs):
             c.dot(x2 - (0 if q else 1), E - (5 if eye == "wide" else 4), H[1], 3, 1)
     if i == 4 and eye != "happy":
@@ -801,7 +839,7 @@ def operator(F: Frame, col: str, i: int, lag: list):
     if i == 1:
         for a, b in ((-6, 3), (-4, 4), (4, 3), (6, 4)):
             c.dot(X + a, E + b, KS[2])
-        pdx = _round(20 + math.sin(T * 2.2) * 1.3 + sw * .4)
+        pdx = _round(20 + F.wave(2.9) * 1.3 + sw * .4)
         c.dot(17, Y(28), GOLD)
         c.dot(23, Y(28), GOLD)
         c.dot(18, Y(29), GOLD, 5, 1, .8)
@@ -810,7 +848,7 @@ def operator(F: Frame, col: str, i: int, lag: list):
     if i == 3:
         sx = _round(cx - 9.4)
         for k in range(7):
-            c.dot(sx + _round(math.sin(T * 2 + k * .5) * (k / 7) * 1.6) + (1 if k > 3 else 0), _round(cy + 3.4 + k * 1.25), C[3])
+            c.dot(sx + _round(F.wave(3, k * .5) * (k / 7) * 1.6) + (1 if k > 3 else 0), _round(cy + 3.4 + k * 1.25), C[3])
     if i == 4:
         c.dot(_round(cx + 12.5 + sw * .6), _round(cy - 10), "#ff6a5e" if math.floor(T * 2) % 2 else "#ffd0c8")
     if i == 0 and s == "speaking" and V > .3:
@@ -838,12 +876,12 @@ def operator(F: Frame, col: str, i: int, lag: list):
                     c.dot(X - 9 + math.cos(a) * r, E + 7 + math.sin(a) * r, C[4], 1, 1, 1 - k * .25)
     if s == "listen":
         for k in range(3):
-            if (T * 2.2 + k) % 3 < 1.6:
+            if F.cycle(2, k / 3) < .53:  # the rings go out one after another
                 r = 3.5 + k * 2
                 for q in range(-2, 3):
                     c.dot(cx + 13 + math.cos(q * .32) * r * .6, E + 1 + math.sin(q * .32) * r, "#7fd4f5", 1, 1, .95 - k * .25)
     if s == "failed":
-        k = (T * .7) % 1
+        k = F.cycle(2)
         c.dot(X + 8, E - 5 + k * 7, "#9fd8ff", 1, 2, 1 - k * .6)
         c.dot(X + 9, E - 3 + k * 7, "#9fd8ff", 1, 1, 1 - k * .6)
 
@@ -854,9 +892,12 @@ def frame(style: str, kind: int, color: str, s: str, T: float, A: float, V: floa
     """One cell, as RGBA."""
     if style == "sketch":
         return sketch.frame(kind, color, s, T, A, V)
-    F = Frame(s, T, A, V)
+    # the operators are drawn one row higher, to stand on the same row as the familiars (42 of 44)
+    F = Frame(s, T, A, V, OFF - 1 if style == "operators" else OFF)
     if style == "operators":
         operator(F, color, kind, lag if lag is not None else [None])
+        if lag is not None and len(lag) > 1:
+            return bytearray()
         F.common(color, 2)
     else:
         FAMILIARS[kind](F, color)
@@ -876,21 +917,30 @@ def _moment(name: str) -> tuple[str, float, float, float]:
     return name, 0.0, 0.0, 0.0
 
 
+def row_frames(style: str, kind: int, color: str, name: str, extra: int = 0):
+    """The cells of one row of the sheet, in order (`extra` more past its end, for checks)."""
+    count = dict(ROWS)[name]
+    s, t0, a0, v = _moment(name)
+    lag: list = [None]
+    if style == "operators":
+        # The hair follows the head a moment late (each frame a part of the way). Run the row once
+        # from 0: where that ends is what the lag owes to the row itself, and a start of that over
+        # (1 - LAG ** count) ends where it began, so the row repeats exactly.
+        lag = [0.0, "follow only"]
+        for i in range(count):
+            frame(style, kind, color, s, t0 + i / FPS, a0 + i / FPS, v, lag)
+        lag = [lag[0] / (1 - LAG ** count)]
+    for i in range(count + extra):
+        yield frame(style, kind, color, s, t0 + i / FPS, a0 + i / FPS, v, lag)
+
+
 def sheet(style: str, kind: int, color: str) -> bytes:
     """Every cell of one figure in one color, as a PNG."""
     n = cell(style)
     width, height = max(count for _, count in ROWS) * n, len(ROWS) * n
     rgba = bytearray(width * height * 4)
     for row, (name, count) in enumerate(ROWS):
-        s, t0, a0, v = _moment(name)
-        lag: list = [None]
-        # Operators' hair follows the head: run the row once before keeping it, so that its
-        # first frame follows on from its last when it repeats.
-        if style == "operators":
-            for i in range(count):
-                frame(style, kind, color, s, t0 + i / FPS, a0 + i / FPS, v, lag)
-        for i in range(count):
-            drawn = frame(style, kind, color, s, t0 + i / FPS, a0 + i / FPS, v, lag)
+        for i, drawn in enumerate(row_frames(style, kind, color, name)):
             for y in range(n):
                 start = ((row * n + y) * width + i * n) * 4
                 rgba[start:start + n * 4] = drawn[y * n * 4:(y + 1) * n * 4]

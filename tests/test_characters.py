@@ -101,6 +101,40 @@ class Drawing(unittest.TestCase):
         between = sum(1 for i in range(3, len(cell), 4) if 20 < cell[i] < 235)
         self.assertGreater(between, 300)  # lines fade at their edges, not whole pixels
 
+    def test_every_row_repeats_without_a_jump(self):
+        # The overlay repeats each row (needs you and done go on into their _hold row): a motion
+        # that does not go round a whole number of times in it jumps where it starts again. The
+        # frame one step past a row's end must be the frame shown next, drawn as the sheet draws
+        # it (the operators' hair following the head a moment late).
+        def changed(a, b):
+            return sum(1 for i in range(0, len(a), 4) if sum(abs(a[i + j] - b[i + j]) for j in range(4)) > 24)
+        for style in ("familiars", "operators"):
+            for kind in range(5):
+                for name, count in characters.ROWS:
+                    nxt = name + "_hold" if name in ("needs", "done") else name
+                    if style == "familiars":  # nothing carried from frame to frame: just the two frames
+                        s, t0, a0, v = characters._moment(name)
+                        end = characters.frame(style, kind, COLORS[kind], s, t0 + count / characters.FPS, a0 + count / characters.FPS, v)
+                    else:
+                        end = list(characters.row_frames(style, kind, COLORS[kind], name, extra=1))[-1]
+                    start = next(characters.row_frames(style, kind, COLORS[kind], nxt))
+                    self.assertEqual(changed(end, start), 0, (style, kind, name))
+
+    def test_feet_stay_on_the_ground(self):
+        # The author, 2026-11-26: no jumping; the window is cut at the edge the figure stands on.
+        # Every figure stands on the same row: two above the cell's bottom (the overlay puts those
+        # below the edge), four in the sketch's cells of twice the size.
+        for style in characters.STYLES:
+            n = characters.cell(style)
+            floor = n - 2 * n // characters.N
+            for kind in range(5):
+                for name, count in characters.ROWS:
+                    s, t0, a0, v = characters._moment(name)
+                    for i in range(0, count, 4):
+                        cell = characters.frame(style, kind, COLORS[kind], s, t0 + i / characters.FPS, a0 + i / characters.FPS, v)
+                        low = next(y for y in range(n - 1, -1, -1) if any(a > 128 for a in cell[y * n * 4 + 3:(y + 1) * n * 4:4]))
+                        self.assertEqual(low, floor, (style, kind, name, i))
+
     def test_shadows_of_skin_do_not_turn_red(self):
         r, g, b = characters.ramp("#f2c9a4")[1]
         self.assertGreater(g / r, 0.55)  # a warm brown, not a red
