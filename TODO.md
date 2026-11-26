@@ -123,8 +123,15 @@ voice, and the wait for the transcript.
       (`docs/dev/facts.md`): Gradium's Phonon 31M (English, Apache 2.0, smaller than Kokoro,
       picked over it a little more than half the time) and Breeze TTS 2 (English and Chinese,
       picked over Kokoro nearly 3 times in 4, fills most of the RTX 5070, and its weights are
-      for non-commercial use, so never bundled). **To decide:** try both on the card in a
-      trial environment and put the author's own lines by each beside Heart on a page to hear.
+      for non-commercial use, so never bundled). The author: "Sure", and "my goal is to have
+      a product, a model that's very similar to V4". Phonon tried the same night on the
+      processor: first sound in 0.04 s, a line made in a ninth of its length. Five of their
+      lines by three of its voices and by Heart are on a page under letters
+      (`~/.cache/sidetone-voice-trials/2026-11-26/index.html`), opened for them. **Waiting
+      for their ears.** Breeze not tried: it wants 7.7 GB of the card and 6.4 were free, so
+      the hub's models would have to leave the card meanwhile. **To decide:** that.
+      A study by four researchers of what a model like V4 takes is in `reports/` and
+      `research_notes/` (kept out of git by `.git/info/exclude`).
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a

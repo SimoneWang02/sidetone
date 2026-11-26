@@ -582,6 +582,20 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   1104; Step Audio EditX 1101; Mistral's Voxtral TTS 1094; NVIDIA's Magpie 1064; Kokoro 1060.
   Below it: Chatterbox 1021 (the author's ears said the same on 2026-11-19), XTTS v2 917.
   No time to first sound for Eleven v4 was found; "Eleven v4 Turbo" scores the same as v4.
+- Phonon 31M tried here (2026-11-26; `ptts` 0.7.1 from PyPI, by Gradium, in
+  `~/.cache/sidetone-voice-trials/2026-11-26/phonon-venv`, its 63 MB model under `hf/` there;
+  on the processor only, 24 threads: `ptts.available_devices()` gives `cpu` alone). Loads in
+  0.28 s once fetched (4.4 s the first time). First sound 0.03 to 0.07 s after the text
+  (median 0.037 s, by `tts.stream`), a line made in 11% of its length. 37 English voices in
+  its catalog (Harper, Hadley and Preston tried), no speed setting, 24 kHz, English only.
+  Five lines the hub had spoken, by those three and by Heart at 1.1, are on a page with the
+  voices under letters and every clip at one loudness (`index.html` there; the key: A Hadley,
+  B Heart, C Harper, D Preston), opened for the author the same night.
+- Breeze TTS 2 by its own card (huggingface.co/BreezeBlue/Breeze-TTS-2, read 2026-11-26): 3
+  billion parameters, 7.7 GiB of card memory (14.4 on its fast path, a 24 GB card), no ready
+  voices (one is described in words or copied from a recording), English and Chinese, run
+  from its GitHub repository, speed given for an H100 only (0.32 of the speech's length,
+  first sound under 40 ms). Not tried: 6.4 GB of the RTX 5070 was free with the hub on it.
 - The voice read back by the speech model (2026-11-26): 80 lines the hub really spoke (2,800
   words), made by Kokoro at speed 1.1 and written down by `large-v3-turbo`. Words that differ:
   Heart 1.5%, Bella 1.0%, Emma 1.7% (as British, the way the hub asks), nearly all of them a
