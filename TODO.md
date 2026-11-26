@@ -62,15 +62,6 @@ Questions for the author; nothing to build until they answer.
 - [ ] VS Code types up to a minute late while its window is hidden (`docs/dev/facts.md`): start
       it with `--disable-background-timer-throttling` (to be tried) so that clear, stop and end act
       at once?
-- [ ] Spoken words typed into the terminal as a real prompt, as a second setting beside Your
-      Words in the Terminal? Asked 2026-11-26: the author's "I would do it, put it as a setting,
-      default as no" was taken as the line above the reply (built, see step 1), and may have
-      meant this. Advised against as the main way: VS Code types up to a minute late while its
-      window is hidden (`docs/dev/facts.md`), and the sessions spoken to are the ones not looked
-      at; the listener wakes a session within a second, in any terminal, and cannot press Enter
-      on an open permission prompt. The listener would stay for every other terminal. What
-      typing alone gives: the words in the prompt history and in the saved conversation (so
-      after a resume). It needs a new order in the extension, which the author then installs.
 
 ## 3. Speech in the author's languages
 
@@ -1263,6 +1254,17 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] Spoken words typed into the terminal as a real prompt: not built (decided 2026-11-26).
+      Asked whether "I would do it, put it as a setting, default as no" meant this or the line
+      above the reply, the author: "your words in the terminal is fine". Weighed against it:
+      VS Code types up to a minute late while its window is hidden (`docs/dev/facts.md`), and
+      the sessions spoken to are the ones not looked at; the hub cannot see a half-typed line
+      or an open permission prompt, which its Enter would answer; no other terminal can be
+      typed into, so the listener would stay beside it. What only typing would give: the
+      words in the prompt history and in the saved conversation (so after a resume).
+      Of the setting's name the author said the same day: "Maybe transcript in the terminal";
+      left as Your Words in the Terminal until they say (Claude Code calls the whole
+      conversation a transcript, and Talking's other lines say "your words").
 - [x] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
       too short to tell the language and English wins. Perhaps lean to the language of the
