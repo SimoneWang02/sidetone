@@ -677,6 +677,35 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   (`first_audio`, previews only, the same sentence each): Kokoro English 377 ms (34), Italian
   236 ms (3), Chinese model 339 ms (5), Piper 296 ms (2).
 
+## A failed request's hook, and the usage limit (2026-11-26, Claude Code 2.1.332)
+
+From the night of 2026-11-26, when the author's sessions reached the usage limit at 01:53:
+`voice.log` against each session's record and its agents' (`<session id>/subagents/*.jsonl`).
+
+- `StopFailure` fires for a failed request of a subagent too, under the session's own
+  `session_id`; there is no `SubagentStopFailure`. Measured: two lines were spoken at the
+  second two agents met the limit (01:53:44 and 01:53:50) while the session's own record has
+  no request and no error then. Read from the program, not seen in a payload: every hook's
+  input is built by one function that adds `agent_id` and `agent_type` from the agent's
+  context, as measured for PermissionRequest below; only a subagent "with delegated
+  observation" is left out.
+- Its fields: `error` (`rate_limit` here; the hook's matcher runs on it), `error_details`,
+  `last_assistant_message`, which is the text Claude Code shows: "You've hit your monthly
+  spend limit · raise it at https://claude.ai/settings/usage?... · your 5-hour limit resets
+  4:20am (America/New_York)" (one wording seen). Its output and exit code are ignored.
+- At the limit an agent's end still wakes its session ("<task-notification>", with a
+  UserPromptSubmit), and the session's request fails in 0.3 s with the same error: 01:53:10.29
+  the agent, 01:53:10.65 the session. Once Claude Code has written "Usage limit reached · set
+  to continue automatically at 4:20am" a later agent's end is queued without a request. At
+  the reset each session gets "Your claude.ai usage limit has reset. Continue the task you
+  were working on..." and goes on by itself.
+- An agent handing its work back reaches the session as "Another Claude session sent a
+  message:" and then `<agent-message from="...">` (its record; `MDt` in the program, with "A
+  peer session sent a message" beside it). Not measured: whether UserPromptSubmit's `prompt`
+  has that opening or starts at the markup. `base.typed` takes neither for typed words.
+- The program is one 400 MB file; a pattern with a long `.{300}` before it took `grep -a`
+  over two minutes, `mmap` and `find` in Python a second.
+
 ## Subagents' permission prompts (measured 2026-11-22, Claude Code 2.1.330, a lab of haiku sessions)
 
 - A subagent's PermissionRequest carries `agent_id` and `agent_type` (the session's own has

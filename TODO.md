@@ -66,6 +66,24 @@ these come before anything new.
       new one. Tests only, **not yet tried by the author**; needs `sidetone hub restart`. Left:
       /clear typed by hand in one of two terminals still gives a new light (no hook says in
       which terminal; `report.sh` could send it).
+- [ ] The usage limit is said once (2026-11-26, the author by voice: "Once we hit the rate
+      limit, it seems to be very buggy ... It gets said multiple times"; that night three
+      sessions said "I hit an error: rate limit" eight times in two minutes, one of them five
+      times; see `docs/dev/features.md` and `docs/dev/facts.md`). Two causes, two changes.
+      A background agent's failed request was taken for its session's: now ignored, a line in
+      `hub.log` (a fix, no setting; it also marked the session failed and let go of its open
+      requests while its own turn went on). And every session said the limit each time an
+      agent's end woke it: now the first one says it and the others show it, unless you had
+      just typed or spoken to them (`limit_once`, "Say the Usage Limit Once", on; that
+      setting and the "unless" are Claude's, not asked for). Tests, and the night's events
+      sent again through the real hook to a silent hub: two lines where there were eight.
+      **Not heard by the author yet**: it takes the limit; needs `sidetone hub restart`. That
+      an agent's failure carries `agent_id` is read from Claude Code's program, not seen in
+      a payload: if the repeats come back, `hub.log` has no "an agent of" line for them.
+      Ideas beside it, not built: say what helps ("Usage limit reached, it resets at 4:20",
+      the time is in the hook's `last_assistant_message`; one wording seen so far), and a look
+      of its own for a session that waits for the limit, as Claude Code goes on by itself at
+      the reset, where "failed" says it broke.
 
 ## 2. To decide
 

@@ -85,6 +85,17 @@ TAKE_BACK = ("Ignore the last thing I said by voice: it was misheard or sent by 
              "Stop acting on it. If you already changed something because of it, tell me what in one line, "
              "and do not undo it unless I ask.")
 
+# How Claude Code opens what another session, or one of the session's own agents handing its work
+# back, sent to a session (read in the program of 2.1.332; the session's record has it so).
+FROM_A_SESSION = ("Another Claude session sent a message", "A peer session sent a message")
+
+
+def typed(prompt: str) -> bool:
+    """Whether a prompt is words you typed. Not one that opens with markup: what wakes a session
+    by itself does (a background task's end, "<task-notification>"), and so does a spoken
+    follow-up, which the hub knows of without it. Nor what another session sent."""
+    return not prompt.lstrip().startswith(("<",) + FROM_A_SESSION)
+
 
 @dataclass
 class Aside:
@@ -486,6 +497,13 @@ class Config:
     # question, a permission, "I need your input". Its other lines are only shown. Off: nothing
     # of it is said, and it waits until you look.
     muted_asks: bool = True
+    # The usage limit is the account's, not a session's: the first session that hits it says so,
+    # and the others, and that one when a background agent's end wakes it again, only show it.
+    # A turn you began yourself, typed or spoken, still says it: that is its answer to you. News
+    # again once a turn has ended well. Off: every session says it every time. (2026-11-26, three
+    # sessions at the limit said it eight times in two minutes; the author: "It gets said
+    # multiple times.")
+    limit_once: bool = True
 
     @property
     def sock(self) -> str:
@@ -523,7 +541,7 @@ class Config:
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "voice_device", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_progress", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
-                    "talk_feedback", "sound_volume", "volume", "muted_asks", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
+                    "talk_feedback", "sound_volume", "volume", "muted_asks", "limit_once", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])
         wanted = user.get("overlay") or {}

@@ -124,6 +124,7 @@ class Hub(Permissions, Talk, Headset):
         self._unload: threading.Timer | None = None  # frees the speech model after a quiet while
         self._focus_lost: tuple[str, float] = ("", 0.0)  # the session a speaker last took the focus from, and when
         self._keys: list | None = None  # hotkeys the overlay was last told to claim
+        self._limit_said = False  # a session said the usage limit, and no turn has ended well since
         self.speech = SpeechQueue(engine, max_age=cfg.max_age, label_for=self._label_for,
                                   on_change=self._speech_changed, on_done=self._log_speech,
                                   on_audio=self._voice_levels, on_load_failed=self._voice_failed,
@@ -134,6 +135,16 @@ class Hub(Permissions, Talk, Headset):
     def on_event(self, ev: dict) -> None:
         """Update a session from any hook payload other than MessageDisplay."""
         if ev.get("session_id"):
+            if ev.get("hook_event_name") == "StopFailure" and ev.get("agent_id"):
+                # A request of one of the session's agents failed. Claude Code reports it under
+                # the session's own id, and has no other event for it; the session's turn has
+                # not ended, its open requests stand, and it is told of the agent's end itself.
+                # Taken for the session's, each agent that met the usage limit said so in the
+                # session's voice, and the session said it again when the agent's end woke it
+                # (2026-11-26: five times from one session in forty seconds).
+                error = str(ev.get("error") or "unknown").replace("_", " ")
+                log(self.cfg, "hub.log", f"an agent of [{ev['session_id'][:8]}] hit an error ({error}): not its session's, not said")
+                return
             with self.lock:
                 s = self.sessions.by_id.get(ev["session_id"])
                 began = s.turn_started if s else None
@@ -308,7 +319,8 @@ class Hub(Permissions, Talk, Headset):
                 s.turn_started, s.spoken = time.monotonic(), None
                 if s.tasks and all(s.tasks.values()):
                     s.tasks.clear()
-                if not prompt.lstrip().startswith("<"):
+                if base.typed(prompt):
+                    s.yours = True
                     # You typed: you have moved on and the old line is stale. A voice follow-up
                     # arrives as markup, often while you have not heard the reply yet, so that
                     # reply stays in the queue and is spoken in full.
@@ -325,7 +337,7 @@ class Hub(Permissions, Talk, Headset):
                 s.state, s.activity = "working", describe(ev.get("tool_name", ""), ev.get("tool_input") or {})
             elif event in ("PostToolUse", "PostToolUseFailure"):
                 if ev.get("is_interrupt"):  # you pressed Esc; no Stop event will follow
-                    s.state, s.activity, s.note, s.turn_started = "idle", "", "interrupted", None
+                    s.state, s.activity, s.note, s.turn_started, s.yours = "idle", "", "interrupted", None, False
                 else:
                     s.state, s.activity = "working", "Thinking"
             elif event == "TaskCreated":
@@ -358,6 +370,7 @@ class Hub(Permissions, Talk, Headset):
                 # Kept until the next turn starts: once, the streamed batch with the line reached
                 # the hub six seconds after Stop had already said it, and it was said again.
                 s.spoken = speech or None
+                s.yours = s.limited = self._limit_said = False  # requests go through: the limit is over, or was never the account's
                 asking = [r for r in self.requests if r.session == sid and r.agent]
                 if asking:  # a subagent in the background still waits for an answer
                     s.state, s.note = "needs_you", f"wants to: {asking[0].summary}"
@@ -365,7 +378,24 @@ class Hub(Permissions, Talk, Headset):
                 s.state, s.activity, s.turn_started = "failed", "", None
                 error = str(ev.get("error") or "unknown").replace("_", " ")
                 s.note = f"error: {error}"
-                self._say(s, f"I hit an error: {error}", "failed", "stop-failure")
+                known = ev.get("error") == "rate_limit" and self._limit_known(s)
+                s.yours = False
+                self._say(s, f"I hit an error: {error}", "failed", "stop-failure", shown=known)
+
+    def _limit_known(self, s) -> bool:
+        """A session's turn has just ended at the usage limit: whether you know that already,
+        so it is shown and not said (`Config.limit_once`). The limit is the account's: said by
+        one session it is known for all, until a turn ends well, and for a session that has
+        hit it, until one of its own does (sessions on another model may go on meanwhile). A
+        turn that began with words of yours says it all the same: silence would be no answer.
+        A session whose voice is off has not said it for the others. Call with the lock held."""
+        known = bool(self.cfg.limit_once and not s.yours and (s.limited or self._limit_said))
+        s.limited = True
+        if known:
+            log(self.cfg, "hub.log", f"limit [{s.id[:8]}] at the usage limit: shown, not said again")
+        elif not self._quiet(s, "failed"):
+            self._limit_said = True
+        return known
 
     def _forget(self, sid: str, why: str) -> None:
         self._settle(sid, why, agents=True)
@@ -649,7 +679,7 @@ class Hub(Permissions, Talk, Headset):
             return
         if reply:
             s.title, s.settled = short_title(reply), True
-        elif prompt and not prompt.lstrip().startswith("<"):
+        elif prompt and base.typed(prompt):
             s.title = short_title(prompt)
 
     def say(self, text: str, voice: str | None = None, kind: str = "notice", session: str = "") -> None:
@@ -1000,7 +1030,9 @@ class Hub(Permissions, Talk, Headset):
             said = base.FEEDBACK_WORDS.get(words, {}).get(lang, words)
             self._say(s, said, "allowed", "follow-up", self._voice_for(s, lang) if said != words else None)
 
-    def _say(self, s, text: str, kind: str, src: str, voice: str | None = None) -> None:
+    def _say(self, s, text: str, kind: str, src: str, voice: str | None = None, shown: bool = False) -> None:
+        """A line of a session: said in its voice, and kept in the history. `shown`: only
+        shown at its light, as with its voice off (you know it already)."""
         if s.id in self._stopping and kind in ("done", "progress"):
             log(self.cfg, "hub.log", f"stop [{s.id[:8]}] not spoken, its turn is being stopped: {text[:80]}")
             return
@@ -1010,7 +1042,7 @@ class Hub(Permissions, Talk, Headset):
             entry = {"time": time.time(), "session": s.id, "name": s.name, "color": s.color,
                      "spoken_name": _spoken_name(s.name), "voice": voice or s.voice, "text": text, "kind": kind, "heard": False}
             self.history.append(entry)
-        if self._quiet(s, kind):
+        if shown or self._quiet(s, kind):
             self._flash(s, text, FLASH_LOOK.get(kind, kind))  # voice is off, or this session's is
             if entry:
                 entry["shown"] = True  # read, not heard: nothing was missed

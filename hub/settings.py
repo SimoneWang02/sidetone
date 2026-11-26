@@ -92,6 +92,7 @@ SECTIONS = [
         # One session muted by its own key (overlay.hotkeys.mute_session) is not a switch here:
         # it belongs to a session, not to the settings. What gets through from it is.
         switch("muted_asks", "Muted Sessions Still Ask", "A session you muted by itself still says when it needs your answer. Off: it only shows it."),
+        switch("limit_once", "Say the Usage Limit Once", "At the usage limit only the first session says so. The others show it, unless you had just typed or spoken to them. Off: every session says it every time."),
         # One volume for the voice and the sounds (the author, 2026-11-20: "do one thing for both so
         # it's more consistent"); `sound_volume` stays in config.json as the sounds' level beside the voice.
         number("volume", "Volume", "The voice and the short sounds together.", 0, 100, 5),

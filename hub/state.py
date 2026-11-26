@@ -221,6 +221,12 @@ class Session:
     # is shown at its light instead, as with the voice off for everyone. It stays with the
     # session across /clear and a hub restart, and ends with it.
     muted: bool = False
+    # The turn began with words of yours, typed or spoken: how it ends is an answer to you. Not
+    # one that a background agent's end woke.
+    yours: bool = False
+    # It has hit the usage limit and that was said or shown: not news until a turn of its own
+    # has ended well (see `Hub._limit_known`).
+    limited: bool = False
 
     def snapshot(self) -> dict:
         now = time.monotonic()

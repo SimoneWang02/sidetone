@@ -426,6 +426,109 @@ class State(HubCase):
         self.assertEqual(self.hub.snapshot()["sessions"], [])
 
 
+class AtTheUsageLimit(HubCase):
+    """The usage limit is the account's. On 2026-11-26 three sessions with agents in the
+    background reached it and said so eight times in two minutes, one of them five times."""
+
+    LINE = "I hit an error: rate limit"
+    WAKE = "<task-notification>\n<task-id>a7002a890bf6a6002</task-id>\n</task-notification>"
+
+    def limit(self, sid="s1", **extra):
+        self.hub.on_event(ev("StopFailure", sid=sid, cwd=f"/w/{sid}", error="rate_limit", **extra))
+
+    def woken(self, sid, prompt=WAKE):
+        """A background agent's end wakes the session, and its request meets the limit."""
+        self.hub.on_event(ev("UserPromptSubmit", sid=sid, cwd=f"/w/{sid}", prompt=prompt))
+        self.limit(sid)
+
+    def test_an_agents_failed_request_is_not_its_sessions(self):
+        hub = self.make()
+        hub.overlay = FakeOverlay()
+        hub.on_event(ev("UserPromptSubmit", prompt="look into it"))
+        hub.on_event(ev("PreToolUse", tool_name="Bash", tool_input={"command": "ls", "description": "List files"}))
+        req = hub.request_permission(ask())
+        self.limit("s1", agent_id="a7002a890bf6a6002", agent_type="general-purpose")
+        self.assertEqual(self.session()["state"], "needs_you")  # its own turn goes on, its request stands
+        self.assertFalse(req.done.is_set())
+        self.assertEqual(self.spoken(), [])
+        hub.on_event(ev("StopFailure", error="server_error", agent_id="a7002a890bf6a6002"))  # any error of an agent's
+        self.assertEqual(self.spoken(), [])
+        with open(os.path.join(self.tmp, "hub.log")) as f:
+            self.assertIn("an agent of [s1] hit an error (rate limit)", f.read())
+
+    def test_that_night_it_is_said_once_and_to_the_one_spoken_to(self):
+        hub = self.make(talk_feedback="none")  # no "Sent." among the lines
+        agent = dict(agent_id="a7002a890bf6a6002", agent_type="general-purpose")
+        self.limit("a", **agent)  # 01:53:10.29, an agent of the first session
+        self.woken("a")  # 01:53:10.65, the session itself, woken by that agent's end
+        self.assertEqual(self.spoken(), [self.LINE])
+        self.limit("b", **agent)  # 01:53:19, the second session's agent, and then that session
+        self.woken("b")
+        self.woken("a", "Another Claude session sent a message:\n<agent-message from=\"a29aea3ef12bf037a\">\n[Subagent hand-back] ...")
+        self.limit("a", **agent)  # 01:53:44 and 01:53:50, two more of its agents
+        self.limit("a", **agent)
+        self.assertEqual(self.spoken(), [self.LINE])
+        self.assertEqual([self.session(sid)["state"] for sid in "ab"], ["failed", "failed"])
+        self.assertEqual(self.session("b")["note"], "error: rate limit")  # shown, as with its voice off
+        self.assertEqual([(e["session"], e.get("shown", False)) for e in hub.history], [("a", False), ("b", True), ("a", True)])
+        # 01:55:24: the author spoke to a third session, which met the limit too. It answers.
+        hub.on_event(ev("SessionStart", sid="c", cwd="/w/c"))
+        listener = hub.listen("c")
+        hub.follow_up("it gets said multiple times", "c", delay=0)
+        self.assertTrue(listener.wake.wait(3))
+        self.assertEqual(hub.collect(listener), "it gets said multiple times")
+        self.woken("c", "<task-notification>\n<summary>Stop hook feedback</summary>\n</task-notification>")
+        self.assertEqual(self.spoken(), [self.LINE, self.LINE])
+        self.woken("c")  # and not once more when something wakes it afterwards
+        self.assertEqual(self.spoken(), [self.LINE, self.LINE])
+
+    def test_a_typed_prompt_is_answered_and_a_turn_that_ends_well_makes_it_news_again(self):
+        hub = self.make()
+        self.woken("a")
+        self.woken("b")
+        self.assertEqual(self.spoken(), [self.LINE])
+        self.woken("b", "try once more")  # typed: silence would be no answer
+        self.assertEqual(self.spoken(), [self.LINE, self.LINE])
+        # A session on another model ends a turn well: the limit was not everyone's. A session
+        # that has not reported it says it; one that has stays quiet until a turn of its own ends well.
+        hub.on_event(ev("Stop", sid="c", cwd="/w/c", last_assistant_message="no tag here"))
+        self.woken("a")
+        self.assertEqual(self.spoken(), [self.LINE, self.LINE])
+        self.woken("d")
+        self.assertEqual(self.spoken(), [self.LINE] * 3)
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt=self.WAKE))  # the limit has reset: it goes on by itself
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message="no tag here"))
+        self.woken("a")  # the next time the limit comes
+        self.assertEqual(self.spoken(), [self.LINE] * 4)
+
+    def test_every_session_says_it_with_limit_once_off(self):
+        self.make(limit_once=False)
+        for times, sid in enumerate("aba", 1):
+            self.woken(sid)
+            self.assertEqual(self.spoken(), [self.LINE] * times)
+
+    def test_a_muted_session_has_not_said_it_for_the_others(self):
+        hub = self.make()
+        for sid in "abc":
+            hub.on_event(ev("SessionStart", sid=sid, cwd=f"/w/{sid}"))
+        self.assertEqual(hub.mute_session("a", True), ("a", True))
+        self.woken("a")  # shown at its light only
+        self.assertEqual(self.spoken(), [])
+        self.woken("b")
+        self.woken("c")
+        self.assertEqual(self.spoken(), [self.LINE])
+        self.assertEqual(self.engine.spoken[0][1], self.session("b")["voice"])
+        hub.mute_session("a", False)
+        self.woken("a")  # it showed it then: not news from it now
+        self.assertEqual(self.spoken(), [self.LINE])
+
+    def test_other_errors_are_said_each_time(self):
+        hub = self.make()
+        for times in (1, 2):
+            hub.on_event(ev("StopFailure", error="server_error"))
+            self.assertEqual(self.spoken(), ["I hit an error: server error"] * times)
+
+
 class FakeOverlay:
     def __init__(self):
         self.sent = []

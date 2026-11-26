@@ -903,8 +903,12 @@ class Talk:
         named after the session tells hooks/display.sh to ask the hub about lines with no speak
         tag too: the reply may begin with other words, or have no tag at all with the voice
         off. One line for all of them, as Claude is given them; not the hub's own "ignore the
-        last thing I said". Call with the lock held."""
+        last thing I said". The turn they start, or join, is one of yours (`Session.yours`).
+        Call with the lock held."""
         text = " ".join(word for t in texts if t != TAKE_BACK for word in t.split())
+        s = self.sessions.by_id.get(sid)
+        if text and s:
+            s.yours = True
         if not text or not self.cfg.words_in_terminal or not SAFE_ID.match(sid):
             return
         self._said.setdefault(sid, []).append(text)

@@ -1199,6 +1199,37 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   notice while one is up. Pictures: `mute-stays-focus.png`, `mute-stays-other.png`,
   `mute-stays-several.png`, `mute-stays-both.png`, `mute-stays-both-top.png`; the longest
   line fits the 380 px panel on one line, and a longer name wraps.
+- The usage limit is said once (2026-11-26; `Config.limit_once`, `Hub._limit_known`,
+  `Session.limited`, `Session.yours`, `base.typed`; the start of `Hub.on_event`). The author,
+  by voice, the morning after: "Once we hit the rate limit, it seems to be very buggy. Like, we
+  hit the rate limit. It gets said multiple times." `voice.log` of 2026-11-26 01:53: "I hit an
+  error: rate limit" eight times in two minutes from three sessions, five of them from one in
+  forty seconds. Read against the sessions' records, two things did it (see `facts.md`).
+  A background agent's failed request reaches the hub as a `StopFailure` under its session's
+  id, and was taken for the end of the session's turn: said in its voice, the session marked
+  failed, its open requests let go (`_settle`), its turn counted as over. Such an event (it
+  carries `agent_id`) is now left alone, with a line in `hub.log`: the session's own turn has
+  not ended, and Claude Code tells the session of the agent's end itself. That is a fix, for
+  any error of an agent's, with no setting.
+  And each agent's end woke its session, whose own request met the limit, which it said each
+  time; so did every other session. The limit is the account's, so with `limit_once` on
+  ("Say the Usage Limit Once", under Speech) the first session to hit it says it and after
+  that a session that hits it only shows it (the flash at its light, its row "failed", the
+  history's line marked read, as with its voice off). Two things make it news again: a turn
+  that ends well, in any session, for those that have not reported it; and for one that has,
+  a turn of its own that ends well, since sessions on another model can go on while one
+  model's limit is reached. A turn that began with words of yours, typed or spoken
+  (`Session.yours`, set by a typed prompt and by `Talk._handed`), says it whatever was said
+  before: you spoke and silence would be no answer. That setting and that exception were
+  Claude's, not asked for. A session whose voice is off has not said it for the others. Off:
+  every session says it every time, as before. Other errors are said each time.
+  `base.typed` is the one place that tells a typed prompt from a wake (markup) and from what
+  another session, or an agent handing back, sent it ("Another Claude session sent a
+  message", "A peer session sent a message"); the focus and the title ask it too.
+  The night's events sent again through `hooks/report.sh` to a silent hub: two lines (the
+  first session, and the one that was then typed to) where there were eight. Not heard by
+  the author yet. Not done: saying when it resets, and a look of its own for waiting at the
+  limit (both in `TODO.md`).
 - The arrow keys move the focus (2026-11-17). Before, besides the wheel, a quick tap of the
   talk key went to the next session; the author on being asked to try it: "I don't think
   it's very intuitive ... control-alt-space, it's used for speaking ... better solution might
