@@ -3132,6 +3132,76 @@ class ThroughTheHooks(HubCase):
     def test_display_without_tag_prints_nothing(self):
         self.assertEqual(self.hook("display.sh", ev("MessageDisplay", delta="plain text\n")).stdout, "")
 
+    def shown(self, delta, sid="s1"):
+        """What display.sh has the terminal show for a batch, or None when it leaves it as it is."""
+        out = self.hook("display.sh", ev("MessageDisplay", sid=sid, delta=delta)).stdout
+        return json.loads(out)["hookSpecificOutput"]["displayContent"] if out else None
+
+    def say_to_idle(self, text, sid="s1"):
+        hub = self.hub
+        listener = hub.listen(sid)
+        with hub.lock:
+            hub._deliver(hub.sessions.by_id[sid], text)
+        self.assertTrue(listener.wake.is_set())
+        return hub.collect(listener)
+
+    def test_your_words_are_written_above_the_reply_when_asked_for(self):
+        self.hub.cfg.words_in_terminal = True
+        self.assertEqual(self.say_to_idle("use  tabs\nplease"), "use  tabs\nplease")  # Claude gets them as they are
+        self.assertEqual(os.listdir(os.path.join(self.tmp, "said")), ["s1"])
+        self.assertEqual(os.stat(os.path.join(self.tmp, "said")).st_mode & 0o077, 0)
+        self.hub.on_event(ev("UserPromptSubmit", prompt="<task-notification>Stop hook feedback</task-notification>"))
+        self.assertIsNone(self.shown("Another session's line.\n", sid="s2"))
+        self.assertEqual(self.shown("On it.\n"), "🎤 use tabs please\n\nOn it.\n")  # before any speak tag
+        self.assertEqual(os.listdir(os.path.join(self.tmp, "said")), [])
+        self.assertIsNone(self.shown("More.\n"))  # once
+        self.assertEqual(self.shown(tag("Done.") + "\n"), "🔊 Done.\n")
+        self.assertEqual(self.spoken(), ["Done."])
+
+    def test_your_words_stand_above_the_spoken_line_of_a_reply_that_opens_with_it(self):
+        self.hub.cfg.words_in_terminal = True
+        self.say_to_idle("how far are you?")
+        self.assertEqual(self.shown(tag("Half way.") + "\nTwo files left.\n"),
+                         "🎤 how far are you?\n\n🔊 Half way.\nTwo files left.\n")
+        self.assertEqual(self.spoken(), ["Half way."])
+
+    def test_your_words_are_not_written_in_the_terminal_unless_asked_for(self):
+        self.assertFalse(self.cfg.words_in_terminal)  # a new install
+        self.say_to_idle("use tabs")
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "said")))
+        self.assertIsNone(self.shown("On it.\n"))
+        self.assertEqual(self.shown(tag("Done.") + "\n"), "🔊 Done.\n")
+
+    def test_words_read_after_a_step_are_written_above_the_lines_that_follow(self):
+        hub = self.hub
+        hub.cfg.words_in_terminal = True
+        hub.on_event(ev("UserPromptSubmit", prompt="go"))
+        self.assertIsNone(self.shown("Starting.\n"))
+        with hub.lock:
+            hub._deliver(hub.sessions.by_id["s1"], "use tabs")
+        self.assertIsNone(self.shown("Still on the first file.\n"))  # not before the session has them
+        self.assertTrue(self.hook("stop.sh", ev("PostToolUse")).stdout)
+        hub.on_event(ev("PostToolUse", tool_name="Bash"))
+        self.assertEqual(self.shown("Tabs it is.\n"), "🎤 use tabs\n\nTabs it is.\n")
+
+    def test_words_taken_back_or_said_to_a_turn_that_was_left_are_not_written(self):
+        hub = self.hub
+        hub.cfg.words_in_terminal = True
+        self.say_to_idle("delete it")  # then Escape, and a prompt typed instead
+        hub.on_event(ev("UserPromptSubmit", prompt="no, keep it"))
+        self.assertEqual(os.listdir(os.path.join(self.tmp, "said")), [])
+        self.assertIsNone(self.shown("Kept.\n"))
+        hub.on_event(ev("Stop"))
+        self.say_to_idle(base.TAKE_BACK)  # the hub's own words, when you take yours back
+        self.assertIsNone(self.shown("Nothing was changed.\n"))
+
+    def test_a_hub_starts_with_no_words_left_to_show(self):
+        self.hub.cfg.words_in_terminal = True
+        self.say_to_idle("use tabs")
+        later = Hub(self.cfg, self.engine)
+        self.addCleanup(later.speech.close)
+        self.assertEqual(os.listdir(os.path.join(self.tmp, "said")), [])
+
     def start_permission_hook(self):
         env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp}
         proc = subprocess.Popen([os.path.join(ROOT, "hooks", "permission.sh")], stdin=subprocess.PIPE,

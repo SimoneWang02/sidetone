@@ -9,6 +9,14 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
 - `final` marks the last batch. Deltas are whole lines except possibly the final one.
 - Stop input has `last_assistant_message`. The transcript can lag, so it's only a fallback.
 - Only own-line tags are spoken, so inline mentions of the tag in prose are ignored.
+- `displayContent` can add lines of its own (measured 2026-11-26, Claude Code 2.1.332, a haiku
+  session in tmux): a line put before the batch with an empty line after it is shown as a
+  paragraph of its own above the reply's first line, in a batch with a speak tag or without.
+  Of words handed to a session by `listen.sh` the terminal itself shows "● Stop hook feedback"
+  and nothing else; of words handed after a step (`additionalContext`) nothing at all.
+- `display.sh` reading `lib.sh` before its fast path costs 0.8 ms a batch (4.75 ms to 5.55 ms,
+  300 runs each, taken in turn, 2026-11-26; it is the `cd … && pwd` for `CS_ROOT`). Asking
+  whether a folder holds a file (`compgen -G`) costs nothing that could be measured.
 - Latency, line written → first audio handed to the player: about 0.2 s with the warm hub,
   about 1.2 s without it (model reloaded per call). Measured on the sink's monitor
   (2026-11-17), real sound followed 0.4 s later for a labelled line, because `paplay` waits for

@@ -12,7 +12,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 | Hook event | Script | Job |
 |---|---|---|
 | UserPromptSubmit | `hooks/voice-reminder.sh` | Injects an instruction: open the final message with ONE line that is exactly a speak tag |
-| MessageDisplay | `hooks/display.sh` | Runs per streamed batch. Sends a batch containing a speak tag to the hub, which queues the speech and returns the "🔊 …" rewrite |
+| MessageDisplay | `hooks/display.sh` | Runs per streamed batch. Sends a batch containing a speak tag to the hub, which queues the speech and returns the "🔊 …" rewrite. With `words_in_terminal`, also the first batch after words of yours, which the hub writes above it ("🎤 …") |
 | Stop | `hooks/speak.sh` | Tells the hub the turn ended; the hub speaks the line only if streaming missed it. A batch with the same line that arrives after Stop (seen once, 2026-11-19: six seconds late, so the line was said twice) is not spoken again; the next turn may say the same words |
 | Notification (`permission_prompt`, `elicitation_dialog`) | `hooks/notify.sh` | Hub marks the session "needs you" and says "I need your input" |
 | PermissionRequest | `hooks/permission.sh` | Holds a request open on the hub until the prompt is answered. Prints the hub's allow/deny, or nothing if it was answered in the terminal |
@@ -813,6 +813,33 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   audios, I'm putting more info into the request". The research also found accidental
   interrupts a top complaint, so this steers without interrupting. With no listener yet, the
   text waits in the hub until the session next stops. The cancel key also cuts the line being spoken.
+- Your words in the terminal (2026-11-26, `words_in_terminal`, "Your Words in the Terminal" under
+  Talking, off; `Talk._handed`, `_shown_said`, `Hub.on_display`, `hooks/display.sh`). The author:
+  "whenever I say something, the transcript gets displayed only on the overlay, but not in the
+  terminal. Why?" Because spoken words reach a session as a hook's feedback (`listen.sh`, exit
+  2) or as a step's `additionalContext`, never as a typed prompt, and Claude Code shows of the
+  first only "● Stop hook feedback" and of the second nothing. With the setting on, the hub
+  keeps the words it hands a session (at `collect`, and when a step has read them in
+  `_sync_steer`) and writes them as `🎤 words` and an empty line above the next lines that
+  session shows, through the rewrite `display.sh` already asks for (`displayContent`). One line
+  for one handing over, as Claude is given them; not the hub's own `TAKE_BACK`. So that it is
+  the first lines of the reply and not only the spoken one (a reply may begin with other words,
+  and has no tag with the voice off), the hub leaves an empty file `$CS_RUN/said/<session>`
+  while it has such words, and `display.sh` sends a batch with no tag to the hub only while
+  that folder holds a file: with the setting off the hook is as fast as before (measured, see
+  `facts.md`). Dropped unshown when a prompt is typed (they were said to a turn that was
+  interrupted) and when the session ends; the folder is emptied when a hub starts. Why off,
+  with the reasons under an info sign (`tag`, `tag_help`, as Piper's "Faster" has; the author:
+  "put it as a setting, default as no ... a info icon to show the downside of them activating
+  it"): the line is on screen only, since the saved conversation keeps the reply as written,
+  and it comes with the reply, not when you speak. Tried with a haiku session in tmux and a
+  hub of its own: said to an idle session, and said to one that was reading files (shown
+  after "Read 1 file", above the lines that followed). **Not tried by the author.** Two other
+  ways were weighed and not built: Claude told to repeat the words (tokens, may reword them,
+  pushes the spoken line down), and the VS Code extension typing them as a real prompt (in
+  the prompt history and the saved conversation, but up to a minute late with its window
+  hidden, VS Code only, and the hub cannot see a half-typed line or an open permission
+  prompt, which its Enter would answer).
 - The cancel key stops a turn (2026-11-17, `Hub._stop_turn`, `hooks/stop.sh`, `cancel_stops`).
   The author, having learned that taking words back from a session that already has them
   only tells it to ignore them: "I thought you were already doing that by terminating

@@ -80,6 +80,7 @@ class Sent:
 # How words left for a session's next step are put to it (hooks/stop.sh hands this over).
 STEER = ("The user said this by voice while you were working (push-to-talk, transcribed by a local speech model, "
          "so a word may be slightly off): \"{text}\" Take it into account from your next step on.")
+SAID = "🎤"  # opens the line of your words in a terminal (words_in_terminal), as "🔊" opens the spoken one
 TAKE_BACK = ("Ignore the last thing I said by voice: it was misheard or sent by mistake, and I took it back. "
              "Stop acting on it. If you already changed something because of it, tell me what in one line, "
              "and do not undo it unless I ask.")
@@ -412,6 +413,13 @@ class Config:
     # after followup_delay unless cancelled), True, or "auto" (only for sessions that would act
     # on it without asking, i.e. not in default or plan mode).
     followup_confirm: bool | str = False
+    # What you said to a session, written in its terminal above the next lines it shows
+    # ("🎤 ..."): Claude Code itself shows only "Stop hook feedback" there, since spoken words
+    # reach it through a hook and not as a typed prompt. Off for a new install (the author,
+    # 2026-11-26: "put it as a setting, default as no"): the line is on screen only (the saved
+    # conversation keeps the reply as it was written), and it comes with the reply, not when
+    # you speak, so the overlay stays the place to check the words in time.
+    words_in_terminal: bool = False
     # Side questions. Spoken words that open with one of `aside_words` do not wait for a busy
     # session: a throwaway copy of that session answers them at once from what the session
     # knows, without tools, and the answer is said in the session's voice. The session itself
@@ -510,7 +518,7 @@ class Config:
         user = cfg._checked(user, path)
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "voice_device", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_progress", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
-                    "followup_confirm", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
+                    "followup_confirm", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])

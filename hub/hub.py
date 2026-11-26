@@ -37,7 +37,7 @@ import base  # noqa: E402
 import usage  # noqa: E402
 from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, CONFIRM_WINDOW, Config, EDITOR_WAIT, Editor,  # noqa: E402,F401
                   FLASH_LOOK, KEPT_LINES, Listener, MIN_SHOWN, NEEDS_INPUT, NUMBER_WORDS, OWN_DIALOG,  # noqa: E402,F401
-                  OWN_SESSION, PROMPTING_MODES, Pending, Request, SAFE_ID, STOP_WAIT, Sent, Stopping,  # noqa: E402,F401
+                  OWN_SESSION, PROMPTING_MODES, Pending, Request, SAFE_ID, SAID, STOP_WAIT, Sent, Stopping,  # noqa: E402,F401
                   TAKE_BACK, TAP, VOICE_AT_PROMPT, _ago, _answerable, _elapsed, _end, _read_out, _runs,  # noqa: E402,F401
                   _same_call, _spoken_name, aside_question, context_mode, log, session_model, spoken_answer)  # noqa: E402,F401
 from headset import Headset, Program as HeadsetProgram  # noqa: E402
@@ -83,6 +83,10 @@ class Hub(Permissions, Talk, Headset):
         # over in followups, so they go.
         self._steering: dict[str, list[str]] = {}
         self._clear_steer()
+        # session id -> what you said to it that its terminal has not shown yet (words_in_terminal;
+        # see `_handed`): written above the next lines it shows.
+        self._said: dict[str, list[str]] = {}
+        self._clear_said()
         self._stopping: dict[str, Stopping] = {}  # sessions asked to end their turn, until they have
         self._clear_stops()  # what a hub before this one asked for is not wanted any more
         self.talk_target: str | None = None  # session a spoken follow-up goes to
@@ -298,6 +302,7 @@ class Hub(Permissions, Talk, Headset):
                     # reply stays in the queue and is spoken in full.
                     self.speech.drop_session(sid)
                     self._unstop(sid, "a new prompt was typed")  # that is a new turn: it must run
+                    self._shown_said(sid)  # words said to a turn that was interrupted are not this reply's
                     self._unclear(sid, "a new prompt was typed")  # clearing after it would throw it away
                     # You are at that session: what you say next is for it. Not in the middle
                     # of push-to-talk, where the words already have their session.
@@ -354,6 +359,7 @@ class Hub(Permissions, Talk, Headset):
         self._settle(sid, why, agents=True)
         self._release(sid)
         self._sync_steer(sid)
+        self._shown_said(sid)
         self.followups.pop(sid, None)
         self._waiting.discard(sid)
         self._unstop(sid)
@@ -513,20 +519,29 @@ class Hub(Permissions, Talk, Headset):
             self.publish()
 
     def on_display(self, ev: dict) -> dict | None:
-        """MessageDisplay: speak a speak-tag line as soon as it streams in; return the rewrite."""
+        """MessageDisplay: speak a speak-tag line as soon as it streams in; return the rewrite.
+        With words_in_terminal, what you said to the session goes above the first lines it
+        shows after that, with or without a speak tag among them."""
         speech, shown, title, lang = split_display(str(ev.get("delta") or ""))
         sid = ev.get("session_id")
-        if not speech or not sid:
+        if not sid:
             return None
         with self.lock:
-            self.last_event = time.monotonic()
-            s = self.sessions.touch(sid, ev.get("cwd", ""))
-            late = s.state == "done" and speech == s.spoken  # Stop got here first and said it
-            s.spoken = speech
-            self._title_from(s, reply=speech, given=title)
-            if not late:
-                self._say_line(s, speech, lang, "stream")
-        self.publish()
+            said = self._shown_said(sid)
+            if speech:
+                self.last_event = time.monotonic()
+                s = self.sessions.touch(sid, ev.get("cwd", ""))
+                late = s.state == "done" and speech == s.spoken  # Stop got here first and said it
+                s.spoken = speech
+                self._title_from(s, reply=speech, given=title)
+                if not late:
+                    self._say_line(s, speech, lang, "stream")
+        if not speech and not said:
+            return None
+        if speech:
+            self.publish()
+        if said:  # a line each, then an empty one: without it the terminal joins them to the reply's first line
+            shown = "".join(f"{SAID} {text}\n\n" for text in said) + shown
         return {"hookSpecificOutput": {"hookEventName": "MessageDisplay", "displayContent": shown}}
 
     def _voice_for(self, s, lang: str, text: str = "") -> str | None:

@@ -24,6 +24,16 @@ these come before anything new.
       **Not heard by the author yet**: listen for an unmarked Italian or Chinese line read by
       the right voice, and an English one never read by the Italian voice.
 
+- [ ] Your words in the terminal (2026-11-26, `words_in_terminal`, "Your Words in the Terminal"
+      under Talking, off for a new install; the author: "put it as a setting, default as no ...
+      a info icon to show the downside"). What you said to a session is written as `🎤 words`
+      above the next lines its terminal shows, where Claude Code shows only "Stop hook
+      feedback"; the downsides are under the info sign beside its description. Tried with a
+      haiku session in tmux and a hub of its own, idle and busy, and its line in the settings
+      window seen in a picture. **Not tried by the author**: needs `sidetone hub restart`,
+      then the switch on, then say something to a session and look at its terminal; rest the
+      mouse on "Downsides" to read them.
+
 - [ ] Three fixes to the bar (2026-11-25, from the review in `docs/dev/overlay-review.md`; the
       author chose to improve today's overlay over the 50 designs, and of a drawn preview said
       "all three steps look good"). A calm working light (`overlay.working_motion`, "Working
@@ -52,26 +62,15 @@ Questions for the author; nothing to build until they answer.
 - [ ] VS Code types up to a minute late while its window is hidden (`docs/dev/facts.md`): start
       it with `--disable-background-timer-throttling` (to be tried) so that clear, stop and end act
       at once?
-- [ ] What you said, also in the terminal (the author, 2026-11-26: "the transcript gets
-      displayed only on the overlay, but not in the terminal. Why?"). Why: spoken words reach a
-      session as a hook's feedback (`listen.sh`, exit 2), which Claude Code shows as the two
-      words "Stop hook feedback"; they are not a typed prompt. Three ways, none built:
-      (1) the hub puts a line such as `🎤 "…"` above the reply's `🔊` line, in the rewrite
-      `display.sh` already asks it for: the exact words, no tokens, no slower, every terminal;
-      but only on screen (the saved session keeps the original), and it comes with the reply,
-      after any steps, so the overlay stays the place to check the words in time. Suggested, as
-      a setting. (2) Claude told to repeat the words: costs tokens, may reword them, pushes the
-      spoken line down. (3) the extension types them as a real prompt: in the history and the
-      saved session, but VS Code only, and the hub cannot see a half-typed line or an open
-      prompt (as with `/btw`), and taking words back gets harder. Not measured: whether a
-      `systemMessage` from the listener is shown.
-      Asked again the same day, whether typing them in would be the better way to deliver
-      them at all. Advised against as the main way: VS Code types up to a minute late while
-      its window is hidden (`docs/dev/facts.md`), and the sessions spoken to are the ones not
-      looked at; the listener wakes a session within a second, in any terminal, and cannot
-      press Enter on an open permission prompt. The listener would have to stay for every
-      other terminal, so it would be a second way beside it, not instead. What typing alone
-      gives: the words in the prompt history and in the saved session (so after a resume).
+- [ ] Spoken words typed into the terminal as a real prompt, as a second setting beside Your
+      Words in the Terminal? Asked 2026-11-26: the author's "I would do it, put it as a setting,
+      default as no" was taken as the line above the reply (built, see step 1), and may have
+      meant this. Advised against as the main way: VS Code types up to a minute late while its
+      window is hidden (`docs/dev/facts.md`), and the sessions spoken to are the ones not looked
+      at; the listener wakes a session within a second, in any terminal, and cannot press Enter
+      on an open permission prompt. The listener would stay for every other terminal. What
+      typing alone gives: the words in the prompt history and in the saved conversation (so
+      after a resume). It needs a new order in the extension, which the author then installs.
 
 ## 3. Speech in the author's languages
 

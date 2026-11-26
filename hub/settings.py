@@ -133,6 +133,14 @@ SECTIONS = [
         # back) and Never.
         switch("cancel_stops", "Cancel Key Interrupts Claude", "Like Ctrl+C: with nothing else to cancel, the cancel key stops "
                "the work of the session in focus. The session stays open."),
+        # Off for a new install, and what it cannot do under the info sign (the author, 2026-11-26:
+        # "put it as a setting, default as no ... in the description maybe put a info icon to show
+        # the downside of them activating it"). The sentence is short because a line with a tag does
+        # not wrap.
+        {**switch("words_in_terminal", "Your Words in the Terminal", "What you said is written above the reply."),
+         "tag": "Downsides", "tag_help": "The line is only on screen: the saved conversation does not have it, so it is "
+         "not there after a resume. It comes with the reply, not when you speak, so the overlay stays the place to check "
+         "your words. Claude is given the same words either way."},
         switch("clear_by_voice", "Clear the Chat by Voice", "Say \"clear the chat\" and /clear is typed into that session's terminal "
                "once it is at its prompt. Needs the VS Code extension."),
         switch("clear_progress", "Show Clearing Progress", "While a chat is being cleared, the overlay says so until it is done. "

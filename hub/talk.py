@@ -867,6 +867,7 @@ class Talk:
             self.followups.pop(sid, None)
             self._waiting.discard(sid)
         self._keep_followups()
+        self._handed(sid, given)
         log(self.cfg, "hub.log", f"follow-up [{sid[:8]}] read by the session after a step")
         return False
 
@@ -878,6 +879,45 @@ class Talk:
                 s = self.sessions.by_id.get(sid)
                 if s and not (self._talking or self._transcribing or self._pending):
                     self._talk("sent", s, given, seconds=2.5, quiet=True)
+
+    def _said_file(self, sid: str) -> str:
+        return os.path.join(self.cfg.run, "said", sid)
+
+    def _clear_said(self) -> None:
+        try:
+            for name in os.listdir(os.path.join(self.cfg.run, "said")):
+                os.unlink(os.path.join(self.cfg.run, "said", name))
+        except OSError:
+            pass
+
+    def _handed(self, sid: str, texts: list[str]) -> None:
+        """A session has just been given these words of yours. With words_in_terminal they are
+        kept to be written above the next lines its terminal shows (`on_display`), and a file
+        named after the session tells hooks/display.sh to ask the hub about lines with no speak
+        tag too: the reply may begin with other words, or have no tag at all with the voice
+        off. One line for all of them, as Claude is given them; not the hub's own "ignore the
+        last thing I said". Call with the lock held."""
+        text = " ".join(word for t in texts if t != TAKE_BACK for word in t.split())
+        if not text or not self.cfg.words_in_terminal or not SAFE_ID.match(sid):
+            return
+        self._said.setdefault(sid, []).append(text)
+        path = self._said_file(sid)
+        try:
+            os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+            os.close(os.open(path, os.O_WRONLY | os.O_CREAT, 0o600))
+        except OSError as e:  # then they are shown with the spoken line, which the hook always sends
+            log(self.cfg, "hub.log", f"could not mark [{sid[:8]}] as having words to show: {e}")
+
+    def _shown_said(self, sid: str) -> list[str]:
+        """Your words a session was handed and has not shown: they are being shown now, or are
+        not wanted any more (a prompt was typed, the session ended). Call with the lock held."""
+        said = self._said.pop(sid, [])
+        if said:
+            try:
+                os.unlink(self._said_file(sid))
+            except OSError:
+                pass
+        return said
 
     def _unsendable(self) -> Sent | None:
         """The follow-up the cancel key would take back right now, if any: one still waiting in
@@ -1188,8 +1228,10 @@ class Talk:
                 return None
             del self.listeners[listener.session]
             self._sync_steer(listener.session)  # read after a step already: not again
-            text = " ".join(self.followups.pop(listener.session, [])) or None
+            texts = self.followups.pop(listener.session, [])
+            text = " ".join(texts) or None
             self._keep_followups()
+            self._handed(listener.session, texts)
             waited = listener.session in self._waiting
             self._waiting.discard(listener.session)
             if text:
