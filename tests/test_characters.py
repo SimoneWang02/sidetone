@@ -73,6 +73,18 @@ class Drawing(unittest.TestCase):
         self.assertEqual(characters.kind_of("#123456"), own)
         self.assertIn(own, range(5))
 
+    def test_nothing_is_cut_off_at_the_top_or_the_sides(self):
+        # The author, 2026-11-26: "the animation seems cut"; leaves and hair ran past the cell.
+        n = characters.N
+        edges = [(x, 0) for x in range(n)] + [(0, y) for y in range(n)] + [(n - 1, y) for y in range(n)]
+        for style in characters.STYLES:
+            for kind in range(5):
+                for name, count in characters.ROWS:
+                    s, t0, a0, v = characters._moment(name)
+                    for i in (0, count // 3, 2 * count // 3):
+                        cell = characters.frame(style, kind, COLORS[kind], s, t0 + i / characters.FPS, a0 + i / characters.FPS, v)
+                        self.assertFalse(any(cell[(y * n + x) * 4 + 3] > 40 for x, y in edges), (style, kind, name, i))
+
     def test_shadows_of_skin_do_not_turn_red(self):
         r, g, b = characters.ramp("#f2c9a4")[1]
         self.assertGreater(g / r, 0.55)  # a warm brown, not a red
