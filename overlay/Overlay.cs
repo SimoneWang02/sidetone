@@ -1016,6 +1016,12 @@ namespace ClaudeSpeaks
         string path = "", moment = "", shown = "";
         double since;
 
+        public bool Size(double size)
+        {
+            if (Image.Width != size) Image.Width = Image.Height = size;
+            return true;
+        }
+
         public Sprite(double size)
         {
             Image.Width = Image.Height = size;
@@ -2787,6 +2793,9 @@ namespace ClaudeSpeaks
             Visibility = Visibility.Collapsed, IsHitTestVisible = false,
         };
         public string Sprite = "";  // the sheet of its character, "" for none
+        // Its character in the details: beside its words in All Sessions (32 px), and in the one row
+        // of Selected Session when the character stands inside (48 px).
+        public readonly Sprite Mini = new Sprite(32);
         public string Name = "", Color = "", Title = "", State = "", FlashText, TalkKind, TalkText = "";  // TalkKind: null unless push-to-talk is about this session
         public readonly Badge Badge = new Badge { Visibility = Visibility.Collapsed };
         Brush talkInk = Brushes.White;  // white for your words, dim for a note, the microphone's color for what to do
@@ -2828,7 +2837,21 @@ namespace ClaudeSpeaks
             words.Children.Add(row2);
             Text.Children.Add(glow);
             Text.Children.Add(Strip);
+            Mini.Image.HorizontalAlignment = HorizontalAlignment.Left;
+            Mini.Image.VerticalAlignment = VerticalAlignment.Center;
+            Mini.Image.Margin = new Thickness(6, 0, 0, 0);
+            Mini.Image.Visibility = Visibility.Collapsed;
+            Text.Children.Add(Mini.Image);
             Text.Children.Add(words);
+        }
+
+        // Shows its character beside its words (size 0: none), and makes room for it.
+        public void Figure(double size, string state, double loudness, double now, bool still)
+        {
+            bool on = size > 0 && Mini.Size(size) && Mini.Show(Sprite, state, loudness, now, still);
+            Mini.Image.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            double left = on ? 12 + size + 2 : 12;
+            if (words.Margin.Left != left) words.Margin = new Thickness(left, 5, 12, 6);
         }
 
         public void Update(Dictionary<string, object> s)
@@ -2958,6 +2981,7 @@ namespace ClaudeSpeaks
         readonly Sprite edgeSprite = new Sprite(80), innerSprite = new Sprite(60);
         readonly DispatcherTimer spriteTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
         string character = "none", characterPlace = "edge";
+        bool characterDetails = true;  // also in the details: on their edge in Selected Session, beside each row in All Sessions
         const double InnerRoom = 50;  // what the bubble grows by, and its words move right by, with a character inside
         const double ChipSize = 32, ChipGap = 4;
         bool muted, mutedMark;
@@ -3324,6 +3348,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("working_motion")) Ui.WorkingCalm = Str(msg, "working_motion") != "lively";
                     if (msg.ContainsKey("session_tick")) sessionTick = Convert.ToBoolean(msg["session_tick"]);
                     if (msg.ContainsKey("character")) character = Str(msg, "character");
+                    if (msg.ContainsKey("character_details")) characterDetails = Convert.ToBoolean(msg["character_details"]);
                     if (msg.ContainsKey("character_place")) characterPlace = Str(msg, "character_place") == "inside" ? "inside" : "edge";
                     bubbleShows = "";  // the bubble is laid out again, with or without room for a character
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
@@ -3656,6 +3681,7 @@ namespace ClaudeSpeaks
                 row.Light.Height = !Island && goal > 0 && chosen == null && row.Text.DesiredSize.Height > Row.High + 4 ? row.Text.DesiredSize.Height : Row.High;
             }
             UpdateBubble(show);
+            UpdateSprite();
             PlaceSides();
             Fade();
             Run(true);
@@ -3763,35 +3789,57 @@ namespace ClaudeSpeaks
             UpdateSprite();
         }
 
-        // The character of the session the bubble is about: what it acts, and where it stands.
+        // What a session's character acts now: listening while you talk to it, speaking, else its state.
+        string Moment(Row r)
+        {
+            if (r.TalkKind != null && talkState == "listening") return "listen";
+            if (r.Speaking) return "speaking";
+            return r.State == "needs_you" ? "needs" : r.State == "done" || r.State == "failed" || r.State == "working" ? r.State : "idle";
+        }
+
+        // The characters: on the bubble's top edge or inside it (the session it is about); with the
+        // details out, on their top edge in Selected Session (the session shown) or beside each row.
+        // Idle and working ones hold still: only a session with news moves.
         void UpdateSprite()
         {
-            Row r = talker;
-            bool want = character != "none" && r != null && r.Sprite.Length > 0 && bubble.Goal > 0;  // the bubble may not be on screen yet: the timer looks again
-            string state = "";
-            if (want)
+            double now = Ui.Now;
+            bool on = character != "none", edge = characterPlace == "edge";
+            bool details = on && characterDetails && panel.Goal > 0, focus = mode == "focus";
+            Row r = talker, chosen = details && focus ? Chosen() : null;
+            bool bubbleWants = on && r != null && r.Sprite.Length > 0 && bubble.Goal > 0;  // the bubble may not be on screen yet: the timer looks again
+            // Who stands on an edge, and on which window's.
+            Glass under = null;
+            Row standing = null;
+            if (bubbleWants && edge) { under = bubble; standing = r; }
+            else if (chosen != null && edge && chosen.Sprite.Length > 0) { under = panel; standing = chosen; }
+            bool onEdge = false;
+            if (standing != null && under.IsVisible && under.Open > 0.85)
             {
-                bool listening = r.TalkKind != null && talkState == "listening";
-                state = listening ? "listen" : r.Speaking ? "speaking" : r.State == "needs_you" ? "needs"
-                    : r.State == "done" || r.State == "failed" || r.State == "working" ? r.State : "idle";
+                string state = Moment(standing);
+                onEdge = edgeSprite.Show(standing.Sprite, state, standing.Speaking ? standing.Wave.At(now - Wave.Lag) : 0, now, still);
             }
-            double now = Ui.Now, loud = want && r.Speaking ? r.Wave.At(now - Wave.Lag) : 0;
-            bool edge = characterPlace == "edge";
-            bool onEdge = want && edge && bubble.IsVisible && bubble.Open > 0.85 && edgeSprite.Show(r.Sprite, state, loud, now, still);
-            bool inside = want && !edge && innerSprite.Show(r.Sprite, state, loud, now, still);
+            bool inside = bubbleWants && !edge && innerSprite.Show(r.Sprite, Moment(r), r.Speaking ? r.Wave.At(now - Wave.Lag) : 0, now, still);
             innerSprite.Image.Visibility = inside ? Visibility.Visible : Visibility.Collapsed;
+            bool rowsMove = false;
+            foreach (Row row in order)
+            {
+                double size = !details || row.Sprite.Length == 0 ? 0 : focus ? (row == chosen && !edge ? 48 : 0) : 32;
+                string state = Moment(row);
+                bool calm = state == "idle" || state == "working";
+                row.Figure(size, state, row.Speaking ? row.Wave.At(now - Wave.Lag) : 0, now, still || calm);
+                rowsMove |= size > 0 && !calm;
+            }
             if (onEdge)
             {
-                // On the bubble's top edge, at its end away from the bar; its feet (two rows above
-                // the cell's bottom) on the edge.
+                // At its end away from the bar, its feet (two rows above the cell's bottom) on the edge.
                 Rect work = WorkArea();
                 double tall = 80 * zoom, foot = 2 * tall / Sprite.Cell;
-                perch.Left = corner.EndsWith("right") || Island ? bubble.Left + 6 * zoom : bubble.Left + bubble.Width - tall - 6 * zoom;
-                perch.Top = Math.Max(work.Top, bubble.Top - tall + foot + 1);
+                perch.Left = corner.EndsWith("right") || Island ? under.Left + 6 * zoom : under.Left + under.Width - tall - 6 * zoom;
+                perch.Top = Math.Max(work.Top, under.Top - tall + foot + 1);
                 if (!perch.IsVisible) { perch.Show(); perch.Raise(); }
             }
             else if (perch.IsVisible) perch.Hide();
-            if (want) { if (!spriteTimer.IsEnabled) spriteTimer.Start(); }
+            if (bubbleWants || standing != null || rowsMove) { if (!spriteTimer.IsEnabled) spriteTimer.Start(); }  // standing: its window may still be opening
             else if (spriteTimer.IsEnabled) spriteTimer.Stop();
         }
 

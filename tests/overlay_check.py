@@ -863,6 +863,20 @@ if not ONLY or ONLY.startswith("character"):
                 shot(f"character-{style}-{place}-{moment}", 1.4)
                 send(type="flash", name=name, text="", seconds=0)
                 time.sleep(0.6)
+    # With the details out (overlay.character_details): on their edge in Selected Session, small
+    # beside each row in All Sessions; web-app needs you, api-server speaks, the others are calm.
+    for style in characters.STYLES:
+        for place, view in (("edge", "focus"), ("inside", "focus"), ("edge", "list")):
+            look(character=style, character_place=place, character_details=True)
+            rows = sessions("api-server", focus="web-app")
+            for row in rows:
+                row["sprite"] = SHEETS[style, row["color"]]
+            send(type="state", sessions=rows, history=HISTORY, sprite_layout=characters.LAYOUT)
+            send(type="wave", name="api-server", levels=voice(9), step=0.04, delay=0.0)
+            send(type="mode", mode=view)
+            shot(f"character-{style}-{view}-{place}", 1.6)
+            send(type="mode", mode="dots")
+            time.sleep(0.5)
     look(character="none")
 
 if "--glass" in sys.argv:

@@ -66,6 +66,10 @@ DEFAULTS = {
     # "On the edge is cool") | inside = in the bubble beside the words, smaller, so that the bubble
     # is no taller ("decrease the size to make them fit").
     "character_place": "edge",
+    # Also with the details out (the author, 2026-11-26: "most of the time I put the details always as
+    # seen ... show selected session, which is the one that I use mostly"): on their top edge in
+    # Selected Session, small beside each row in All Sessions. Off: only with the bubble.
+    "character_details": True,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
     # Held to take hold of the bar with the mouse: drag it, or turn the wheel on it. "" (the

@@ -331,9 +331,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     its end away from the bar, 80 px; the bubble keeps its size ("On the edge is cool").
     Inside: 60 px in the bubble beside the words, which grows 50 px wider and no taller
     ("decrease the size to make them fit").
+  - Character in the Details (`overlay.character_details`, on; 2026-11-26). The first build
+    showed nothing for the author, whose details are always out ("most of the time I put the
+    details always as seen ... show selected session, which is the one that I use mostly"),
+    and the bubble only comes with the details away. Now with the details out too: in Selected
+    Session the shown session's character stands on the details' top edge (edge) or sits
+    48 px in its row (inside); in All Sessions each row has one, 32 px, beside its words. Idle
+    and working ones hold their first frame, so only a session with news moves (`UpdateSprite`).
   - Seen in pictures (`overlay_check.py --only=character`): both kinds, both places,
-    speaking, needs you, done, failed. **Not seen live by the author yet**; not in the
-    request card or the details rows yet, and Reduce Motion holds the first frame.
+    speaking, needs you, done, failed; Selected Session on the edge and inside, All Sessions.
+    Not in the request card yet, and Reduce Motion holds the first frame.
     It counts lights of the usual height: rows grown by `row_lines` 2 or 3 can still pass
     the screen.
   - Both settings have their new-install values built into the window, so an overlay
