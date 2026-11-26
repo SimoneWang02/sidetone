@@ -49,6 +49,19 @@ Questions for the author; nothing to build until they answer.
 - [ ] VS Code types up to a minute late while its window is hidden (`docs/dev/facts.md`): start
       it with `--disable-background-timer-throttling` (to be tried) so that clear, stop and end act
       at once?
+- [ ] What you said, also in the terminal (the author, 2026-11-26: "the transcript gets
+      displayed only on the overlay, but not in the terminal. Why?"). Why: spoken words reach a
+      session as a hook's feedback (`listen.sh`, exit 2), which Claude Code shows as the two
+      words "Stop hook feedback"; they are not a typed prompt. Three ways, none built:
+      (1) the hub puts a line such as `🎤 "…"` above the reply's `🔊` line, in the rewrite
+      `display.sh` already asks it for: the exact words, no tokens, no slower, every terminal;
+      but only on screen (the saved session keeps the original), and it comes with the reply,
+      after any steps, so the overlay stays the place to check the words in time. Suggested, as
+      a setting. (2) Claude told to repeat the words: costs tokens, may reword them, pushes the
+      spoken line down. (3) the extension types them as a real prompt: in the history and the
+      saved session, but VS Code only, and the hub cannot see a half-typed line or an open
+      prompt (as with `/btw`), and taking words back gets harder. Not measured: whether a
+      `systemMessage` from the listener is shown.
 
 ## 3. Speech in the author's languages
 
