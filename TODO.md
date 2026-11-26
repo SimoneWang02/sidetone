@@ -30,9 +30,13 @@ these come before anything new.
       above the next lines its terminal shows, where Claude Code shows only "Stop hook
       feedback"; the downsides are under the info sign beside its description. Tried with a
       haiku session in tmux and a hub of its own, idle and busy, and its line in the settings
-      window seen in a picture. **Not tried by the author**: needs `sidetone hub restart`,
-      then the switch on, then say something to a session and look at its terminal; rest the
-      mouse on "Downsides" to read them.
+      window seen in a picture. Live on the author's hub since 2026-11-26, and switched on by
+      them the same night: "I see a microphone icon emote and I see let me try I'll just
+      switch down. Is that what I said?" (it was what the speech model heard). **No word yet
+      from the author** on how the line looks, and the "Downsides" sign's words (rest the
+      mouse on it) not read by them. They did not find the switch at first ("I don't see
+      that setting"): it is under Talking, and its name ends in "the Terminal", which is
+      also a section.
 
 - [ ] Three fixes to the bar (2026-11-25, from the review in `docs/dev/overlay-review.md`; the
       author chose to improve today's overlay over the 50 designs, and of a drawn preview said
