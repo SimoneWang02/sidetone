@@ -318,7 +318,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     768 px laptop (measured there: 11 at 100 %, 12 at 97 %, 20 at 63 %), 27 on the author's
     own (1440 px high, no taskbar). Seen in pictures only: no screen has held that many
     real sessions.
-- Character (`overlay.character`: none, familiars, operators; none by default) and Character
+- Character (`overlay.character`: none, familiars, operators, sketch; none by default; a
+  drop-down since 2026-11-26) and Character
   Place (`overlay.character_place`: edge, inside), in the Overlay section (2026-11-25). A small
   pixel-art figure with the bubble that acts what its session is doing. Where it came from:
   the 50-design prompt (`docs/dev/overlay-redesign-prompt.md`), then plushies ("very AI
@@ -331,8 +332,18 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     flame flares with the voice, an excitable ember, a sleepy sprout, a shy shellback that
     hides in its shell when its session fails, a grumpy toadstool). Operators: five people on
     the line, each with their own headset and something of their own (hoodie with cat ears, a
-    pendant, a bandana, earbuds and a beard, an aerial and a scarf). The third look shown, a
-    pencil sketch, is not built.
+    pendant, a bandana, earbuds and a beard, an aerial and a scarf). Sketch (2026-11-26, the
+    author: "it's missing the hand-drawn operators"): one operator in rough pencil, the same
+    for every session but for the scarf and headset in its color, the lines shaking three times
+    a second as if redrawn.
+  - `hub/sketch.py` draws the Sketch: the preview's canvas lines with smooth edges (each
+    pixel's coverage; numpy), in 88 px cells, twice the pixel styles', shown at their own size
+    on the edge and scaled down smoothly inside and in the details (the overlay reads a
+    sheet's cell size from its height over its rows, and scales with hard edges only cells of
+    `Cell`, the pixel styles'). Measured: 2.2 s a sheet, 250 kB, 5280 by 1056 px (22 MB once
+    loaded by the overlay). Changed from the preview so rows repeat without a jump: its sway
+    and its typing arm go once a second; when it fails it sinks 7 units, not 9, feet kept on
+    the ground so nothing leaves the cell.
   - `hub/characters.py` draws them, ported from the previews' JavaScript: shapes filled in
     flat bands of tone on a 40 by 40 grid, a contact shadow where a part lies on another, an
     outline in the part's darkest tone, then single pixels. Each session gets a sheet: one
