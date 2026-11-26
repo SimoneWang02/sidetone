@@ -18,6 +18,21 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
+- [ ] The end key on a session with work in the background (2026-11-26, the author by voice,
+      after Ctrl+Alt+Minus on "sidetone 6": "non l'ha cancellato, mi chiedeva di confermare
+      sul terminale"). Claude Code asks in the terminal before it exits such a session; now
+      the overlay asks in its place, "sidetone 6 has background work", and Ctrl+Alt+Minus
+      once more ends it ("Ending With Background Work" under Terminal: Ask Again, End
+      Anyway, In the Terminal; see `docs/dev/features.md`). Run for real in a lab, pictures
+      taken. **Not tried by the author yet.** Needs the extension 0.8.0 in each VS Code
+      window (Ctrl+Shift+P, Restart Extension Host); until then the overlay only says
+      "sidetone 6 asks in its terminal". To answer: Ask Again as the default was Claude's
+      choice (what stops may be a long run); End Anyway saves the third press.
+      Found on the way, not looked at: Claude Code's session file now says `shell`, not
+      `idle`, for a session at its prompt with a command left running, and the hub takes only
+      `idle` for "at its prompt": the clear key there may wait as for a busy session, and a
+      turn interrupted with Escape may go on showing as working (`docs/dev/facts.md`).
+
 - [ ] The details folding away (2026-11-26, the author by voice: "when the detail box
       closes, I think that animation can be improved"; see `docs/dev/features.md`). They said
       no more than that, so what was changed is Claude's reading of the numbers: the fold took

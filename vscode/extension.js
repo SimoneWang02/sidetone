@@ -23,6 +23,11 @@
 // `claude` into it (only that: the command is written here, not sent by the hub); "exit", typed
 // like the others; and close a terminal of ours once the hub has seen its session end.
 //
+// From 0.8.0 it knows one more key, "confirm": an Enter by itself. Claude Code does not exit a
+// session that has work in the background before it has asked ("Background work is running", with
+// "Exit and stop tasks" first), and the Enter takes that answer. The hub asks for it only for a
+// terminal it had "exit" typed into, whose session is still there.
+//
 // From 0.7.0 it can also bring up another of the editor's windows (a project each): it tells the
 // hub what its own window has open, and when this window is the one in front and the hub names
 // what another one has open, it opens that, which VS Code answers by showing that window.
@@ -70,7 +75,9 @@ async function report(why) {
 // clear: Escape first too, for a dialog Claude Code shows at its prompt while its own file says
 // idle, such as "Teach auto mode about your environment?": without it the Enter after /clear
 // answered that dialog's "Yes" and ran /auto-mode-setup (found in a lab, 2026-11-22).
-const KEYS = { escape: ["\x1b"], clear: ["\x1b", "\x03", "/clear\r"], exit: ["\x1b", "\x03", "/exit\r"] };
+// confirm: Enter takes the first answer, "Exit and stop tasks", of what Claude Code asks before
+// it exits with work in the background (measured 2026-11-26, Claude Code 2.1.332; Escape is "Stay").
+const KEYS = { escape: ["\x1b"], clear: ["\x1b", "\x03", "/clear\r"], exit: ["\x1b", "\x03", "/exit\r"], confirm: ["\r"] };
 const START = "claude";  // what a new terminal is given to run, typed as you would
 const BETWEEN = 150;  // ms from one piece to the next: typed in one go, Claude Code may take them as one
 const RETRY = 5000;  // no hub, or one from before this: ask again after this long
@@ -153,7 +160,7 @@ async function listen() {
   if (closed) return;
   const pids = (await Promise.all(vscode.window.terminals.map((terminal) => terminal.processId))).filter(Boolean);
   if (closed || open) return;
-  const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear", "open", "window"], theme: theme(), folder: folder() });  // what the hub may ask of us
+  const data = JSON.stringify({ terminals: pids, can: ["escape", "show", "clear", "open", "window", "confirm"], theme: theme(), folder: folder() });  // what the hub may ask of us
   const request = http.request({
     socketPath: socket(), path: "/editor", method: "POST", timeout: 60000,
     headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) },

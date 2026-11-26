@@ -35,7 +35,7 @@ from tts import LANG_LETTER, PREFERRED_VOICE, Meter, NullEngine, SpeechQueue, Ut
 
 import base  # noqa: E402
 import usage  # noqa: E402
-from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, CONFIRM_WINDOW, Config, EDITOR_WAIT, Editor,  # noqa: E402,F401
+from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, CONFIRM_WINDOW, Config, EDITOR_WAIT, Editor, Ending,  # noqa: E402,F401
                   FLASH_LOOK, KEPT_LINES, Listener, MIN_SHOWN, NEEDS_INPUT, NUMBER_WORDS, OWN_DIALOG,  # noqa: E402,F401
                   OWN_SESSION, PROMPTING_MODES, Pending, Request, SAFE_ID, SAID, STOP_WAIT, Sent, Stopping,  # noqa: E402,F401
                   TAKE_BACK, TAP, VOICE_AT_PROMPT, _ago, _answerable, _elapsed, _end, _read_out, _runs,  # noqa: E402,F401
@@ -104,7 +104,9 @@ class Hub(Permissions, Talk, Headset):
         self._opening: float = base.NEVER  # when a new session was last asked of an editor (the new-session key)
         self._clear_armed: tuple[str, float] | None = None  # the session the clear key asked about, and when
         self._end_armed: tuple[str, float] | None = None  # the session the end key asked about, and when
-        self._ending: dict[str, str] = {}  # session -> its terminal, for a session ended with the end key: closed once it has ended
+        self._end_anyway = False  # that question is the second one, in the place of Claude Code's about work in the background
+        self._ending: dict[str, Ending] = {}  # sessions the end key had /exit typed into: each one's terminal is closed once it has ended
+        self._confirms_by: dict[str, float] = {}  # terminal -> when a request of an editor that can answer that question in it last ended
         self._editor_wanted: list = []  # (what, terminal, when) asked while the editor was between two requests: "close"
         self._clearing: dict[str, tuple] = {}  # session -> (its voice, timers) while /clear has been asked for and not yet seen done
         self._clear_shown = ""  # the session whose clearing the banner is about
@@ -313,6 +315,7 @@ class Hub(Permissions, Talk, Headset):
                 self._settle(sid, "turn moved on")
 
             if event == "UserPromptSubmit":
+                self._not_ending(sid)  # it goes on: the end key's /exit did not end it
                 prompt = str(ev.get("prompt") or "")
                 self._title_from(s, prompt=prompt)
                 s.state, s.activity, s.note = "working", "Thinking", ""
@@ -522,6 +525,23 @@ class Hub(Permissions, Talk, Headset):
                            if shell not in req.shells] if pid else []
                 if any(_runs(line, str(req.tool_input.get("command") or "")) for line in started):
                     self._resolve(req, None, "allowed in the terminal: its command is running")
+                    changed = True
+            # A session the end key had /exit typed into, and Claude Code asks first (it has
+            # work in the background): no hook says so, its file does. A dialog that was open
+            # before is not it (Escape, typed before /exit, closes that), nor is a permission
+            # prompt, which the file names differently.
+            for sid, ending in list(self._ending.items()):
+                info = live.get(sid)
+                if not info:
+                    continue
+                asks = (info["status"] == "waiting" and info["waiting_for"] == "dialog open" and info["status_at"] >= ending.asked)
+                if asks and not ending.held:
+                    ending.held = True
+                    self._end_held(sid)
+                    changed = True
+                elif ending.held and not asks:  # "Stay", answered in its terminal: it goes on
+                    self._not_ending(sid)
+                    log(self.cfg, "hub.log", f"end [{sid[:8]}] not ended: its question was answered in its terminal, and it goes on")
                     changed = True
             # A session that was asked to stop: its hook takes the file away as it ends the turn.
             for sid, stopping in list(self._stopping.items()):

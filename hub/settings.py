@@ -315,6 +315,13 @@ SECTIONS = [
         switch("terminal.window", "Switching Brings Its Window", "With a VS Code window in front, moving to a session whose project is open in another one brings that one up."),
         choice("terminal.new_session", "New Session Opens", "Where the new-session key puts the terminal: split next to the session in focus, "
                "or in a tab of its own, one in sight at a time.", ("beside", "Side by Side"), ("tab", "In a New Tab")),
+        # The end key on a session with work in the background (2026-11-26, the author: "it didn't
+        # end it, it asked me to confirm in the terminal"). Beside New Session Opens, the other
+        # key's setting; `end_background` in config.json.
+        choice("end_background", "Ending With Background Work", "Claude Code asks in the terminal before it ends a session "
+               "that has work in the background. The overlay can ask in its place, where the end key once more says yes; "
+               "or it is ended without asking; or the question stays in the terminal.",
+               ("ask", "Ask Again"), ("end", "End Anyway"), ("terminal", "In the Terminal")),
         # "Name in the Terminal's Title" (terminal.title) left the window on 2026-11-22, the
         # author after trying it: "I don't know how useful it is ... I don't usually look at
         # them". Still off by default, still read from config.json.
@@ -357,7 +364,8 @@ SECTIONS = [
         heading("keys.sessions", "Sessions"),
         hotkey("new_session", "New Session", "Opens a terminal in the folder of the session in focus and starts Claude Code in it. "
                "Beside it or in a tab of its own: New Session Opens, under Terminal."),
-        hotkey("end_session", "End Session", "Press it twice: the editor types /exit for the session in focus and closes its terminal."),
+        hotkey("end_session", "End Session", "Press it twice: the editor types /exit for the session in focus and closes its terminal. "
+               "With work in the background: Ending With Background Work, under Terminal."),
         hotkey("clear", "Clear the Chat", "Press it twice: the editor types /clear for the session in focus, at its prompt."),
     ]),
 ]

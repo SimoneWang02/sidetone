@@ -858,6 +858,13 @@ send(type="banner", icon="clearing", text="Clearing sidetone\u2026", hint="waiti
 shot("clear-slow", 0.6)
 send(type="banner", icon="cleared", text="Cleared sidetone", hint="")
 shot("clear-done", 0.6)
+send(type="banner", icon="end", text="End sidetone?", hint="Ctrl+Alt+Minus to confirm")  # the end key asks
+shot("end-ask", 0.6)
+# Claude Code asked first, in the terminal, about work in the background: the overlay in its place.
+send(type="banner", icon="end", text="sidetone has background work", hint="Ctrl+Alt+Minus to end anyway", below=True)
+shot("end-background", 0.6)
+send(type="banner", icon="end", text="sidetone asks in its terminal", hint="")  # left there (end_background: terminal)
+shot("end-terminal", 0.6)
 send(type="banner", text=None)
 send(type="state", sessions=sessions(), history=HISTORY, muted=True)
 send(type="peek", on=True)

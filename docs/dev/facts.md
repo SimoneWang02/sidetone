@@ -458,6 +458,24 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   at 0 and is compared with that clock has the same fault; the others in the hub were
   looked at and are safe. The same log had "overlay could not start: [Errno 5] Input/output
   error: 'powershell.exe'" from 03:35 the night before: that was WSL going down, not a fault.
+- Exiting with work in the background (measured 2026-11-26, Claude Code 2.1.332, a throwaway
+  session in tmux with `sleep 900` left running by the Bash tool): `/exit` does not exit. It
+  shows "Background work is running", "The following will stop when you exit:", the list
+  ("shell · Sleep 900 seconds in background") and "1. Exit and stop tasks", "2. Move to
+  background and exit", "3. Stay", the first one chosen. Enter exits and the command is
+  stopped (0.2 s); Escape is "Stay" and the prompt is back. No hook fires for it. Read in the
+  program's own text, not tried: the list is every background task still running (commands,
+  agents, monitors, scheduled tasks and loops), Ctrl+C or Ctrl+D twice ask the same, and in a
+  worktree "Exiting worktree session" comes instead. The author's "sidetone 6", asked this
+  the same day, had an artifact's comment watch armed in its transcript; what its list named
+  was not seen.
+- Session-file facts on 2.1.332 (measured 2026-11-26, the same session): `status` has two more
+  values than the next note says. `shell`: at its prompt with a command of its own left
+  running, where `idle` was. `waiting`, with `waitingFor` saying for what: `permission prompt`
+  while a tool asks, `dialog open` for the /model picker and for the question before exiting
+  above (there 0.3 s after /exit), and `shell` again when read a second after Escape. The
+  hub takes only `idle` for "at its prompt" (`Talk._cannot_clear`, the interrupted turn in
+  `reconcile`): not yet looked at for a session with a command left running.
 - Session-file facts (measured): `status` is only `busy` or `idle`; it stays `busy` during a
   permission dialog and flips to `idle` within 0.2 s of Esc. The file is removed when the
   session exits. A command the Bash tool runs is a child of the session's pid (measured

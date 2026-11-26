@@ -803,6 +803,39 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Claimed only while an editor that can do it is there (`_can_open`, `_endable_here`). Hotkeys
   name the keys "Plus" and "Minus" (a "+" would split the combination; `Ui.KeyNamed`,
   `NameOfKey`), drawn as "+" and "-" on the caps. Word has Ctrl+Alt+Minus for a long dash: shared.
+  A session with work in the background (2026-11-26, `end_background`, "Ending With Background
+  Work" under Terminal: `ask` | `end` | `terminal`; `Talk._end_held`, `_asks_before_exit`,
+  `_exit_anyway`, `_not_ending`, `base.Ending`, `END_ANYWAY` 8 s; the extension 0.8.0, its key
+  `confirm`; pictures `end-ask`, `end-background`, `end-terminal`). The author, by voice, of
+  "sidetone 6": "ho fatto CTRL-ALT-MENO e non l'ha cancellato, mi chiedeva di confermare sul
+  terminale". The log had /exit typed at 12:41:04 and the session ended 11 s later, answered by
+  hand (the nine ends before it: eight within a second, one in three). Its transcript had an
+  artifact's comment watch armed, and Claude Code does not exit with work in the background
+  before it has asked, "Exit and stop tasks" or "Stay" (`docs/dev/facts.md`). No hook tells of
+  that question; Claude Code's file for the session does (`status` "waiting", `waitingFor`
+  "dialog open"), which `reconcile` reads every second: a dialog that opened after /exit was
+  asked of the editor is that question (one open before is closed by the Escape typed first; a
+  permission prompt is named differently, so the Enter can never allow a command). What then:
+  `ask` (the default, Claude's choice: what stops may be a long run, and the hub cannot tell a
+  watch from a build) puts a banner in the end key's look, "sidetone 6 has background work"
+  with "Ctrl+Alt+Minus to end anyway" on a line of its own below (`below` in the banner's
+  message, the sign's width kept free before it: on one line the key's words wrapped), with the
+  notes of "queued", for 8 s; the key once more has the editor type one Enter, which takes
+  "Exit and stop tasks", if the file still says the question is open. `end`: the Enter is typed
+  without asking. `terminal`, and an extension from before 0.8.0: the question stays in the
+  terminal and the overlay says "sidetone 6 asks in its terminal" for 4 s. Only the question on
+  screen is answered (another banner in its place, the focus on another session, or the 8 s
+  gone: the key asks "End ...?" again, and /exit typed anew answers the terminal's question
+  with its Escape, "Stay", and brings it back). "Stay" answered in the terminal takes the
+  overlay's question away within a second and the session keeps its terminal when it ends later
+  by itself, as after a prompt it takes (before, the end key's /exit counted until any end).
+  Run for real in a lab (Claude Code 2.1.332 on haiku in tmux, a hub of its own inside a
+  script, the real extension code with a stand-in editor typing into the pane, a `sleep 900`
+  left running): `ask`, the banner 1.3 s after the second press, ended 0.2 s after the third,
+  the terminal closed and the sleep stopped; no work in the background, ended 0.5 s after the
+  second press with no second question; `end`, ended 1.1 s after the second press; `terminal`,
+  the notice and the question left there; Escape by hand in the terminal, the banner gone 0.6 s
+  later and the key asking "End ...?" again. Not tried by the author yet.
 - Where a new session opens (2026-11-26, `terminal.new_session`, "New Session Opens" under
   Terminal: `beside` | `tab`; `sidetone terminal new beside|tab`). The author, by voice:
   "whenever I do Ctrl Alt Plus, the terminal is always created side by side. I think there

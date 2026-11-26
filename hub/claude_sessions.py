@@ -21,9 +21,13 @@ def alive(pid: int) -> bool:
 
 
 def read(directory: str) -> dict[str, dict]:
-    """session id -> {"pid", "pids", "status": "busy" | "idle", "status_at": epoch seconds, "name": its title} for running
-    sessions. `pids`: every live process that has it, as one conversation can be open in two
-    terminals at once (resumed in a second one); `pid` is one of them."""
+    """session id -> {"pid", "pids", "status", "status_at": epoch seconds, "waiting_for", "name": its title}
+    for running sessions. `status`: "busy", "idle", "shell" (at its prompt with a command of
+    its own left running) or "waiting", and then `waiting_for` says for what: "permission
+    prompt", or "dialog open" for a picker such as /model's and for what it asks before it
+    exits with work in the background (measured 2026-11-26, Claude Code 2.1.332). `pids`:
+    every live process that has it, as one conversation can be open in two terminals at once
+    (resumed in a second one); `pid` is one of them."""
     found: dict[str, dict] = {}
     try:
         names = os.listdir(directory)
@@ -44,7 +48,7 @@ def read(directory: str) -> dict[str, dict]:
                 name = ""  # "derived" is a placeholder made at start: the folder plus two letters ("my-project-3f")
             pids = sorted(found.get(sid, {}).get("pids", []) + [pid])
             found[sid] = {"pid": pid, "pids": pids, "status": data.get("status"), "status_at": at / 1000 if isinstance(at := data.get("statusUpdatedAt"), (int, float)) else 0,
-                          "name": name}
+                          "waiting_for": str(data.get("waitingFor") or ""), "name": name}
     return found
 
 

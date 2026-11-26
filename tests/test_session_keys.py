@@ -15,6 +15,7 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
+import base  # noqa: E402
 import hub as hub_module  # noqa: E402
 from test_hub import FakeOverlay, FakeSounds, HubCase, ev, wait_for  # noqa: E402
 
@@ -126,16 +127,9 @@ class SessionKeys(HubCase):
         hub.on_overlay({"type": "hotkey", "name": "new_session"})
         self.assertEqual(editor.open, [{"cwd": "/w/a", "beside": 4001}])
 
-    @unittest.skipUnless(shutil.which("node"), "needs node to run the editor extension")
-    def test_the_editor_extension_opens_it_split_or_as_a_tab(self):
-        """The real extension code, with a stand-in for the editor, against the hub over its
-        socket. Beside: the new terminal is split from the one of the session in focus. As a
-        tab: it is given no place at all, so the editor puts it where its new terminals go.
-        Both in that session's folder, shown with the keyboard in it, and `claude` typed."""
-        hub = self.make()
-        folder = os.path.join(self.tmp, "a")
-        os.makedirs(folder)
-        hub.sessions.by_id["a"].cwd = folder
+    def extension(self, hub):
+        """Start the real extension code, with a stand-in for the editor, against the hub over
+        its socket. Returns what reads the notes of what it did in the editor."""
         server = hub_module.serve(hub, os.path.join(self.tmp, "hub.sock"))
         threading.Thread(target=server.serve_forever, daemon=True).start()
         self.addCleanup(server.server_close)
@@ -157,6 +151,19 @@ class SessionKeys(HubCase):
                     return json.load(f)
             except (OSError, ValueError):  # not yet written, or being written
                 return []
+        return notes
+
+    @unittest.skipUnless(shutil.which("node"), "needs node to run the editor extension")
+    def test_the_editor_extension_opens_it_split_or_as_a_tab(self):
+        """The real extension code, with a stand-in for the editor, against the hub over its
+        socket. Beside: the new terminal is split from the one of the session in focus. As a
+        tab: it is given no place at all, so the editor puts it where its new terminals go.
+        Both in that session's folder, shown with the keyboard in it, and `claude` typed."""
+        hub = self.make()
+        folder = os.path.join(self.tmp, "a")
+        os.makedirs(folder)
+        hub.sessions.by_id["a"].cwd = folder
+        notes = self.extension(hub)
 
         def press(so_far):
             waiting = lambda: any(e.opens and "/dev/pts/41" in e.ttys and not e.wake.is_set() for e in hub.editors)  # noqa: E731
@@ -229,6 +236,175 @@ class SessionKeys(HubCase):
         editor = hub.editor_waits([4001], opens=True)
         self.assertEqual(editor.close, [4001])
         self.assertTrue(editor.wake.is_set())
+
+    # --- a session with work in the background: Claude Code asks before it exits ---------------
+
+    def end_twice(self, hub, **can):
+        """The end key pressed twice with an editor waiting: /exit is typed. Returns the editor
+        that waits after it."""
+        can = {"opens": True, "confirms": True, **can}
+        editor = hub.editor_waits([4001, 4002], **can)
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "exit"}])
+        return hub.editor_waits([4001, 4002], **can)
+
+    def file(self, hub, sid, status, waiting_for=None, at=None):
+        """Claude Code's own file for a session: what it says the session is doing now."""
+        os.makedirs(hub.cfg.sessions_dir, exist_ok=True)
+        with open(os.path.join(hub.cfg.sessions_dir, f"{sid}.json"), "w") as f:
+            json.dump({"sessionId": sid, "pid": os.getpid(), "status": status, "waitingFor": waiting_for,
+                       "statusUpdatedAt": (at or time.time()) * 1000}, f)
+
+    def asks(self, hub, sid="a"):
+        """Claude Code asks before it exits: its file says so, and the hub looks at it every second."""
+        self.file(hub, sid, "waiting", "dialog open")
+        hub.reconcile()
+
+    def test_claude_code_asks_first_the_overlay_asks_and_the_key_once_more_ends_it(self):
+        """The author, 2026-11-26: "it didn't end it, it asked me to confirm in the terminal"."""
+        hub = self.make()
+        hub.sounds = FakeSounds()
+        self.assertEqual(hub.cfg.end_background, "ask")  # a new install
+        editor = self.end_twice(hub)
+        self.asks(hub)
+        asked = self.overlay.of("banner")[-1]
+        self.assertEqual((asked["icon"], asked["text"], asked["hint"], asked["below"], asked["seconds"]),
+                         ("end", "a has background work", "Ctrl+Alt+Minus to end anyway", True, base.END_ANYWAY))
+        self.assertEqual(hub.sounds.played, ["queued"])
+        self.assertFalse(editor.wake.is_set(), "nothing is answered before you say so")
+        hub.reconcile()
+        self.assertEqual(hub.sounds.played, ["queued"], "asked once, however long it waits")
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertEqual(self.overlay.of("banner")[-1], {"type": "banner"})
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "confirm"}])
+        editor = hub.editor_waits([4001, 4002], opens=True, confirms=True)
+        hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))
+        self.assertEqual(editor.close, [4001])
+        self.assertEqual(hub.sounds.played, ["queued", "ended"])
+
+    def test_only_a_dialog_opened_after_exit_was_typed_is_taken_for_the_question(self):
+        hub = self.make(end_background="end")
+        self.file(hub, "a", "waiting", "dialog open", at=time.time() - 5)  # a picker that was open: Escape closes it
+        editor = self.end_twice(hub)
+        hub.reconcile()
+        self.file(hub, "a", "waiting", "permission prompt")  # asked meanwhile: an Enter would allow it
+        hub.reconcile()
+        self.file(hub, "a", "shell")  # at its prompt, a command of its own running: /exit not typed yet
+        hub.reconcile()
+        self.file(hub, "b", "waiting", "dialog open")  # another session's dialog
+        hub.reconcile()
+        self.assertFalse(editor.wake.is_set())
+        self.assertFalse([b for b in self.overlay.of("banner") if "background" in str(b.get("text"))])
+        self.asks(hub)
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "confirm"}])
+
+    def test_end_anyway_answers_without_asking(self):
+        hub = self.make()
+        self.assertIsNone(hub.set_setting("end_background", "end"))
+        editor = self.end_twice(hub)
+        so_far = len(self.overlay.of("banner"))
+        self.asks(hub)
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "confirm"}])
+        self.assertEqual(self.overlay.of("banner")[so_far:], [])
+        # Its editor between two requests at that moment: the next one is handed the answer.
+        hub.talk_target = "b"
+        editor = hub.editor_waits([4001, 4002], opens=True, confirms=True)
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        hub.editor_done(editor)
+        self.asks(hub, "b")
+        editor = hub.editor_waits([4001, 4002], opens=True, confirms=True)
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4002, "key": "confirm"}])
+
+    def test_left_in_the_terminal_the_overlay_only_says_so(self):
+        """`end_background: terminal`, and an editor whose extension cannot type the answer."""
+        for setting, can in (("terminal", {}), ("ask", {"confirms": False}), ("end", {"confirms": False})):
+            hub = self.make()
+            self.assertIsNone(hub.set_setting("end_background", setting))
+            editor = self.end_twice(hub, **can)
+            self.asks(hub)
+            said = self.overlay.of("banner")[-1]
+            self.assertEqual((said["icon"], said["text"], said["hint"]), ("end", "a asks in its terminal", ""), setting)
+            hub.on_overlay({"type": "hotkey", "name": "end_session"})  # not an answer: the first question again
+            self.assertEqual(self.overlay.of("banner")[-1]["text"], "End a?")
+            self.assertFalse(editor.wake.is_set(), setting)
+        self.assertIsNotNone(hub.set_setting("end_background", "always"))  # not one of the three
+
+    def test_only_the_second_question_on_screen_is_answered(self):
+        hub = self.make()
+        editor = self.end_twice(hub)
+        self.asks(hub)
+        hub.on_overlay({"type": "hotkey", "name": "mute"})  # its banner takes the question's place
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], "End a?")
+        hub._end_armed = None
+        hub._end_held("a")
+        hub._end_armed = ("a", time.monotonic() - base.END_ANYWAY - 1)  # it went by itself
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], "End a?")
+        hub._end_armed = None
+        hub._end_held("a")
+        hub.talk_target = "b"  # the focus is on another session: the key is about that one
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], "End b?")
+        self.assertFalse(editor.wake.is_set())
+
+    def test_answered_in_the_terminal_nothing_is_typed_and_its_terminal_stays(self):
+        """ "Stay" chosen in the terminal while the overlay asks: its file no longer says it
+        waits. The key then types nothing, and the session keeps its terminal when it ends later."""
+        hub = self.make()
+        hub.sounds = FakeSounds()
+        editor = self.end_twice(hub)
+        self.asks(hub)
+        self.file(hub, "a", "idle")
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})  # before the hub has looked again
+        self.assertEqual(self.overlay.of("banner")[-1], {"type": "banner"})
+        self.assertFalse(editor.wake.is_set(), "an Enter would go to its prompt")
+        hub.reconcile()
+        self.assertEqual(hub._ending, {})
+        hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))
+        self.assertEqual(editor.close, [])
+        self.assertEqual(hub.sounds.played, ["queued"])
+        # The same when the hub looks first: the question goes from the overlay by itself.
+        hub.talk_target = "b"
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertEqual(hub.editor_done(editor), [{"pid": 4002, "key": "exit"}])
+        editor = hub.editor_waits([4001, 4002], opens=True, confirms=True)
+        self.asks(hub, "b")
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], "b has background work")
+        self.file(hub, "b", "shell")
+        hub.reconcile()
+        self.assertEqual(self.overlay.of("banner")[-1], {"type": "banner"})
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], "End b?")
+
+    def test_a_prompt_taken_since_means_it_goes_on(self):
+        """A question the hub never saw (answered within the second): the next prompt says it stayed."""
+        hub = self.make()
+        editor = self.end_twice(hub)
+        hub.on_event(ev("UserPromptSubmit", sid="a", prompt="go on"))
+        hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))
+        self.assertEqual(editor.close, [])
+
+    @unittest.skipUnless(shutil.which("node"), "needs node to run the editor extension")
+    def test_the_editor_extension_types_exit_and_then_the_enter_that_answers(self):
+        """The real extension code: it says it can confirm, types Escape, Ctrl+C and /exit for
+        the end key, and a single Enter for the key pressed once more."""
+        hub = self.make()
+        notes = self.extension(hub)
+        waiting = lambda: any(e.confirms and "/dev/pts/41" in e.ttys and not e.wake.is_set() for e in hub.editors)  # noqa: E731
+        self.assertTrue(wait_for(waiting, 8), "the editor's request never came, or it cannot confirm")
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertTrue(wait_for(lambda: len(notes()) == 3, 8), f"not typed: {notes()}")
+        self.assertEqual(notes(), [["typed", 4001, "\x1b", False], ["typed", 4001, "\x03", False], ["typed", 4001, "/exit\r", False]])
+        self.assertTrue(wait_for(waiting, 8), "the editor did not ask again")
+        self.asks(hub)
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertTrue(wait_for(lambda: len(notes()) == 4, 8), f"not answered: {notes()}")
+        self.assertEqual(notes()[3], ["typed", 4001, "\r", False])
 
 
 class OneSessionTwoTerminals(SessionKeys):

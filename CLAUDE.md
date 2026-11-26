@@ -100,7 +100,7 @@ Where the code is:
   It only draws; all logic is in the hub so it can be tested. JSON lines over stdin and stdout.
 - `headset/Headset.cs`: a second Windows program, only where `headset_button` is on: a headset's
   button and microphone (`hub/headset.py` is the hub's side). `tests/headset/`: a test by hand.
-- `vscode/`: the VS Code extension (0.7.0): the focus follows the terminal in front, and the
+- `vscode/`: the VS Code extension (0.8.0): the focus follows the terminal in front, and the
   hub can have it type Escape (stop), `/clear`, show a terminal, or bring up another
   of its windows. `sidetone vscode install`.
 - `bin/sidetone` (`st`): every command (`sidetone` with no arguments lists them).

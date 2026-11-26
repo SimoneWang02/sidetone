@@ -36,6 +36,14 @@ class Stopping:
 
 
 @dataclass
+class Ending:
+    """A session the end key had /exit typed into, until it has ended (see Talk.end_session_key)."""
+    tty: str  # its terminal, closed once it has ended
+    asked: float  # when, in epoch seconds as Claude Code's session files tell time
+    held: bool = False  # Claude Code was seen asking first, about work in the background (Talk._end_held)
+
+
+@dataclass
 class Editor:
     """A window of the editor that waits to be asked for a key in one of its terminals (see
     vscode/extension.js): only the editor can type into them."""
@@ -49,6 +57,7 @@ class Editor:
     open: list = field(default_factory=list)  # new sessions asked of it: {"cwd": ..., "beside": a terminal's process id or None}
     close: list = field(default_factory=list)  # terminals it is asked to close, by process id
     windows: bool = False  # it can also bring another of the editor's windows up (0.7.0 on)
+    confirms: bool = False  # it can also type the Enter that answers what Claude Code asks before it exits with work in the background (0.8.0 on)
     window: str = ""  # the folder of the window it is asked to bring up, if it is the one in front
 
 
@@ -59,6 +68,10 @@ CLEAR_SLOW = 5.0  # seconds after /clear was asked of the editor when its progre
 # minute while it is hidden, so what it is asked to type can wait that long and then all come at
 # once (measured 2026-11-24: two asked 11 s apart, both typed 8 s after the second).
 CLEAR_CONFIRM = 75.0
+# Seconds the overlay asks for, in the place of what Claude Code asks in the terminal before it
+# exits a session with work in the background (`end_background`): longer than the end key's own
+# question, which you have your finger ready for.
+END_ANYWAY = 8.0
 EDITOR_GAP = 3.0  # seconds an editor counts as still there after a request of its ended: the next one is on its way
 NEVER = float("-inf")  # "has not happened", for times on the clock that counts from the boot
 RECOUNT = 1.5  # seconds after a turn ended until what it used is added up once more (its last reply may be written late)
@@ -325,6 +338,15 @@ class Config:
     # has cleared (the author, 2026-11-24: "a loading progress for the clearing, because usually I
     # didn't see anything").
     clear_progress: bool = True
+    # A session that has work in the background (a command, an agent, a watch) is not ended by
+    # /exit at once: Claude Code lists what will stop and asks, in the terminal, "Exit and stop
+    # tasks" or "Stay". The author, 2026-11-26, after the end key on such a session: "it didn't
+    # end it, it asked me to confirm in the terminal". "ask": the overlay asks in its place and
+    # the end key, pressed once more, has the editor answer "Exit and stop tasks". "end": the
+    # editor answers so without your being asked again. "terminal": the question is left in
+    # the terminal, and the overlay only says it is there. Needs the extension from 0.8.0;
+    # with an older one it is "terminal".
+    end_background: str = "ask"
     clear_words: list = field(default_factory=lambda: [
         "clear the chat", "clear the context", "clear the conversation", "clear the session", "clear the history",
         "slash clear", "run slash clear", "do a slash clear", "use slash clear",
@@ -540,7 +562,7 @@ class Config:
         user = cfg._checked(user, path)
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "voice_device", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_progress", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
-                    "followup_confirm", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
+                    "followup_confirm", "end_background", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "volume", "muted_asks", "limit_once", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])

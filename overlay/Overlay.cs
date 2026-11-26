@@ -5288,11 +5288,23 @@ namespace ClaudeSpeaks
                 }
                 else if (icon == "clear" || icon == "end")  // the clear key asks, as the mute key's row says what it did; a bin (an eraser was first: "I don't like it much"); the end key the same, with a power sign
                 {
-                    bannerTitle.Inlines.Add(new Run(icon == "end" ? "\uE7E8" : "\uE74D") { FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = 14,
+                    string sign = icon == "end" ? "\uE7E8" : "\uE74D";
+                    FontFamily signs = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets");
+                    bannerTitle.Inlines.Add(new Run(sign) { FontFamily = signs, FontSize = 14,
                         Foreground = Ui.Alpha(Ui.Tint("working"), 1), BaselineAlignment = BaselineAlignment.Center });
                     bannerTitle.Inlines.Add(new Run("  " + Str(msg, "text")) { Foreground = Ui.Dim });
                     string confirm = Str(msg, "hint");
-                    if (confirm.Length > 0) bannerTitle.Inlines.Add(new Run("   " + confirm) { Foreground = Ui.Faint, FontSize = 11.5 });
+                    // "below": the key on a line of its own, under the words and starting where they
+                    // start (the sign again, unseen, takes its room): for words too long to share
+                    // the line with it ("sidetone has background work").
+                    if (confirm.Length > 0 && msg.ContainsKey("below") && Convert.ToBoolean(msg["below"]))
+                    {
+                        bannerTitle.Inlines.Add(new LineBreak());
+                        bannerTitle.Inlines.Add(new Run(sign) { FontFamily = signs, FontSize = 14, Foreground = Brushes.Transparent, BaselineAlignment = BaselineAlignment.Center });
+                        bannerTitle.Inlines.Add(new Run("  "));
+                        bannerTitle.Inlines.Add(new Run(confirm) { Foreground = Ui.Faint, FontSize = 11.5 });
+                    }
+                    else if (confirm.Length > 0) bannerTitle.Inlines.Add(new Run("   " + confirm) { Foreground = Ui.Faint, FontSize = 11.5 });
                     bannerHint.Text = "";
                 }
                 else

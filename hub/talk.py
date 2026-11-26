@@ -17,7 +17,7 @@ import usage
 import stt
 import terminal as terminal_mod
 from tts import Utterance
-from base import (aside_mode, interrupts, ASIDE_ASK, Aside, BUSY, Editor, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
+from base import (aside_mode, interrupts, ASIDE_ASK, Aside, BUSY, Editor, Ending, Listener, OWN_SESSION, PROMPTING_MODES, Pending,
                   SAFE_ID, STEER, Sent, Stopping, TAKE_BACK, VOICE_AT_PROMPT, _end, _spoken_name, aside_question, log,
                   session_model, spoken_answer, spoken_verdict)
 
@@ -357,23 +357,35 @@ class Talk:
         """The end key: pressed once it asks, as the clear key does; pressed again within
         `END_TWICE` the editor ends the session in focus (Escape stops a turn, Ctrl+C empties a line
         half typed, /exit ends it: measured on a working session and an idle one, 2026-11-22) and,
-        once Claude Code has ended it, closes its terminal."""
+        once Claude Code has ended it, closes its terminal. A session with work in the background
+        is not ended by /exit: Claude Code asks first, in its terminal. `_end_held` then has the
+        overlay ask in its place, and the key pressed once more answers it."""
         with self.lock:
             s = self._target()
             if not self._endable_here(s):
                 return
             now, armed = time.monotonic(), self._end_armed
-            if armed and armed[0] == s.id and now - armed[1] < END_TWICE:
+            mine = bool(armed and armed[0] == s.id)
+            if mine and self._end_anyway and s.id in self._ending and now - armed[1] < base.END_ANYWAY:
+                self._end_armed = None
+                if self.overlay:
+                    self.overlay.send({"type": "banner"})
+                if self._asks_before_exit(s.id):
+                    self._exit_anyway(s, "the end key, once more")
+                else:  # answered in its terminal meanwhile: an Enter now would go to whatever is there
+                    log(self.cfg, "hub.log", f"end [{s.id[:8]}] its question is gone from its terminal: nothing typed")
+            elif mine and not self._end_anyway and now - armed[1] < END_TWICE:
                 self._end_armed = None
                 if self.overlay:
                     self.overlay.send({"type": "banner"})
                 editor = next(e for e in self.editors if e.opens and s.tty in e.ttys and not e.wake.is_set())
                 editor.keys.append({"pid": editor.ttys[s.tty], "key": "exit"})
                 editor.wake.set()
-                self._ending[s.id] = s.tty
+                self._ending[s.id] = Ending(s.tty, time.time())
                 log(self.cfg, "hub.log", f"end [{s.id[:8]}] /exit asked of the editor for its terminal ({s.tty}): the end key")
             else:
-                self._end_armed, self._clear_armed, self._clear_shown = (s.id, now), None, ""  # as the clear key's question
+                # as the clear key's question
+                self._end_armed, self._end_anyway, self._clear_armed, self._clear_shown = (s.id, now), False, None, ""
                 log(self.cfg, "hub.log", f"end [{s.id[:8]}] \"End {s.name}?\" asked: the end key, once")
                 key = self.cfg.overlay.get("hotkeys", {}).get("end_session", "")
                 if self.overlay:
@@ -381,10 +393,85 @@ class Talk:
                                        "hint": f"{key} to confirm" if key else "", "seconds": END_TWICE})
         self.publish()
 
+    def _asks_before_exit(self, sid: str) -> bool:
+        """Whether Claude Code is asking, right now, before it exits the session the end key
+        had /exit typed into: its own file says it waits with a dialog open, since then (see
+        `reconcile`). Call with the lock held."""
+        ending, info = self._ending.get(sid), claude_sessions.read(self.cfg.sessions_dir).get(sid)
+        return bool(ending and info and info["status"] == "waiting" and info["waiting_for"] == "dialog open"
+                    and info["status_at"] >= ending.asked)
+
+    def _end_held(self, sid: str) -> None:
+        """/exit was typed and Claude Code asks first, in the terminal, as it does for a session
+        with work in the background (a command, an agent, a watch): "Background work is running.
+        The following will stop when you exit", then "Exit and stop tasks", "Move to background
+        and exit" for some, and "Stay". Enter takes the first and Escape the last (measured
+        2026-11-26, Claude Code 2.1.332, with a command left running). What happens then is
+        `Config.end_background`: the overlay asks in its place ("ask"), the editor answers at
+        once ("end"), or the question is left where it is and the overlay says so ("terminal",
+        and with an editor that cannot type the answer). Called by `reconcile`, once for each
+        time /exit was typed, with the lock held."""
+        s, ending = self.sessions.by_id.get(sid), self._ending.get(sid)
+        if not s or not ending:
+            return
+        how = self.cfg.end_background if self._can_confirm(ending.tty) else "terminal"
+        log(self.cfg, "hub.log", f"end [{sid[:8]}] Claude Code asks before it exits (work in the background): "
+            + {"ask": f"\"{s.name} has background work\" asked in its place",
+               "end": "answered for you (end_background: end)"}.get(how, "left in its terminal"))
+        if how == "end":
+            self._exit_anyway(s, "end_background: end")
+        elif how == "ask":
+            self._end_armed, self._end_anyway, self._clear_armed, self._clear_shown = (sid, time.monotonic()), True, None, ""
+            self._signal("queued", s, "It has background work. Press the end key again to end it.")
+            key = self.cfg.overlay.get("hotkeys", {}).get("end_session", "")
+            if self.overlay:
+                # The key on a line of its own ("below"): the two do not fit on one.
+                self.overlay.send({"type": "banner", "icon": "end", "text": f"{s.name} has background work",
+                                   "hint": f"{key} to end anyway" if key else "", "below": True, "seconds": base.END_ANYWAY})
+        else:
+            self._signal("queued", s, "It asks in its terminal before it ends.")
+            if self.overlay:
+                self._clear_armed = self._end_armed = None  # its row takes the place of a question
+                self._clear_shown = ""
+                self.overlay.send({"type": "banner", "icon": "end", "text": f"{s.name} asks in its terminal", "hint": "", "seconds": 4})
+
+    def _exit_anyway(self, s, why: str) -> None:
+        """Have the editor type the Enter that takes "Exit and stop tasks", the first answer to
+        what Claude Code asks before it exits with work in the background. Only for a session
+        `_ending` has, whose file says the question is open. Call with the lock held."""
+        tty = self._ending[s.id].tty
+        for editor in self.editors:
+            if editor.confirms and tty in editor.ttys and not editor.wake.is_set():
+                editor.keys.append({"pid": editor.ttys[tty], "key": "confirm"})
+                editor.wake.set()
+                break
+        else:  # its editor is between two requests: the next one is handed it
+            self._editor_wanted.append(("confirm", tty, time.monotonic()))
+        log(self.cfg, "hub.log", f"end [{s.id[:8]}] Enter (\"Exit and stop tasks\") asked of the editor for its terminal ({tty}): {why}")
+
+    def _can_confirm(self, tty: str) -> bool:
+        """Whether an editor can type that Enter into this terminal: one that holds it is waiting
+        to be asked, or was a moment ago and is about to ask again. Call with the lock held."""
+        return (any(e.confirms and tty in e.ttys for e in self.editors)
+                or time.monotonic() - self._confirms_by.get(tty, base.NEVER) < base.EDITOR_GAP)
+
+    def _not_ending(self, sid: str) -> str:
+        """The /exit the end key had typed for `sid` no longer counts: it has ended, or it goes
+        on ("Stay" in its terminal). The question the overlay asks in Claude Code's place goes.
+        Returns its terminal, or "" if the end key had not asked for it. Call with the lock held."""
+        ending = self._ending.pop(sid, None)
+        if not ending:
+            return ""
+        if self._end_anyway and self._end_armed and self._end_armed[0] == sid:
+            self._end_armed = None
+            if self.overlay:
+                self.overlay.send({"type": "banner"})
+        return ending.tty
+
     def _ended_by_key(self, sid: str) -> None:
         """A session ended: if the end key asked for it, its terminal is closed now. Call with
         the lock held."""
-        tty = self._ending.pop(sid, None)
+        tty = self._not_ending(sid)
         if not tty:
             return
         for editor in self.editors:
@@ -1012,15 +1099,17 @@ class Talk:
         return False
 
     def editor_waits(self, pids: list, shows: bool = False, clears: bool = False, opens: bool = False,
-                     theme: str = "", windows: bool = False, folder: str = "") -> Editor:
+                     theme: str = "", windows: bool = False, folder: str = "", confirms: bool = False) -> Editor:
         """An editor's window asks to be told when a key is wanted in one of its terminals,
         which it names by the process each one runs (its shell). `shows`: it can also bring
         one of them to the front. `clears`: it can also type /clear into one. `opens`: it can
         also open a terminal with a new session, end a session and close its terminal.
         `theme`: "light" or "dark", what its terminals' tint is mixed into. `windows`: it can
-        also bring up another window of the editor. `folder`: what its own window has open."""
+        also bring up another window of the editor. `folder`: what its own window has open.
+        `confirms`: it can also type the Enter that answers what Claude Code asks before it
+        exits with work in the background."""
         ttys = {tty: pid for pid in pids for tty in [terminal_mod.tty_of(pid)] if tty}
-        editor = Editor(ttys, shows=shows, clears=clears, opens=opens, windows=windows)
+        editor = Editor(ttys, shows=shows, clears=clears, opens=opens, windows=windows, confirms=confirms)
         repaint = False
         with self.lock:
             self.editors.append(editor)
@@ -1041,6 +1130,9 @@ class Talk:
                         continue
                     if what == "close" and tty in ttys:
                         editor.close.append(ttys[tty])
+                        editor.wake.set()
+                    elif what == "confirm" and confirms and tty in ttys:
+                        editor.keys.append({"pid": ttys[tty], "key": "confirm"})
                         editor.wake.set()
                     else:
                         kept.append((what, tty, since))
@@ -1072,6 +1164,8 @@ class Talk:
                 self._clears_by.update(dict.fromkeys(editor.ttys, time.monotonic()))
             if editor.opens:
                 self._opens_by = time.monotonic()
+            if editor.confirms:
+                self._confirms_by.update(dict.fromkeys(editor.ttys, time.monotonic()))
             return editor.keys
 
     def _showable(self, s) -> bool:
