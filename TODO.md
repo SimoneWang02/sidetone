@@ -165,6 +165,11 @@ voice, and the wait for the transcript.
       work where no ranking exists: Italian, code and file names read aloud, what is said and
       when. Proof would be a blind test against V4 itself, about 1000 votes for 70 to 170
       dollars. **To decide:** time Breeze and Ming on the card next, or leave it here.
+      The author, by voice, later that night: "Kokoro al momento è quella migliore, ma a me
+      non dispiace, c'è qualcosa meglio di Kokoro" (whether after hearing the page, not
+      said). Fetching Ming (the maker's code from GitHub, its packages, 3 GB of weights, into
+      the trial folder) was stopped by Claude Code's own check as not clearly allowed by
+      them: **needs their plain yes** to installing Ming and Breeze for a trial.
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a
