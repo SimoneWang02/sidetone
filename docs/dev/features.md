@@ -749,6 +749,26 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   Claimed only while an editor that can do it is there (`_can_open`, `_endable_here`). Hotkeys
   name the keys "Plus" and "Minus" (a "+" would split the combination; `Ui.KeyNamed`,
   `NameOfKey`), drawn as "+" and "-" on the caps. Word has Ctrl+Alt+Minus for a long dash: shared.
+- Where a new session opens (2026-11-26, `terminal.new_session`, "New Session Opens" under
+  Terminal: `beside` | `tab`; `sidetone terminal new beside|tab`). The author, by voice:
+  "whenever I do Ctrl Alt Plus, the terminal is always created side by side. I think there
+  should be a feature setting that lets me create a new tab, which is not side by side".
+  `beside` (the default, as it was): split next to the terminal of the session in focus.
+  `tab`: a terminal of its own, which VS Code lists as a new tab of the terminal panel and
+  shows alone (or wherever its `terminal.integrated.defaultLocation` sends new terminals).
+  Only the hub changed: with `tab`, `Hub.new_session_key` names no terminal to sit beside
+  (`"beside": null`), which the extension has opened as a terminal of its own since 0.5.0
+  (what it did with no session), so there is no new extension to install. Still asked of the
+  window that holds the focused session's terminal, in that session's folder, `claude` typed,
+  the keyboard in it, and the session that starts gets the focus. It goes with Switching Moves
+  the Keyboard (`terminal.jump`): as tabs only one terminal is in sight, and that setting
+  brings up the one of the session you move to. "A new tab" was taken to mean a tab of the
+  terminal panel; a tab in the editor area (`TerminalLocation.Editor`) would be a third value
+  and needs the extension changed: not built. Tests: what the hub asks, and the real extension
+  with a stand-in editor over the hub's socket
+  (`test_the_editor_extension_opens_it_split_or_as_a_tab`: `createTerminal` is given
+  `location.parentTerminal` for beside and no `location` for a tab). Picture
+  `settings-terminal.png`. Not tried by the author in VS Code yet.
 - Answering a permission prompt by voice (2026-11-21, `spoken_verdict`, `SPOKEN_YES`, `SPOKEN_NO`):
   a bare yes or no (English, Italian, Chinese; "please", "thanks" after it allowed) allows or
   denies as the keys do; anything longer turns the request down and follows as the next message

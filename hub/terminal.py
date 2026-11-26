@@ -42,8 +42,14 @@ DEFAULTS = {
     # too, with its terminal, as soon as the focus rests; only from another window of the editor,
     # never over another program. Off by default: it covers the window you were in.
     "window": False,
+    # Where the new-session key has the editor put the terminal: beside = split next to the one of
+    # the session in focus | tab = a terminal of its own, a new tab where the editor puts new
+    # terminals, one in sight at a time (the author, 2026-11-26: "the terminal is always created
+    # side by side ... a feature setting that lets me create a new tab").
+    "new_session": "beside",
 }
 TINTS = ("focus", "all", "off")
+PLACES = ("beside", "tab")  # what `new_session` can be
 PULSE_SECONDS = 0.7
 PULSE_STEPS = 14
 RESET = b"\x1b]111\x1b\\"

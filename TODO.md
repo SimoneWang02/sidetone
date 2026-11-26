@@ -41,6 +41,15 @@ these come before anything new.
       card too) and measured level. **Not seen live**: the author's screen holds 27
       sessions before anything shrinks. The mending needs `sidetone overlay restart`.
 
+- [ ] A new session in a tab of its own (2026-11-26, `terminal.new_session`, "New Session
+      Opens" under Terminal; the author: "a feature setting that lets me create a new tab,
+      which is not side by side"). Side by Side stays the default. Tested with the real
+      extension against a stand-in editor, **not yet tried by the author** in VS Code: choose
+      In a New Tab, press Ctrl+Alt+Plus, and the terminal should come up alone in the panel
+      with Claude Code started and its session in focus. Needs `sidetone hub restart`, no new
+      extension. To ask then: is a tab of the terminal panel what was meant, or a tab up in
+      the editor area (not built)?
+
 - [ ] Clearing progress (2026-11-24, `clear_progress`): a turning ring and "Clearing sidetone 2…"
       until it is done, and no second /clear typed meanwhile. Tests and pictures only, **not yet
       tried by the author**; best tried with VS Code's window covered for some minutes too.

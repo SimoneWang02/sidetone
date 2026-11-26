@@ -328,7 +328,10 @@ class Talk:
         session in focus, in that session's folder, and starts Claude Code in it (the extension
         types `claude` itself; the hub only names the folder and the terminal to sit beside). The
         session that starts there gets the focus. With no session, or one whose terminal is in no
-        editor, a terminal of its own in any editor that can open one."""
+        editor, a terminal of its own in any editor that can open one. With `terminal.new_session`
+        "tab" it is always a terminal of its own (2026-11-26), still in the editor that holds the
+        terminal of the session in focus, and in that session's folder: the hub names no terminal
+        to sit beside, which the extension has taken since 0.5.0."""
         with self.lock:
             s = self._target()
             tty = s.tty if s and s.tty else ""
@@ -337,11 +340,12 @@ class Talk:
             if not editor:
                 log(self.cfg, "hub.log", "new session not asked: no editor that can open one is waiting")
                 return
-            editor.open.append({"cwd": s.cwd if s else "", "beside": editor.ttys.get(tty)})
+            beside = editor.ttys.get(tty) if self.cfg.terminal.get("new_session") != "tab" else None
+            editor.open.append({"cwd": s.cwd if s else "", "beside": beside})
             editor.wake.set()
             self._opening = time.monotonic()
         log(self.cfg, "hub.log", f"new session asked of the editor, in {s.cwd if s else 'its own folder'}"
-            + (f", beside the terminal of {s.name} ({tty})" if tty in editor.ttys else ""))
+            + (f", beside the terminal of {s.name} ({tty})" if beside else ", in a tab of its own"))
 
     def end_session_key(self) -> None:
         """The end key: pressed once it asks, as the clear key does; pressed again within

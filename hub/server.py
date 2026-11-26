@@ -162,6 +162,8 @@ class Handler(BaseHTTPRequestHandler):
             changes = {k: body[k] for k in terminal_mod.DEFAULTS if k in body}
             if changes.get("tint", "focus") not in terminal_mod.TINTS:
                 return self._reply({"error": "tint is one of: " + ", ".join(terminal_mod.TINTS)}, 400)
+            if changes.get("new_session", "beside") not in terminal_mod.PLACES:
+                return self._reply({"error": "new_session is one of: " + ", ".join(terminal_mod.PLACES)}, 400)
             if changes:
                 hub.set_terminal(**changes)
             self._reply({"terminal": hub.cfg.terminal})

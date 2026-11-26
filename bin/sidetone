@@ -47,6 +47,7 @@ Usage: sidetone <command>
   terminal follow on|off     going to a terminal in VS Code gives its session the focus (needs: vscode install)
   terminal jump on|off       moving the focus by hand brings that session's terminal to the front in VS Code
   terminal window on|off     from one VS Code window, moving to a session in another one brings that window up
+  terminal new beside|tab    where the new-session key opens the terminal: split beside the one in focus, or a tab of its own
   vscode install|uninstall   the small VS Code extension that tells the hub which terminal you are in
   terminal strength N        how strong the color is, 0 to 1
   terminal background COLOR  the terminal's own background (#RRGGBB) that the color is mixed into
@@ -236,6 +237,7 @@ case ${1:-} in
       find) request=$(jq -nc --arg p "${3:-}" '{find: $p}') ;;
       show) request=$(jq -nc --arg p "${3:-}" '{show: $p}') ;;
       tint) request=$(jq -nc --arg t "${3:-}" '{tint: $t}') ;;
+      new) request=$(jq -nc --arg p "${3:-}" '{new_session: $p}') ;;
       pulse|title|follow|jump|window)
         case ${3:-} in
           on|off) request=$(jq -nc --arg k "$2" --arg v "$3" '{($k): ($v == "on")}') ;;
@@ -247,7 +249,7 @@ case ${1:-} in
         request=$(jq -nc --arg k "${2/-/_}" --arg c "$3" '{($k): $c}') ;;
       *) usage; exit 2 ;;
     esac
-    reply=$(hub_post /terminal <<<"$request") || { echo "hub is not running, or that is not a choice (tint: focus, all, off)"; exit 1; }
+    reply=$(hub_post /terminal <<<"$request") || { echo "hub is not running, or that is not a choice (tint: focus, all, off; new: beside, tab)"; exit 1; }
     if [ "${2:-}" = show ]; then
       shown=$(jq -r '.shown // empty' <<<"$reply")
       [ -n "$shown" ] && echo "to the front: $shown" || { echo "no such session, or no VS Code with the Sidetone extension holds its terminal"; exit 1; }

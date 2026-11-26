@@ -3,8 +3,12 @@ editor, when the keys are claimed, and the session that starts getting the focus
 
 Run: ~/.local/share/kokoro/venv/bin/python -I -m unittest discover -s tests
 """
+import json
 import os
+import shutil
+import subprocess
 import sys
+import threading
 import time
 import unittest
 
@@ -12,7 +16,36 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
 import hub as hub_module  # noqa: E402
-from test_hub import FakeOverlay, FakeSounds, HubCase, ev  # noqa: E402
+from test_hub import FakeOverlay, FakeSounds, HubCase, ev, wait_for  # noqa: E402
+
+# A stand-in for the editor, for the real extension to run against: two terminals of ours, and a
+# note of every terminal it opens (its folder, the terminal it is split from), shows and types into.
+EDITOR = """
+    const fs = require("fs");
+    const done = [];
+    const note = (...what) => { done.push(what); fs.writeFileSync(process.env.DONE, JSON.stringify(done)); };
+    const terminal = (pid) => ({
+      pid, processId: Promise.resolve(pid),
+      sendText: (text, enter) => note("typed", pid, text, enter),
+      show: (keepKeyboard) => note("shown", pid, keepKeyboard),
+    });
+    let opened = 9000;
+    const nothing = (f) => ({ dispose() {} });
+    exports.workspace = { workspaceFolders: [], onDidChangeWorkspaceFolders: nothing };
+    exports.ColorThemeKind = { Light: 1, Dark: 2, HighContrast: 3, HighContrastLight: 4 };
+    exports.window = {
+      state: { focused: true },
+      terminals: [terminal(4001), terminal(4002)],
+      activeTerminal: undefined,
+      createTerminal: (options) => {
+        const parent = options.location && options.location.parentTerminal;
+        note("opened", options.cwd || "", parent ? parent.pid : null, Object.keys(options).sort());
+        return terminal(++opened);
+      },
+      onDidChangeActiveTerminal: nothing, onDidChangeWindowState: nothing, onDidOpenTerminal: nothing,
+      onDidCloseTerminal: nothing, onDidChangeActiveColorTheme: nothing,
+      activeColorTheme: { kind: 2 },
+    };"""
 
 
 class SessionKeys(HubCase):
@@ -70,6 +103,73 @@ class SessionKeys(HubCase):
         editor = hub.editor_waits([4001], opens=True)
         hub.on_overlay({"type": "hotkey", "name": "new_session"})
         self.assertEqual(editor.open, [{"cwd": "", "beside": None}])
+
+    def test_as_a_tab_it_names_no_terminal_to_sit_beside(self):
+        """`terminal.new_session` "tab": a terminal of its own, still asked of the editor that
+        holds the terminal of the session in focus, in that session's folder, and its session
+        still gets the focus."""
+        hub = self.make()
+        self.assertEqual(hub.cfg.terminal["new_session"], "beside")  # a new install: as it was
+        self.assertIsNone(hub.set_setting("terminal.new_session", "tab"))
+        other = hub.editor_waits([4002], opens=True)  # another window of the editor, asked first
+        editor = hub.editor_waits([4001], opens=True)
+        hub.on_overlay({"type": "hotkey", "name": "new_session"})
+        self.assertEqual(editor.open, [{"cwd": "/w/a", "beside": None}])
+        self.assertEqual(other.open, [])
+        hub.on_event(ev("SessionStart", sid="c", cwd="/w/a", source="startup"))
+        self.assertEqual(hub._target().id, "c")
+        self.assertIsNotNone(hub.set_setting("terminal.new_session", "window"))  # not a place
+        self.assertEqual(hub.cfg.terminal["new_session"], "tab")
+        self.assertIsNone(hub.set_setting("terminal.new_session", "beside"))
+        hub.talk_target = "a"
+        editor = hub.editor_waits([4001], opens=True)
+        hub.on_overlay({"type": "hotkey", "name": "new_session"})
+        self.assertEqual(editor.open, [{"cwd": "/w/a", "beside": 4001}])
+
+    @unittest.skipUnless(shutil.which("node"), "needs node to run the editor extension")
+    def test_the_editor_extension_opens_it_split_or_as_a_tab(self):
+        """The real extension code, with a stand-in for the editor, against the hub over its
+        socket. Beside: the new terminal is split from the one of the session in focus. As a
+        tab: it is given no place at all, so the editor puts it where its new terminals go.
+        Both in that session's folder, shown with the keyboard in it, and `claude` typed."""
+        hub = self.make()
+        folder = os.path.join(self.tmp, "a")
+        os.makedirs(folder)
+        hub.sessions.by_id["a"].cwd = folder
+        server = hub_module.serve(hub, os.path.join(self.tmp, "hub.sock"))
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        ext = os.path.join(self.tmp, "ext")
+        os.makedirs(os.path.join(ext, "node_modules", "vscode"))
+        shutil.copy(os.path.join(ROOT, "vscode", "extension.js"), ext)
+        with open(os.path.join(ext, "node_modules", "vscode", "index.js"), "w") as f:
+            f.write(EDITOR)
+        done = os.path.join(self.tmp, "done.json")
+        editor = subprocess.Popen(["node", "-e", "require('./extension.js').activate({ subscriptions: [] });"], cwd=ext,
+                                  env={**os.environ, "CS_RUN": self.tmp, "DONE": done})
+        self.addCleanup(editor.wait)
+        self.addCleanup(editor.kill)
+
+        def notes():
+            try:
+                with open(done) as f:
+                    return json.load(f)
+            except (OSError, ValueError):  # not yet written, or being written
+                return []
+
+        def press(so_far):
+            waiting = lambda: any(e.opens and "/dev/pts/41" in e.ttys and not e.wake.is_set() for e in hub.editors)  # noqa: E731
+            self.assertTrue(wait_for(waiting, 8), "the editor's request never came")
+            hub.on_overlay({"type": "hotkey", "name": "new_session"})
+            self.assertTrue(wait_for(lambda: len(notes()) == so_far + 3, 8), f"the editor opened nothing: {notes()}")
+            return notes()[so_far:]
+
+        self.assertEqual(press(0), [["opened", folder, 4001, ["cwd", "location"]],
+                                    ["shown", 9001, False], ["typed", 9001, "claude", True]])
+        self.assertIsNone(hub.set_setting("terminal.new_session", "tab"))
+        self.assertEqual(press(3), [["opened", folder, None, ["cwd"]],
+                                    ["shown", 9002, False], ["typed", 9002, "claude", True]])
 
     def test_the_end_key_asks_then_ends_and_closes_the_terminal_once_ended(self):
         hub = self.make()
