@@ -24,20 +24,6 @@ these come before anything new.
       **Not heard by the author yet**: listen for an unmarked Italian or Chinese line read by
       the right voice, and an English one never read by the Italian voice.
 
-- [ ] Your words in the terminal (2026-11-26, `words_in_terminal`, "Your Words in the Terminal"
-      under Talking, off for a new install; the author: "put it as a setting, default as no ...
-      a info icon to show the downside"). What you said to a session is written as `🎤 words`
-      above the next lines its terminal shows, where Claude Code shows only "Stop hook
-      feedback"; the downsides are under the info sign beside its description. Tried with a
-      haiku session in tmux and a hub of its own, idle and busy, and its line in the settings
-      window seen in a picture. Live on the author's hub since 2026-11-26, and switched on by
-      them the same night: "I see a microphone icon emote and I see let me try I'll just
-      switch down. Is that what I said?" (it was what the speech model heard). **No word yet
-      from the author** on how the line looks, and the "Downsides" sign's words (rest the
-      mouse on it) not read by them. They did not find the switch at first ("I don't see
-      that setting"): it is under Talking, and its name ends in "the Terminal", which is
-      also a section.
-
 - [ ] Three fixes to the bar (2026-11-25, from the review in `docs/dev/overlay-review.md`; the
       author chose to improve today's overlay over the 50 designs, and of a drawn preview said
       "all three steps look good"). A calm working light (`overlay.working_motion`, "Working
@@ -76,10 +62,6 @@ Questions for the author; nothing to build until they answer.
       or an open permission prompt, which its Enter would answer; no other terminal can be
       typed into, so the listener would stay beside it. What only typing would give: the
       words in the prompt history and in the saved conversation (so after a resume).
-- [ ] The name of Your Words in the Terminal: the author, 2026-11-26: "your words in the
-      terminal is fine. Maybe transcript in the terminal". Left as it is until they say
-      (Claude Code calls the whole conversation a transcript, and Talking's other lines say
-      "your words").
 
 ## 3. Speech in the author's languages
 
@@ -686,6 +668,21 @@ on to the release ("let's go to publish unless there's something else to impleme
 Kept for the history: what was asked, what was found, and the author's words on it.
 
 ### Tried by hand
+
+- [x] Your words in the terminal (2026-11-26, `words_in_terminal`, "Your Words in the Terminal"
+      under Talking, off for a new install; the author: "put it as a setting, default as no ...
+      a info icon to show the downside"). What you said to a session is written as `🎤 words`
+      above the next lines its terminal shows, where Claude Code shows only "Stop hook
+      feedback"; the downsides are under the info sign beside its description. Tried with a
+      haiku session in tmux and a hub of its own, idle and busy, and its line in the settings
+      window seen in a picture. Live on the author's hub since 2026-11-26, and switched on by
+      them the same night: "I see a microphone icon emote and I see let me try I'll just
+      switch down. Is that what I said?" (it was what the speech model heard). Told that
+      how the line looks and its name were still theirs to judge: "No, it's fine. I'll switch
+      it off." Taken by the session as: the look and the name stay, and they keep it off for
+      themselves. They did not find the switch at first ("I don't see that setting"): it is
+      under Talking, and its name ends in "the Terminal", which is also a section. The
+      "Downsides" sign's words (rest the mouse on it) are not known to have been read.
 
 - [x] A new session in a tab of its own (2026-11-26, `terminal.new_session`, "New Session
       Opens" under Terminal: Side by Side, the default, or In a New Tab; the author: "a
