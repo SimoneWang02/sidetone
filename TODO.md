@@ -203,8 +203,10 @@ Roughly easiest first, the larger ones after.
       definitely improve those"), without the rectangle around them ("occupy much more space"):
       free, inside or on the bubble's edge, and the operator in pixels too
       (`pixel-companions.html`). "Could you improve them": redrawn at 40 pixels, each with its own
-      temper and acting, a level-up for done (`familiars-and-operators.html`, **not seen by them
-      yet**). 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      temper and acting, a level-up for done (`familiars-and-operators.html`). Seen: "all three of
+      them are pretty good. So we can just put them as selection by the user"; details that move
+      and not the same headset and scarf for all: each operator their own (`characters.html`, a
+      Character choice of Familiars, Operators, Sketch or None, **not seen by them yet**). 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
