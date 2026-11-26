@@ -268,6 +268,12 @@ Roughly easiest first, the larger ones after.
       only an id and a type). Left out: cost, animation, and anything spoken (spoken progress was
       built and removed at the author's word, docs/dev/features.md). Worth it only if a long turn
       often leaves you wondering whether it is stuck; not to hold up the first public version.
+      2026-11-26, the author: "since I have a character, a companion per session, I feel like it
+      would be good to have sub-agents as many companions". Proposed: while a session's
+      subagents run, small copies of its companion (about half size) stand beside it, one for
+      each, up to three and then "+N"; each appears when its subagent starts (the Agent tool's
+      PreToolUse carries the description), works, and cheers and goes when it finishes
+      (SubagentStop). Hovering one could show its task. To decide; the hooks to test first.
 
 ### Larger extras
 
