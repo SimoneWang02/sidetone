@@ -316,11 +316,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   - `hub/characters.py` draws them, ported from the previews' JavaScript: shapes filled in
     flat bands of tone on a 40 by 40 grid, a contact shadow where a part lies on another, an
     outline in the part's darkest tone, then single pixels. Each session gets a sheet: one
-    row of 40 px cells for each moment (idle 32 frames, working 16, speaking at four
-    loudnesses 8 each, needs 40 then 8 repeated, done 32 then 8, failed 16, listening 16; 8
-    frames a second, `LAYOUT`), as a PNG. Its figure follows its color (`kind_of`), so a project
-    keeps its own. Measured: 0.35 s for a familiar's sheet, 0.84 s for an operator's, about
-    30 kB, drawn once in a thread (`Sheets`) and kept beside the overlay's program in
+    row of 40 px cells for each moment (idle 4 s, working 2, speaking at four
+    loudnesses 1 s each, needs 5 then 1 repeated, done 4 then 1, failed 2, listening 2; 12
+    frames a second since 2026-11-26, 8 at first, the author: "could we put more FPS?";
+    `LAYOUT`), as a PNG. Its figure follows its color (`kind_of`), so a project
+    keeps its own. Measured at 12 frames a second: 0.52 s for a familiar's sheet, 1.27 s for an
+    operator's, 35 to 42 kB (2400 by 480 px), drawn once in a thread (`Sheets`) and kept beside the overlay's program in
     `%LOCALAPPDATA%\sidetone\characters`, named by the drawing's own version.
   - The hub sends each row's sheet (`sprite`, "" while it is drawn) and the layout
     (`sprite_layout`) with the state. The overlay (`Sprite`) only crops a cell: the bubble's
