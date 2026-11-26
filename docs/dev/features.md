@@ -347,9 +347,11 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     (`sprite_layout`) with the state. The overlay (`Sprite`) only crops a cell: the bubble's
     session's moment (listening if you are talking to it, speaking, else its state), the time
     since that moment began, and while it speaks the loudness of its voice for the row.  It
-    makes a small jump when the moment changes (4 of its pixels up and down in a third of a
-    second; at first it rose from below the edge in a fifth, and its window cut it off: the
-    author, 2026-11-26, "the animation seems cut when jumping and then falling down"). The
+    does not jump when the moment or the session changes: it did at first (rising from below
+    the edge, then 4 of its pixels up and down in a third of a second), and the author,
+    2026-11-26: "the animation seems cut when jumping", then "I don't think they should be
+    jumpy whenever I switch session ... their body is cut off from the bottom side". Jumps
+    drawn in a sheet (done's) stay inside the cell. The
     cells are 44 px with the 40 px drawing 4 rows down (`OFF`), so raised leaves and hair are
     not cut flat at the top. Edge: in a window
     of its own (`perch`, see-through, click-through, no blur) on the bubble's top edge, at

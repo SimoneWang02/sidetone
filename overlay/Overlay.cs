@@ -1004,7 +1004,7 @@ namespace ClaudeSpeaks
     // A session's character beside the bubble (hub/characters.py draws its sheet): one cell of the
     // sheet at a time, picked by the moment (idle, working, speaking, needs, done, failed, listen),
     // the time since it began and, while the session speaks, how loud the voice is. Needs and done
-    // play their first part once, then repeat their last. It hops up when the moment changes.
+    // play their first part once, then repeat their last.
     class Sprite
     {
         static readonly Dictionary<string, BitmapSource> sheets = new Dictionary<string, BitmapSource>();
@@ -1012,7 +1012,6 @@ namespace ClaudeSpeaks
         public static int Cell = 40, Fps = 8, RowCount = 1;  // Cell: the pixel styles' cell, which sizes every figure on screen
         public static readonly Dictionary<string, int[]> Rows = new Dictionary<string, int[]>();  // name -> its row, how many frames
         public readonly Image Image = new Image { Stretch = Stretch.Fill, IsHitTestVisible = false };
-        readonly TranslateTransform hop = new TranslateTransform();
         string path = "", moment = "", shown = "";
         double since;
         int drawnAt;  // the cell size of the sheet shown last, so the scaling follows it
@@ -1027,7 +1026,6 @@ namespace ClaudeSpeaks
         {
             Image.Width = Image.Height = size;
             RenderOptions.SetBitmapScalingMode(Image, BitmapScalingMode.NearestNeighbor);
-            Image.RenderTransform = hop;
         }
 
         public static void Layout(Dictionary<string, object> layout)
@@ -1106,11 +1104,9 @@ namespace ClaudeSpeaks
                 Image.Source = cell;
                 shown = key;
             }
-            // A small jump when the moment changes: up four of its own pixels and down again in a
-            // third of a second, in whole steps, never below where it stands (the sheet's cells
-            // have room above the figure; below, its window ends at the edge it stands on).
-            double step = Image.Height / Cell;
-            hop.Y = still || state == "idle" || age >= 0.33 ? 0 : -Math.Round(Math.Sin(Math.PI * age / 0.33) * 4) * step;
+            // No jump of its own when the moment or the session changes (the author, 2026-11-26:
+            // "I don't think they should be jumpy whenever I switch session ... their body is cut
+            // off from the bottom side"); a jump the drawing has, as done's, stays in its cell.
             return true;
         }
     }
