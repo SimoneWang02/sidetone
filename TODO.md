@@ -341,7 +341,11 @@ Roughly easiest first, the larger ones after.
       familiars (the toadstool in one piece, the shellback on all fours, an axolotl, a dragon),
       the Mix as the one look, and Character Pick (by color or at random); **not yet tried live
       by the author**. The mimic in too since its rework (eight familiars). Open: ghost and owl
-      offered, not drawn; the
+      offered, not drawn; a cat and a dog previewed 2026-11-26 ("could we create more such as
+      cat, dog"; `docs/dev/looks/familiars_next.py`, drawn and critiqued by subagents,
+      docs/dev/features.md), **for the author to judge**, not in the overlay. As figures nine
+      and ten they come up By Color only with nine sessions open: with Character Pick at Random
+      ("I'll probably pick random"), or a setting for which familiars are in use, not built; the
       Classic and Refined branches in `hub/characters.py`, kept only for comparison pages, to
       fold away once the author is sure. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.

@@ -365,6 +365,25 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     author: "it's missing the hand-drawn operators"): one operator in rough pencil, the same
     for every session but for the scarf and headset in its color, the lines shaking three times
     a second as if redrawn.
+  - Previewed, not in the overlay (2026-11-26, the author: "could we create more such as cat,
+    dog ... run multiple agents, study those kind of things, and also run agents to critique
+    the result"): a curious cat and a devoted dog in `docs/dev/looks/familiars_next.py`. The
+    cat sits upright, pointed ears, a long tail curled on the right; it pats a ball of yarn
+    (in the hue opposite the session's) while working, beckons with one paw and meows when it
+    needs you, and wraps its tail round its paws when done. The dog is a puppy with long
+    hanging ears under a round crown and its tail on the left; it chews a bone while working,
+    begs with both paws up when it needs you, tilts its head to listen, and hangs its head,
+    eyes shut, when it fails. Each was drawn by a subagent after a short study, then judged by
+    two more that were not told what the animals were (both saw a cat and a puppy at 35 px).
+    What they found and what was changed: the cat's raised tail was up in three moments, so it
+    is up for needs you only; its flat ears and bristling tail when failed read as an owl or
+    as hissing, now ears half back and the tail limp; pink ears and nose vanished on pink
+    sessions, now a deeper tone of the session's color there; the dog's ears began at the top
+    of its head (a flat "bowl cut", "could be a hamster"); its done never calmed (four wags a
+    second), now two seconds of joy then one wag a second; its raised paw copied the cat's,
+    hence the begging. Not taken: hops for needs you (feet stay on the floor: a head bob
+    instead). By Color, figures nine and ten come up only with nine sessions open (the eight
+    soft colors go out first): the author would use Character Pick at Random.
   - `hub/sketch.py` draws the Sketch: the preview's canvas lines with smooth edges (each
     pixel's coverage; numpy), in 88 px cells, twice the pixel styles', shown at their own size
     on the edge and scaled down smoothly inside and in the details (the overlay reads a
