@@ -84,6 +84,17 @@ voice, and the wait for the transcript.
       of waiting before each line (Chatterbox, measured 2026-11-19, when they kept Heart).
       **To ask:** what about the voice they want better: its tone, its speed (1.1 now), or
       the words of the spoken line.
+      Then asked to be scored against ElevenLabs ("you score me and them"). By others' blind
+      tests (`docs/dev/facts.md`) their best voice, Eleven v4, is picked over Kokoro 5 times
+      in 6, while their fast one, Flash, is level with Kokoro; their speech to text gets 2
+      words wrong in 100 where Whisper turbo gets 4.6. Ours is quicker to start, stays on the
+      machine and costs nothing; theirs would be about 3 dollars a month to listen and, at
+      some 600,000 characters a month, their 99 dollar plan or more to speak (plans from
+      memory, to check). Our voice is clear: read back by the speech model it loses about 1
+      word in 400. **To decide:** whether to hear it on their own lines: with a key from a
+      free ElevenLabs account, a page with five of their lines by Heart, Flash and Eleven v4,
+      unnamed, and twenty of their recordings written by Scribe beside ours. That sends those
+      lines and recordings to ElevenLabs. An optional engine only if their ears say so.
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a

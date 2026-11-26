@@ -561,6 +561,23 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   first sound 0.12 s after it is asked for (median; 0.32 s for the slowest tenth). Kokoro's
   VOICES.md: "Weakness on short utterances, especially less than 10-20 tokens", which is what
   a session's label said by itself before its line is.
+- Ours against ElevenLabs, by others' scores (2026-11-26, artificialanalysis.ai). Voices, by
+  blind votes between two voices saying the same text (Elo, 106 models): Eleven v4 Turbo 1342
+  and Eleven v4 1340 (first and second), Eleven v3 1194 (23rd), Turbo v2.5 1094, Multilingual
+  v2 1091, Flash v2.5 1075 (58th), Kokoro 82M v1.0 1060 (69th). 280 points apart means the
+  better one is picked 5 times in 6; 15 points apart, about evenly. Speech to text, words
+  wrong in 100 on their own English test set (AA-WER): ElevenLabs Scribe v3 1.95 and Scribe v2
+  2.18 (3.67 dollars per 1000 minutes), Whisper large-v3 4.07 to 4.53 by host, large-v3-turbo
+  4.62 (Groq's). None of it is the author's voice, and none was measured here.
+- The voice read back by the speech model (2026-11-26): 80 lines the hub really spoke (2,800
+  words), made by Kokoro at speed 1.1 and written down by `large-v3-turbo`. Words that differ:
+  Heart 1.5%, Bella 1.0%, Emma 1.7% (as British, the way the hub asks), nearly all of them a
+  number written in digits or "colour"; real ones about 1 word in 400 ("scores" as "score
+  is", "ear" as "tier"), and "Sidetone" and "Claude" as "side tone" and "clawed" from our own
+  voice too. Emma given American pronunciation by mistake said "got it" as "gartit" and "top"
+  as "tarp": a British voice needs `en-gb`.
+- How much is said (2026-11-26, `voice.log` and the kept recordings): the voice says 11,000 to
+  42,000 characters on a working day (about 27,000), the author about 27 minutes.
 - From the talk key to the reply's first sound (2026-11-22, the author's last 12 spoken
   messages to one session, both models on the RTX 5070): release delay 0.4 s (`talk_tail`);
   transcription 0.14 to 0.5 s; from the transcript (the kept recording's time, in ms) to Claude
