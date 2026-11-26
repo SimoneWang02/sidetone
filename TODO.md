@@ -656,6 +656,27 @@ on to the release ("let's go to publish unless there's something else to impleme
       hook events and session files the hooks read. The author makes it once the tool is
       published, not before.
 
+- [ ] Claude looking at the screen on a key (the author, by voice, 2026-11-26: "it would be
+      really cool to have Claude with a shortcut looking at your screen, looking at what
+      you're seeing and helping you go through, navigate stuff"). It came up when asked
+      whether the overlay could be used more broadly than beside VS Code: a general
+      overlay, they said, is "not much difference" from the Claude app already sitting in
+      Windows. Told in reply, nothing built and nothing decided: most pieces are here (a
+      key, push-to-talk, a throwaway `claude -p` as for side questions, the answer said
+      aloud), the overlay would take the picture, and what the overlay can add that a chat
+      window cannot is pointing: a ring drawn on the screen where to click. Notes for
+      whoever builds it:
+      - Look first at what the Claude app does today (a key that opens it with a picture
+        of the screen, and working the desktop itself; from memory on that day, not
+        checked), so this does not repeat it. What would be new: asked and answered by
+        voice with the window in front untouched, and the pointing.
+      - A picture on the press only, never on its own; the window in front by default, the
+        whole screen as a setting. It would be the first thing here that sends what is on
+        the screen away from the machine, so the settings window has to say so.
+      - Measure before promising: the seconds from the key to the first spoken word (a
+        headless start plus reading a picture), and how far the place Claude names is
+        from the real one, in pixels, with Windows' scaling on.
+
 ## Done
 
 Kept for the history: what was asked, what was found, and the author's words on it.
