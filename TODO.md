@@ -128,29 +128,6 @@ voice, and the wait for the transcript.
       probability is low for the words it gets wrong ("side tone", "five coding" for "vibe
       coding", "cloud" for "Claude" four times in ten), so the hub could hand them to Claude
       marked as unsure, as a setting. **To decide.**
-- [ ] A newer speech model in place of Whisper, tried on the kept recordings (offered
-      2026-11-26, not answered; the author, by voice: "do you think we could improve the
-      reception of my words as in transcript?"). Whisper is no longer the best free model: on
-      the Open ASR Leaderboard large-v3 gets 7.2 words wrong in 100 and the best free ones 5.3
-      to 5.4 (`docs/dev/facts.md`; by others' write-ups, none on the author's voice). The one
-      that fits here: Qwen3-ASR 1.7B (Apache 2.0; English, Italian and Chinese among its 30
-      languages; trained to take names and context as a prompt; `pip install qwen-asr`).
-      Not known: its time on the RTX 5070 against turbo's 0.2 s, short answers, and whether
-      it invents words. `stt.Named`, leaning and mixed languages are built on Whisper's
-      insides and would need redoing for another engine. So first a trial outside the hub:
-      the kept recordings through both, the known mistakes counted ("cloud" for "Claude",
-      "side tone", "five coding", short Italian answers), the differences read, the time
-      measured. Nobody has written down what was really said, so "better" is by those counts
-      and by reading. The author: "Yes, do that."
-      Tried the same day on their 481 recordings (`docs/dev/facts.md`; the scripts and both
-      models' words are in `~/.local/share/stt-trial`, 7.4 GB, and the model is 4.4 GB in the
-      Hugging Face cache). Not better here: where the two differ each is right about as often,
-      Qwen takes 0.57 s where turbo takes 0.19 (1.5 s against 0.3 for a long message) and three
-      times the card's memory, writes every "uh" and "um", and gets languages wrong in worse
-      ways (a mixed message written all in Italian, "Yes, do that." as Cantonese). Its one gain
-      is names: given 19 of them it wrote "Claude" 24 times (turbo 12) and "Sidetone" 7 (turbo
-      1) and invented nothing, where Whisper invented words with that list. Advised: stay with
-      Whisper. **To decide:** whether to drop it and delete the trial's 12 GB.
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a
@@ -1503,6 +1480,25 @@ Kept for the history: what was asked, what was found, and the author's words on 
       said. Offered as a setting; the author: "as a setting for capturing more better true
       words ... no, I don't think it's worth it". The words while you speak (Whisper read
       again every half second on the card) were not looked into.
+- [x] A newer speech model in place of Whisper: tried, Whisper stays (the author, by voice,
+      2026-11-26: "do you think we could improve the reception of my words as in
+      transcript?", and to a trial on their kept recordings, "Yes, do that."). Whisper is no
+      longer first among free models: on the Open ASR Leaderboard large-v3 gets 7.2 words
+      wrong in 100 and the best free ones 5.3 to 5.4 (by others' write-ups). The one that fits
+      here, Qwen3-ASR 1.7B (Apache 2.0; English, Italian and Chinese; names and context taken
+      as a prompt), went through their 481 recordings beside turbo (`docs/dev/facts.md`). Not
+      better on this voice: where the two differ each is right about as often, Qwen takes
+      0.57 s where turbo takes 0.19 (1.5 s against 0.3 for a long message) and 4.8 GB of the
+      card, writes every "uh" and "um", and gets languages wrong in worse ways (a mixed
+      message written all in Italian, "Yes, do that." as Cantonese); `stt.Named`, leaning and
+      mixed languages are built on Whisper's insides and would have had to be redone. Its one
+      gain is names: given 19 of them it wrote "Claude" 24 times (turbo 12) and "Sidetone" 7
+      (turbo 1) and invented nothing, where Whisper invented words with that list. The
+      author, to deleting the trial: "Yes, let's do that." Its environment, the model and the
+      package copies it added are gone (9.6 GB); the scripts and what each model wrote are
+      kept in `~/.local/share/stt-trial` (0.7 MB; `pip install qwen-asr` to run them again).
+      Not tried: NVIDIA's Nemotron 3.5 Transcribe, Cohere Transcribe, Granite Speech 4.1, and
+      Qwen's faster vLLM way.
 - [x] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
       too short to tell the language and English wins. Perhaps lean to the language of the

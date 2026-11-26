@@ -604,7 +604,8 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
 - Qwen3-ASR 1.7B against Whisper turbo on the author's voice (2026-11-26; 481 kept recordings,
   445 English and 36 Italian, each alone as push-to-talk gives them; `whisper_run.py`,
   `qwen_run.py` and `compare.py` in `~/.local/share/stt-trial`, with the words each wrote in
-  `whisper.json` and `qwen.json`). Qwen through its `qwen-asr` package (transformers 4.57.6,
+  `whisper.json` and `qwen.json`; its environment and the model were deleted the same day).
+  Qwen through its `qwen-asr` package (transformers 4.57.6,
   torch 2.11.0+cu128, bfloat16, no language named; its faster vLLM way was not tried): loads
   in 4 s, 3.8 GB of the card and 4.8 at most. Median time 0.57 s where turbo through the hub's
   `Transcriber` takes 0.19; recordings under 4 s 0.23 / 0.14; 20 s or more 1.48 / 0.32.
