@@ -46,9 +46,10 @@ these come before anything new.
       which is not side by side"). Side by Side stays the default. Tested with the real
       extension against a stand-in editor, **not yet tried by the author** in VS Code: choose
       In a New Tab, press Ctrl+Alt+Plus, and the terminal should come up alone in the panel
-      with Claude Code started and its session in focus. Needs `sidetone hub restart`, no new
-      extension. To ask then: is a tab of the terminal panel what was meant, or a tab up in
-      the editor area (not built)?
+      with Claude Code started and its session in focus. Live in the author's hub since
+      2026-11-26 00:53 and set to In a New Tab in their config (`sidetone terminal new beside`
+      puts it back); no new extension. To ask then: is a tab of the terminal panel what was
+      meant, or a tab up in the editor area (not built)?
 
 - [ ] Clearing progress (2026-11-24, `clear_progress`): a turning ring and "Clearing sidetone 2…"
       until it is done, and no second /clear typed meanwhile. Tests and pictures only, **not yet
