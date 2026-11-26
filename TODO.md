@@ -62,6 +62,13 @@ Questions for the author; nothing to build until they answer.
       saved session, but VS Code only, and the hub cannot see a half-typed line or an open
       prompt (as with `/btw`), and taking words back gets harder. Not measured: whether a
       `systemMessage` from the listener is shown.
+      Asked again the same day, whether typing them in would be the better way to deliver
+      them at all. Advised against as the main way: VS Code types up to a minute late while
+      its window is hidden (`docs/dev/facts.md`), and the sessions spoken to are the ones not
+      looked at; the listener wakes a session within a second, in any terminal, and cannot
+      press Enter on an open permission prompt. The listener would have to stay for every
+      other terminal, so it would be a second way beside it, not instead. What typing alone
+      gives: the words in the prompt history and in the saved session (so after a resume).
 
 ## 3. Speech in the author's languages
 
