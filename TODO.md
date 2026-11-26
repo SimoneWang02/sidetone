@@ -141,7 +141,16 @@ voice, and the wait for the transcript.
       the kept recordings through both, the known mistakes counted ("cloud" for "Claude",
       "side tone", "five coding", short Italian answers), the differences read, the time
       measured. Nobody has written down what was really said, so "better" is by those counts
-      and by reading. **To decide.**
+      and by reading. The author: "Yes, do that."
+      Tried the same day on their 481 recordings (`docs/dev/facts.md`; the scripts and both
+      models' words are in `~/.local/share/stt-trial`, 7.4 GB, and the model is 4.4 GB in the
+      Hugging Face cache). Not better here: where the two differ each is right about as often,
+      Qwen takes 0.57 s where turbo takes 0.19 (1.5 s against 0.3 for a long message) and three
+      times the card's memory, writes every "uh" and "um", and gets languages wrong in worse
+      ways (a mixed message written all in Italian, "Yes, do that." as Cantonese). Its one gain
+      is names: given 19 of them it wrote "Claude" 24 times (turbo 12) and "Sidetone" 7 (turbo
+      1) and invented nothing, where Whisper invented words with that list. Advised: stay with
+      Whisper. **To decide:** whether to drop it and delete the trial's 12 GB.
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a

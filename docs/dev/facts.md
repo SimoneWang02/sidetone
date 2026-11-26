@@ -601,6 +601,32 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   languages with all three, the weights behind a form). Parakeet TDT 0.6B v3 has 25 European
   languages and no Chinese; Canary-Qwen 2.5B is English only. The card had 6.6 of its 12 GB in
   use with the hub running turbo.
+- Qwen3-ASR 1.7B against Whisper turbo on the author's voice (2026-11-26; 481 kept recordings,
+  445 English and 36 Italian, each alone as push-to-talk gives them; `whisper_run.py`,
+  `qwen_run.py` and `compare.py` in `~/.local/share/stt-trial`, with the words each wrote in
+  `whisper.json` and `qwen.json`). Qwen through its `qwen-asr` package (transformers 4.57.6,
+  torch 2.11.0+cu128, bfloat16, no language named; its faster vLLM way was not tried): loads
+  in 4 s, 3.8 GB of the card and 4.8 at most. Median time 0.57 s where turbo through the hub's
+  `Transcriber` takes 0.19; recordings under 4 s 0.23 / 0.14; 20 s or more 1.48 / 0.32.
+  It writes speech sound for sound: 353 "uh" and "um" where Whisper writes 25, and endings left
+  off ("finish", "feature", "wipe"). Besides those the two differ in about 350 places in 12,000
+  words, and by reading (nobody wrote down what was said) each is right about as often.
+  Qwen's: "voice message" for "boy message", "metrics box" for "matrix box" three times,
+  "anthropic" for "on frohpic", "senior review" for "seeing your review", "neural model" for
+  "new role model", "fiscale" for "freescal". Whisper's: "side tone" where Qwen wrote "python"
+  three times, "Claude design" for "cloth design", "Kokoro" for "coro" and "cocora",
+  "impeccable" for "unpackable", "per session" for "procession", "README" for "redmi",
+  "what is left to do" for "love to do", and one clause Qwen left out. Names with no hints:
+  Claude 17 (turbo 12), cloud or cloth 14 (22), Sidetone 0 (1), Kokoro 10 (14). With the 19
+  names that harmed Whisper given as `context`: Claude 24, cloud 8, Sidetone 7, Kokoro 15,
+  and none of the captions Whisper invented with that list, though "pixel art" became "pixelr"
+  three times. Languages: it takes one per recording, so the mixed one came out all Italian
+  with its English translated ("Ah, era troppa corta. Avevo detto in cinese") and its Chinese
+  as noise, another lost its Chinese ending to invented English, "Yes, do that." came out as
+  Cantonese ("呀，是的。") and "Prototipo." as Portuguese; the other 478 agree with Whisper.
+  So the leaderboard's lead does not show on this voice: no better on words, three times
+  slower, three times the memory, and without the hub's leaning and mixed languages, which
+  are built on Whisper's insides. What it does better is taking a long list of names.
 - Kokoro, by its own card (huggingface.co/hexgrad/Kokoro-82M, read 2026-11-26): 82 million
   parameters, Apache 2.0, built on StyleTTS 2 and ISTFTNet, v1.0 on 2025-01-27, trained on "a
   few hundred hours of audio" for "about $1000 for 1000 hours of A100"; 8 languages, 54 voices.
