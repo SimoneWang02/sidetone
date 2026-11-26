@@ -772,7 +772,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   with a stand-in editor over the hub's socket
   (`test_the_editor_extension_opens_it_split_or_as_a_tab`: `createTerminal` is given
   `location.parentTerminal` for beside and no `location` for a tab). Picture
-  `settings-terminal.png`. Not tried by the author in VS Code yet.
+  `settings-terminal.png`. Tried by the author the same hour, as a tab: "it works well".
 - Answering a permission prompt by voice (2026-11-21, `spoken_verdict`, `SPOKEN_YES`, `SPOKEN_NO`):
   a bare yes or no (English, Italian, Chinese; "please", "thanks" after it allowed) allows or
   denies as the keys do; anything longer turns the request down and follows as the next message
