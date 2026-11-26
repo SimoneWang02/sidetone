@@ -57,7 +57,9 @@ PARTS = {
         "ramp3",      # Classic's tones with the outline lifted to show on the glass (_ramp3)
         "glow", "glow3",  # glows without rings, as strong as Classic's
         "sparks", "sparks3",  # the sparks, two pixels tall so they last at 35 px
-        "glyph", "wide", "ink", "lantern2",
+        # not "wide": the author, 2026-11-26, of the needs-you and listening eyes in the Mix, "I
+        # probably prefer the classic ... not consistent with the rest"
+        "glyph", "ink", "lantern2",
     }),
 }
 
