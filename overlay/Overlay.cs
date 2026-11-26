@@ -5342,9 +5342,14 @@ namespace ClaudeSpeaks
             shared.Clear();
             talkKey = talkMods = 0;
             if (typingKey) return;  // the keys pressed now are a new hotkey being chosen, not ours to act on
-            int next = 1;
+            // Each key keeps its own number, whichever of the others are claimed just now. Counted
+            // over the claimed ones only, a press still on its way when that list changed was
+            // taken for its neighbour: the clear key for the new-session key in the instant a
+            // voice stopped and the cancel key before them was let go (found 2026-11-26).
+            int next = 0;
             foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
+                next++;
                 bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key == "jump" || entry.Key == "clear" || entry.Key == "new_session" || entry.Key == "end_session" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
                 // The focus moves with the arrows that point the way the lights run: up and down
                 // for the bar, left and right for the island. The other pair is left to other programs.
@@ -5375,7 +5380,7 @@ namespace ClaudeSpeaks
                 if (vk == 0) { if (complained.Add(combo)) Error("hotkey not understood: " + combo); continue; }
                 if (RegisterHotKey(hwnd, next, modifiers, vk))
                 {
-                    hotkeys[next] = entry.Key; hotkeyKeys[next] = vk; next++;
+                    hotkeys[next] = entry.Key; hotkeyKeys[next] = vk;
                     claims[entry.Key] = new uint[] { vk, modifiers & ~MOD_NOREPEAT };
                     if (entry.Key == "talk") { talkKey = vk; talkMods = modifiers & ~MOD_NOREPEAT; }
                 }

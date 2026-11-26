@@ -314,6 +314,9 @@ class Talk:
                 # dropped (the author, 2026-11-22: clear asked, end asked, and the clear key again
                 # cleared with no question on screen).
                 self._clear_armed, self._end_armed, self._clear_shown = (s.id, now), None, ""
+                # The first press is written down too: asked which key had closed a terminal, the
+                # log could only name the second (2026-11-26).
+                log(self.cfg, "hub.log", f"clear [{s.id[:8]}] \"Clear {s.name}?\" asked: the clear key, once")
                 key = self.cfg.overlay.get("hotkeys", {}).get("clear", "")
                 if self.overlay:
                     self.overlay.send({"type": "banner", "icon": "clear", "text": f"Clear {s.name}?",
@@ -368,6 +371,7 @@ class Talk:
                 log(self.cfg, "hub.log", f"end [{s.id[:8]}] /exit asked of the editor for its terminal ({s.tty}): the end key")
             else:
                 self._end_armed, self._clear_armed, self._clear_shown = (s.id, now), None, ""  # as the clear key's question
+                log(self.cfg, "hub.log", f"end [{s.id[:8]}] \"End {s.name}?\" asked: the end key, once")
                 key = self.cfg.overlay.get("hotkeys", {}).get("end_session", "")
                 if self.overlay:
                     self.overlay.send({"type": "banner", "icon": "end", "text": f"End {s.name}?",

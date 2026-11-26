@@ -743,6 +743,14 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   dialog Claude Code does report (a /model picker, a permission prompt) already makes the clear
   wait for the end of the turn. As built: the cancel key does not take the clear question away
   (a second clear press then clears); the focus keys stop at the first and last row.
+  A terminal closed "instead of clearing" (the author, 2026-11-26, 01:17): the log had the end
+  key pressed twice there and no clear key, and the hub ends on nothing else, so by what is
+  written down it was Ctrl+Alt+Minus; the first press was not logged, which it now is for both
+  keys ("asked: the clear key, once"). Found on the way, in `RegisterHotkeys`: the numbers Windows
+  hands back with a press were counted over the keys claimed just then, so a press still on its
+  way when that list changed was read as its neighbour (clear as new session when the cancel key
+  was let go as a voice stopped, clear as end when allow and deny went with a request). Each key
+  now has its own number. It can hardly have done the closing, which takes two presses read wrong.
 - The new-session and end keys (2026-11-22, `new_session` Ctrl+Alt+Plus, `end_session`
   Ctrl+Alt+Minus, `Hub.new_session_key`, `Hub.end_session_key`, `END_TWICE` 3 s, `NEW_WAIT` 60 s;
   the extension 0.5.0, `openNew`, `close`). The author: "Ctrl Alt plus and Ctrl Alt minus to add a
