@@ -18,6 +18,17 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
+- [ ] One session muted by itself (2026-11-26, the author by voice: "I have 5 sessions right
+      now and I mute 3 of them because I want to focus on 2"; see `docs/dev/features.md`).
+      Ctrl+Alt+Shift+M mutes the session in focus and unmutes it; `sidetone mute [PROJECT]`
+      and `unmute` do the same. Its lines are shown, not said; a small struck-out speaker
+      sits on its light and by its name. **Not tried by the author yet**: the key itself
+      (tests and pictures only), how the mark looks on the real bar, and whether the two
+      notes should differ from the mute key's. To answer: a muted session still says when
+      it needs you ("Muted Sessions Still Ask", on), which was Claude's change to what was
+      asked; keep it on by default? Needs `sidetone hub restart` and `sidetone overlay restart`.
+      An idea beside it, not built: one press for "only this one speaks", for many sessions.
+
 - [ ] A spoken line with no `lang` in its tag: the hub now guesses its language from the
       words (2026-11-22, `hub/language.py`, no setting; see `docs/dev/features.md`), so an
       Italian line without the mark gets the Italian voice. Each guess goes to `hub.log`.
@@ -1009,7 +1020,8 @@ Kept for the history: what was asked, what was found, and the author's words on 
       in the card's top right corner (`muted_icon`), their next one; whether both should stay
       is to be asked. The repeat key no longer speaks while muted (they found it did).
       **Not seen by them yet.**
-      Open: mute is for every session, not only the one in focus.
+      Open: mute is for every session, not only the one in focus. (Since 2026-11-26 one
+      session can be muted by itself, with its own key: see step 1.)
       Seen by them at 15:52: two looks one after the other when muting, "Voice on" out of
       line, and "a reverb, something scratching" after the sounds. The looks made one row
       the same day (see `docs/dev/features.md`). The scratch is not in what Linux plays:

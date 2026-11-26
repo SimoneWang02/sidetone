@@ -103,6 +103,10 @@ DEFAULTS = {
     "muted_icon": True,
     "muted_card_icon": False,
     "muted_mark": False,
+    # One session muted by itself (the key mute_session): a small struck-out speaker in the lower
+    # right corner of its light, so a closed bar says which sessions are silent. The speaker by
+    # its name in the details stays either way.
+    "muted_session_mark": True,
     # What brings the details out: always = the mouse resting on the bar, or holding Ctrl+Alt |
     # keys = only holding Ctrl+Alt (or the key that keeps them out), so a mouse passing over
     # the bar, in a game for one, changes nothing
@@ -214,6 +218,10 @@ DEFAULTS = {
                 # its microphone by default; where it does, both act on the key (share_taken_keys), which
                 # the author chose over another letter: "if there's conflict just do both".
                 "mute": "Ctrl+Alt+M",
+                # The voice off for the session in focus alone, or on again (the author, 2026-11-26:
+                # "a setting to mute single sessions ... I want to prioritize 2 out of 5"). The mute
+                # key with Shift; claimed only while there are two or more sessions, or one is muted.
+                "mute_session": "Ctrl+Alt+Shift+M",
                 # Move the focus to the session before or after; claimed only while there are two or more.
                 # The first pair is for the bar, where the lights run down; the second for the island,
                 # where they run across. Only the pair of the layout in use is claimed.

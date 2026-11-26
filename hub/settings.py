@@ -89,6 +89,9 @@ SECTIONS = [
         # Was "Voice", "Speak a short summary of each reply.": the author took it for short or long
         # answers (2026-11-20: "it sounds like it's more like a mute or not").
         switch("mute", "Mute", "No voice for any session. The mute key does the same."),
+        # One session muted by its own key (overlay.hotkeys.mute_session) is not a switch here:
+        # it belongs to a session, not to the settings. What gets through from it is.
+        switch("muted_asks", "Muted Sessions Still Ask", "A session you muted by itself still says when it needs your answer. Off: it only shows it."),
         # One volume for the voice and the sounds (the author, 2026-11-20: "do one thing for both so
         # it's more consistent"); `sound_volume` stays in config.json as the sounds' level beside the voice.
         number("volume", "Volume", "The voice and the short sounds together.", 0, 100, 5),
@@ -248,6 +251,8 @@ SECTIONS = [
         # From the review of 2026-11-25; off for a new install since the 26th (the author did not like it on the screen).
         switch("overlay.session_tick", "Session Color on the Bar", "A small tick of each session's color beside its light: "
                "the color of its name in the details and of its terminal."),
+        switch("overlay.muted_session_mark", "Muted Sessions on the Bar", "A small struck-out speaker on the light of a session you muted by itself. "
+               "The one beside its name in the details stays."),
         choice("overlay.history", "History Shows", "What was said last, when the mouse rests on the details: by this session, or by all of them.",
                ("session", "This Session"), ("all", "All Sessions")),
         choice("overlay.focus_history", "History in Selected Session", "In the Selected Session view, what it said last: always in its card, or only when the mouse rests on the details.",
@@ -322,6 +327,7 @@ SECTIONS = [
         # read from config.json, with off.
         hotkey("cancel", "Cancel or Stop", "Drops a recording, takes back words not yet sent, cuts the line being spoken, or stops the turn."),
         hotkey("mute", "Mute", "Turns the voice off for every session, and on again."),
+        hotkey("mute_session", "Mute One Session", "Turns the voice off for the session in focus only, and on again. The others go on speaking."),
         hotkey("repeat", "Say It Again", "Repeats the last line of the session in focus."),
         heading("keys.answering", "Answering"),
         hotkey("allow", "Allow", "Allows what a session asks to do. With answers to tick, it confirms them."),

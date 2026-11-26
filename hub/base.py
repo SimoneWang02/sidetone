@@ -482,6 +482,10 @@ class Config:
     # How each session's own terminal is marked (see terminal.py): tint, strength, background, pulse, title.
     terminal: dict = field(default_factory=lambda: dict(terminal_mod.DEFAULTS))
     mute_file: str = os.path.expanduser("~/.claude/voice-off")
+    # A session whose own voice is off (the key `mute_session`) still says when it needs you: a
+    # question, a permission, "I need your input". Its other lines are only shown. Off: nothing
+    # of it is said, and it waits until you look.
+    muted_asks: bool = True
 
     @property
     def sock(self) -> str:
@@ -519,7 +523,7 @@ class Config:
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "voice_device", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_progress", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
-                    "talk_feedback", "sound_volume", "volume", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
+                    "talk_feedback", "sound_volume", "volume", "muted_asks", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])
         wanted = user.get("overlay") or {}

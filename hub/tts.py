@@ -607,13 +607,14 @@ class SpeechQueue:
             self.queued.append(u)
             self._cond.notify_all()
 
-    def drop_session(self, session: str) -> None:
-        """Forget everything a session wanted to say, including the line being spoken."""
+    def drop_session(self, session: str, spare: tuple = ()) -> None:
+        """Forget everything a session wanted to say, including the line being spoken.
+        `spare`: the kinds of line that stay (a session muted by itself may still ask for you)."""
         with self._cond:
-            self.queued = [q for q in self.queued if q.session != session]
-            if self._cut and self._cut.session == session:
+            self.queued = [q for q in self.queued if q.session != session or q.kind in spare]
+            if self._cut and self._cut.session == session and self._cut.kind not in spare:
                 self._cut = None
-            if self.current and self.current.session == session:
+            if self.current and self.current.session == session and self.current.kind not in spare:
                 self._stop()
 
     def _stop(self) -> None:

@@ -217,6 +217,10 @@ class Session:
     # Not a session: the light of one just cleared, kept, its context at 0, until the session
     # Claude Code starts after it takes its place (see `Sessions.stand_in`).
     standin: bool = False
+    # Its voice is off, the others' is not (the key `mute_session`, `sidetone mute`): what it says
+    # is shown at its light instead, as with the voice off for everyone. It stays with the
+    # session across /clear and a hub restart, and ends with it.
+    muted: bool = False
 
     def snapshot(self) -> dict:
         now = time.monotonic()
@@ -237,6 +241,7 @@ class Session:
             "context": self.context,
             "turn_tokens": self.turn_tokens,
             "tty": self.tty or "",  # the terminal it runs in, where known
+            "muted": self.muted,
         }
 
 
@@ -283,12 +288,12 @@ class Sessions:
                 for k in [k for k, o in self.by_id.items() if o.standin and o.name == old["name"]]:
                     del self.by_id[k]  # its light is this one's now
                 s = Session(id=sid, cwd=cwd, name=old["name"], voice=self.pinned.get(old["name"], old["voice"]),
-                            color=old["color"], order=old["order"], context=0.0)
+                            color=old["color"], order=old["order"], context=0.0, muted=bool(old.get("muted")))
             elif was:  # known before the hub restarted: the same name, color, voice and place as then
                 s = Session(id=sid, cwd=cwd or was["cwd"], name=was["name"],
                             voice=self.pinned.get(was["name"], was["voice"]), color=was["color"],
                             title=was["title"], named=was["named"], settled=was["settled"], given=was["given"],
-                            state=was["state"], note=was["note"], order=was["order"])
+                            state=was["state"], note=was["note"], order=was["order"], muted=was.get("muted", False))
             else:
                 name = self._unique_name(os.path.basename(cwd.rstrip("/")) or "session")
                 s = Session(id=sid, cwd=cwd, name=name, voice=self._voice_for(name), color=self._color_for(name),
@@ -323,7 +328,7 @@ class Sessions:
         """The session ended by /clear: keep its place for the one that follows (see touch)."""
         s = self.by_id.get(sid)
         if s:
-            self.cleared[s.cwd] = ({"name": s.name, "voice": s.voice, "color": s.color, "order": s.order}, time.monotonic())
+            self.cleared[s.cwd] = ({"name": s.name, "voice": s.voice, "color": s.color, "order": s.order, "muted": s.muted}, time.monotonic())
 
     def stand_in(self, old: Session) -> None:
         """A session ended by /clear: its light stays, with its context at 0, until the session
@@ -331,7 +336,7 @@ class Sessions:
         back to nothing instead of the light going out and coming back (the author,
         2026-11-21: "I want the animation of the arc of the context to go to reset to zero")."""
         self.by_id["cleared:" + old.id] = Session(id="cleared:" + old.id, cwd=old.cwd, name=old.name, voice=old.voice,
-                                                  color=old.color, order=old.order, context=0.0, standin=True)
+                                                  color=old.color, order=old.order, context=0.0, standin=True, muted=old.muted)
         in_order = sorted(self.by_id.items(), key=lambda item: item[1].order)
         self.by_id.clear()
         self.by_id.update(in_order)
@@ -346,7 +351,7 @@ class Sessions:
         second restart soon after the first does not lose them."""
         back = [{"id": s.id, "cwd": s.cwd, "name": s.name, "voice": s.voice, "color": s.color,
                  "title": s.title, "named": s.named, "settled": s.settled, "given": s.given,
-                 "state": s.state, "note": s.note,
+                 "state": s.state, "note": s.note, "muted": s.muted,
                  "seen_file": s.seen_file, "order": s.order} for s in self.by_id.values() if not s.standin]
         return sorted(back + list(self.kept.values()), key=lambda entry: entry["order"])
 
@@ -371,6 +376,7 @@ class Sessions:
                     "state": state if ended else "idle",
                     "note": str(entry.get("note") or "") if ended else "",
                     "seen_file": bool(entry.get("seen_file")), "order": order,
+                    "muted": bool(entry.get("muted")),
                 }
                 if self.kept[sid]["color"] not in self.colors:  # a color that is no longer handed out
                     self.kept[sid]["color"] = ""

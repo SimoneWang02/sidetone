@@ -293,6 +293,40 @@ class Permissions:
             self.overlay.send({"type": "settings", "open": True, "title": settings_mod.NAME, "sections": settings_mod.describe(self)})
         return muted
 
+    def mute_session(self, name: str | None = None, muted: bool | None = None) -> tuple[str, bool] | None:
+        """The key that mutes one session: the voice off for the session in focus (or the one
+        of that name), or on again, while the others go on speaking (the author, 2026-11-26: "I
+        have 5 sessions right now and I mute 3 of them because I want to focus on 2"). `muted`:
+        what it should be, or None to change it over. Muting cuts its line being said and drops
+        those it has waiting, but not its asking for you while `muted_asks` is on. Answered like
+        the mute key: a sound, and a moment's notice with the session's name. Returns its name
+        and whether it is now muted, or None when there is no such session."""
+        with self.lock:
+            s = (next((x for x in self.sessions.by_id.values() if x.name == name), None) if name else self._target())
+            if not s or s.standin:
+                return None
+            was, s.muted = s.muted, (not s.muted) if muted is None else bool(muted)
+            label, now, sid = s.name, s.muted, s.id
+        if now == was:
+            return label, now
+        if now:
+            if self.sounds and self.cfg.talk_feedback != "none" and not self._muted():
+                self.sounds.play("voice_off")
+            self.speech.drop_session(sid, spare=("needs_you",) if self.cfg.muted_asks else ())
+        elif self.sounds and self.cfg.talk_feedback != "none" and not self._muted():
+            self.sounds.play("voice_on")
+        log(self.cfg, "hub.log", f"voice {'off' if now else 'on'} for {label} alone")
+        if self.overlay:
+            key = self.cfg.overlay.get("hotkeys", {}).get("mute_session", "")
+            self._clear_armed = self._end_armed = None  # as the mute key: its row takes the place of a question
+            self._clear_shown = ""
+            self.overlay.send({"type": "banner", "icon": "muted" if now else "voice",
+                               "text": f"{label} is muted" if now else f"{label} is unmuted",
+                               "hint": f"{key} turns it on" if now and key else "",
+                               "seconds": 2.5 if now else 1.5})
+        self.publish()
+        return label, now
+
     def set_setting(self, key: str, value) -> str | None:
         """Something was chosen, in the window or with `sidetone settings KEY VALUE` (the key
         `reset` with a section's name puts that section back as a new install has it). Returns
@@ -375,3 +409,5 @@ class Permissions:
             self.show_settings()
         elif name == "mute":
             self.toggle_mute()
+        elif name == "mute_session":
+            self.mute_session()

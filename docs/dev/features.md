@@ -1132,6 +1132,43 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   waits for those (`_settling`). Claimed only while they can act: `allow` Ctrl+Alt+Y,
   `deny` Ctrl+Alt+N, `option1`-`option4` Ctrl+Alt+1-4 and `cancel` Ctrl+Alt+Backspace, and
   with two or more sessions `focus_prev` Ctrl+Alt+Up and `focus_next` Ctrl+Alt+Down.
+- One session muted by itself (2026-11-26; `Session.muted`, `Permissions.mute_session`,
+  `Hub._quiet`, `muted_asks`; `Orb.MutedMark`, `Row.Muted` in `Overlay.cs`). The author, by
+  voice: "do you think there should be a setting to mute single sessions? Maybe I have 5
+  sessions right now and I mute 3 of them because I want to focus on 2. I want to prioritize 2
+  out of 5." The key `mute_session`, Ctrl+Alt+Shift+M (the mute key with Shift; claimed only
+  while there are two or more sessions, or one is muted, so the last one left can get its
+  voice back), turns the voice off for the session in focus and on again; from a shell,
+  `sidetone mute [PROJECT]` and `unmute` (`POST /mute`). `sidetone status` and `/state` say
+  who is muted.
+  What a muted session says by itself (the end of a turn, an error, a word on the way) is
+  shown at its light, as with the voice off for everyone, and counts as read in the history.
+  Its asking for you is still said (a question, a permission, "I need your input") while
+  `muted_asks` is on ("Muted Sessions Still Ask", under Speech). That was Claude's change to
+  what was asked, said to the author while building and not yet answered by them: a session
+  that waits for an answer in silence waits until someone looks, which is the delay the
+  project is there to cut. Off: nothing of it is said. Answers to what you do to it
+  ("Allowed.", the repeat key, a question on the side) are said as before. The mute key for
+  everyone still covers it, and leaves it muted when the voice comes back.
+  Muting cuts its line and drops those it has waiting, but not its question while `muted_asks`
+  is on (`SpeechQueue.drop_session(spare=)`). It stays muted across /clear and a hub restart
+  (`Sessions.cleared`, `identities`, `keep`) and ends with the session: it is in no settings
+  file. The key is answered like the mute key, with its two notes and the same row: "web-app
+  is muted" with "Ctrl+Alt+Shift+M turns it on", then "web-app is unmuted".
+  Shown: a struck-out speaker (`MutedSpeaker.Draw`, 12 px on a dark disc 16 px across) in the
+  lower right corner of its light, across from the number of waiting words, so that a closed
+  bar says which lights are silent (`overlay.muted_session_mark`, on; "Muted Sessions on the
+  Bar"); the same speaker, 14 px, at the right end of its row's first line; and the bubble's
+  speaker (`muted_icon`) on a line of its that is shown and not said. Pictures:
+  `mute-one-bar.png`, `mute-one-list.png`, `mute-one-notice.png`, `mute-one-bubble.png`,
+  `mute-one-unmarked.png`. Without a hub the hooks' fallback voice knows nothing of it.
+  Looked up first (2026-11-26, the pages themselves): cc-hooks (github.com/husniadil/cc-hooks)
+  sets it when a session is started (`cld --silent`, `--silent=announcements`,
+  `--silent=sound-effects`), with no switch for a running session in its README; pchalasani's
+  voice plugin has `/voice:speak stop`, and its page does not say whether that is for one
+  session. Neither says what still gets through, and neither has "only these speak". Slack's
+  muted channels still show a badge for a mention (its help page): the pattern followed here.
+  Not built: "only this one speaks" in one press, for someone with many sessions (`TODO.md`).
 - The arrow keys move the focus (2026-11-17). Before, besides the wheel, a quick tap of the
   talk key went to the next session; the author on being asked to try it: "I don't think
   it's very intuitive ... control-alt-space, it's used for speaking ... better solution might

@@ -2099,7 +2099,7 @@ class PushToTalk(HubCase):
     def test_the_arrow_keys_move_the_focus_and_are_only_claimed_with_several_sessions(self):
         hub = self.make()  # two sessions, a and b
         hub.publish()
-        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["focus_next", "focus_prev"])
+        self.assertEqual(self.overlay.of("keys")[-1]["live"], ["focus_next", "focus_prev", "mute_session"])
         hub.talk_target = "a"
         hub.on_overlay({"type": "hotkey", "name": "focus_next"})
         self.assertEqual(hub.talk_target, "b")
@@ -2367,7 +2367,7 @@ class PushToTalk(HubCase):
     def test_overlay_claims_keys_only_while_they_can_act(self):
         hub = self.make()
         hub.publish()
-        arrows = ["focus_next", "focus_prev"]  # there are two sessions to move between
+        arrows = ["focus_next", "focus_prev", "mute_session"]  # there are two sessions: to move between, and to mute one of
         self.assertEqual(self.overlay.of("keys")[-1]["live"], arrows)
         hub.request_permission(ask(sid="a", cwd="/w/a"))
         self.assertEqual(self.overlay.of("keys")[-1]["live"], ["allow", "deny"] + arrows)
@@ -2815,6 +2815,102 @@ class ClaudeCodesOwnRecords(HubCase):
         self.assertEqual([s["id"] for s in hub.snapshot()["sessions"]], ["demo"])
 
 
+class OneSessionMuted(HubCase):
+    """One session's voice off while the others go on speaking (the key `mute_session`)."""
+
+    def two(self, duration=0.0, **cfg):
+        hub = self.make(duration, **cfg)
+        hub.overlay = self.overlay = FakeOverlay()
+        for sid in "ab":
+            hub.on_event(ev("SessionStart", sid=sid, cwd=f"/w/{sid}"))
+        hub.talk_target = "a"
+        return hub
+
+    def test_its_lines_are_shown_and_the_others_are_said(self):
+        hub = self.two()
+        hub.on_overlay({"type": "hotkey", "name": "mute_session"})  # the session in focus
+        self.assertEqual((self.session("a")["muted"], self.session("b")["muted"]), (True, False))
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Quiet one.")))
+        hub.on_event(ev("Stop", sid="b", cwd="/w/b", last_assistant_message=tag("Loud one.")))
+        self.assertEqual(self.spoken(), ["Loud one."])
+        self.assertEqual(self.session("a")["last_speech"], "Quiet one.")
+        self.assertIn(("a", "Quiet one."), [(m["name"], m["text"]) for m in self.overlay.of("flash")])
+        self.assertTrue(next(e for e in hub.history if e["text"] == "Quiet one.")["shown"])  # read, not missed
+        self.assertEqual({r["name"]: r["muted"] for r in self.overlay.of("state")[-1]["sessions"]}, {"a": True, "b": False})
+        hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a", prompt="again"))
+        hub.say("Half way.", session="a")  # a word on the way is its own line too
+        self.assertEqual(self.spoken(), ["Loud one."])
+        hub.on_overlay({"type": "hotkey", "name": "mute_session"})  # and on again
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Back.")))
+        self.assertEqual(self.spoken(), ["Loud one.", "Back."])
+
+    def test_it_still_asks_for_you_unless_told_not_to(self):
+        hub = self.two()
+        hub.mute_session()
+        hub.on_event(ev("Notification", sid="a", cwd="/w/a", notification_type="permission_prompt"))
+        self.assertEqual(self.spoken(), ["I need your input"])
+        hub.decide_for = None
+        hub.on_event(ev("PostToolUse", sid="a", cwd="/w/a", tool_name="Bash"))
+        hub.cfg.muted_asks = False
+        hub.on_event(ev("Notification", sid="a", cwd="/w/a", notification_type="permission_prompt"))
+        self.assertEqual(self.spoken(), ["I need your input"])  # not a second time
+        self.assertEqual(self.session("a")["state"], "needs_you")
+        self.assertEqual(self.overlay.of("flash")[-1]["text"], "I need your input")
+
+    def test_the_voice_off_for_everyone_still_covers_it(self):
+        hub = self.two()
+        hub.mute_session()
+        open(self.cfg.mute_file, "w").close()
+        hub.on_event(ev("Notification", sid="a", cwd="/w/a", notification_type="permission_prompt"))
+        hub.on_event(ev("Stop", sid="b", cwd="/w/b", last_assistant_message=tag("Loud one.")))
+        self.assertEqual(self.spoken(), [])
+        os.remove(self.cfg.mute_file)  # the mute key again: the one session is still muted
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Quiet one.")))
+        self.assertEqual(self.spoken(), [])
+        self.assertTrue(self.session("a")["muted"])
+
+    def test_the_key_names_the_session_and_is_claimed_while_it_can_act(self):
+        hub = self.make()
+        hub.overlay = self.overlay = FakeOverlay()
+        hub.on_event(ev("SessionStart", sid="a", cwd="/w/a"))
+        self.assertNotIn("mute_session", self.overlay.of("keys")[-1]["live"])  # alone: the mute key says the same
+        hub.on_event(ev("SessionStart", sid="b", cwd="/w/b"))
+        self.assertIn("mute_session", self.overlay.of("keys")[-1]["live"])
+        played = []
+        hub.sounds = unittest.mock.Mock(play=played.append)
+        self.assertEqual(hub.mute_session("b"), ("b", True))
+        banner = self.overlay.of("banner")[-1]
+        self.assertEqual((banner["icon"], banner["text"], banner["hint"]), ("muted", "b is muted", "Ctrl+Alt+Shift+M turns it on"))
+        self.assertEqual(hub.mute_session("b", True), ("b", True))  # it already is: no second sound
+        self.assertEqual(played, ["voice_off"])
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="exit"))
+        self.assertIn("mute_session", self.overlay.of("keys")[-1]["live"])  # the one left can get its voice back
+        self.assertEqual(hub.mute_session("b", False), ("b", False))
+        self.assertEqual((self.overlay.of("banner")[-1]["text"], played), ("b is unmuted", ["voice_off", "voice_on"]))
+        self.assertNotIn("mute_session", self.overlay.of("keys")[-1]["live"])
+        self.assertIsNone(hub.mute_session("nobody"))
+
+    def test_muting_cuts_what_it_had_to_say_but_not_its_question(self):
+        hub = self.two(duration=1.5)
+        lines = lambda: sorted((u.session, u.kind) for u in hub.speech.waiting())  # noqa: E731
+        hub.on_event(ev("Notification", sid="a", cwd="/w/a", notification_type="permission_prompt"))
+        self.assertTrue(wait_for(lambda: hub.speech.current is not None, 3))  # it is asking, aloud
+        hub.on_event(ev("Stop", sid="b", cwd="/w/b", last_assistant_message=tag("The other one's line.")))
+        hub.mute_session()
+        self.assertEqual(lines(), [("a", "needs_you"), ("b", "done")])  # its question goes on
+        hub.mute_session()
+        hub.cfg.muted_asks = False
+        hub.mute_session()
+        self.assertTrue(wait_for(lambda: lines() == [("b", "done")], 3))  # now cut too; the other's line is not
+
+    def test_it_stays_muted_across_a_clear(self):
+        hub = self.two()
+        hub.mute_session()
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="clear"))
+        hub.on_event(ev("SessionStart", sid="c", cwd="/w/a", source="clear"))
+        self.assertEqual((self.session("c")["name"], self.session("c")["muted"]), ("a", True))
+
+
 class AcrossARestart(HubCase):
     """A restarted hub knows its sessions again: who is who must not depend on who reports first."""
 
@@ -3002,6 +3098,14 @@ class AcrossARestart(HubCase):
         self.hub.on_event(ev("SessionStart", sid="d"))
         self.assertEqual([sid for sid, _, _, _ in self.who()][-1], "d", "a new session goes at the end")
 
+    def test_a_session_muted_by_itself_is_still_muted_after_a_restart(self):
+        hub = self.three()
+        hub.mute_session(self.who()[1][1])
+        hub = self.restart()
+        for sid in "cba":
+            hub.listen(sid)
+        self.assertEqual({s["id"]: s["muted"] for s in hub.snapshot()["sessions"]}, {"a": False, "b": True, "c": False})
+
     def test_what_is_kept_is_private_and_goes_stale(self):
         self.three()
         path = os.path.join(self.tmp, "sessions.json")
@@ -3041,6 +3145,21 @@ class ThroughTheHooks(HubCase):
 
     def test_socket_is_private(self):
         self.assertEqual(os.stat(self.cfg.sock).st_mode & 0o077, 0)
+
+    def test_one_session_is_muted_from_a_shell(self):
+        hub = self.hub
+        for sid in "ab":
+            hub.on_event(ev("SessionStart", sid=sid, cwd=f"/w/{sid}"))
+        env = {**os.environ, "CS_RUN": self.tmp, "CS_STATE": self.tmp, "HOME": self.tmp}
+        run = lambda *args: subprocess.run([os.path.join(ROOT, "bin", "sidetone"), *args], capture_output=True, text=True, env=env, timeout=10)  # noqa: E731
+        self.assertEqual(run("mute", "b").stdout, "b: voice off\n")
+        self.assertEqual((self.session("a")["muted"], self.session("b")["muted"]), (False, True))
+        self.assertIn("muted", next(line for line in run("status").stdout.splitlines() if line.startswith("b ")))
+        self.assertEqual(run("unmute", "b").stdout, "b: voice on\n")
+        self.assertFalse(self.session("b")["muted"])
+        hub.talk_target = "a"
+        self.assertEqual(run("mute").stdout, "a: voice off\n")  # no name: the one in focus
+        self.assertEqual((run("mute", "nobody").returncode, run("mute", "nobody").stdout), (1, "no such session: nobody\n"))
 
     def test_words_for_a_busy_session_are_read_after_its_next_step(self):
         hub = self.hub

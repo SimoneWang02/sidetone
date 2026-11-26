@@ -80,6 +80,10 @@ class Handler(BaseHTTPRequestHandler):
                 target = hub._target()
             hub.publish()
             self._reply({"target": target.name if target else None, "found": bool(match) or not body.get("session")})
+        elif self.path == "/mute":  # one session's voice off or on: {"session": its name (else the one in focus), "muted": true, false or absent to change it over}
+            wanted = body.get("muted")
+            done = hub.mute_session(str(body["session"]) if body.get("session") else None, wanted if isinstance(wanted, bool) else None)
+            self._reply({"found": bool(done), "session": done[0] if done else None, "muted": done[1] if done else None})
         elif self.path == "/usage":  # the plan's usage now; said aloud too with {"say": true}
             read = hub.usage()
             if body.get("say"):

@@ -805,6 +805,7 @@ class Hub(Permissions, Talk, Headset):
                 "waiting": self._waiting_count(s.id),  # words of yours it has not been handed yet
                 "speaking": s.id == speaking,
                 "target": len(self.sessions.by_id) > 1 and self._target() is s,  # in focus: follow-ups go here
+                "muted": s.muted,  # its own voice is off: a struck-out speaker at its light and by its name
                 "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
                 # Its character's sheet ("" for none, or while it is being drawn).
                 "sprite": self.sheets.path(self.cfg.overlay.get("character", "none"), s.color),
@@ -816,6 +817,9 @@ class Hub(Permissions, Talk, Headset):
                           + (["cancel"] if self._talking or self._transcribing or self._pending or current or self._unsendable()
                              or self._asides or self._stoppable() else [])
                           + (["focus_next", "focus_prev"] if len(self.sessions.by_id) > 1 else [])
+                          # One session of several; with one alone the mute key says the same. Kept
+                          # while any is muted, so that the last one left can be given its voice back.
+                          + (["mute_session"] if len(self.sessions.by_id) > 1 or any(s.muted for s in self.sessions.by_id.values()) else [])
                           + (["jump"] if self._showable(self._target()) else [])
                           + (["clear"] if self._clearable_here(self._target()) else [])
                           + (["new_session"] if self._can_open() else [])
@@ -938,6 +942,15 @@ class Hub(Permissions, Talk, Headset):
     def _muted(self) -> bool:
         return os.path.exists(self.cfg.mute_file)
 
+    def _quiet(self, s, kind: str) -> bool:
+        """Whether a line of this session is shown and not said: the voice is off for everyone,
+        or for this session alone (`Session.muted`). What a muted session says by itself is
+        quiet: a turn's end, an error, a word on the way; and its asking for you too, unless
+        `muted_asks` (on) lets that through. Answers to what you did to it ("Allowed.") are said."""
+        if self._muted():
+            return True
+        return s.muted and (kind in ("done", "failed", "progress") or (kind == "needs_you" and not self.cfg.muted_asks))
+
     def _signal(self, name: str, s=None, words: str = "", lang: str = "") -> None:
         """Answer something the user did by voice: with a sound, played at once beside whatever
         is being spoken, or with `words` in the session's voice (see `Config.talk_feedback`),
@@ -962,8 +975,8 @@ class Hub(Permissions, Talk, Headset):
             entry = {"time": time.time(), "session": s.id, "name": s.name, "color": s.color,
                      "spoken_name": _spoken_name(s.name), "voice": voice or s.voice, "text": text, "kind": kind, "heard": False}
             self.history.append(entry)
-        if self._muted():
-            self._flash(s, text, FLASH_LOOK.get(kind, kind))  # voice is off
+        if self._quiet(s, kind):
+            self._flash(s, text, FLASH_LOOK.get(kind, kind))  # voice is off, or this session's is
             if entry:
                 entry["shown"] = True  # read, not heard: nothing was missed
         else:

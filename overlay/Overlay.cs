@@ -97,6 +97,7 @@ namespace ClaudeSpeaks
         // How a working light moves (`working_motion`): calm = its arc goes round once in five
         // seconds, at one length | lively = round in 1.4 s, breathing, its dot beating.
         public static bool WorkingCalm = true;
+        public static bool MutedSessionMark = true;  // `muted_session_mark`: the struck-out speaker on the light of a session muted by itself
         // How see-through the glass is, 0 to 100 (`glass_clear`): 0 plain dark glass with no blur,
         // 50 the look it always had (a tint of 55 to 65 % over the blur), 100 the clearest (20 to
         // 30 %). The author, 2026-11-21, of Blur and Plain: "both are glass-like ... percentage like
@@ -374,6 +375,7 @@ namespace ClaudeSpeaks
         public string State = "idle", Sign = "";  // Sign: where push-to-talk stands, while it is about this session and shown here
         public bool Speaking;
         public int Waiting;  // how many messages of yours are held for this session until it can take them
+        public bool Muted;  // its own voice is off: a struck-out speaker in the lower right corner
         public double WaitingSince = -10;  // when the last of them joined
         public bool Covers = true;  // that one shows itself across the whole light before it goes to the corner
         public Wave Wave, Listening;  // Listening: your own voice, while you hold the talk key for this session
@@ -442,6 +444,7 @@ namespace ClaudeSpeaks
                 dc.DrawEllipse(Ui.Alpha(tint, 0.30), Ui.Line(tint, 0.95, 1.5), c, 13, 13);
                 Badge.Draw(dc, Sign, c.X, c.Y, t, t - SignSince, true);
                 if (Sign != "wait") Mark(dc, c, t);  // the clock says it already
+                else MutedMark(dc, c);
                 dc.Pop();
                 return;
             }
@@ -545,6 +548,7 @@ namespace ClaudeSpeaks
         // hand goes round (with the number from two on), "dot" a plain breathing dot.
         void Mark(DrawingContext dc, Point c, double t)
         {
+            MutedMark(dc, c);
             if (Waiting <= 0) return;
             var corner = new Point(c.X + 10.5, c.Y - 10.5);
             string count = Waiting > 9 ? "9+" : Waiting.ToString(CultureInfo.InvariantCulture);
@@ -595,6 +599,22 @@ namespace ClaudeSpeaks
             Pen hand = Ui.Line(Colors.White, 1, 1.3);
             dc.DrawLine(hand, corner, new Point(corner.X, corner.Y - 4));
             dc.DrawLine(hand, corner, new Point(corner.X + 3 * Math.Sin(turn), corner.Y - 3 * Math.Cos(turn)));
+        }
+
+        // This session's voice is off while the others speak: a struck-out speaker on a dark
+        // disc in the lower right corner, across from the number of waiting words, so a closed
+        // bar says which lights are silent.
+        static readonly Brush MutedDisc = Ui.Alpha(Color.FromRgb(0x14, 0x14, 0x18), 0.94), MutedInk = Ui.Alpha(Colors.White, 0.92);
+
+        void MutedMark(DrawingContext dc, Point c)
+        {
+            if (!Muted || !Ui.MutedSessionMark) return;
+            const double side = 12, r = 8;
+            var at = new Point(c.X + 10, c.Y + 10);
+            dc.DrawEllipse(MutedDisc, null, at, r, r);
+            dc.PushTransform(new TranslateTransform(at.X - side / 2 - 0.3, at.Y - side / 2));
+            MutedSpeaker.Draw(dc, side, MutedInk, true);
+            dc.Pop();
         }
 
         const double MarkMove = 0.55;  // seconds the number takes from the middle of the light to its corner
@@ -821,9 +841,12 @@ namespace ClaudeSpeaks
             IsHitTestVisible = false;
         }
 
-        protected override void OnRender(DrawingContext dc)
+        protected override void OnRender(DrawingContext dc) { Draw(dc, Side, Ink, Struck); }
+
+        // The same drawing in a box of `side` at the origin, for whoever draws for itself (a light's corner).
+        public static void Draw(DrawingContext dc, double side, Brush Ink, bool Struck)
         {
-            double k = Side / 16.0;
+            double k = side / 16.0;
             var speaker = new StreamGeometry();
             using (StreamGeometryContext g = speaker.Open())
             {
@@ -2793,6 +2816,8 @@ namespace ClaudeSpeaks
         readonly StackPanel words = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
         readonly TextBlock line1 = new TextBlock(), line2 = new TextBlock(), meta = new TextBlock();
         public bool Speaking, Focus;
+        public bool Muted;  // its own voice is off (the key mute_session): its lines are shown, not said
+        readonly MutedSpeaker quiet = new MutedSpeaker(14) { Margin = new Thickness(6, 1, 0, 0), VerticalAlignment = VerticalAlignment.Center, Visibility = Visibility.Collapsed };
         public bool Chosen;  // in the Selected Session view: the one row shown, the card's session
         public readonly Border Pip = new Border {  // a dash of its color under the light, where rows are not beside their lights
             Width = 16, Height = 3, CornerRadius = new CornerRadius(1.5), VerticalAlignment = VerticalAlignment.Bottom,
@@ -2843,8 +2868,11 @@ namespace ClaudeSpeaks
             var row1 = new Grid();  // the name and title, and at the right the push-to-talk sign
             row1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             row1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            Grid.SetColumn(Badge, 1);
+            row1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            Grid.SetColumn(quiet, 1);
+            Grid.SetColumn(Badge, 2);
             row1.Children.Add(line1);
+            row1.Children.Add(quiet);
             row1.Children.Add(Badge);
             words.Children.Add(row1);
             words.Children.Add(row2);
@@ -2878,6 +2906,8 @@ namespace ClaudeSpeaks
             State = Orb.State = Overlay.Str(s, "state", "idle");
             Speaking = Orb.Speaking = s.ContainsKey("speaking") && Convert.ToBoolean(s["speaking"]);
             Focus = s.ContainsKey("target") && Convert.ToBoolean(s["target"]);
+            Muted = Orb.Muted = s.ContainsKey("muted") && Convert.ToBoolean(s["muted"]);
+            quiet.Visibility = Muted ? Visibility.Visible : Visibility.Collapsed;
             int waits = s.ContainsKey("waiting") ? (int)Convert.ToDouble(s["waiting"], CultureInfo.InvariantCulture) : 0;
             if (waits > Orb.Waiting)  // another message joined: the number shows itself again
             {
@@ -3420,6 +3450,11 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("muted_line")) mutedLine = Convert.ToBoolean(msg["muted_line"]);
                     if (msg.ContainsKey("muted_icon")) mutedIconOn = Convert.ToBoolean(msg["muted_icon"]);
                     if (msg.ContainsKey("muted_card_icon")) mutedCardIcon = Convert.ToBoolean(msg["muted_card_icon"]);
+                    if (msg.ContainsKey("muted_session_mark") && Convert.ToBoolean(msg["muted_session_mark"]) != Ui.MutedSessionMark)
+                    {
+                        Ui.MutedSessionMark = !Ui.MutedSessionMark;
+                        foreach (Row row in order) row.Orb.InvalidateVisual();
+                    }
                     SetGlass();
                     if (was != corner) { ForgetRows(); Stack(); }  // the panel changes sides, or its order
                     if (msg.ContainsKey("hotkeys"))
@@ -3782,7 +3817,7 @@ namespace ClaudeSpeaks
             bool mine = orphan || (found.TalkKind != null && !hushed), listening = mine && talkState == "listening";
             string head = orphan ? TalkWords() : found.Name, sub = orphan ? "" : found.Title, body = orphan ? "" : mine ? TalkWords() : found.FlashText;
             string kind = mine ? TalkKind() : "";
-            bubbleMuted.Visibility = muted && mutedIconOn && !mine ? Visibility.Visible : Visibility.Collapsed;  // a line shown, not said
+            bubbleMuted.Visibility = (muted || (found != null && found.Muted)) && mutedIconOn && !mine ? Visibility.Visible : Visibility.Collapsed;  // a line shown, not said
             string shows = head + "\n" + sub + "\n" + body + "\n" + (orphan ? "" : found.State + found.Color) + listening + kind + Ui.SignInLight + Ui.TalkText;
             if (shows != bubbleShows)
             {
@@ -5350,7 +5385,7 @@ namespace ClaudeSpeaks
             foreach (KeyValuePair<string, string> entry in wantedKeys)
             {
                 next++;
-                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key == "jump" || entry.Key == "clear" || entry.Key == "new_session" || entry.Key == "end_session" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
+                bool answers = entry.Key == "allow" || entry.Key == "deny" || entry.Key == "cancel" || entry.Key == "jump" || entry.Key == "clear" || entry.Key == "new_session" || entry.Key == "end_session" || entry.Key == "mute_session" || entry.Key.StartsWith("option") || entry.Key.StartsWith("focus_");
                 // The focus moves with the arrows that point the way the lights run: up and down
                 // for the bar, left and right for the island. The other pair is left to other programs.
                 bool sideways = entry.Key == "focus_left" || entry.Key == "focus_right";

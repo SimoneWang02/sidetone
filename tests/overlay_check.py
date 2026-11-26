@@ -298,10 +298,10 @@ def voice(seconds, step=0.04):
             for i in range(int(seconds / step))]
 
 
-def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, context=None):
+def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, context=None, muted=()):
     """The rows the hub would send. `waiting`: session name -> messages held for it; `stopping`:
     the name of a session that was asked to end its turn; `context`: session name -> how full
-    its context is, in percent."""
+    its context is, in percent; `muted`: the names of those whose own voice is off."""
     rows = [
         dict(name="sidetone", title="Glass overlay redesign", state="done", text="Pushed, all up to date.", meta="",
              details=[["Context", "7%", 0.07, ""], ["Total Tokens", "1.4M", None, ""], ["Total Time", "2h05", None, ""], ["Tasks", "", None, ""]]),
@@ -318,6 +318,7 @@ def sessions(speaking=None, focus="api-server", waiting=None, stopping=None, con
         row["target"] = row["name"] == focus
         row["waiting"] = n = (waiting or {}).get(row["name"], 0)
         row["context"] = (context or {}).get(row["name"])
+        row["muted"] = row["name"] in muted
         if row["name"] == stopping:
             row["text"] = "Stopping at its next step"
     return rows
@@ -872,6 +873,25 @@ shot("mute-bubble", 0.8)
 send(type="peek", on=True)
 send(type="config", **{**dict(opaque=True, still=True, mode="dots", hotkeys=KEYS, **HERE), "muted_line": True, "muted_card_icon": False})
 send(type="peek", on=False)
+send(type="state", sessions=sessions(), history=HISTORY, muted=False)
+# Three of five muted by themselves (the key mute_session): the mark on a light of every kind,
+# beside waiting words and the context's arc, in the rows, on the key's notice and on a line shown.
+QUIET = dict(muted={"sidetone", "web-app", "notes"}, waiting={"web-app": 2}, context={"sidetone": 7, "web-app": 83, "api-server": 56})
+send(type="flash", name="api-server", state="done", text="", seconds=0)
+send(type="state", sessions=sessions(**QUIET), history=HISTORY, muted=False)
+shot("mute-one-bar", 1.0)
+send(type="peek", on=True)
+shot("mute-one-list", 0.8)
+send(type="banner", icon="muted", text="web-app is muted", hint="Ctrl+Alt+Shift+M turns it on")
+shot("mute-one-notice", 0.6)
+send(type="banner", text=None)
+send(type="peek", on=False)
+send(type="flash", name="sidetone", state="done", text="Pushed, all up to date. The pictures are in the folder you named.", seconds=30)
+shot("mute-one-bubble", 0.8)
+send(type="flash", name="sidetone", state="done", text="", seconds=0)
+send(type="config", **{**dict(opaque=True, still=True, mode="dots", hotkeys=KEYS, **HERE), "muted_session_mark": False})
+shot("mute-one-unmarked", 0.8)  # the lights without the mark (muted_session_mark off)
+send(type="config", **{**dict(opaque=True, still=True, mode="dots", hotkeys=KEYS, **HERE), "muted_session_mark": True})
 send(type="state", sessions=sessions(), history=HISTORY, muted=False)
 send(type="move")
 shot("move")

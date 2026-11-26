@@ -16,6 +16,7 @@ Usage: sidetone <command>
   voice remove NAME          delete one of your own voices
   stop                       stop speaking and clear the queue
   on | off                   turn the voice on or off for every session
+  mute | unmute [PROJECT]    turn the voice off or on for one session (default: the one in focus); the others go on speaking
   allow | deny               answer the permission prompt the overlay is showing
   answer N                   pick option N of the question the overlay is showing
   sound sent|queued|failed   play one of the short sounds that answer push-to-talk
@@ -79,7 +80,7 @@ case ${1:-} in
     jq -r 'if .outdated.overlay then "note: the overlay is running an older version than is on disk; to apply: sidetone overlay restart" else empty end' <<<"$state"
     jq -r 'if (.sessions | length) == 0 then "no sessions" else
         (.sessions[] | [.name, .state, (.activity | if . == "" then "-" else . end),
-          (if .tasks_total > 0 then "\(.tasks_done)/\(.tasks_total)" else "-" end), .voice] | @tsv) end' <<<"$state" |
+          (if .tasks_total > 0 then "\(.tasks_done)/\(.tasks_total)" else "-" end), .voice, (if .muted then "muted" else "" end)] | @tsv) end' <<<"$state" |
       column -t -s $'\t'
     jq -r '.queued[] | "queued: [\(.kind)] \(.text)"' <<<"$state"
     ;;
@@ -126,6 +127,13 @@ case ${1:-} in
   stop) hub_post /stop </dev/null >/dev/null || { echo "hub is not running"; exit 1; } ;;
   on) rm -f "$HOME/.claude/voice-off"; echo "voice on" ;;
   off) mkdir -p "$HOME/.claude" && touch "$HOME/.claude/voice-off"; hub_post /stop </dev/null >/dev/null 2>&1; echo "voice off" ;;
+  mute|unmute)
+    name="${*:2}"
+    reply=$(jq -nc --arg p "$name" --argjson m "$([ "$1" = mute ] && echo true || echo false)" \
+      '{muted: $m} + (if $p == "" then {} else {session: $p} end)' | hub_post /mute) || { echo "hub is not running"; exit 1; }
+    [ "$(jq -r .found <<<"$reply")" = true ] || { echo "no such session${name:+: $name}"; exit 1; }
+    echo "$(jq -r .session <<<"$reply"): voice $([ "$1" = mute ] && echo off || echo on)"
+    ;;
   allow|deny)
     answered=$(jq -nc --arg d "$1" '{decision: $d}' | hub_post /decide | jq -r .answered)
     [ "$answered" = true ] && echo "$1 sent" || { echo "no permission prompt is waiting"; exit 1; }
