@@ -350,9 +350,14 @@ Roughly easiest first, the larger ones after.
       all of it arrives, but one that is stopped sends no SubagentStop), on the edge only,
       pictures `character-agents-*`. **Not tried by the author.** To go live: the two new hooks
       in `~/.claude/settings.json` (`install.sh --hooks-only`), `sidetone hub restart`, the
-      setting on. Left: the real hooks through a hub with a real session, the motion seen live,
-      a review by subagents (the usage window was at 97 %). The "Agents" figure and the panel
-      rows of the first idea are not built.
+      setting on. Since then tried with the real hooks through a hub of its own, in motion on
+      a test overlay and with the real mouse, and reviewed by two subagents (what was fixed and
+      what was left is in docs/dev/features.md). For the author to judge live: the cheer at
+      half size (faint for operators and sketch), equal gaps or a tighter group, the others
+      moving over at once when one goes; and whether a subagent's steps should turn its
+      session's row to "working" after the session's own turn has ended (they do, as before:
+      with companions on, the large figure goes between cheering and working). The "Agents"
+      figure and the panel rows of the first idea are not built.
 
 ### Larger extras
 

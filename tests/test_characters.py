@@ -561,12 +561,55 @@ class Companions(unittest.TestCase):
         hub.on_event(_ev("SubagentStart", agent_id="a1", agent_type="general-purpose"))  # sent a message, or woke itself
         self.assertEqual(self.shown(hub, sent), ([["a2", "Step walker", "working"], ["a1", "Quick look", "working"]], 0))
 
-    def test_events_out_of_order_still_name_it_once(self):
-        hub, sent = self.make()  # the hooks report on their own, 30 ms apart
-        hub.on_event(_ev("PostToolUse", tool_name="Agent", tool_response={"status": "async_launched", "agentId": "a1", "description": "Alpha task"}))
+    def test_one_that_comes_back_while_it_cheers_keeps_its_place(self):
+        hub, sent = self.make()  # the session is told of its end 0.05 s after, and may send it a message at once
+        self.start(hub, "a1", "Quick look")
+        self.start(hub, "a2", "Step walker")
+        hub.on_event(_ev("SubagentStop", agent_id="a1", agent_type="general-purpose"))
         hub.on_event(_ev("SubagentStart", agent_id="a1", agent_type="general-purpose"))
-        hub.on_event(_ev("PreToolUse", tool_name="Agent", tool_input={"description": "Alpha task"}))
-        self.assertEqual(self.shown(hub, sent), ([["a1", "Alpha task", "working"]], 0))
+        self.assertEqual([a[0] + ":" + a[2] for a in self.shown(hub, sent)[0]], ["a1:working", "a2:working"])
+
+    def test_one_that_was_stopped_and_comes_back_keeps_its_task(self):
+        hub, sent = self.make()
+        self.start(hub, "a1", "Alpha task")
+        self.start(hub, "a2", "Beta task")
+        hub.on_event(_ev("Stop", last_assistant_message="x", background_tasks=[{"id": "a1", "type": "subagent", "status": "running"}]))
+        hub.on_event(_ev("SubagentStart", agent_id="a2", agent_type="general-purpose"))
+        self.assertEqual(self.shown(hub, sent)[0], [["a1", "Alpha task", "working"], ["a2", "Beta task", "working"]])
+
+    def test_a_stop_and_a_start_that_crossed_are_put_right_when_the_turn_ends(self):
+        # It stopped waiting on a command of its own, which ended at that moment: the hooks report
+        # on their own, and its start came first. It runs, and the next Stop says so.
+        hub, sent = self.make()
+        self.start(hub, "a1", "Self waker")
+        hub.on_event(_ev("SubagentStart", agent_id="a1", agent_type="general-purpose"))
+        hub.on_event(_ev("SubagentStop", agent_id="a1", agent_type="general-purpose"))
+        hub.on_event(_ev("Stop", last_assistant_message="x", background_tasks=[{"id": "a1", "type": "subagent", "status": "running"}]))
+        hub.sessions.by_id["s1"].agents["a1"].since -= 60
+        self.assertEqual(self.shown(hub, sent)[0], [["a1", "Self waker", "working"]])
+
+    def test_one_whose_request_failed_goes_without_a_cheer(self):
+        hub, sent = self.make()  # at the usage limit there may be no clean turn for hours
+        self.start(hub, "a1", "Alpha task")
+        hub.on_event(_ev("StopFailure", agent_id="a1", agent_type="general-purpose", error="rate_limit"))
+        self.assertEqual(self.shown(hub, sent), ([], 0))
+        self.assertEqual(hub.snapshot()["sessions"][0]["agents"], [])
+
+    def test_events_in_any_order_name_it_once_and_leave_no_task_behind(self):
+        import itertools
+        events = [_ev("PreToolUse", tool_name="Agent", tool_input={"description": "Alpha task"}),
+                  _ev("SubagentStart", agent_id="a1", agent_type="general-purpose"),
+                  _ev("PostToolUse", tool_name="Agent", tool_response={"status": "async_launched", "agentId": "a1", "description": "Alpha task"})]
+        for order in itertools.permutations(events):
+            hub, sent = self.make()
+            for event in order:
+                hub.on_event(event)
+            self.assertEqual(self.shown(hub, sent), ([["a1", "Alpha task", "working"]], 0))
+            self.assertEqual(hub.snapshot()["sessions"][0]["agents"], ["Alpha task"])
+            # The next one, whose own task has not arrived yet, is not given this one's for good.
+            hub.on_event(_ev("SubagentStart", agent_id="a2", agent_type="general-purpose"))
+            hub.on_event(_ev("PostToolUse", tool_name="Agent", tool_response={"status": "async_launched", "agentId": "a2", "description": "Beta task"}))
+            self.assertEqual([a[1] for a in self.shown(hub, sent)[0]], ["Alpha task", "Beta task"])
 
     def test_one_that_outlived_a_clear_is_taken_in_at_the_next_stop(self):
         hub, sent = self.make()  # it reports under the new session, which has not seen it start

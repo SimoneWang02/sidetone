@@ -3034,13 +3034,14 @@ namespace ClaudeSpeaks
         readonly StackPanel perchRow = new StackPanel { Orientation = Orientation.Horizontal };
         readonly List<Companion> companions = new List<Companion>();
         readonly TextBlock moreText = new TextBlock { FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White };
-        readonly Border moreChip = new Border { CornerRadius = new CornerRadius(9), Background = Ui.Paint("#CC16161A"), BorderBrush = Ui.Paint("#38FFFFFF"), BorderThickness = new Thickness(1), Padding = new Thickness(6, 1, 6, 2), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(2, 0, 2, 14), Visibility = Visibility.Collapsed };
+        readonly Border moreChip = new Border { CornerRadius = new CornerRadius(9), Background = Ui.Paint("#E6262A33"), BorderBrush = Ui.GlassEdge, BorderThickness = new Thickness(1), Padding = new Thickness(6, 1, 6, 2), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(5, 0, 2, 10), Visibility = Visibility.Collapsed };
         readonly Glass tag = new Glass(0);
         readonly TextBlock tagText = new TextBlock { FontSize = 12, Margin = new Thickness(9, 4, 9, 5), MaxWidth = 360, TextTrimming = TextTrimming.CharacterEllipsis };
         Companion tagged;  // the one whose task the tag shows
         string companionsOf = "";  // the session they belong to
         bool perchMirrored;  // the figure at the right end, its companions to its left
         int forcedTag = -1;  // a tag shown without a mouse, for a picture
+        int companionsMade;  // how many there have been: each keeps the lead it was given
         readonly DispatcherTimer spriteTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
         string character = "none", characterPlace = "edge";
         bool characterDetails = true;  // also in the details: on their edge in Selected Session, beside each row in All Sessions
@@ -3959,14 +3960,12 @@ namespace ClaudeSpeaks
             {
                 if (c.Leaving || Named(wanted, c.Id) != null) continue;
                 c.Leaving = true;
-                if (tagged == c) tagged = null;
                 if (still) { companions.Remove(c); changed = true; continue; }
                 Companion gone = c;
                 var fade = new DoubleAnimation(0, TimeSpan.FromSeconds(0.25));
                 fade.Completed += delegate { if (companions.Remove(gone)) { PerchOrder(); UpdateSprite(); } };
                 c.Sprite.Image.BeginAnimation(UIElement.OpacityProperty, fade);
             }
-            int place = 0;
             foreach (object a in wanted)
             {
                 var one = a as object[];
@@ -3976,13 +3975,13 @@ namespace ClaudeSpeaks
                 if (c == null)
                 {
                     c = new Companion { Id = id };
+                    c.Sprite.Lead = companionsMade++ % 3 * 0.67;  // a third of the working row's two seconds from the one before, and its own for good: closing up moves nobody's motion
                     companions.Add(c);
                     changed = true;
-                    if (!swap && !still) c.Sprite.Image.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.25)));
+                    if (!swap && !still) c.Sprite.Image.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.25)) { FillBehavior = FillBehavior.Stop });
                 }
                 c.Task = Convert.ToString(one[1]);
                 c.State = Convert.ToString(one[2]);
-                c.Sprite.Lead = place++ * 0.67;  // a third of the working row's two seconds apart
             }
             foreach (Companion c in companions)
             {
@@ -4010,14 +4009,18 @@ namespace ClaudeSpeaks
             if (perchMirrored) row.Reverse();
             perchRow.Children.Clear();
             foreach (UIElement e in row) perchRow.Children.Add(e);
-            // A figure has more empty room at its sides than a companion: 9 closer, the gap between
-            // the figure and the first is that between two companions (14 to 16 px, measured).
-            edgeSprite.Image.Margin = companions.Count == 0 ? new Thickness(0) : perchMirrored ? new Thickness(-9, 0, 0, 0) : new Thickness(0, 0, -9, 0);
+            // A figure has more empty room at its sides than a companion, and more at its right than
+            // at its left (it is drawn two of its pixels left of its cell's middle): 9 closer, or 5
+            // where the companions are at its left, the gap between the figure and the first is that
+            // between two companions and before the count (14 to 17 px, measured at both corners).
+            edgeSprite.Image.Margin = companions.Count == 0 ? new Thickness(0) : perchMirrored ? new Thickness(-5, 0, 0, 0) : new Thickness(0, 0, -9, 0);
+            moreChip.Margin = perchMirrored ? new Thickness(2, 0, 9, 10) : new Thickness(5, 0, 2, 10);
             perchRow.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));  // its new width now, so that it is placed by it in the same step
         }
 
-        // The mouse on a small companion shows its subagent's task in a tag above it, on the side
-        // away from the figure, so that the figure is never covered.
+        // The mouse on a small companion shows its subagent's task in a tag above it: over its
+        // middle where that does not reach the figure, which is never covered, and the other
+        // companions are dimmed meanwhile, so that it is plain whose task it is.
         void WatchCompanions()
         {
             Companion under = null;
@@ -4035,13 +4038,17 @@ namespace ClaudeSpeaks
             if (under != null && (under.Leaving || under.Task.Length == 0)) under = null;
             if (under == tagged && (under == null || tagText.Text == under.Task)) return;
             tagged = under;
+            foreach (Companion c in companions) c.Sprite.Image.Opacity = under == null || c == under ? 1 : 0.45;
             if (under == null) { tag.Hide(); return; }
             tagText.Text = under.Task;
             tagText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));  // the words themselves: what holds them is not measured again until it is drawn
             Rect work = WorkArea();
             Point at = under.Sprite.Image.TranslatePoint(new Point(0, 0), perch);
             double wide = tagText.DesiredSize.Width + 2, high = tagText.DesiredSize.Height + 2, small = under.Sprite.Image.ActualWidth * zoom;
-            double left = perchMirrored ? perch.Left + at.X + small - wide : perch.Left + at.X;
+            Companion first = companions.Find(delegate(Companion c) { return !c.Leaving; });  // the one next to the figure
+            double edge = first.Sprite.Image.TranslatePoint(new Point(0, 0), perch).X + (perchMirrored ? small : 0);
+            double middle = at.X + (small - wide) / 2;
+            double left = perch.Left + (perchMirrored ? Math.Min(middle, edge - wide) : Math.Max(middle, edge));
             tag.Left = Math.Max(work.Left, Math.Min(left, work.Right - wide));
             tag.Top = Math.Max(work.Top, perch.Top + at.Y - high - 2 * zoom);
             if (!tag.IsVisible) { tag.Show(); tag.Raise(); }

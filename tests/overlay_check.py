@@ -1030,8 +1030,10 @@ if not ONLY or ONLY.startswith("character"):
                 row.update(extra)
         send(type="state", sessions=rows, history=HISTORY, sprite_layout=characters.LAYOUT)
 
+    # hover="keys" for all of these: the real mouse may rest where this overlay is, and the session
+    # under it would be the one shown (it did, 2026-11-26: every picture after the first five).
     for style in characters.STYLES:
-        look(character=style, character_place="edge", character_details=True)
+        look(character=style, character_place="edge", character_details=True, hover="keys")
         send(type="mode", mode="focus")
         for name, extra in (("one", companions(1)), ("three", companions(3)), ("five", companions(5)), ("cheer", companions(3, done=(1,)))):
             with_companions(style, extra)
@@ -1041,7 +1043,7 @@ if not ONLY or ONLY.startswith("character"):
         send(type="tag")
         send(type="mode", mode="dots")
         time.sleep(0.5)
-    look(character="familiars", character_place="edge")
+    look(character="familiars", character_place="edge", hover="keys")
     with_companions("familiars", companions(3), speaking="api-server")
     send(type="flash", state="working", name="api-server", text=SAID, seconds=6)
     send(type="wave", name="api-server", levels=voice(9), step=0.04, delay=0.0)
@@ -1049,7 +1051,7 @@ if not ONLY or ONLY.startswith("character"):
     send(type="flash", name="api-server", text="", seconds=0)
     time.sleep(0.6)
     send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, character="familiars", character_place="edge",
-         character_details=True, **{**HERE, "corner": "bottom-left"})
+         character_details=True, hover="keys", **{**HERE, "corner": "bottom-left"})
     send(type="mode", mode="focus")
     with_companions("familiars", companions(5))
     shot("character-agents-left", 1.4)
@@ -1058,7 +1060,24 @@ if not ONLY or ONLY.startswith("character"):
     send(type="tag")
     send(type="mode", mode="dots")
     time.sleep(0.5)
-    look(character="none")
+    # In motion (still off): a third joins two, the first cheers, goes, and the others close up.
+    # Each picture is a moment of it, so these differ from run to run: the run is the check that
+    # the fading and the closing up work, the pictures show where it ended.
+    look(character="familiars", character_place="edge", character_details=True, still=False, hover="keys")
+    send(type="mode", mode="focus")
+    three = companions(3)["agents"]
+    with_companions("familiars", dict(agents=three[:2], agents_more=0))
+    shot("character-agents-moving-1-two", 0.8)
+    with_companions("familiars", dict(agents=three, agents_more=0))
+    shot("character-agents-moving-2-joins", 0.05)
+    with_companions("familiars", dict(agents=[[three[0][0], three[0][1], "done"]] + three[1:], agents_more=0))
+    shot("character-agents-moving-3-cheers", 1.2)
+    with_companions("familiars", dict(agents=three[1:], agents_more=0))
+    shot("character-agents-moving-4-goes", 0.05)
+    shot("character-agents-moving-5-closed-up", 0.8)
+    send(type="mode", mode="dots")
+    time.sleep(0.5)
+    look(character="none", hover=overlay.DEFAULTS["hover"])
 
 if "--glass" in sys.argv:
     spot = free_place()

@@ -421,21 +421,41 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     one whose subagent finished cheers for 3 s (`base.AGENT_CHEER`, the done row) and fades
     away, and the others close up at once; one that was stopped goes without a cheer. At work
     each is a third of the two-second row ahead of the one before (`Sprite.Lead`), so they do
-    not move as one. The mouse on one shows its task (the Agent tool's `description`) in a tag
-    above it, on the side away from the figure. Only where a figure stands on an edge (the
+    not move as one; the lead is its own for good, so closing up moves nobody's motion. The
+    mouse on one shows its task (the Agent tool's `description`) in a tag above it, over its
+    middle where that does not reach the figure, which is never covered; the other companions
+    are dimmed meanwhile, so it is plain whose task it is. Only where a figure stands on an edge (the
     bubble's, or the details' in Selected Session): inside the bubble and beside the rows of
     All Sessions a half-size copy would be 33 and 18 px, too small to read. The hub keeps
     which run (`Hub._agent_event`, `Session.agents`) from four events, measured in
     `docs/dev/facts.md`: `SubagentStart` (also one that comes back), the Agent tool's
     `PostToolUse` (the id with the task), `SubagentStop` (a cheer), and `background_tasks` of
     each `Stop` (one that was stopped sends no `SubagentStop`, so it goes when the turn ends;
-    one that outlived a /clear is taken in). Two new hooks for it, `SubagentStart` and
+    one that outlived a /clear is taken in; one that is listed runs, whatever was heard of
+    it). One whose request failed (`StopFailure` with its `agent_id`) goes without a cheer. A
+    record is kept for the session's life, so one that comes back has its task. The hub's
+    state names those that run (`agents`). Two new hooks for it, `SubagentStart` and
     `SubagentStop`, both `report.sh`: an install from before needs `install.sh --hooks-only`
-    again. Measured in pictures (`overlay_check.py --only=character-agents`): gaps of 14 to
-    17 px between all figures, feet on one row of pixels. Tests replay the events as a real
-    session sent them (`tests/test_characters.py`, `Companions`). Not done: the real hooks
-    through a hub with a real session; the motion (fade, cheer, closing up) seen by anyone; an
-    agent in the foreground (not seen on Claude Code 2.1.332). Not tried by the author.
+    again. Measured in pictures (`overlay_check.py --only=character-agents`, taken with
+    `hover: keys` because the real mouse resting on the test overlay changed them): gaps of 14
+    to 17 px between all figures and before the count, at a right and at a left corner (a
+    figure is drawn two of its pixels left of its cell's middle, so the overlap differs by
+    side: 9 and 5); feet on one row of pixels. Tests replay the events as a real session sent
+    them, in every order (`tests/test_characters.py`, `Companions`). Tried without the author,
+    2026-11-26: a haiku session with the real hooks and a silent hub of its own (three named
+    within half a second, each gone at its own finish; one stopped by hand gone 1.5 s later,
+    at the Stop); the fade, the cheer and the closing up on a test overlay
+    (`character-agents-moving-*`); the real mouse on one (its tag came, and went on the large
+    figure). Reviewed by two subagents, the code and the pictures. Fixed from that: a tag that
+    stayed up after its companion had gone; the failed agent, the stopped one that comes back,
+    a stop and a start that cross; the count in the overlay's blue-grey, 4 px lower; the left
+    corner's gaps (10 and 7 px where the right had 14 and 11); the tag's aim. Left as they
+    are, for the author to judge: at half size the cheer is plain for the familiars and faint
+    for the operators and the sketch (arms beside the head, a face of 14 px); the gaps are
+    equal (the critic: tighter between the small ones, 8 px, would read more as a group); when
+    one goes the others move over at once, with no slide. Not measured: an agent in the
+    foreground (not seen on Claude Code 2.1.332); whether a failed agent also sends a
+    `SubagentStop`. Not tried by the author.
   - Seen in pictures (`overlay_check.py --only=character`): both kinds, both places,
     speaking, needs you, done, failed; Selected Session on the edge and inside, All Sessions.
     Not in the request card yet, and Reduce Motion holds the first frame.

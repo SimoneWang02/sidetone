@@ -240,6 +240,7 @@ class Session:
             "note": self.note,
             "tasks_done": sum(self.tasks.values()),
             "tasks_total": len(self.tasks),
+            "agents": [a.task for a in self.agents.values() if not a.done],  # the tasks of its subagents that run
             "turn_seconds": round(now - self.turn_started) if self.turn_started else None,
             "last_speech": self.last_speech,
             "idle_seconds": round(now - self.updated),

@@ -145,6 +145,12 @@ class Hub(Permissions, Talk, Headset):
                 # voice).
                 error = str(ev.get("error") or "unknown").replace("_", " ")
                 log(self.cfg, "hub.log", f"an agent of [{ev['session_id'][:8]}] hit an error ({error}): not its session's, not said")
+                with self.lock:  # that agent has ended, and not well: its companion goes without a cheer
+                    s = self.sessions.by_id.get(ev["session_id"])
+                    agent = s.agents.get(str(ev["agent_id"])) if s else None
+                    if agent and not agent.done:
+                        agent.done = time.monotonic() - base.AGENT_CHEER
+                self.publish()
                 return
             with self.lock:
                 s = self.sessions.by_id.get(ev["session_id"])
@@ -389,27 +395,37 @@ class Hub(Permissions, Talk, Headset):
             s.agent_task = str((ev.get("tool_input") or {}).get("description") or "")
         elif event == "SubagentStart" and aid and ev.get("agent_type"):
             # It starts, or is back at work under the same id (sent a message, or woken by a
-            # command of its own that ended): then it keeps its task and stands last.
+            # command of its own that ended): then it keeps its task, and its place if it still
+            # stands there cheering, else it stands last.
             was = s.agents.get(aid)
             if was and not was.done:
                 return
-            s.agents[aid] = Agent(was.task if was else s.agent_task, now)
+            s.agents[aid] = Agent(was.task if was else s.agent_task, was.since if was and now - was.done < base.AGENT_CHEER else now)
             s.agent_task = s.agent_task if was else ""
         elif event == "PostToolUse" and answer.get("status") == "async_launched" and answer.get("agentId"):
             # The one event with both its id and its task; hooks report on their own, so this
             # may come before its SubagentStart.
             s.agents.setdefault(str(answer["agentId"]), Agent("", now)).task = str(answer.get("description") or "")
+            s.agent_task = ""
         elif event == "SubagentStop" and aid in s.agents:  # not the agent Claude Code runs itself after every turn
             s.agents[aid].done = s.agents[aid].done or now
-        elif event == "Stop" and isinstance(ev.get("background_tasks"), list):
-            # One that was stopped, by Claude or by hand, has no SubagentStop: what still runs
-            # is listed when a turn ends. It goes without a cheer. One listed that is not known
-            # (it outlived a /clear, and reports under the new session) is taken in.
+        elif event in ("Stop", "StopFailure") and isinstance(ev.get("background_tasks"), list):
+            # What still runs is listed when a turn ends, and that list is right. One that was
+            # stopped, by Claude or by hand, has no SubagentStop: not listed, it goes without a
+            # cheer. One that is listed runs, whatever was heard of it (its stop and its next
+            # start can cross on the way); if it is not known (it outlived a /clear, and reports
+            # under the new session) it is taken in.
+            # shortcut: a record is kept for the session's life, for its task if it comes back (one small record a subagent); prune if sessions ever run thousands
             running = {str(t.get("id")): t for t in ev["background_tasks"]
                        if isinstance(t, dict) and t.get("type") == "subagent" and t.get("status") == "running"}
-            s.agents = {a: agent for a, agent in s.agents.items() if agent.done or a in running}
+            for a, agent in s.agents.items():
+                if a in running:
+                    agent.done = 0.0
+                elif not agent.done:
+                    agent.done = now - base.AGENT_CHEER
             for a, task in running.items():
-                s.agents.setdefault(a, Agent(str(task.get("description") or ""), now))
+                agent = s.agents.setdefault(a, Agent("", now))
+                agent.task = agent.task or str(task.get("description") or "")
 
     def _companions(self, s) -> tuple[list, int]:
         """A session's subagents as the overlay draws them: the first `base.AGENTS_SHOWN` that
