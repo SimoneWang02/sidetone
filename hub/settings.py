@@ -222,14 +222,17 @@ SECTIONS = [
                "comes on top of this.", 75, 150, 5, "%"),
         switch("overlay.still", "Reduce Motion", "The overlay opens and changes at once, with no springs, slides or glints. "
                "It is on by itself while Windows' animation effects are off."),
-        # Both 2026-11-25, from the review of the overlay (docs/dev/overlay-review.md).
-        choice("overlay.working_motion", "Working Light", "How the light of a session at work moves: a slow turn, so that "
-               "only a session that needs you moves fast, or the quick spin it had at first.",
-               ("calm", "Calm"), ("lively", "Lively")),
+        # From the review of the overlay (docs/dev/overlay-review.md), 2026-11-25. "Working Light"
+        # (overlay.working_motion: calm, lively) left the window on 2026-11-26, the author: "I
+        # don't think is needed ... just put a single spinning speed". Calm stays; still read from
+        # config.json.
         # 2026-11-25, after the previews in docs/dev/looks/: the author chose these two kinds.
-        choice("overlay.character", "Character", "A small figure beside the bubble that acts what its session is doing: "
-               "speaking, needing you, done, failed. Each session keeps its own.",
-               ("none", "None"), ("familiars", "Familiars"), ("operators", "Operators")),
+        # A list to drop down, not buttons (the author, 2026-11-26: "a select would be better"),
+        # with room for more kinds; the hand-drawn operators of the previews are to come.
+        {"key": "overlay.character", "kind": "pick", "name": "Character",
+         "help": "A small figure beside the bubble that acts what its session is doing: speaking, needing you, done, "
+                 "failed. Each session keeps its own.",
+         "options": [["none", "None"], ["familiars", "Familiars"], ["operators", "Operators"]]},
         choice("overlay.character_place", "Character Place", "On the bubble's edge, so the bubble keeps its size, or inside it "
                "beside the words, smaller.", ("edge", "On the Edge"), ("inside", "Inside")),
         switch("overlay.character_details", "Character in the Details", "With the details out too: on their edge in "

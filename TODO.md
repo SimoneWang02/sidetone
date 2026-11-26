@@ -217,7 +217,12 @@ Roughly easiest first, the larger ones after.
       author**. In the details too since 2026-11-26 (Character in
       the Details), at 12 frames a second, with room above each figure so nothing is cut off
       (the author saw it live and asked for those). Not built: the sketch, a character in the
-      request card, a third Character Place or more than five kinds per style. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      request card, a third Character Place or more than five kinds per style. **Next**: the
+      hand-drawn operators (the pencil "Sketch" of `docs/dev/looks/characters.html`, one
+      operator for all, the scarf in the session's color) as a fourth choice of Character, now
+      a drop-down (2026-11-26: "a select would be better, because it's missing the hand-drawn
+      operators"). Pencil lines want smooth edges, not pixels: drawn larger, with coverage, in
+      `hub/characters.py`, and shown at their own size, not doubled. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
