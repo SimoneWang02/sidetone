@@ -847,6 +847,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   second press with no second question; `end`, ended 1.1 s after the second press; `terminal`,
   the notice and the question left there; Escape by hand in the terminal, the banner gone 0.6 s
   later and the key asking "End ...?" again. Not tried by the author yet.
+  Ending shows its progress (2026-11-26, `end_progress`, on, "Show Ending Progress" under
+  Terminal; `Talk._show_ending`, `base.END_SHOWN` 10 s; pictures `end-under-way`, `end-done`).
+  The author, by voice: "I confirm it, there's nothing visually that tells me that you're
+  deleting it". The confirming press took the question away and nothing came in its place
+  until the light went. Now the question's row becomes the ring of a clear and "Ending
+  sidetone 2…" (the overlay's `clearing` and `cleared` looks, so `Overlay.cs` is as it was),
+  then a check and "Ended sidetone 2" for 1.5 s once SessionEnd comes. The same after the
+  press that ends it anyway, and with `end_background: end`. It goes when the session goes on
+  ("Stay", a prompt taken), and gives way to the question about work in the background.
+  Which session the row is about is kept where the clear's is (`_clear_shown`): any other
+  banner takes its place, and "Ended" is then not said over that one. No "waiting for the
+  editor" as a clear has: the end key is only claimed while an editor is waiting to be asked.
+  Tests and pictures only, not tried by the author yet; needs `sidetone hub restart`.
 - Where a new session opens (2026-11-26, `terminal.new_session`, "New Session Opens" under
   Terminal: `beside` | `tab`; `sidetone terminal new beside|tab`). The author, by voice:
   "whenever I do Ctrl Alt Plus, the terminal is always created side by side. I think there
@@ -1947,7 +1960,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`always`/`never`, `never` by default; `auto`, said only with several sessions and no overlay, dropped 2026-11-20: "make it two choices ... I want to reduce [friction]"), `titles` (`ask`/`auto`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `headset_button`, `headset_seconds`, `headset_send`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_progress`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `headset_button`, `headset_seconds`, `headset_send`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_progress`, `end_progress`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `SIDETONE_OVERLAY=off` disables the overlay.
 - `~/.local/state/sidetone/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).

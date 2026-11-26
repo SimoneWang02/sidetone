@@ -187,7 +187,7 @@ class SessionKeys(HubCase):
         asked = self.overlay.of("banner")[-1]
         self.assertEqual((asked["icon"], asked["text"], asked["hint"]), ("end", "End a?", "Ctrl+Alt+Minus to confirm"))
         hub.on_overlay({"type": "hotkey", "name": "end_session"})
-        self.assertEqual(self.overlay.of("banner")[-1], {"type": "banner"})
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], "Ending a\u2026")  # in the question's place
         self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "exit"}])
         self.assertEqual(editor.close, [], "the terminal stays until the session has ended")
         editor = hub.editor_waits([4001, 4002], opens=True)
@@ -200,6 +200,35 @@ class SessionKeys(HubCase):
         hub.on_event(ev("SessionEnd", sid="b", reason="prompt_input_exit"))
         self.assertEqual(editor.close, [])
         self.assertEqual(hub.sounds.played, ["ended"])
+
+    def test_ending_shows_its_progress_until_it_has_ended(self):
+        """The author, 2026-11-26: "I confirm it, there's nothing visually that tells me that
+        you're deleting it"."""
+        hub = self.make()
+        self.assertTrue(hub.cfg.end_progress)  # a new install
+        self.end_twice(hub)
+        shown = self.overlay.of("banner")[-1]
+        self.assertEqual((shown["icon"], shown["text"], shown["seconds"]), ("clearing", "Ending a\u2026", base.END_SHOWN))
+        hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))
+        done = self.overlay.of("banner")[-1]
+        self.assertEqual((done["icon"], done["text"]), ("cleared", "Ended a"))
+        # Another banner that took its place stays: nothing says "Ended" over it.
+        hub.talk_target = "b"
+        hub.editor_waits([4001, 4002], opens=True)
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        hub.on_overlay({"type": "hotkey", "name": "end_session"})
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], "Ending b\u2026")
+        hub.on_overlay({"type": "hotkey", "name": "mute"})
+        hub.on_event(ev("SessionEnd", sid="b", reason="prompt_input_exit"))
+        self.assertEqual(self.overlay.of("banner")[-1]["icon"], "muted")
+        # Switched off, the question only goes.
+        hub = self.make()
+        self.assertIsNone(hub.set_setting("end_progress", False))
+        self.end_twice(hub)
+        self.assertEqual(self.overlay.of("banner")[-1], {"type": "banner"})
+        so_far = len(self.overlay.of("banner"))
+        hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))
+        self.assertEqual(self.overlay.of("banner")[so_far:], [])
 
     def test_a_late_second_press_only_asks_again(self):
         hub = self.make()
@@ -276,7 +305,7 @@ class SessionKeys(HubCase):
         hub.reconcile()
         self.assertEqual(hub.sounds.played, ["queued"], "asked once, however long it waits")
         hub.on_overlay({"type": "hotkey", "name": "end_session"})
-        self.assertEqual(self.overlay.of("banner")[-1], {"type": "banner"})
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], "Ending a\u2026")
         self.assertEqual(hub.editor_done(editor), [{"pid": 4001, "key": "confirm"}])
         editor = hub.editor_waits([4001, 4002], opens=True, confirms=True)
         hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))
@@ -385,6 +414,7 @@ class SessionKeys(HubCase):
         hub = self.make()
         editor = self.end_twice(hub)
         hub.on_event(ev("UserPromptSubmit", sid="a", prompt="go on"))
+        self.assertEqual(self.overlay.of("banner")[-1], {"type": "banner"})  # "Ending ..." goes with it
         hub.on_event(ev("SessionEnd", sid="a", reason="prompt_input_exit"))
         self.assertEqual(editor.close, [])
 

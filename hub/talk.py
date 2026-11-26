@@ -368,20 +368,20 @@ class Talk:
             mine = bool(armed and armed[0] == s.id)
             if mine and self._end_anyway and s.id in self._ending and now - armed[1] < base.END_ANYWAY:
                 self._end_armed = None
-                if self.overlay:
-                    self.overlay.send({"type": "banner"})
                 if self._asks_before_exit(s.id):
                     self._exit_anyway(s, "the end key, once more")
+                    self._show_ending(s)
                 else:  # answered in its terminal meanwhile: an Enter now would go to whatever is there
                     log(self.cfg, "hub.log", f"end [{s.id[:8]}] its question is gone from its terminal: nothing typed")
+                    if self.overlay:
+                        self.overlay.send({"type": "banner"})
             elif mine and not self._end_anyway and now - armed[1] < END_TWICE:
                 self._end_armed = None
-                if self.overlay:
-                    self.overlay.send({"type": "banner"})
                 editor = next(e for e in self.editors if e.opens and s.tty in e.ttys and not e.wake.is_set())
                 editor.keys.append({"pid": editor.ttys[s.tty], "key": "exit"})
                 editor.wake.set()
                 self._ending[s.id] = Ending(s.tty, time.time())
+                self._show_ending(s)
                 log(self.cfg, "hub.log", f"end [{s.id[:8]}] /exit asked of the editor for its terminal ({s.tty}): the end key")
             else:
                 # as the clear key's question
@@ -392,6 +392,19 @@ class Talk:
                     self.overlay.send({"type": "banner", "icon": "end", "text": f"End {s.name}?",
                                        "hint": f"{key} to confirm" if key else "", "seconds": END_TWICE})
         self.publish()
+
+    def _show_ending(self, s) -> None:
+        """The end key's question gives way to the banner that the end is under way
+        (`end_progress`): the ring of a clear, until the session has ended ("Ended ...", from
+        `_ended_by_key`) or goes on (`_not_ending`). Switched off, the question only goes. Call
+        with the lock held."""
+        if not self.overlay:
+            return
+        if not self.cfg.end_progress:
+            self.overlay.send({"type": "banner"})
+            return
+        self._clear_shown = s.id
+        self.overlay.send({"type": "banner", "icon": "clearing", "text": f"Ending {s.name}\u2026", "hint": "", "seconds": base.END_SHOWN})
 
     def _asks_before_exit(self, sid: str) -> bool:
         """Whether Claude Code is asking, right now, before it exits the session the end key
@@ -455,13 +468,15 @@ class Talk:
         return (any(e.confirms and tty in e.ttys for e in self.editors)
                 or time.monotonic() - self._confirms_by.get(tty, base.NEVER) < base.EDITOR_GAP)
 
-    def _not_ending(self, sid: str) -> str:
+    def _not_ending(self, sid: str, done: str = "") -> str:
         """The /exit the end key had typed for `sid` no longer counts: it has ended, or it goes
-        on ("Stay" in its terminal). The question the overlay asks in Claude Code's place goes.
+        on ("Stay" in its terminal). The question the overlay asks in Claude Code's place goes,
+        and so does "Ending ...", or it says `done` for a moment.
         Returns its terminal, or "" if the end key had not asked for it. Call with the lock held."""
         ending = self._ending.pop(sid, None)
         if not ending:
             return ""
+        self._hide_clearing(sid, done)
         if self._end_anyway and self._end_armed and self._end_armed[0] == sid:
             self._end_armed = None
             if self.overlay:
@@ -471,7 +486,8 @@ class Talk:
     def _ended_by_key(self, sid: str) -> None:
         """A session ended: if the end key asked for it, its terminal is closed now. Call with
         the lock held."""
-        tty = self._not_ending(sid)
+        s = self.sessions.by_id.get(sid)
+        tty = self._not_ending(sid, f"Ended {s.name}" if s else "")
         if not tty:
             return
         for editor in self.editors:
@@ -483,7 +499,6 @@ class Talk:
             self._editor_wanted.append(("close", tty, time.monotonic()))
         log(self.cfg, "hub.log", f"end [{sid[:8]}] ended: its terminal ({tty}) asked closed")
         # Its own sound once it has really ended, as a clear has (or the words, in its voice).
-        s = self.sessions.by_id.get(sid)
         if self.cfg.talk_feedback == "sound" and self.sounds:
             if not self._muted():
                 self.sounds.play("ended")

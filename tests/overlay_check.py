@@ -860,6 +860,10 @@ send(type="banner", icon="cleared", text="Cleared sidetone", hint="")
 shot("clear-done", 0.6)
 send(type="banner", icon="end", text="End sidetone?", hint="Ctrl+Alt+Minus to confirm")  # the end key asks
 shot("end-ask", 0.6)
+send(type="banner", icon="clearing", text="Ending sidetone\u2026", hint="")  # confirmed: under way, with the ring of a clear
+shot("end-under-way", 0.6)
+send(type="banner", icon="cleared", text="Ended sidetone", hint="")
+shot("end-done", 0.6)
 # Claude Code asked first, in the terminal, about work in the background: the overlay in its place.
 send(type="banner", icon="end", text="sidetone has background work", hint="Ctrl+Alt+Minus to end anyway", below=True)
 shot("end-background", 0.6)

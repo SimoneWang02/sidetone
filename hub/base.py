@@ -72,6 +72,9 @@ CLEAR_CONFIRM = 75.0
 # exits a session with work in the background (`end_background`): longer than the end key's own
 # question, which you have your finger ready for.
 END_ANYWAY = 8.0
+# Seconds "Ending ..." stays up with no end seen (`end_progress`): every end measured took under
+# three, and the question about work in the background takes its place within two.
+END_SHOWN = 10.0
 EDITOR_GAP = 3.0  # seconds an editor counts as still there after a request of its ended: the next one is on its way
 NEVER = float("-inf")  # "has not happened", for times on the clock that counts from the boot
 RECOUNT = 1.5  # seconds after a turn ended until what it used is added up once more (its last reply may be written late)
@@ -347,6 +350,10 @@ class Config:
     # the terminal, and the overlay only says it is there. Needs the extension from 0.8.0;
     # with an older one it is "terminal".
     end_background: str = "ask"
+    # A banner with the ring of a clear from the end key's confirming press until the session has
+    # ended, then "Ended ..." for a moment (the author, 2026-11-26: "I confirm it, there's nothing
+    # visually that tells me that you're deleting it"). False: the question only goes.
+    end_progress: bool = True
     clear_words: list = field(default_factory=lambda: [
         "clear the chat", "clear the context", "clear the conversation", "clear the session", "clear the history",
         "slash clear", "run slash clear", "do a slash clear", "use slash clear",
@@ -562,7 +569,7 @@ class Config:
         user = cfg._checked(user, path)
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "voice_device", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_progress", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
-                    "followup_confirm", "end_background", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
+                    "followup_confirm", "end_background", "end_progress", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "volume", "muted_asks", "limit_once", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])

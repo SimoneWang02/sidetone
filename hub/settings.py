@@ -328,6 +328,7 @@ SECTIONS = [
                "that has work in the background. The overlay can ask in its place, where the end key once more says yes; "
                "or it is ended without asking; or the question stays in the terminal.",
                ("ask", "Ask Again"), ("end", "End Anyway"), ("terminal", "In the Terminal")),
+        switch("end_progress", "Show Ending Progress", "After the end key's second press, the overlay says the session is ending until it is gone."),
         # "Name in the Terminal's Title" (terminal.title) left the window on 2026-11-22, the
         # author after trying it: "I don't know how useful it is ... I don't usually look at
         # them". Still off by default, still read from config.json.

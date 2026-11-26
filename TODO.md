@@ -28,6 +28,11 @@ these come before anything new.
       window (Ctrl+Shift+P, Restart Extension Host); until then the overlay only says
       "sidetone 6 asks in its terminal". To answer: Ask Again as the default was Claude's
       choice (what stops may be a long run); End Anyway saves the third press.
+- [ ] Ending shows its progress (2026-11-26, `end_progress`, the author by voice: "I confirm
+      it, there's nothing visually that tells me that you're deleting it"): after the end
+      key's second press a turning ring and "Ending sidetone 2…", then a check and "Ended
+      sidetone 2" ("Show Ending Progress" under Terminal). Tests and pictures only, **not
+      tried by the author yet**; needs `sidetone hub restart`.
       Found on the way, not looked at: Claude Code's session file now says `shell`, not
       `idle`, for a session at its prompt with a command left running, and the hub takes only
       `idle` for "at its prompt": the clear key there may wait as for a busy session, and a

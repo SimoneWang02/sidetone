@@ -109,7 +109,7 @@ class Hub(Permissions, Talk, Headset):
         self._confirms_by: dict[str, float] = {}  # terminal -> when a request of an editor that can answer that question in it last ended
         self._editor_wanted: list = []  # (what, terminal, when) asked while the editor was between two requests: "close"
         self._clearing: dict[str, tuple] = {}  # session -> (its voice, timers) while /clear has been asked for and not yet seen done
-        self._clear_shown = ""  # the session whose clearing the banner is about
+        self._clear_shown = ""  # the session whose clearing, or ending (`_show_ending`), the banner is about
         self._clear_after: dict[str, float] = {}  # session -> when "clear the chat" was said while it was busy: cleared once its turn ends
         self._ended: dict[str, float] = {}  # session -> when Claude Code said it ended: its listener must not bring it back
         self.history: collections.deque = collections.deque(maxlen=100)  # lines sessions said, newest last
