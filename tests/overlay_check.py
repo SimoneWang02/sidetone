@@ -1013,6 +1013,51 @@ if not ONLY or ONLY.startswith("character"):
             shot(f"character-{style}-{view}-{place}", 1.6)
             send(type="mode", mode="dots")
             time.sleep(0.5)
+    # Subagents as small companions (overlay.character_agents, 2026-11-26): half-size copies of the
+    # session's figure beside it on the edge. On the details' edge in Selected Session: one, three,
+    # five (three and "+2"), one of the three cheering, the task of the one the mouse is on. Then
+    # on the bubble's edge, and at a left corner, where they stand to the figure's left.
+    def companions(count, done=()):
+        tasks = ["Search the hooks", "Read the overlay code", "Check the tests", "Measure the gaps", "Review the wording"]
+        return dict(agents=[[f"a{i}", tasks[i], "done" if i in done else "working"] for i in range(min(count, 3))],
+                    agents_more=max(0, count - 3))
+
+    def with_companions(style, extra, speaking=None):
+        rows = sessions(speaking, focus="api-server")
+        for row in rows:
+            row["sprite"] = SHEETS[style, row["color"]]
+            if row["name"] == "api-server":
+                row.update(extra)
+        send(type="state", sessions=rows, history=HISTORY, sprite_layout=characters.LAYOUT)
+
+    for style in characters.STYLES:
+        look(character=style, character_place="edge", character_details=True)
+        send(type="mode", mode="focus")
+        for name, extra in (("one", companions(1)), ("three", companions(3)), ("five", companions(5)), ("cheer", companions(3, done=(1,)))):
+            with_companions(style, extra)
+            shot(f"character-agents-{style}-{name}", 1.2)
+        send(type="tag", agent=1)
+        shot(f"character-agents-{style}-task", 0.8)
+        send(type="tag")
+        send(type="mode", mode="dots")
+        time.sleep(0.5)
+    look(character="familiars", character_place="edge")
+    with_companions("familiars", companions(3), speaking="api-server")
+    send(type="flash", state="working", name="api-server", text=SAID, seconds=6)
+    send(type="wave", name="api-server", levels=voice(9), step=0.04, delay=0.0)
+    shot("character-agents-bubble", 1.4)
+    send(type="flash", name="api-server", text="", seconds=0)
+    time.sleep(0.6)
+    send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, character="familiars", character_place="edge",
+         character_details=True, **{**HERE, "corner": "bottom-left"})
+    send(type="mode", mode="focus")
+    with_companions("familiars", companions(5))
+    shot("character-agents-left", 1.4)
+    send(type="tag", agent=0)
+    shot("character-agents-left-task", 0.8)
+    send(type="tag")
+    send(type="mode", mode="dots")
+    time.sleep(0.5)
     look(character="none")
 
 if "--glass" in sys.argv:

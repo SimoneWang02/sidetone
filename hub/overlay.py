@@ -80,6 +80,10 @@ DEFAULTS = {
     # seen ... show selected session, which is the one that I use mostly"): on their top edge in
     # Selected Session, small beside each row in All Sessions. Off: only with the bubble.
     "character_details": True,
+    # While a session's subagents run, small copies of its character stand beside it on the edge,
+    # one for each (the author, 2026-11-26: "since I have a character, a companion per session
+    # ... sub-agents as many companions"). Off by default.
+    "character_agents": False,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
     # Held to take hold of the bar with the mouse: drag it, or turn the wheel on it. "" (the

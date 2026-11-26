@@ -260,6 +260,9 @@ SECTIONS = [
         # shouldn't be two choices. Make it only one. I guess mix is better.").
         switch("overlay.character_details", "Character in the Details", "With the details out too: on their edge in "
                "Selected Session, small beside each session in All Sessions. Only a session with news moves."),
+        switch("overlay.character_agents", "Companions for Subagents", "While a session's subagents run, half-size copies of "
+               "its character stand beside it on the edge, one for each, up to three and then a count. Each cheers and goes "
+               "when its subagent finishes. Rest the mouse on one to read its task."),
         # From the review of 2026-11-25; off for a new install since the 26th (the author did not like it on the screen).
         switch("overlay.session_tick", "Session Color on the Bar", "A small tick of each session's color beside its light: "
                "the color of its name in the details and of its terminal."),

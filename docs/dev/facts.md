@@ -790,6 +790,43 @@ From the night of 2026-11-26, when the author's sessions reached the usage limit
 - The program is one 400 MB file; a pattern with a long `.{300}` before it took `grep -a`
   over two minutes, `mmap` and `find` in Python a second.
 
+## What the hooks say about subagents (measured 2026-11-26, Claude Code 2.1.332, a haiku session in tmux)
+
+A hook that wrote every payload to a file; 16 agents over 7 prompts (one, three at once, an
+Explore one, one stopped by Claude, one stopped by hand, one resumed, one that woke itself, one
+that outlived a /clear).
+
+- Every agent ran in the background, also when asked for `run_in_background: false`: the Agent
+  tool returns in 8 ms with `status: async_launched`. An agent in the foreground was not seen
+  on this version, so what its events look like is not measured.
+- A start is three events within 30 ms, in this order: `PreToolUse` of `Agent` (`tool_input`:
+  `description`, `prompt`, `subagent_type`; a `tool_use_id`, no agent id yet), `SubagentStart`
+  (`agent_id`, `agent_type`; no description, no `tool_use_id`), `PostToolUse` of `Agent`
+  (`tool_response`: `agentId`, `description`, `status`). Only the last one has both the id and
+  the task. Three started in one message came as three such groups, 0.4 s apart, never mixed.
+- Its finish: `SubagentStop` (`agent_id`, `agent_type`, `last_assistant_message`,
+  `agent_transcript_path`), 16 of 16 times for one that ended by itself, and 0.05 s later a
+  `UserPromptSubmit` whose prompt is `<task-notification>` with `<task-id>`, `<status>` and
+  `<summary>`.
+- **One that is stopped sends no `SubagentStop`**, neither stopped by Claude (`TaskStop`; its
+  `PostToolUse` has `tool_response.task_id`) nor by hand (the agents list, x). What says so:
+  the notification, `<status>killed</status>`, 0.5 and 2.5 s after, and the next `Stop`.
+- `Stop` and `SubagentStop` carry `background_tasks`: a list of `{id, type: "subagent" |
+  "shell", status, description, agent_type}` for what still runs. In `Stop` it is right. In an
+  agent's own `SubagentStop` that agent is still listed as running.
+- After every turn Claude Code runs an agent of its own (it writes the suggested next prompt):
+  a `SubagentStop` with `agent_type: ""` and no `SubagentStart`, about 1 s after each `Stop`.
+- An agent comes back under the same `agent_id`, with `SubagentStart` and later `SubagentStop`
+  again: when it is sent a message (`SendMessage`; `tool_response.resumedAgentId`), and by
+  itself when a command it left in the background ends (it had stopped as "waiting on its own
+  background work", which is a `SubagentStop` too).
+- What an agent does carries `agent_id` and `agent_type` on its `PreToolUse` and `PostToolUse`,
+  under the session's `session_id`. The hub takes those as the session's own: its row says
+  "working" and shows the agent's step, also after the session's turn has ended.
+- After `/clear` a running agent goes on and reports under the new `session_id`, its
+  `SubagentStop` too.
+- `agent_type` is the type asked for: `general-purpose`, `Explore`.
+
 ## Subagents' permission prompts (measured 2026-11-22, Claude Code 2.1.330, a lab of haiku sessions)
 
 - A subagent's PermissionRequest carries `agent_id` and `agent_type` (the session's own has

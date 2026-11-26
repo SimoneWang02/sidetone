@@ -1037,6 +1037,7 @@ namespace ClaudeSpeaks
         public readonly Image Image = new Image { Stretch = Stretch.Fill, IsHitTestVisible = false };
         string path = "", moment = "", shown = "";
         double since;
+        public double Lead;  // seconds its working row is ahead: copies of one figure side by side do not move as one
         int drawnAt;  // the cell size of the sheet shown last, so the scaling follows it
 
         public bool Size(double size)
@@ -1093,7 +1094,7 @@ namespace ClaudeSpeaks
             // A moment's first part (needs you waving, done cheering) plays when the session's moment
             // changes, not when another session's figure takes this place: that one shows the rest.
             if (state != moment || file != path) { since = file != path && path.Length > 0 && state == moment ? now - 3600 : now; moment = state; path = file; }
-            double age = now - since, a = age;
+            double age = now - since + (state == "working" ? Lead : 0), a = age;
             string row = state;
             if (state == "speaking") row = "speaking" + (loudness < 0.12 ? 0 : loudness < 0.4 ? 1 : loudness < 0.7 ? 2 : 3);
             int[] first;
@@ -1133,6 +1134,22 @@ namespace ClaudeSpeaks
             // "I don't think they should be jumpy whenever I switch session ... their body is cut
             // off from the bottom side"); a jump the drawing has, as done's, stays in its cell.
             return true;
+        }
+    }
+
+    // A subagent of the session whose character stands on an edge (overlay.character_agents): a
+    // half-size copy of that character beside it, at work until its subagent has finished, then
+    // cheering until the hub leaves it out.
+    class Companion
+    {
+        public readonly Sprite Sprite = new Sprite(40);
+        public string Id = "", Task = "", State = "working";
+        public bool Leaving;  // fading away: no longer one of the session's
+
+        public Companion()
+        {
+            Sprite.Image.VerticalAlignment = VerticalAlignment.Bottom;
+            Sprite.Image.Margin = new Thickness(0, 0, 0, 1);  // a cell's last row is empty: 1 pixel here, 2 under the large figure, so their feet are on one line
         }
     }
 
@@ -2849,6 +2866,8 @@ namespace ClaudeSpeaks
             Visibility = Visibility.Collapsed, IsHitTestVisible = false,
         };
         public string Sprite = "";  // the sheet of its character, "" for none
+        public object[] Agents = new object[0];  // its subagents as small companions: [id, task, "working" or "done"] each
+        public int AgentsMore;  // and how many there are beyond those
         // Its character in the details: beside its words in All Sessions (32 px), and in the one row
         // of Selected Session when the character stands inside (48 px).
         public readonly Sprite Mini = new Sprite(32);
@@ -2937,6 +2956,8 @@ namespace ClaudeSpeaks
             if (before.Length > 0 && (before != State || was != Speaking)) Orb.Changed = Ui.Now;  // the light pops
             Wave.Synthetic = s.ContainsKey("synth") && Convert.ToBoolean(s["synth"]);
             Sprite = Overlay.Str(s, "sprite");
+            Agents = s.ContainsKey("agents") && s["agents"] is object[] ? (object[])s["agents"] : new object[0];
+            AgentsMore = s.ContainsKey("agents_more") ? (int)Convert.ToDouble(s["agents_more"], CultureInfo.InvariantCulture) : 0;
             if (Speaking && !was) Wave.Since = Ui.Now;
             if (!Speaking && was) Wave.Clear();
             Overlay.Heading(line1, Name, Title, Color);
@@ -3040,6 +3061,18 @@ namespace ClaudeSpeaks
         // smaller (`character`, `character_place`).
         readonly Glass perch = new Glass(0);
         readonly Sprite edgeSprite = new Sprite(80), innerSprite = new Sprite(60);
+        // Subagents as small companions beside the figure on an edge, the count of those that do
+        // not fit, and the tag with the task of the one under the mouse.
+        readonly StackPanel perchRow = new StackPanel { Orientation = Orientation.Horizontal };
+        readonly List<Companion> companions = new List<Companion>();
+        readonly TextBlock moreText = new TextBlock { FontSize = 11, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White };
+        readonly Border moreChip = new Border { CornerRadius = new CornerRadius(9), Background = Ui.Paint("#CC16161A"), BorderBrush = Ui.Paint("#38FFFFFF"), BorderThickness = new Thickness(1), Padding = new Thickness(6, 1, 6, 2), VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(2, 0, 2, 14), Visibility = Visibility.Collapsed };
+        readonly Glass tag = new Glass(0);
+        readonly TextBlock tagText = new TextBlock { FontSize = 12, Margin = new Thickness(9, 4, 9, 5), MaxWidth = 360, TextTrimming = TextTrimming.CharacterEllipsis };
+        Companion tagged;  // the one whose task the tag shows
+        string companionsOf = "";  // the session they belong to
+        bool perchMirrored;  // the figure at the right end, its companions to its left
+        int forcedTag = -1;  // a tag shown without a mouse, for a picture
         readonly DispatcherTimer spriteTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
         string character = "none", characterPlace = "edge";
         bool characterDetails = true;  // also in the details: on their edge in Selected Session, beside each row in All Sessions
@@ -3218,7 +3251,7 @@ namespace ClaudeSpeaks
             }
             if (size == zoom) return false;
             zoom = size;
-            foreach (Glass g in new[] { rail, panel, bubble, muteChip, perch }) g.Zoom(zoom);
+            foreach (Glass g in new[] { rail, panel, bubble, muteChip, perch, tag }) g.Zoom(zoom);
             return true;
         }
         string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
@@ -3315,14 +3348,18 @@ namespace ClaudeSpeaks
             bubble.Body = layers;
             perch.Panel.BorderThickness = new Thickness(0);
             perch.Panel.Background = Brushes.Transparent;
-            perch.Body = edgeSprite.Image;
+            edgeSprite.Image.VerticalAlignment = VerticalAlignment.Bottom;
+            moreChip.Child = moreText;
+            perchRow.Children.Add(edgeSprite.Image);
+            perch.Body = perchRow;
+            tag.Body = tagText;
             spriteTimer.Tick += delegate { UpdateSprite(); };
 
             rail.SizeChanged += delegate { Place(); };
             bannerTimer.Tick += delegate { bannerTimer.Stop(); StopSpin(); hasBanner = false; Render(); };
             // Clicks pass through, so "the mouse is on me" is found by watching where the cursor is.
             hoverTimer.Interval = TimeSpan.FromMilliseconds(30);
-            hoverTimer.Tick += delegate { WatchWheelKeys(); WatchTalkKeys(); WatchCursor(); };
+            hoverTimer.Tick += delegate { WatchWheelKeys(); WatchTalkKeys(); WatchCursor(); WatchCompanions(); };
             moveTimer.Tick += delegate { EndMove(); };
             rail.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { Press(e.GetPosition(rail)); };
             panel.MouseLeftButtonDown += delegate(object sender, MouseButtonEventArgs e) { PressPanel(e.GetPosition(panel)); };
@@ -3331,7 +3368,7 @@ namespace ClaudeSpeaks
             holdTimer.Tick += delegate { if (!Down((int)heldKey)) EndHold(); };
             // Other always-on-top windows (and some games) push us down; climb back regularly.
             topTimer.Interval = TimeSpan.FromSeconds(2);
-            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); muteChip.Raise(); perch.Raise(); };
+            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); muteChip.Raise(); perch.Raise(); tag.Raise(); };
 
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
             SetGlass();
@@ -3552,6 +3589,9 @@ namespace ClaudeSpeaks
                     historyOf = Str(msg, "over", "");  // as if the mouse were on that session's row
                     Render();
                     break;
+                case "tag":  // a companion's task without a mouse on it (for checking how it looks)
+                    forcedTag = msg.ContainsKey("agent") ? (int)Convert.ToDouble(msg["agent"], CultureInfo.InvariantCulture) : -1;
+                    break;
                 case "settings":  // the settings window: open with what there is to set, or closed
                     // "toggle" (the key): shut it if it is in front of you, else bring it there. Only
                     // the window knows which, now that it can lie behind other programs.
@@ -3631,6 +3671,7 @@ namespace ClaudeSpeaks
             panel.Look(kind);
             bubble.Look(kind);
             muteChip.Look(kind);
+            tag.Look(kind);
             if (settings != null) settings.Look(kind);
         }
 
@@ -3924,18 +3965,126 @@ namespace ClaudeSpeaks
                 row.Figure(size, state, row.Speaking ? row.Wave.At(now - Wave.Lag) : 0, now, still || calm);
                 rowsMove |= size > 0 && !calm;
             }
+            bool mirrored = !(corner.EndsWith("right") || Island);
+            Companions(onEdge ? standing : null, mirrored, now);
             if (onEdge)
             {
-                // At its end away from the bar, its feet (two rows above the cell's bottom) on the edge.
+                // At its end away from the bar, its feet (two rows above the cell's bottom) on the edge;
+                // its companions stand on from there, towards the bar.
                 Rect work = WorkArea();
                 double tall = 2 * Sprite.Cell * zoom, foot = 2 * tall / Sprite.Cell;
-                perch.Left = corner.EndsWith("right") || Island ? under.Left + 6 * zoom : under.Left + under.Width - tall - 6 * zoom;
+                double wide = companions.Count > 0 ? perchRow.DesiredSize.Width : tall;
+                perch.Left = !mirrored ? under.Left + 6 * zoom : under.Left + under.Width - wide - 6 * zoom;
                 perch.Top = Math.Max(work.Top, under.Top - tall + foot + 1);
                 if (!perch.IsVisible) { perch.Show(); perch.Raise(); }
             }
             else if (perch.IsVisible) perch.Hide();
             if (bubbleWants || standing != null || rowsMove) { if (!spriteTimer.IsEnabled) spriteTimer.Start(); }  // standing: its window may still be opening
             else if (spriteTimer.IsEnabled) spriteTimer.Stop();
+        }
+
+        // The small companions beside the figure on an edge: one for each subagent the hub names for
+        // that session. A new one fades in, one that is no longer named fades away and the others
+        // close up; another session's figure on the edge brings its own at once.
+        void Companions(Row standing, bool mirrored, double now)
+        {
+            object[] wanted = standing != null ? standing.Agents : new object[0];
+            int more = standing != null ? standing.AgentsMore : 0;
+            string owner = standing != null ? standing.Name : "";
+            bool swap = owner != companionsOf, changed = swap || mirrored != perchMirrored;
+            companionsOf = owner;
+            perchMirrored = mirrored;
+            if (swap) companions.Clear();
+            foreach (Companion c in companions.ToArray())
+            {
+                if (c.Leaving || Named(wanted, c.Id) != null) continue;
+                c.Leaving = true;
+                if (tagged == c) tagged = null;
+                if (still) { companions.Remove(c); changed = true; continue; }
+                Companion gone = c;
+                var fade = new DoubleAnimation(0, TimeSpan.FromSeconds(0.25));
+                fade.Completed += delegate { if (companions.Remove(gone)) { PerchOrder(); UpdateSprite(); } };
+                c.Sprite.Image.BeginAnimation(UIElement.OpacityProperty, fade);
+            }
+            int place = 0;
+            foreach (object a in wanted)
+            {
+                var one = a as object[];
+                if (one == null || one.Length < 3) continue;
+                string id = Convert.ToString(one[0]);
+                Companion c = companions.Find(delegate(Companion x) { return x.Id == id && !x.Leaving; });
+                if (c == null)
+                {
+                    c = new Companion { Id = id };
+                    companions.Add(c);
+                    changed = true;
+                    if (!swap && !still) c.Sprite.Image.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.25)));
+                }
+                c.Task = Convert.ToString(one[1]);
+                c.State = Convert.ToString(one[2]);
+                c.Sprite.Lead = place++ * 0.67;  // a third of the working row's two seconds apart
+            }
+            foreach (Companion c in companions)
+            {
+                c.Sprite.Size(Sprite.Cell);  // one screen pixel for each of its own: half the figure it stands beside
+                c.Sprite.Show(standing != null ? standing.Sprite : "", c.State == "done" ? "done" : "working", 0, now, still);
+            }
+            string count = more > 0 ? "+" + more : "";
+            if (moreText.Text != count) { moreText.Text = count; moreChip.Visibility = more > 0 ? Visibility.Visible : Visibility.Collapsed; changed = true; }
+            if (changed) PerchOrder();
+        }
+
+        static object[] Named(object[] agents, string id)
+        {
+            foreach (object a in agents) { var one = a as object[]; if (one != null && one.Length >= 3 && Convert.ToString(one[0]) == id) return one; }
+            return null;
+        }
+
+        // The figure, its companions in the order they started, the count: left to right, or the
+        // other way round where the figure stands at the right end.
+        void PerchOrder()
+        {
+            var row = new List<UIElement> { edgeSprite.Image };
+            foreach (Companion c in companions) row.Add(c.Sprite.Image);
+            row.Add(moreChip);
+            if (perchMirrored) row.Reverse();
+            perchRow.Children.Clear();
+            foreach (UIElement e in row) perchRow.Children.Add(e);
+            // A figure has more empty room at its sides than a companion: 9 closer, the gap between
+            // the figure and the first is that between two companions (14 to 16 px, measured).
+            edgeSprite.Image.Margin = companions.Count == 0 ? new Thickness(0) : perchMirrored ? new Thickness(-9, 0, 0, 0) : new Thickness(0, 0, -9, 0);
+            perchRow.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));  // its new width now, so that it is placed by it in the same step
+        }
+
+        // The mouse on a small companion shows its subagent's task in a tag above it, on the side
+        // away from the figure, so that the figure is never covered.
+        void WatchCompanions()
+        {
+            Companion under = null;
+            CursorPoint cursor;
+            if (!perch.IsVisible) under = null;
+            else if (forcedTag >= 0) under = forcedTag < companions.Count ? companions[forcedTag] : null;
+            else if (companions.Count > 0 && GetCursorPos(out cursor))
+                foreach (Companion c in companions)
+                {
+                    Image image = c.Sprite.Image;
+                    if (c.Leaving || !image.IsVisible || PresentationSource.FromVisual(image) == null) continue;
+                    Point from = image.PointToScreen(new Point(0, 0)), to = image.PointToScreen(new Point(image.ActualWidth, image.ActualHeight));
+                    if (cursor.X >= from.X && cursor.X < to.X && cursor.Y >= from.Y && cursor.Y < to.Y) under = c;
+                }
+            if (under != null && (under.Leaving || under.Task.Length == 0)) under = null;
+            if (under == tagged && (under == null || tagText.Text == under.Task)) return;
+            tagged = under;
+            if (under == null) { tag.Hide(); return; }
+            tagText.Text = under.Task;
+            tagText.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));  // the words themselves: what holds them is not measured again until it is drawn
+            Rect work = WorkArea();
+            Point at = under.Sprite.Image.TranslatePoint(new Point(0, 0), perch);
+            double wide = tagText.DesiredSize.Width + 2, high = tagText.DesiredSize.Height + 2, small = under.Sprite.Image.ActualWidth * zoom;
+            double left = perchMirrored ? perch.Left + at.X + small - wide : perch.Left + at.X;
+            tag.Left = Math.Max(work.Left, Math.Min(left, work.Right - wide));
+            tag.Top = Math.Max(work.Top, perch.Top + at.Y - high - 2 * zoom);
+            if (!tag.IsVisible) { tag.Show(); tag.Raise(); }
         }
 
         // --- motion ---------------------------------------------------------------------------------
@@ -5521,6 +5670,7 @@ namespace ClaudeSpeaks
                 if (panel.IsVisible) pieces.Add(panel.Area());
                 if (bubble.IsVisible) pieces.Add(bubble.Area());
                 if (perch.IsVisible) pieces.Add(perch.Area());
+                if (tag.IsVisible) pieces.Add(tag.Area());
                 if (muteChip.IsVisible) pieces.Add(muteChip.Area());
                 if (settings != null && settings.IsOpen)
                 {

@@ -29,7 +29,7 @@ import sounds as sounds_mod  # noqa: E402
 import stale  # noqa: E402
 import stt  # noqa: E402
 import terminal as terminal_mod  # noqa: E402
-from state import (FORGET_AFTER, Sessions, describe, short_title,  # noqa: E402
+from state import (FORGET_AFTER, Agent, Sessions, describe, short_title,  # noqa: E402
                    lang_from_message, speech_from_message, split_display, title_from_message)
 from tts import LANG_LETTER, PREFERRED_VOICE, Meter, NullEngine, SpeechQueue, Utterance, make_engine  # noqa: E402
 
@@ -305,6 +305,7 @@ class Hub(Permissions, Talk, Headset):
             s = self.sessions.touch(sid, ev.get("cwd", ""),
                                     after_clear=event == "SessionStart" and ev.get("source") == "clear")
             s.permission_mode = str(ev.get("permission_mode") or s.permission_mode)
+            self._agent_event(s, ev)
             if event == "SessionStart" and ev.get("source") == "startup" and time.monotonic() - self._opening < NEW_WAIT:
                 self._opening = base.NEVER  # the session the new-session key opened: what you say next is for it
                 self._focus_on(s)
@@ -384,6 +385,51 @@ class Hub(Permissions, Talk, Headset):
                 known = ev.get("error") == "rate_limit" and self._limit_known(s)
                 s.yours = False
                 self._say(s, f"I hit an error: {error}", "failed", "stop-failure", shown=known)
+
+    def _agent_event(self, s, ev: dict) -> None:
+        """Which of a session's subagents run, for the small companions beside its character
+        (`overlay.character_agents`), from the four events that say so (measured in
+        docs/dev/facts.md, "What the hooks say about subagents"). Call with the lock held."""
+        event, aid, now = ev.get("hook_event_name"), str(ev.get("agent_id") or ""), time.monotonic()
+        answer = ev.get("tool_response") if isinstance(ev.get("tool_response"), dict) else {}
+        if event == "PreToolUse" and ev.get("tool_name") in ("Agent", "Task") and not aid:
+            s.agent_task = str((ev.get("tool_input") or {}).get("description") or "")
+        elif event == "SubagentStart" and aid and ev.get("agent_type"):
+            # It starts, or is back at work under the same id (sent a message, or woken by a
+            # command of its own that ended): then it keeps its task and stands last.
+            was = s.agents.get(aid)
+            if was and not was.done:
+                return
+            s.agents[aid] = Agent(was.task if was else s.agent_task, now)
+            s.agent_task = s.agent_task if was else ""
+        elif event == "PostToolUse" and answer.get("status") == "async_launched" and answer.get("agentId"):
+            # The one event with both its id and its task; hooks report on their own, so this
+            # may come before its SubagentStart.
+            s.agents.setdefault(str(answer["agentId"]), Agent("", now)).task = str(answer.get("description") or "")
+        elif event == "SubagentStop" and aid in s.agents:  # not the agent Claude Code runs itself after every turn
+            s.agents[aid].done = s.agents[aid].done or now
+        elif event == "Stop" and isinstance(ev.get("background_tasks"), list):
+            # One that was stopped, by Claude or by hand, has no SubagentStop: what still runs
+            # is listed when a turn ends. It goes without a cheer. One listed that is not known
+            # (it outlived a /clear, and reports under the new session) is taken in.
+            running = {str(t.get("id")): t for t in ev["background_tasks"]
+                       if isinstance(t, dict) and t.get("type") == "subagent" and t.get("status") == "running"}
+            s.agents = {a: agent for a, agent in s.agents.items() if agent.done or a in running}
+            for a, task in running.items():
+                s.agents.setdefault(a, Agent(str(task.get("description") or ""), now))
+
+    def _companions(self, s) -> tuple[list, int]:
+        """A session's subagents as the overlay draws them: the first `base.AGENTS_SHOWN` that
+        started, each `[its id, its task, "working" or "done"]`, and how many more there are.
+        One that finished cheers for `base.AGENT_CHEER` seconds and is gone (its record stays,
+        for its task if it comes back). Call with the lock held."""
+        if not self.cfg.overlay.get("character_agents") or self.cfg.overlay.get("character", "none") == "none":
+            return [], 0
+        now = time.monotonic()
+        ordered = sorted(((a, agent) for a, agent in s.agents.items() if not agent.done or now - agent.done < base.AGENT_CHEER),
+                         key=lambda item: item[1].since)
+        return ([[a, agent.task, "done" if agent.done else "working"] for a, agent in ordered[:base.AGENTS_SHOWN]],
+                max(0, len(ordered) - base.AGENTS_SHOWN))
 
     def _limit_known(self, s) -> bool:
         """A session's turn has just ended at the usage limit: whether you know that already,
@@ -873,7 +919,9 @@ class Hub(Permissions, Talk, Headset):
                 # Its character's sheet ("" for none, or while it is being drawn): the figure by
                 # its color, or by its id when the pick is at random (overlay.character_pick).
                 "sprite": self.sheets.path(style, s.color, kind=characters.pick(style, s.color, s.id, pick)),
-            } for s in self.sessions.by_id.values() for figures in [self._figures(s)]]
+                # Its subagents as small companions beside that character, and how many more than those.
+                "agents": agents, "agents_more": more,
+            } for s in self.sessions.by_id.values() for figures in [self._figures(s)] for agents, more in [self._companions(s)]]
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)]
                            + (["allow"] if asking.get("multiSelect") else []) if asking

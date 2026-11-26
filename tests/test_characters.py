@@ -13,6 +13,7 @@ import zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "hub"))
+import base  # noqa: E402
 import characters  # noqa: E402
 from hub import Config, Hub  # noqa: E402
 from state import COLORS  # noqa: E402
@@ -475,6 +476,106 @@ class HubRows(unittest.TestCase):
         path = self.rows(sent)["sessions"][0]["sprite"]
         self.assertTrue(path.endswith(".png") and os.path.isfile(path), path)
         self.assertIn(os.path.join(self.tmp, "characters"), path)
+
+
+def _ev(event, **extra):
+    return {"hook_event_name": event, "session_id": "s1", "cwd": "/tmp/project-a", **extra}
+
+
+class Companions(unittest.TestCase):
+    """A session's subagents as small companions (`overlay.character_agents`), from the events
+    as a real session sent them (docs/dev/facts.md, "What the hooks say about subagents")."""
+    rows = HubRows.rows
+
+    def make(self, on=True, character="familiars"):
+        hub, sent = HubRows.make(self, character)
+        hub.sheets._busy = True  # no sheet is drawn: only the rows matter here
+        hub.cfg.overlay["character_agents"] = on
+        return hub, sent
+
+    def start(self, hub, aid, task):
+        hub.on_event(_ev("PreToolUse", tool_name="Agent", tool_input={"description": task, "subagent_type": "general-purpose"}))
+        hub.on_event(_ev("SubagentStart", agent_id=aid, agent_type="general-purpose"))
+        hub.on_event(_ev("PostToolUse", tool_name="Agent", tool_input={"description": task},
+                         tool_response={"isAsync": True, "status": "async_launched", "agentId": aid, "description": task}))
+
+    def shown(self, hub, sent):
+        hub.publish()
+        row = self.rows(sent)["sessions"][0]
+        return row["agents"], row["agents_more"]
+
+    def test_off_for_a_new_install_and_with_no_character(self):
+        import overlay
+        self.assertIs(overlay.DEFAULTS["character_agents"], False)
+        for on, character in ((False, "familiars"), (True, "none")):
+            hub, sent = self.make(on, character)
+            self.start(hub, "a1", "Alpha task")
+            self.assertEqual(self.shown(hub, sent), ([], 0))
+
+    def test_one_for_each_that_runs_and_a_cheer_when_it_finishes(self):
+        hub, sent = self.make()
+        for aid, task in (("a1", "Alpha task"), ("a2", "Beta task"), ("a3", "Gamma task")):
+            self.start(hub, aid, task)
+        self.assertEqual(self.shown(hub, sent), ([["a1", "Alpha task", "working"], ["a2", "Beta task", "working"],
+                                                  ["a3", "Gamma task", "working"]], 0))
+        # What one of them does is the session's too, and its turn ends while they run on.
+        hub.on_event(_ev("PreToolUse", tool_name="Bash", tool_input={"command": "sleep 4"}, agent_id="a3", agent_type="general-purpose"))
+        hub.on_event(_ev("Stop", last_assistant_message="Launched.", background_tasks=[
+            {"id": aid, "type": "subagent", "status": "running", "description": "x"} for aid in ("a1", "a2", "a3")]))
+        # Claude Code's own agent after each turn: no start, no type.
+        hub.on_event(_ev("SubagentStop", agent_id="a9", agent_type="", last_assistant_message="is it done yet?"))
+        self.assertEqual(len(self.shown(hub, sent)[0]), 3)
+        hub.on_event(_ev("SubagentStop", agent_id="a3", agent_type="general-purpose", last_assistant_message="gamma"))
+        self.assertEqual([a[2] for a in self.shown(hub, sent)[0]], ["working", "working", "done"])
+        hub.sessions.by_id["s1"].agents["a3"].done -= base.AGENT_CHEER  # it has cheered
+        self.assertEqual([a[0] for a in self.shown(hub, sent)[0]], ["a1", "a2"])
+
+    def test_three_stand_there_and_the_rest_are_counted(self):
+        hub, sent = self.make()
+        for n in range(5):
+            self.start(hub, f"a{n}", f"Task {n}")
+        agents, more = self.shown(hub, sent)
+        self.assertEqual(([a[0] for a in agents], more), (["a0", "a1", "a2"], 2))
+        hub.on_event(_ev("SubagentStop", agent_id="a0", agent_type="general-purpose"))
+        hub.sessions.by_id["s1"].agents["a0"].done -= base.AGENT_CHEER
+        agents, more = self.shown(hub, sent)
+        self.assertEqual(([a[0] for a in agents], more), (["a1", "a2", "a3"], 1))  # the next one steps up
+
+    def test_one_that_was_stopped_goes_when_the_turn_ends(self):
+        # Stopped by Claude or by hand it sends no SubagentStop: the next Stop lists what runs.
+        hub, sent = self.make()
+        self.start(hub, "a1", "Step walker")
+        self.start(hub, "a2", "Quick look")
+        hub.on_event(_ev("Stop", last_assistant_message="x", background_tasks=[
+            {"id": "a2", "type": "subagent", "status": "running", "description": "Quick look", "agent_type": "general-purpose"},
+            {"id": "b1", "type": "shell", "status": "running", "description": "Sleep"}]))
+        self.assertEqual(self.shown(hub, sent), ([["a2", "Quick look", "working"]], 0))
+        hub.on_event(_ev("Stop", last_assistant_message="x"))  # an older Claude Code names none: nothing is taken away
+        self.assertEqual(len(self.shown(hub, sent)[0]), 1)
+
+    def test_one_that_comes_back_keeps_its_task_and_stands_last(self):
+        hub, sent = self.make()
+        self.start(hub, "a1", "Quick look")
+        hub.on_event(_ev("SubagentStop", agent_id="a1", agent_type="general-purpose"))
+        hub.sessions.by_id["s1"].agents["a1"].done -= base.AGENT_CHEER
+        self.start(hub, "a2", "Step walker")
+        hub.on_event(_ev("SubagentStart", agent_id="a1", agent_type="general-purpose"))  # sent a message, or woke itself
+        self.assertEqual(self.shown(hub, sent), ([["a2", "Step walker", "working"], ["a1", "Quick look", "working"]], 0))
+
+    def test_events_out_of_order_still_name_it_once(self):
+        hub, sent = self.make()  # the hooks report on their own, 30 ms apart
+        hub.on_event(_ev("PostToolUse", tool_name="Agent", tool_response={"status": "async_launched", "agentId": "a1", "description": "Alpha task"}))
+        hub.on_event(_ev("SubagentStart", agent_id="a1", agent_type="general-purpose"))
+        hub.on_event(_ev("PreToolUse", tool_name="Agent", tool_input={"description": "Alpha task"}))
+        self.assertEqual(self.shown(hub, sent), ([["a1", "Alpha task", "working"]], 0))
+
+    def test_one_that_outlived_a_clear_is_taken_in_at_the_next_stop(self):
+        hub, sent = self.make()  # it reports under the new session, which has not seen it start
+        hub.on_event(_ev("SubagentStop", agent_id="a1", agent_type="general-purpose"))
+        self.assertEqual(self.shown(hub, sent), ([], 0))
+        hub.on_event(_ev("Stop", last_assistant_message="x", background_tasks=[
+            {"id": "a2", "type": "subagent", "status": "running", "description": "Outlives clear"}]))
+        self.assertEqual(self.shown(hub, sent), ([["a2", "Outlives clear", "working"]], 0))
 
 
 if __name__ == "__main__":

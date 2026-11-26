@@ -413,6 +413,29 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     Session the shown session's character stands on the details' top edge (edge) or sits
     48 px in its row (inside); in All Sessions each row has one, 32 px, beside its words. Idle
     and working ones hold their first frame, so only a session with news moves (`UpdateSprite`).
+  - Companions for Subagents (`overlay.character_agents`, off; 2026-11-26, the author: "since I
+    have a character, a companion per session ... sub-agents as many companions"). While a
+    session's subagents run, copies of its figure at half size (one screen pixel for each of
+    its own) stand beside it on the edge, in the order they started, up to three
+    (`base.AGENTS_SHOWN`), then a count ("+2"). A new one fades in over a quarter of a second;
+    one whose subagent finished cheers for 3 s (`base.AGENT_CHEER`, the done row) and fades
+    away, and the others close up at once; one that was stopped goes without a cheer. At work
+    each is a third of the two-second row ahead of the one before (`Sprite.Lead`), so they do
+    not move as one. The mouse on one shows its task (the Agent tool's `description`) in a tag
+    above it, on the side away from the figure. Only where a figure stands on an edge (the
+    bubble's, or the details' in Selected Session): inside the bubble and beside the rows of
+    All Sessions a half-size copy would be 33 and 18 px, too small to read. The hub keeps
+    which run (`Hub._agent_event`, `Session.agents`) from four events, measured in
+    `docs/dev/facts.md`: `SubagentStart` (also one that comes back), the Agent tool's
+    `PostToolUse` (the id with the task), `SubagentStop` (a cheer), and `background_tasks` of
+    each `Stop` (one that was stopped sends no `SubagentStop`, so it goes when the turn ends;
+    one that outlived a /clear is taken in). Two new hooks for it, `SubagentStart` and
+    `SubagentStop`, both `report.sh`: an install from before needs `install.sh --hooks-only`
+    again. Measured in pictures (`overlay_check.py --only=character-agents`): gaps of 14 to
+    17 px between all figures, feet on one row of pixels. Tests replay the events as a real
+    session sent them (`tests/test_characters.py`, `Companions`). Not done: the real hooks
+    through a hub with a real session; the motion (fade, cheer, closing up) seen by anyone; an
+    agent in the foreground (not seen on Claude Code 2.1.332). Not tried by the author.
   - Seen in pictures (`overlay_check.py --only=character`): both kinds, both places,
     speaking, needs you, done, failed; Selected Session on the edge and inside, All Sessions.
     Not in the request card yet, and Reduce Motion holds the first frame.

@@ -185,6 +185,15 @@ def permission_summary(tool: str, tool_input: dict) -> tuple[str, str]:
 
 
 @dataclass
+class Agent:
+    """A subagent of a session, while it runs and for a moment after it finished: a small
+    companion beside the session's character (`overlay.character_agents`)."""
+    task: str  # the few words the Agent tool was given for it (`description`)
+    since: float  # when it started, on the clock that counts from the boot: their order
+    done: float = 0.0  # when it finished by itself: it cheers for `base.AGENT_CHEER` seconds and is not shown after
+
+
+@dataclass
 class Session:
     id: str
     cwd: str
@@ -199,6 +208,8 @@ class Session:
     activity: str = ""  # what it is doing, while working
     note: str = ""  # how the last turn ended, shown when not working
     tasks: dict[str, bool] = field(default_factory=dict)  # task id -> completed
+    agents: dict[str, Agent] = field(default_factory=dict)  # Claude Code's agent id -> its subagent that runs or has just finished
+    agent_task: str = ""  # the task of the Agent tool's last call, for the agent that starts next
     turn_started: float | None = None
     spoken: str | None = None  # line already spoken this turn, so neither Stop nor a late batch repeats it
     last_speech: str = ""

@@ -75,6 +75,10 @@ END_ANYWAY = 8.0
 # Seconds "Ending ..." stays up with no end seen (`end_progress`): every end measured took under
 # three, and the question about work in the background takes its place within two.
 END_SHOWN = 10.0
+# Subagents as small companions (`overlay.character_agents`): how many stand beside a session's
+# character before the rest are counted ("+2"), and the seconds one cheers after it finished.
+AGENTS_SHOWN = 3
+AGENT_CHEER = 3.0
 EDITOR_GAP = 3.0  # seconds an editor counts as still there after a request of its ended: the next one is on its way
 NEVER = float("-inf")  # "has not happened", for times on the clock that counts from the boot
 RECOUNT = 1.5  # seconds after a turn ended until what it used is added up once more (its last reply may be written late)

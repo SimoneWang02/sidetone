@@ -345,7 +345,14 @@ Roughly easiest first, the larger ones after.
       subagents run, small copies of its companion (about half size) stand beside it, one for
       each, up to three and then "+N"; each appears when its subagent starts (the Agent tool's
       PreToolUse carries the description), works, and cheers and goes when it finishes
-      (SubagentStop). Hovering one could show its task. To decide; the hooks to test first.
+      (SubagentStop). Hovering one could show its task. Built the same day as "Companions for
+      Subagents" (`overlay.character_agents`, off), the hooks tested first (docs/dev/facts.md:
+      all of it arrives, but one that is stopped sends no SubagentStop), on the edge only,
+      pictures `character-agents-*`. **Not tried by the author.** To go live: the two new hooks
+      in `~/.claude/settings.json` (`install.sh --hooks-only`), `sidetone hub restart`, the
+      setting on. Left: the real hooks through a hub with a real session, the motion seen live,
+      a review by subagents (the usage window was at 97 %). The "Agents" figure and the panel
+      rows of the first idea are not built.
 
 ### Larger extras
 
