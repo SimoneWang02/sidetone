@@ -2,7 +2,7 @@
 
 Run: ~/.local/share/kokoro/venv/bin/python -I tests/characters_page.py OUT_DIR
 Writes OUT_DIR/index.html and OUT_DIR/sheets/*.png (each style's figures, each in the session color
-that gets it: the first seven colors for the seven familiars, the first five for the others). The
+that gets it: the first ten colors for the ten familiars, the first five for the others). The
 page plays them as the overlay does: 12 frames a second, needs you and done play their start once
 then repeat their end, speaking picks its row by a made-up voice's loudness.
 """
@@ -17,12 +17,12 @@ from state import COLORS  # noqa: E402
 
 NAMES = {
     "familiars": ["Lantern, calm", "Ember, excitable", "Sprout, sleepy", "Shellback, shy", "Toadstool, grumpy",
-                  "Axolotl, sweet", "Dragon, proud", "Mimic, sneaky"],
+                  "Axolotl, sweet", "Dragon, proud", "Mimic, sneaky", "Cat, curious", "Dog, devoted"],
     "operators": ["Hoodie with cat ears", "Pendant", "Bandana", "Earbuds and a beard", "Aerial and a scarf"],
     "sketch": ["Blue session", "Orange session", "Violet session", "Teal session", "Pink session"],
 }
 ABOUT = {
-    "familiars": "Seven creatures with seven tempers. Pixel art, shown with hard edges at twice its size.",
+    "familiars": "Ten creatures with ten tempers. Pixel art, shown with hard edges at twice its size.",
     "operators": "Five people on the line, each with their own headset and something of their own. Pixel art, twice its size.",
     "sketch": "One operator in pencil for every session; the scarf and headset take the session's color. Smooth lines, drawn at the size shown on the edge.",
 }

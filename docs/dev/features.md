@@ -355,19 +355,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     fan with the voice) and a proud dragon whelp (two-finger wings, smug in idle, a snort of
     smoke), and since its rework a sneaky mimic (an innocent treasure chest nearly shut, eyes
     glinting in the gap, fangs when it opens, wooden planks with its metal in the session's
-    color; the author: "It looks good ... you can put that"), eight in all. Previewed, reviewed
+    color; the author: "It looks good ... you can put that"), eight in all, ten with the cat and the dog below. Previewed, reviewed
     by subagents (a pixel-art critic among them) and simplified before going in. Character Pick (`overlay.character_pick`): by session
     color (`kind_of(color, kinds(style))`, the default) or at random, which is the session id's
     crc32, so a session keeps its figure for its whole life ("maybe someone want the companion
-    to be random"); the 6th and 7th colors now get the axolotl and the dragon. Operators: five people on
+    to be random"); the 6th and 7th colors now get the axolotl and the dragon, the 9th and 10th the cat and the dog. Operators: five people on
     the line, each with their own headset and something of their own (hoodie with cat ears, a
     pendant, a bandana, earbuds and a beard, an aerial and a scarf). Sketch (2026-11-26, the
     author: "it's missing the hand-drawn operators"): one operator in rough pencil, the same
     for every session but for the scarf and headset in its color, the lines shaking three times
     a second as if redrawn.
-  - Previewed, not in the overlay (2026-11-26, the author: "could we create more such as cat,
-    dog ... run multiple agents, study those kind of things, and also run agents to critique
-    the result"): a curious cat and a devoted dog in `docs/dev/looks/familiars_next.py`. The
+  - A curious cat and a devoted dog, the ninth and tenth familiars (2026-11-26, the author:
+    "could we create more such as cat, dog ... run multiple agents, study those kind of
+    things, and also run agents to critique the result"; of their preview: "they're good. You
+    can put it"). The
     cat sits upright, pointed ears, a long tail curled on the right; it pats a ball of yarn
     (in the hue opposite the session's) while working, beckons with one paw and meows when it
     needs you, and wraps its tail round its paws when done. The dog is a puppy with long
