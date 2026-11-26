@@ -860,12 +860,32 @@ class Hub(Permissions, Talk, Headset):
             new_keys, self._keys = keys != self._keys, keys
             bars = self._plan_bars()
             muted = self._muted()
-            new_rows, self._shown = (rows, history, bars, muted) != self._shown, (rows, history, bars, muted)
+            quiet = self._muted_sessions_line()
+            new_rows, self._shown = (rows, history, bars, muted, quiet) != self._shown, (rows, history, bars, muted, quiet)
         if new_keys:  # claim allow/deny/cancel only while they can do something
             self.overlay.send({"type": "keys", "live": keys})
         if new_rows:
             self.overlay.send({"type": "state", "sessions": rows, "history": history, "usage": bars, "muted": muted,
-                               "sprite_layout": characters.LAYOUT})
+                               "quiet": quiet, "sprite_layout": characters.LAYOUT})
+
+    def _muted_sessions_line(self) -> dict | None:
+        """The line that stays in the details while a session is muted by itself, under "Voice
+        is muted" when that is there too (the author, 2026-11-26: "it should stick there ... what
+        if I don't know how to disable it"): who is muted, and the key that gives the voice back.
+        The key acts on the session in focus, so the line says that it turns it on only while
+        that one is muted, and otherwise that the session has to be selected first. Several
+        muted: how many, as each one's row and light carry the speaker. Call with the lock held."""
+        quiet = [s for s in self.sessions.by_id.values() if s.muted and not s.standin]
+        if not quiet:
+            return None
+        focus = self._target()
+        here = focus is not None and focus.muted
+        key = self.cfg.overlay.get("hotkeys", {}).get("mute_session", "")
+        if len(quiet) == 1:
+            text, hint = f"{quiet[0].name} is muted", "turns it on" if here else "when selected"
+        else:
+            text, hint = f"{len(quiet)} sessions are muted", "turns this one on" if here else "when selected"
+        return {"text": text, "hint": f"{key} {hint}" if key else ""}
 
     def _figures(self, s) -> dict:
         """What can be said in figures about a session right now. For each (see

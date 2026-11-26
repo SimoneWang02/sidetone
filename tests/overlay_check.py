@@ -892,6 +892,25 @@ send(type="flash", name="sidetone", state="done", text="", seconds=0)
 send(type="config", **{**dict(opaque=True, still=True, mode="dots", hotkeys=KEYS, **HERE), "muted_session_mark": False})
 shot("mute-one-unmarked", 0.8)  # the lights without the mark (muted_session_mark off)
 send(type="config", **{**dict(opaque=True, still=True, mode="dots", hotkeys=KEYS, **HERE), "muted_session_mark": True})
+# The line that stays in the details while a session is muted by itself: the one in focus, one
+# that is not, several, and under "Voice is muted" when the voice is off for everyone as well.
+send(type="peek", on=True)
+send(type="state", sessions=sessions(muted={"api-server"}), history=HISTORY, muted=False,
+     quiet=dict(text="api-server is muted", hint="Ctrl+Alt+Shift+M turns it on"))
+shot("mute-stays-focus", 0.8)
+send(type="state", sessions=sessions(muted={"data-pipeline"}), history=HISTORY, muted=False,
+     quiet=dict(text="data-pipeline is muted", hint="Ctrl+Alt+Shift+M when selected"))
+shot("mute-stays-other", 0.8)
+send(type="state", sessions=sessions(**QUIET), history=HISTORY, muted=False,
+     quiet=dict(text="3 sessions are muted", hint="Ctrl+Alt+Shift+M when selected"))
+shot("mute-stays-several", 0.8)
+send(type="state", sessions=sessions(muted={"api-server", "notes"}), history=HISTORY, muted=True,
+     quiet=dict(text="2 sessions are muted", hint="Ctrl+Alt+Shift+M turns this one on"))
+shot("mute-stays-both", 0.8)
+send(type="config", **{**dict(opaque=True, still=True, mode="dots", hotkeys=KEYS, **HERE), "corner": "top-right"})
+shot("mute-stays-both-top", 1.2)  # the bar at the top: the details below the rows, in the same order
+send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, **HERE)
+send(type="peek", on=False)
 send(type="state", sessions=sessions(), history=HISTORY, muted=False)
 send(type="move")
 shot("move")

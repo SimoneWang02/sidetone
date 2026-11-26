@@ -1176,6 +1176,22 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   session. Neither says what still gets through, and neither has "only these speak". Slack's
   muted channels still show a badge for a mention (its help page): the pattern followed here.
   Not built: "only this one speaks" in one press, for someone with many sessions (`TODO.md`).
+  A line that stays (the same day; `Hub._muted_sessions_line`, `quiet` in the state,
+  `quietBox` in `Overlay.cs`). The author, having pressed the key: "I like it but similar to
+  how [Ctrl+Alt+M] mutes everything, I feel like the label should ... stick there, it
+  shouldn't disappear because like what if I don't know how to disable it"; and with both
+  mutes on, "overall in general and then display the specific session that's muted ... it's
+  like cascade things". So while a session is muted by itself the details hold the mute
+  key's own row for it, under "Voice is muted" when that is there too, whichever way the
+  panel grows, and with the same setting (`overlay.muted_line`): "web-app is muted" with
+  "Ctrl+Alt+Shift+M turns it on". The key acts on the session in focus, so the hub says
+  "turns it on" only while that one is muted and "Ctrl+Alt+Shift+M when selected" otherwise
+  (pressed then, it would mute the one in focus). Several muted: "3 sessions are muted", as
+  each one's row and light carry the speaker, with "turns this one on" or "when selected".
+  The wording was left to Claude ("you pick it"). Like "Voice is muted" it gives way to a
+  notice while one is up. Pictures: `mute-stays-focus.png`, `mute-stays-other.png`,
+  `mute-stays-several.png`, `mute-stays-both.png`, `mute-stays-both-top.png`; the longest
+  line fits the 380 px panel on one line, and a longer name wraps.
 - The arrow keys move the focus (2026-11-17). Before, besides the wheel, a quick tap of the
   talk key went to the next session; the author on being asked to try it: "I don't think
   it's very intuitive ... control-alt-space, it's used for speaking ... better solution might

@@ -22,9 +22,12 @@ these come before anything new.
       now and I mute 3 of them because I want to focus on 2"; see `docs/dev/features.md`).
       Ctrl+Alt+Shift+M mutes the session in focus and unmutes it; `sidetone mute [PROJECT]`
       and `unmute` do the same. Its lines are shown, not said; a small struck-out speaker
-      sits on its light and by its name. **Not tried by the author yet**: the key itself
-      (tests and pictures only), how the mark looks on the real bar, and whether the two
-      notes should differ from the mute key's. To answer: a muted session still says when
+      sits on its light and by its name. Pressed by the author the same day: "I like it",
+      and asked that the notice stay, as "Voice is muted" does, under that one when both are
+      on: built ("web-app is muted", "Ctrl+Alt+Shift+M turns it on"; with another session in
+      focus "when selected"; several, "3 sessions are muted"). **Not seen by the author
+      yet**: that line, in pictures only; and not said, whether the two notes should differ
+      from the mute key's. To answer: a muted session still says when
       it needs you ("Muted Sessions Still Ask", on), which was Claude's change to what was
       asked; keep it on by default? Needs `sidetone hub restart` and `sidetone overlay restart`.
       An idea beside it, not built: one press for "only this one speaks", for many sessions.

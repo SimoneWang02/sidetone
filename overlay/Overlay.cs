@@ -3059,6 +3059,11 @@ namespace ClaudeSpeaks
         // wanted it there rather than as a mark past the bar.
         readonly StackPanel mutedBox = new StackPanel();
         readonly TextBlock mutedText = new TextBlock();
+        // Under it, the same row for sessions muted by themselves ("web-app is muted", the key
+        // that turns it on): the hub's words (`quiet` in the state), shown with muted_line too.
+        readonly StackPanel quietBox = new StackPanel();
+        readonly TextBlock quietText = new TextBlock { TextWrapping = TextWrapping.Wrap };
+        string quietWords = "", quietHint = "";
         bool mutedLine = true;
         readonly StackPanel historyLines = new StackPanel();
         // The figures of one session, each with its name in front, under the rows: the session
@@ -3252,6 +3257,7 @@ namespace ClaudeSpeaks
             bannerHint.Margin = new Thickness(0, 2, 0, 0);
             Section(bannerBox, bannerTitle, bannerHint);
             Section(mutedBox, mutedText);
+            Section(quietBox, quietText);
             var cardLayers = new Grid();
             cardLayers.Children.Add(metricsBody);
             cardLayers.Children.Add(mutedIcon);
@@ -3473,6 +3479,9 @@ namespace ClaudeSpeaks
                     history = msg.ContainsKey("history") ? (object[])msg["history"] : new object[0];
                     usage = msg.ContainsKey("usage") && msg["usage"] is object[] ? (object[])msg["usage"] : new object[0];
                     muted = msg.ContainsKey("muted") && Convert.ToBoolean(msg["muted"]);
+                    var quiet = msg.ContainsKey("quiet") ? msg["quiet"] as Dictionary<string, object> : null;
+                    quietWords = quiet == null ? "" : Str(quiet, "text");
+                    quietHint = quiet == null ? "" : Str(quiet, "hint");
                     if (msg.ContainsKey("sprite_layout") && msg["sprite_layout"] is Dictionary<string, object>) Sprite.Layout((Dictionary<string, object>)msg["sprite_layout"]);
                     // The focus moved to another session (arrows, wheel, another terminal, or it
                     // spoke): the card and the history are about that one now, not about the one
@@ -3633,11 +3642,13 @@ namespace ClaudeSpeaks
         void Stack()
         {
             bool bottom = Low;
-            var parts = new List<UIElement> { rowsPanel, emptyLine, mutedBox, requestBox, bannerBox, historyBox };
+            // The voice off for everyone reads first, then who is muted alone, whichever way the panel grows.
+            var parts = bottom ? new List<UIElement> { rowsPanel, emptyLine, quietBox, mutedBox, requestBox, bannerBox, historyBox }
+                               : new List<UIElement> { rowsPanel, emptyLine, mutedBox, quietBox, requestBox, bannerBox, historyBox };
             if (bottom) parts.Reverse();
             sections.Children.Clear();
             foreach (UIElement part in parts) sections.Children.Add(part);
-            foreach (StackPanel box in new[] { mutedBox, requestBox, bannerBox, historyBox })
+            foreach (StackPanel box in new[] { mutedBox, quietBox, requestBox, bannerBox, historyBox })
             {
                 UIElement line = box.Children[0] is Border ? box.Children[0] : box.Children[1];
                 box.Children.Remove(line);
@@ -3702,6 +3713,12 @@ namespace ClaudeSpeaks
                 mutedBox.Visibility = Visibility.Visible;
             }
             else mutedBox.Visibility = Visibility.Collapsed;
+            if (quietWords.Length > 0 && mutedLine && asked && !hasBanner)  // as above: not twice while the key's own notice is up
+            {
+                VoiceRow(quietText, true, quietWords, quietHint);
+                quietBox.Visibility = Visibility.Visible;
+            }
+            else quietBox.Visibility = Visibility.Collapsed;
             bool talking = talkState.Length > 0;
             foreach (Row row in order)
                 if (talking && row.Name == talkName) row.SetTalk(TalkKind(), TalkWords(), TalkInk(), talkState == "listening" ? mic : null);

@@ -2929,6 +2929,28 @@ class OneSessionMuted(HubCase):
         hub.mute_session()
         self.assertTrue(wait_for(lambda: lines() == [("b", "done")], 3))  # now cut too; the other's line is not
 
+    def test_a_line_stays_in_the_details_while_one_is_muted(self):
+        hub = self.two()
+        line = lambda: self.overlay.of("state")[-1]["quiet"]  # noqa: E731
+        hub.publish()
+        self.assertIsNone(line())
+        hub.mute_session()  # a, the one in focus: the key would give its voice back
+        self.assertEqual(line(), {"text": "a is muted", "hint": "Ctrl+Alt+Shift+M turns it on"})
+        hub.talk_target = "b"
+        hub.publish()
+        self.assertEqual(line(), {"text": "a is muted", "hint": "Ctrl+Alt+Shift+M when selected"})  # here it would mute b
+        hub.mute_session()
+        self.assertEqual(line(), {"text": "2 sessions are muted", "hint": "Ctrl+Alt+Shift+M turns this one on"})
+        open(self.cfg.mute_file, "w").close()  # the voice off for everyone as well: both are told
+        hub.publish()
+        self.assertEqual((self.overlay.of("state")[-1]["muted"], line()["text"]), (True, "2 sessions are muted"))
+        os.remove(self.cfg.mute_file)
+        hub.cfg.overlay["hotkeys"]["mute_session"] = ""  # no key for it: no key named
+        hub.mute_session("a", False)
+        self.assertEqual(line(), {"text": "b is muted", "hint": ""})
+        hub.mute_session("b", False)
+        self.assertIsNone(line())
+
     def test_it_stays_muted_across_a_clear(self):
         hub = self.two()
         hub.mute_session()
