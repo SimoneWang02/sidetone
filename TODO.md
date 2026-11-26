@@ -18,6 +18,15 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
+- [ ] Other programs go quieter while a line is spoken (2026-11-26, `other_volume`, 30, the
+      author by voice: "the audio level should be lower so I can focus more on your voice"):
+      music, videos and calls go down to 30% of their own level for the length of a line and
+      come back after it ("Other Sound While Speaking" under Speech; 100 leaves them alone;
+      see `docs/dev/features.md`). Tests, and the real overlay on the author's own programs
+      with the levels read back from Windows. **Not heard by the author yet.** To judge by
+      ear: 30 as the level, how fast it goes down and comes back, and whether a call
+      (Discord) should go down like the music. Not built: the same while the talk key is
+      held, and programs to leave alone.
 - [ ] The end key on a session with work in the background (2026-11-26, the author by voice,
       after Ctrl+Alt+Minus on "sidetone 6": "non l'ha cancellato, mi chiedeva di confermare
       sul terminale"). Claude Code asks in the terminal before it exits such a session; now

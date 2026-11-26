@@ -561,6 +561,18 @@ class OverlayFeed(HubCase):
         hub.on_event(ev("Stop", transcript_path=os.path.join(self.tmp, "gone.jsonl"), last_assistant_message=tag("Done.")))
         self.assertEqual(row()["context"], 62.0, "a record that cannot be read leaves the last figure")
 
+    def test_other_programs_are_lowered_while_a_line_is_spoken_and_given_back_after_it(self):
+        hub = self.make()
+        hub.on_display(ev("MessageDisplay", delta=tag("All done.") + "\n"))
+        self.spoken()
+        self.assertEqual(self.overlay.of("duck"), [{"type": "duck", "level": 0.3}, {"type": "duck", "level": 1}])
+
+    def test_other_programs_are_left_alone_at_a_hundred(self):
+        hub = self.make(other_volume=100)
+        hub.on_display(ev("MessageDisplay", delta=tag("All done.") + "\n"))
+        self.spoken()
+        self.assertEqual(self.overlay.of("duck"), [{"type": "duck", "level": 1}])  # only given back, as after a change of the setting mid-line
+
     def test_the_history_says_how_a_line_ended_and_whether_it_was_missed(self):
         hub = self.make()
         hub.cfg.history_missed = True

@@ -1442,6 +1442,31 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   keybind: tried by the author 2026-11-21, the ring stayed dark ("It's perfect, I think").
   Their first recording came out as Ctrl + F24, which never matches during a hold (Ctrl is
   masked); recorded with hands off the keyboard it is F24 alone.
+- Other programs quieter while a line is spoken (2026-11-26, `other_volume`, 30; "Other Sound
+  While Speaking" under Speech; `Hub._speech_changed`, `Duck` in `Overlay.cs`). The author, by
+  voice: "you should make a setting when you are speaking the other systems level should like
+  the audio level should be lower so I can focus more on your voice". When a line starts the
+  hub sends `duck` with the level as a share (0.3), when it ends `duck` with 1. The overlay
+  sets every program's level in Windows' Volume Mixer to that share of its own level
+  (`ISimpleAudioVolume` on each stream of each output in use), in steps of 30 ms: down in
+  about 0.12 s, which is over before the first word (a line's sound starts about 0.3 s after
+  it does), back up in about 0.3 s, so of two lines back to back the second finds the others
+  still low. The voice itself is WSL's stream and is left alone: `msrdc.exe`, known by the
+  program's path, which the stream's identifier holds (no look at the processes; an old
+  `msrdc` stream of a process long gone was in the list too). Windows remembers a program's
+  level after it ends, so nothing may be left low: each level is given back to what it was,
+  the overlay gives all of them back at once when it closes, and a level moved by hand during
+  a line is left where it was put (before each step the overlay reads the level, and lets go
+  of a stream that is not where it set it). A stream that starts during a line is lowered
+  from the next line on. Measured on the author's machine with a second program reading the
+  levels from Windows (ten programs on four outputs, Spotify playing): 0.30 during, 1.00
+  after, `msrdc` 1.00 throughout, the one moved by hand kept, all back when the overlay's
+  input closed with them low. Claude's choices, not asked for: 30 as the level and on for a
+  new install, calls and Windows' own sounds lowered like the rest, the two fade times, and
+  no lowering while the talk key is held. Not built: programs to leave alone by name, and
+  pausing or muffling in place of lowering (Superwhisper offers Pause, Mute, Lower, Muffle;
+  `docs/dev/inspiration.md`). Limits: only with the Windows overlay, and an overlay that is
+  killed during a line (not closed) leaves the levels low until the next line ends.
 - The talk key reaches back (2026-11-17, `focus_reach_back`, 1 s): a session that starts to
   speak takes the focus, also in the split second before the talk key goes down, and the
   words then went to it instead of the session the author meant (three times that day; the

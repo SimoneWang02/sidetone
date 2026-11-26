@@ -90,6 +90,8 @@ SECTIONS = [
         # One volume for the voice and the sounds; `sound_volume` stays in config.json as the
         # sounds' level beside the voice.
         number("volume", "Volume", "The voice and the short sounds together.", 0, 100, 5),
+        number("other_volume", "Other Sound While Speaking", "How loud music, videos and calls stay while a line is spoken. "
+               "100 leaves them alone.", 0, 100, 5),
         number("speed", "Speed", "How fast the voice talks.", 0.7, 1.6, 0.05, "x"),
         {"key": "reply_language", "kind": "pick", "name": "Language of the Summary",
          "help": "The spoken line in the language you wrote or spoke in, or always in one language.",

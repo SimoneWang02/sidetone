@@ -27,6 +27,9 @@ its own spoken line as the first line of its reply.
 - **Several sessions take turns.** One line at a time. "Needs you" goes before "done". Each
   project has its own voice. The overlay shows who is talking; without an overlay the
   project's name is spoken first when more than one session is active.
+- **Other sound steps back** (Windows). While a line is spoken, music, videos and calls go down
+  to 30% of their own level and come back after it (`other_volume`, 0 to 100; 100 leaves them
+  alone).
 - **A glass overlay** (Windows): a slim bar of frosted glass with one status light per session:
   a spinner while it works, a pulsing amber light when it needs you, a check when it is done.
   Move the mouse onto it and a panel unfolds beside it with each session's name (each in its

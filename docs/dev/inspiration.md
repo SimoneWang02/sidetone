@@ -24,7 +24,8 @@ Ranked by how much they cut attention latency or would delight someone using it.
    On Windows the overlay could lower other apps' playback sessions. The Discord attempt that
    failed was on a capture stream; playback streams are what the Volume Mixer itself changes
    ([ISimpleAudioVolume](https://learn.microsoft.com/en-us/windows/win32/api/audioclient/nn-audioclient-isimpleaudiovolume)).
-   The WSL voice stream (`msrdc`) must be left alone.
+   The WSL voice stream (`msrdc`) must be left alone. **Built 2026-11-26** for the spoken
+   line (`other_volume`, see `docs/dev/features.md`); not while the talk key is held.
 2. **Session-Aware Dictionary** (Wispr Flow Dictionary and Variable Recognition, Aqua Deep
    Context). Give faster-whisper the words this session is likely to hear: session names,
    the project folder, file and function names in its working folder, and words you corrected

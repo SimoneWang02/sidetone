@@ -1071,6 +1071,9 @@ class Hub(Permissions, Talk, Headset):
                     kind = u.entry["kind"] if u.kind == "notice" and u.entry else u.kind  # said again: as it first looked
                     self._flash(s, u.text, FLASH_LOOK.get(kind, kind))
         self.headset_spoke(u)
+        level = self.cfg.other_volume / 100 if u else 1
+        if self.overlay and (level < 1 or not u):  # other programs quieter while it is heard
+            self.overlay.send({"type": "duck", "level": max(0.0, level)})
         self.publish()
 
     # --- helpers -----------------------------------------------------------------------------

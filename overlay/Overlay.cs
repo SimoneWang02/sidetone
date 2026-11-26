@@ -3,7 +3,7 @@
 // appears while a session talks. The bar can be dragged with the mouse. It only draws what the
 // hub tells it to and reports hotkeys.
 // Protocol: one JSON object per line.
-// In on stdin: config, state, flash, wave, request, banner, keys, mode, move, peek, settings, hold_key, bounds, quit.
+// In on stdin: config, state, flash, wave, request, banner, keys, mode, move, peek, settings, hold_key, duck, bounds, quit.
 // Out on stdout: ready, hotkey, mode, moved, setting, settings, bounds, error.
 // Built with the C# compiler that ships with Windows (csc.exe of .NET Framework 4) or, failing
 // that, by Windows PowerShell 5.1 (Add-Type). Both stop at C# 5, and the file is kept ASCII.
@@ -2990,6 +2990,149 @@ namespace ClaudeSpeaks
         }
     }
 
+    // Other programs' sound, lowered while the voice speaks (other_volume). Windows keeps a stream
+    // per program on each output (an audio session) with a level of its own, the one the Volume
+    // Mixer shows, and remembers it after the program ends: so each level is given back, and one
+    // moved by hand meanwhile is left where it was put. The voice comes from WSL as a stream of
+    // msrdc.exe, which is left alone. Listing the streams takes about 2 ms (11 ms the first time).
+    static class Duck
+    {
+        [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class DeviceEnumerator { }
+        [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IMMDeviceEnumerator { [PreserveSig] int EnumAudioEndpoints(int flow, int mask, out IMMDeviceCollection devices); }
+        [ComImport, Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IMMDeviceCollection
+        {
+            [PreserveSig] int GetCount(out int count);
+            [PreserveSig] int Item(int index, out IMMDevice device);
+        }
+        [ComImport, Guid("D666063F-1587-4E43-81F1-B948E807363F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IMMDevice { [PreserveSig] int Activate(ref Guid iid, int context, IntPtr parameters, [MarshalAs(UnmanagedType.IUnknown)] out object found); }
+        [ComImport, Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IAudioSessionManager2
+        {
+            [PreserveSig] int GetAudioSessionControl(IntPtr a, int b, out IntPtr c);
+            [PreserveSig] int GetSimpleAudioVolume(IntPtr a, int b, out IntPtr c);
+            [PreserveSig] int GetSessionEnumerator(out IAudioSessionEnumerator sessions);
+        }
+        [ComImport, Guid("E2F5BB11-0570-40CA-ACDD-3AA01277DEE8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IAudioSessionEnumerator
+        {
+            [PreserveSig] int GetCount(out int count);
+            [PreserveSig] int GetSession(int index, [MarshalAs(UnmanagedType.IUnknown)] out object session);
+        }
+        [ComImport, Guid("bfb7ff88-7239-4fc9-8fa2-07c950be9c6d"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface IAudioSessionControl2
+        {
+            [PreserveSig] int GetState(out int state);
+            [PreserveSig] int GetDisplayName(out IntPtr name);
+            [PreserveSig] int SetDisplayName(IntPtr a, IntPtr b);
+            [PreserveSig] int GetIconPath(out IntPtr path);
+            [PreserveSig] int SetIconPath(IntPtr a, IntPtr b);
+            [PreserveSig] int GetGroupingParam(out Guid group);
+            [PreserveSig] int SetGroupingParam(IntPtr a, IntPtr b);
+            [PreserveSig] int RegisterAudioSessionNotification(IntPtr a);
+            [PreserveSig] int UnregisterAudioSessionNotification(IntPtr a);
+            [PreserveSig] int GetSessionIdentifier(out IntPtr id);
+            [PreserveSig] int GetSessionInstanceIdentifier([MarshalAs(UnmanagedType.LPWStr)] out string id);
+        }
+        [ComImport, Guid("87CE5498-68D6-44E5-9215-6DA47EF883D8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+        interface ISimpleAudioVolume
+        {
+            [PreserveSig] int SetMasterVolume(float level, ref Guid context);
+            [PreserveSig] int GetMasterVolume(out float level);
+        }
+
+        class Stream { public ISimpleAudioVolume Volume; public float Was, Set; }
+
+        // The streams lowered here, by the name Windows gives each: output, program's path, process.
+        static readonly Dictionary<string, Stream> lowered = new Dictionary<string, Stream>();
+        static double share = 1, target = 1;  // of each program's own level
+        static DispatcherTimer fade;
+
+        // `level`, 0 to 1 of each program's own level, is reached in steps; 1 gives the levels back.
+        public static void To(double level)
+        {
+            target = Math.Max(0, Math.Min(1, level));
+            if (target < 1) Collect();
+            if (fade == null)
+            {
+                fade = new DispatcherTimer(DispatcherPriority.Send);
+                fade.Interval = TimeSpan.FromMilliseconds(30);
+                fade.Tick += delegate { Step(); };
+            }
+            fade.Start();
+        }
+
+        public static void Restore()  // at once: the overlay is closing
+        {
+            share = target = 1;
+            Apply();
+            lowered.Clear();
+        }
+
+        // Down within 0.15 s, before the voice's first word, and back up in about 0.4 s: a line
+        // that follows another at once finds the others still low.
+        static void Step()
+        {
+            share = share > target ? Math.Max(target, share - 0.2) : Math.Min(target, share + 0.075);
+            Apply();
+            if (share != target) return;
+            fade.Stop();
+            if (share >= 1) lowered.Clear();
+        }
+
+        static void Apply()
+        {
+            Guid none = Guid.Empty;
+            foreach (string id in new List<string>(lowered.Keys))
+            {
+                Stream s = lowered[id];
+                float now;
+                if (s.Volume.GetMasterVolume(out now) != 0 || Math.Abs(now - s.Set) > 0.005)
+                {
+                    lowered.Remove(id);  // moved by hand, or its output is gone: no longer ours to set
+                    continue;
+                }
+                s.Set = (float)(s.Was * share);
+                s.Volume.SetMasterVolume(s.Set, ref none);
+            }
+        }
+
+        // Every stream on every output in use that is not lowered yet: one that began to play
+        // during a line joins at the next.
+        static void Collect()
+        {
+            Guid iid = typeof(IAudioSessionManager2).GUID;
+            IMMDeviceCollection all;
+            if (((IMMDeviceEnumerator)new DeviceEnumerator()).EnumAudioEndpoints(0, 1, out all) != 0) return;  // playback, active
+            int count;
+            all.GetCount(out count);
+            for (int i = 0; i < count; i++)
+            {
+                IMMDevice device;
+                object found;
+                IAudioSessionEnumerator sessions;
+                int n;
+                if (all.Item(i, out device) != 0 || device.Activate(ref iid, 23, IntPtr.Zero, out found) != 0) continue;
+                if (((IAudioSessionManager2)found).GetSessionEnumerator(out sessions) != 0) continue;
+                sessions.GetCount(out n);
+                for (int j = 0; j < n; j++)
+                {
+                    object session;
+                    string id;
+                    float was;
+                    if (sessions.GetSession(j, out session) != 0) continue;
+                    if (((IAudioSessionControl2)session).GetSessionInstanceIdentifier(out id) != 0 || id == null || lowered.ContainsKey(id)) continue;
+                    if (id.IndexOf("\\msrdc.exe", StringComparison.OrdinalIgnoreCase) >= 0) continue;  // the voice itself
+                    var volume = (ISimpleAudioVolume)session;
+                    if (volume.GetMasterVolume(out was) != 0) continue;
+                    lowered[id] = new Stream { Volume = volume, Was = was, Set = was };
+                }
+            }
+        }
+    }
+
     public class Overlay
     {
         const int WM_HOTKEY = 0x0312;
@@ -3367,6 +3510,7 @@ namespace ClaudeSpeaks
             overlay.Send("ready", null, null);
             app.Run();
             overlay.HoldKey(0);  // the hub is gone: no key stays held by us
+            Duck.Restore();  // and no program stays lowered
         }
 
         // --- input from the hub -------------------------------------------------------------------
@@ -3615,6 +3759,10 @@ namespace ClaudeSpeaks
                         try { held = (uint)KeyInterop.VirtualKeyFromKey(Ui.KeyNamed(keyName)); }
                         catch (Exception) { Error("key to hold not understood: " + keyName); }
                     HoldKey(held);
+                    break;
+                case "duck":  // the other programs' sound while the voice speaks, 0 to 1 of their own level; 1 gives it back
+                    try { Duck.To(Num(msg, "level", 1)); }
+                    catch (Exception e) { Error("other programs' sound not lowered: " + e.Message); }
                     break;
                 case "bounds":
                     ReportBounds();

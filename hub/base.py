@@ -439,6 +439,9 @@ class Config:
     talk_feedback: str = "sound"
     sound_volume: float = 0.3  # 0 to 1: the short sounds beside the voice
     volume: float = 100  # 0 to 100, like a game's master volume: the voice and the sounds together
+    # 0 to 100: how loud other programs stay while a line is spoken, of their own level; 100
+    # leaves them alone. The overlay sets it, on Windows.
+    other_volume: float = 30
     whisper_language: str = "en"  # for multilingual models such as "small": "it", "en,it" (the ones you speak), or "auto"
     # With several languages: a short recording whose language the model is unsure of is also
     # written in the language you last spoke clearly in, and kept so unless clearly worse
@@ -519,7 +522,7 @@ class Config:
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "voice_device", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_progress", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "end_background", "end_progress", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
-                    "talk_feedback", "sound_volume", "volume", "muted_asks", "limit_once", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
+                    "talk_feedback", "sound_volume", "volume", "other_volume", "muted_asks", "limit_once", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])
         wanted = user.get("overlay") or {}

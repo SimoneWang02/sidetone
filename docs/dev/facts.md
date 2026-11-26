@@ -726,6 +726,17 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   app and the new pairing.
   Paired again after the author was told to turn LE Audio off ("Done and connected"): the
   microphone opened in 0.66 s with sound and the call, 2026-11-25, 00:00.
+- Each program's playback level in Windows (the Volume Mixer's sliders) can be read and set from
+  another program: `IAudioSessionManager2.GetSessionEnumerator` on each active output, then
+  `ISimpleAudioVolume` on each stream (measured 2026-11-26, `Duck` in `Overlay.cs`). It works on
+  playback streams; on a microphone's streams Windows accepts it and does nothing (the Discord
+  attempt of 2026-11-20). A stream's instance identifier holds its output, the program's full
+  path and the process number
+  (`{0.0.0.00000000}.{output}|\Device\HarddiskVolume3\Program Files\WSL\msrdc.exe%b{0...}|5%b3004`),
+  so the program is known without asking about the process; Windows' own sounds have `#` for
+  the path and process 0. Streams of ended processes stay in the list. WSL's sound is one
+  `msrdc.exe` stream on every output. Listing twenty streams on four outputs takes 2 ms, 11 ms
+  the first time in a process.
 - Machine facts: PowerShell 5.1 with WPF, stdin pipes from WSL into `powershell.exe` work,
   execution policy undefined (use `-ExecutionPolicy Bypass`), WSLg mic is `RDPSource`,
   `dev.tty.legacy_tiocsti=0` (no typing into a terminal from outside), tmux 3.6 installed.
