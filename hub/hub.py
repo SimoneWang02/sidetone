@@ -849,6 +849,7 @@ class Hub(Permissions, Talk, Headset):
         context = context_mode(self.cfg)
         # A row's right end: what the settings name, and what older settings still ask for there.
         in_row = list(self.cfg.row_metrics) + ["waiting"] * bool(self.cfg.waiting_words) + ["context"] * (context in ("text", "both"))
+        style, pick = self.cfg.overlay.get("character", "none"), self.cfg.overlay.get("character_pick", "color")
         with self.lock:
             rows = [{
                 "name": s.name,
@@ -869,8 +870,9 @@ class Hub(Permissions, Talk, Headset):
                 "target": len(self.sessions.by_id) > 1 and self._target() is s,  # in focus: follow-ups go here
                 "muted": s.muted,  # its own voice is off: a struck-out speaker at its light and by its name
                 "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
-                # Its character's sheet ("" for none, or while it is being drawn).
-                "sprite": self.sheets.path(self.cfg.overlay.get("character", "none"), s.color),
+                # Its character's sheet ("" for none, or while it is being drawn): the figure by
+                # its color, or by its id when the pick is at random (overlay.character_pick).
+                "sprite": self.sheets.path(style, s.color, kind=characters.pick(style, s.color, s.id, pick)),
             } for s in self.sessions.by_id.values() for figures in [self._figures(s)]]
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)]

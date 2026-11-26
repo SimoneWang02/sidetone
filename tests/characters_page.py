@@ -1,8 +1,8 @@
 """A page that plays every character in every moment, from the sheets the hub really draws.
 
 Run: ~/.local/share/kokoro/venv/bin/python -I tests/characters_page.py OUT_DIR
-Writes OUT_DIR/index.html and OUT_DIR/sheets/*.png (each style, each of the first five session
-colors). The page plays them as the overlay does: 12 frames a second, needs you and done play
+Writes OUT_DIR/index.html and OUT_DIR/sheets/*.png (each style's figures, each in the session
+color that gets it: the first seven colors for the seven familiars, the first five for the others). The page plays them as the overlay does: 12 frames a second, needs you and done play
 their start once then repeat their end, speaking picks its row by a made-up voice's loudness.
 The author, 2026-11-26: "can you give me a preview page for each character, each animation".
 """
@@ -16,12 +16,13 @@ import characters  # noqa: E402
 from state import COLORS  # noqa: E402
 
 NAMES = {
-    "familiars": ["Lantern, calm", "Ember, excitable", "Sprout, sleepy", "Shellback, shy", "Toadstool, grumpy"],
+    "familiars": ["Lantern, calm", "Ember, excitable", "Sprout, sleepy", "Shellback, shy", "Toadstool, grumpy",
+                  "Axolotl, sweet", "Dragon, proud"],
     "operators": ["Hoodie with cat ears", "Pendant", "Bandana", "Earbuds and a beard", "Aerial and a scarf"],
     "sketch": ["Blue session", "Orange session", "Violet session", "Teal session", "Pink session"],
 }
 ABOUT = {
-    "familiars": "Five creatures with five tempers. Pixel art, shown with hard edges at twice its size.",
+    "familiars": "Seven creatures with seven tempers. Pixel art, shown with hard edges at twice its size.",
     "operators": "Five people on the line, each with their own headset and something of their own. Pixel art, twice its size.",
     "sketch": "One operator in pencil for every session; the scarf and headset take the session's color. Smooth lines, drawn at the size shown on the edge.",
 }
@@ -122,10 +123,15 @@ def write(out: str, groups, title: str = "Sidetone Characters") -> str:
     return os.path.join(out, "index.html")
 
 
+def colors(count: int) -> list:
+    """The first session colors, one for each figure: the color at place i gets figure i."""
+    return COLORS[:count]
+
+
 def main(out: str) -> None:
     groups = []
     for style in characters.STYLES:
-        figures = [(NAMES[style][i], color, characters.sheet(style, characters.kind_of(color), color)) for i, color in enumerate(COLORS[:5])]
+        figures = [(NAMES[style][kind], color, characters.sheet(style, kind, color)) for kind, color in enumerate(colors(characters.kinds(style)))]
         groups.append((style, {"familiars": "Familiars", "operators": "Operators", "sketch": "Sketch"}[style], ABOUT[style], figures, characters.cell(style)))
     print(write(out, groups))
 

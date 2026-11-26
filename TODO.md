@@ -316,13 +316,13 @@ Roughly easiest first, the larger ones after.
       as a fourth choice, Sketch, in Character, now a drop-down ("a select would be better,
       because it's missing the hand-drawn operators"): smooth pencil lines, shown at their own
       size; seen in pictures, **not yet tried live by the author**. Not built: a character in
-      the request card, a third Character Place. **Previewed, to decide** (2026-11-26,
-      `docs/dev/looks/familiars_next.py`, a page of every moment from real sheets): the
-      toadstool in one piece ("the head seems very detached from the body"), the shellback
-      facing you ("the one that I like the least ... Revamp it", keep it), and new familiars,
-      a dragon whelp, a mimic, an axolotl; ghost and owl offered, not drawn. Then: more than
-      five per style ("We're not limited by 5") and a way to give them out other than by color
-      in order ("maybe someone want the companion to be random"): a setting, by color or random. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      the request card, a third Character Place. Built 2026-11-26 ("you can put them"): seven
+      familiars (the toadstool in one piece, the shellback on all fours, an axolotl, a dragon),
+      the Mix as the one look, and Character Pick (by color or at random); **not yet tried live
+      by the author**. Open: the mimic, held for a rework (eyes glinting in the gap, fangs, a
+      plank front; `docs/dev/looks/familiars_next.py`); ghost and owl offered, not drawn; the
+      Classic and Refined branches in `hub/characters.py`, kept only for comparison pages, to
+      fold away once the author is sure. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.

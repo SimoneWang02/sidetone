@@ -75,7 +75,7 @@ def page(out: str, groups, title: str = TITLE, intro: str = INTRO, changes=CHANG
 def main(out: str) -> None:
     base = len(ch.FAMILIARS)
     ch.FAMILIARS.extend(f for _, _, f in familiars_next.FIGURES)  # in this process only
-    colors = list(ch.COLORS[:5]) + [c for _, c, _ in familiars_next.FIGURES]
+    colors = list(ch.COLORS[:len(ch.FAMILIARS)]) + [c for _, c, _ in familiars_next.FIGURES]
     was = ch.LOOK
     drawn = {}
     try:

@@ -252,6 +252,10 @@ SECTIONS = [
          "options": [["none", "None"], ["familiars", "Familiars"], ["operators", "Operators"], ["sketch", "Sketch"]]},
         choice("overlay.character_place", "Character Place", "On the bubble's edge, so the bubble keeps its size, or inside it "
                "beside the words, smaller.", ("edge", "On the Edge"), ("inside", "Inside")),
+        # 2026-11-26, with seven familiars; the author: "maybe someone want the companion to be random".
+        choice("overlay.character_pick", "Character Pick", "Which figure a session gets: by its color, so the same "
+               "project keeps the same one, or at random, kept for as long as the session lasts.",
+               ("color", "By Session Color"), ("random", "At Random")),
         # Character Look (classic, mix, refined) left on 2026-11-26: the Mix is the one look (the author: "There
         # shouldn't be two choices. Make it only one. I guess mix is better.").
         switch("overlay.character_details", "Character in the Details", "With the details out too: on their edge in "

@@ -71,6 +71,11 @@ DEFAULTS = {
     # "On the edge is cool") | inside = in the bubble beside the words, smaller, so that the bubble
     # is no taller ("decrease the size to make them fit").
     "character_place": "edge",
+    # Which figure a session gets: color = by its color's place among the session colors, so the
+    # same project keeps the same figure | random = by the session's id, so it looks random and
+    # stays the same for the session's whole life (the author, 2026-11-26: "maybe someone want the
+    # companion to be random").
+    "character_pick": "color",
     # Also with the details out (the author, 2026-11-26: "most of the time I put the details always as
     # seen ... show selected session, which is the one that I use mostly"): on their top edge in
     # Selected Session, small beside each row in All Sessions. Off: only with the bubble.

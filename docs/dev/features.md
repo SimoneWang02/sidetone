@@ -346,9 +346,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   ("I love pixel art ... I play a lot of games"); of the last previews, "all three of them are
   pretty good. So we can just put them as selection by the user ... You can build them". The
   previews are in `docs/dev/looks/` (`characters.html` is the one built from).
-  - Familiars: five creatures, each with a temper and its own acting (a calm lantern whose
-    flame flares with the voice, an excitable ember, a sleepy sprout, a shy shellback that
-    hides in its shell when its session fails, a grumpy toadstool). Operators: five people on
+  - Familiars: seven creatures since 2026-11-26 (five before; the author: "We're not limited by
+    5"), each with a temper and its own acting: a calm lantern whose flame flares with the
+    voice, an excitable ember, a sleepy sprout, a shy shellback (a turtle on all fours, the
+    patterned shell on top, the head peeking out; tan skin on greenish sessions; it replaced a
+    side view, "the one that I like the least"), a grumpy toadstool (one piece, the cap on its
+    stem: "the head seems very detached from the body"), a sweet axolotl (gills as fronds that
+    fan with the voice) and a proud dragon whelp (two-finger wings, smug in idle, a snort of
+    smoke). Previewed, reviewed by subagents (a pixel-art critic among them) and simplified
+    before going in. A mimic (a treasure chest) is held for a rework in
+    `docs/dev/looks/familiars_next.py`. Character Pick (`overlay.character_pick`): by session
+    color (`kind_of(color, kinds(style))`, the default) or at random, which is the session id's
+    crc32, so a session keeps its figure for its whole life ("maybe someone want the companion
+    to be random"); the 6th and 7th colors now get the axolotl and the dragon. Operators: five people on
     the line, each with their own headset and something of their own (hoodie with cat ears, a
     pendant, a bandana, earbuds and a beard, an aerial and a scarf). Sketch (2026-11-26, the
     author: "it's missing the hand-drawn operators"): one operator in rough pencil, the same

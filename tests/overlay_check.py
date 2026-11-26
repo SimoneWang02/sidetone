@@ -975,7 +975,7 @@ if not ONLY or ONLY.startswith("character"):
         for color in COLORS:
             path = os.path.join(folder, f"check-{style}-{color.lstrip('#')}.png")
             with open(path, "wb") as f:
-                f.write(characters.sheet(style, characters.kind_of(color), color))
+                f.write(characters.sheet(style, characters.kind_of(color, characters.kinds(style)), color))
             SHEETS[style, color] = win(path)
     MOMENTS = [("speaking", "api-server", "done", SAID), ("needs", "web-app", "needs_you", "asks: Which drink would you like?"),
                ("done", "sidetone", "done", "Pushed, all up to date."), ("failed", "data-pipeline", "failed", "I hit an error: rate limit")]

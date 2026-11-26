@@ -40,7 +40,7 @@ LOOKS = [(1, "Classic"), (3, "Mix"), (2, "Refined")]
 def main(out: str) -> None:
     base = len(ch.FAMILIARS)
     ch.FAMILIARS.extend(f for _, _, f in familiars_next.FIGURES)  # in this process only
-    colors = list(ch.COLORS[:5]) + [c for _, c, _ in familiars_next.FIGURES]
+    colors = list(ch.COLORS[:len(ch.FAMILIARS)]) + [c for _, c, _ in familiars_next.FIGURES]
     fam, ops = {}, {}
     try:
         for look, _ in LOOKS:

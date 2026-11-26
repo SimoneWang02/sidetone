@@ -51,7 +51,7 @@ class Drawing(unittest.TestCase):
     styles = characters.STYLES
     def test_every_figure_draws_every_moment(self):
         for style in self.styles:
-            for kind in range(5):
+            for kind in range(characters.kinds(style)):
                 for moment in MOMENTS:
                     cell = characters.frame(style, kind, COLORS[kind], moment, 0.5, 0.5, 0.6)
                     self.assertEqual(len(cell), characters.cell(style) ** 2 * 4)
@@ -68,18 +68,36 @@ class Drawing(unittest.TestCase):
         self.assertNotEqual(quiet, loud)
 
     def test_each_session_keeps_its_figure_by_its_color(self):
-        self.assertEqual([characters.kind_of(c) for c in COLORS[:6]], [0, 1, 2, 3, 4, 0])
-        self.assertEqual(characters.kind_of("#8ab4ff"), 0)  # the color as the config may write it
-        own = characters.kind_of("#123456")
-        self.assertEqual(characters.kind_of("#123456"), own)
-        self.assertIn(own, range(5))
+        self.assertEqual(characters.kinds("familiars"), 7)
+        self.assertEqual(characters.kinds("operators"), 5)
+        self.assertEqual([characters.kind_of(c, 7) for c in COLORS[:8]], [0, 1, 2, 3, 4, 5, 6, 0])
+        self.assertEqual([characters.kind_of(c, 5) for c in COLORS[:6]], [0, 1, 2, 3, 4, 0])
+        self.assertEqual(characters.kind_of("#8ab4ff", 7), 0)  # the color as the config may write it
+        own = characters.kind_of("#123456", 7)
+        self.assertEqual(characters.kind_of("#123456", 7), own)
+        self.assertIn(own, range(7))
+        # by color, the pick the hub has always made: the first five colors keep their five figures
+        for style in ("familiars", "operators"):
+            self.assertEqual([characters.pick(style, c, "any-session") for c in COLORS[:5]], [0, 1, 2, 3, 4])
+        self.assertEqual(characters.pick("familiars", COLORS[6], "s"), 6)
+
+    def test_at_random_a_session_keeps_one_figure_for_its_life(self):
+        # overlay.character_pick "random"; the author, 2026-11-26: "maybe someone want the companion to be random"
+        ids = [f"5f0c{i:04x}-1a2b-4c3d-8e9f-{i * 7919:012x}" for i in range(140)]
+        for style, count in (("familiars", 7), ("operators", 5)):
+            got = [characters.pick(style, COLORS[0], sid, "random") for sid in ids]
+            self.assertEqual(got, [characters.pick(style, COLORS[0], sid, "random") for sid in ids])  # the same every time
+            self.assertEqual(got, [characters.pick(style, COLORS[3], sid, "random") for sid in ids])  # whatever its color
+            self.assertEqual(set(got), set(range(count)))  # every figure comes up
+            self.assertLess(max(got.count(k) for k in range(count)), len(ids) / count * 1.8)  # none much more than the others
+        self.assertEqual(characters.pick("familiars", COLORS[2], "", "random"), 2)  # no id yet: by its color
 
     def test_nothing_is_cut_off_at_the_top_or_the_sides(self):
         # The author, 2026-11-26: "the animation seems cut"; leaves and hair ran past the cell.
         for style in self.styles:
             n = characters.cell(style)
             edges = [(x, 0) for x in range(n)] + [(0, y) for y in range(n)] + [(n - 1, y) for y in range(n)]
-            for kind in range(5):
+            for kind in range(characters.kinds(style)):
                 for name, count in characters.ROWS:
                     s, t0, a0, v = characters._moment(name)
                     for i in (0, count // 3, 2 * count // 3):
@@ -110,7 +128,7 @@ class Drawing(unittest.TestCase):
         def changed(a, b):
             return sum(1 for i in range(0, len(a), 4) if sum(abs(a[i + j] - b[i + j]) for j in range(4)) > 24)
         for style in [s for s in self.styles if s != "sketch"]:
-            for kind in range(5):
+            for kind in range(characters.kinds(style)):
                 for name, count in characters.ROWS:
                     nxt = name + "_hold" if name in ("needs", "done") else name
                     if style == "familiars":  # nothing carried from frame to frame: just the two frames
@@ -128,13 +146,45 @@ class Drawing(unittest.TestCase):
         for style in self.styles:
             n = characters.cell(style)
             floor = n - 2 * n // characters.N
-            for kind in range(5):
+            for kind in range(characters.kinds(style)):
                 for name, count in characters.ROWS:
                     s, t0, a0, v = characters._moment(name)
                     for i in range(0, count, 4):
                         cell = characters.frame(style, kind, COLORS[kind], s, t0 + i / characters.FPS, a0 + i / characters.FPS, v)
                         low = next(y for y in range(n - 1, -1, -1) if any(a > 128 for a in cell[y * n * 4 + 3:(y + 1) * n * 4:4]))
                         self.assertEqual(low, floor, (style, kind, name, i))
+
+    def test_no_blink_on_the_idle_rows_first_frame(self):
+        # The list shows a row's first frame when nothing moves: shut eyes there look asleep. The
+        # eyes' white shine is all there at frame 0, as in a frame with no blink in it.
+        def shine(cell):
+            return sum(1 for i in range(0, len(cell), 4) if cell[i + 3] > 200 and bytes(cell[i:i + 3]) == bytes(characters.WH))
+        for kind in range(characters.kinds("familiars")):
+            first, later = (characters.frame("familiars", kind, COLORS[kind], "idle", t, t, 0) for t in (0, 1.0))
+            self.assertGreaterEqual(shine(first), shine(later), kind)
+
+    def test_needs_you_settles(self):
+        # The big motions of needs you play in its first five seconds; held, only the mark bobs.
+        def figure(cell):  # the cell without the mark's corner
+            n = characters.N
+            return bytes(cell[(y * n + x) * 4 + 3] > 128 for y in range(n) for x in range(n) if not (x >= 31 and y < 20))
+        for style in self.styles:
+            if style == "sketch":
+                continue
+            for kind in range(characters.kinds(style)):
+                held = [characters.frame(style, kind, COLORS[kind], "needs", 6 + i / 4, 6 + i / 4, 0) for i in range(4)]
+                moved = max(sum(a != b for a, b in zip(figure(held[0]), figure(h))) for h in held[1:])
+                self.assertLess(moved, 40, (style, kind))
+
+    def test_the_shellback_is_not_green_on_green(self):
+        # On a green session color its face and legs are tan, so they do not merge with the shell.
+        self.assertTrue(characters._greenish("#0CC006"))
+        self.assertTrue(characters._greenish("#B9F27C"))
+        self.assertFalse(characters._greenish("#7FDBCA"))  # the teal it gets first keeps its green face
+        self.assertFalse(characters._greenish("#8AB4FF"))
+        skin = characters.ramp(characters.SHELL_SKIN[True][0])[3]
+        tan = characters.frame("familiars", 3, "#0CC006", "idle", 0, 0, 0)
+        self.assertTrue(any(bytes(tan[i:i + 3]) == bytes(skin) for i in range(0, len(tan), 4)))
 
     def test_shadows_of_skin_do_not_turn_red(self):
         r, g, b = characters.ramp("#f2c9a4")[1]
@@ -212,10 +262,20 @@ class Sheets(unittest.TestCase):
         sheets.path("familiars", COLORS[0], 3)
         self.assertEqual([key[3] for key in sheets._wanted[:2]], [1, 3])
 
+    def test_the_kind_given_names_the_sheet(self):
+        # the hub hands the figure it picked (by color, or at random by the session's id)
+        sheets = characters.Sheets(tempfile.mkdtemp(prefix="cs-sprites-"))
+        sheets._busy = True  # nothing drawn: only what is asked for
+        sheets.path("familiars", COLORS[0], kind=6)
+        sheets.path("familiars", COLORS[0])
+        sheets.path("operators", COLORS[0], kind=6)  # past the operators' five: wrapped round
+        self.assertEqual([key[:3] for key in sheets._wanted], [("familiars", 6, COLORS[0]), ("familiars", 0, COLORS[0]),
+                                                               ("operators", 1, COLORS[0])])
+
     def test_a_sheet_already_on_disk_is_not_drawn_again(self):
         folder = tempfile.mkdtemp(prefix="cs-sprites-")
         first = characters.Sheets(folder)
-        name = first.name("operators", characters.kind_of(COLORS[1]), COLORS[1])
+        name = first.name("operators", characters.kind_of(COLORS[1], 5), COLORS[1])
         with open(name, "wb") as f:
             f.write(b"drawn before")
         again = characters.Sheets(folder, done=lambda: self.fail("drawn again"))
@@ -294,7 +354,7 @@ class Look3Mix(Look3, unittest.TestCase):
         # Held poses, not the eased cycles of LOOK 2: the figure's own pixels where Classic's are.
         def solid(cell):
             return bytes(cell[i] > 200 for i in range(3, len(cell), 4))
-        for style, kinds in (("familiars", range(1, 5)), ("operators", range(5))):
+        for style, kinds in (("familiars", range(1, 7)), ("operators", range(5))):
             for kind in kinds:
                 for i in range(0, 24, 3):
                     t = i / characters.FPS
@@ -393,6 +453,15 @@ class HubRows(unittest.TestCase):
         state = self.rows(sent)
         self.assertEqual([r["sprite"] for r in state["sessions"]], [""])
         self.assertEqual(state["sprite_layout"], characters.LAYOUT)
+
+    def test_at_random_the_figure_follows_the_session_id(self):
+        hub, sent = self.make("familiars")
+        hub.sheets._busy = True  # nothing drawn: only what is asked for
+        hub.publish()
+        hub.cfg.overlay["character_pick"] = "random"
+        hub.publish()
+        by_color, by_id = characters.kind_of(hub.sessions.by_id["s1"].color, 7), characters.pick("familiars", "", "s1", "random")
+        self.assertEqual([key[1] for key in hub.sheets._wanted], list(dict.fromkeys([by_color, by_id])))
 
     def test_a_character_reaches_the_overlay_once_drawn(self):
         hub, sent = self.make("familiars")

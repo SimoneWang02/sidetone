@@ -3,15 +3,18 @@
 The author, 2026-11-25, after many tries (plushies, an aquarium, twelve sketches, six looks):
 "all three of them are pretty good. So we can just put them as selection by the user", and of the
 previews, "these previews look good. You can build them." Two of the three are drawn here, as
-pixel art: Familiars (five creatures with five tempers) and Operators (five people on the line,
-each with their own headset and something of their own). The previews they were drawn from are
+pixel art: Familiars (seven creatures with seven tempers since 2026-11-26, when the axolotl and the
+dragon joined and the shellback and the toadstool were redrawn; the author: "We can maybe do more
+than 5", and of the preview, "you can put them") and Operators (five people on the line, each with
+their own headset and something of their own). The previews they were drawn from are
 `docs/dev/looks/characters.html`; this is the same drawing, ported from its JavaScript.
 
 The hub draws every frame of a session's character once, into a sheet of 40 by 40 pixel cells,
 one row for each moment (idle, working, speaking at four loudnesses, needs you, done, failed,
 listening), and keeps it as a PNG where the overlay can read it. The overlay only picks the cell:
 by the moment, the time since it began, and, while the session speaks, how loud the voice is.
-A session's character follows its color, so the same project keeps the same figure.
+A session's character follows its color, so the same project keeps the same figure, or, with
+overlay.character_pick at random, its id (`pick`).
 """
 from __future__ import annotations
 
@@ -105,12 +108,34 @@ def cell(style: str) -> int:
     return sketch.CELL if style == "sketch" else N
 
 
-def kind_of(color: str) -> int:
-    """Which of the five figures a session of this color gets."""
+def kinds(style: str) -> int:
+    """How many figures a style has: seven familiars, five operators; the sketch is one operator,
+    and its kind only varies the pencil's wobble."""
+    return len(FAMILIARS) if style == "familiars" else 5
+
+
+def kind_of(color: str, count: int) -> int:
+    """Which of `count` figures a session of this color gets: by the color's place in the hub's
+    list, so the first sessions get the figures in order, or by the color itself."""
     color = color.upper()
     if color in COLORS:
-        return COLORS.index(color) % 5
-    return zlib.crc32(color.encode()) % 5
+        return COLORS.index(color) % count
+    return zlib.crc32(color.encode()) % count
+
+
+# How a session's figure is chosen (overlay.character_pick): by its color, so the same project
+# keeps the same figure, or at random, which here means by the session's id: it looks random, and
+# a session keeps its figure for its whole life with nothing stored. The author, 2026-11-26:
+# "maybe someone want the companion to be random".
+PICKS = ("color", "random")
+
+
+def pick(style: str, color: str, session: str = "", how: str = "color") -> int:
+    """Which figure of the style a session gets."""
+    count = kinds(style)
+    if how == "random" and session:
+        return zlib.crc32(session.encode()) % count
+    return kind_of(color, count)
 
 
 # ---- colors -----------------------------------------------------------------------------------
@@ -673,7 +698,7 @@ class Frame:
             c.dot(x - 1, y + h - 1, EM, 2, 1)
 
 
-# ---- the familiars: five creatures, five tempers ------------------------------------------------
+# ---- the familiars: seven creatures, seven tempers ----------------------------------------------
 
 def lantern(F: Frame, col: str):
     if has("lantern2"):
@@ -889,130 +914,417 @@ def sprout(F: Frame, col: str):
 
 
 def shellback(F: Frame, col: str):
+    """Shy, on all fours, seen from the front and a little above: a big domed shell in the session's
+    color, its plates parted by dark seams, a light rim; a round face pokes out under it. It pulls
+    everything in when its session fails. (Redrawn 2026-11-26; the author: "I feel like the turtle
+    is the one that I like the least", then "Revamp it".)"""
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
-    C, W, D = ramp(col), ramp("#e3d3a4"), ramp(tint(col, -.3))
-    hx, hy, by, leg, hide, jaw = 0.0, 0.0, 0, 0, 0, 0.0
-    if s == "speaking":
-        hx, hy, jaw = 1, -1 - V * 2 + F.wave(.5) * .6 * (.4 + V), V  # it nods as it talks
-    if s == "needs":
-        hx, hy, leg, jaw = 1, -8 + math.sin(A * TAU) * 1.2 * F.lively, 5 + F.wave(1, 1) * 1.5 * F.lively, .4
-    if s == "working":
-        if not has("beat"):
-            hx, hy, leg = -.5, 2 + math.floor(T * 6) % 2, math.floor(T * 6) % 2 * 2
-        else:  # a nod and a tap, with frames in between
-            b = F.beat(2 / 3)
-            hx, hy, leg = -.5, 2 + b, 2 * b
-    if s == "done":
-        # no jump: the author, 2026-11-26, "when they're done, they're jumping"
-        hy, jaw = -4 + F.wave(1) * .5, .4
-    if s == "failed":
-        hide = 1
-    if s == "listen":
-        hx, hy = 1 + F.wave(1, 1) * .4, -5 + F.wave(1) * .6
+    C, D, Rm = ramp(col), ramp(tint(col, -.3)), ramp(tint(col, .3))
+    # the face, and the legs a tone darker: green, or tan on a green shell, where green would merge
+    # with it (a session hue within about 40 degrees of green)
+    skin, legs = SHELL_SKIN[_greenish(col)]
+    W, Wa = ramp(skin), ramp(legs)
+    hy, tilt, eye, mouth, lift, wave_, wig, hide = 0.0, 0.0, "open", 0.0, (0, 0), None, 0.0, 0
+    sy = 0.0  # the shell's breath: its top a little up or down
     if s == "idle":
-        hy = 1 + F.wave(4) * .4
-    c.part(ELL(5.5, 33.5 + by, 2.6, 1.4), W, k=-1)
-    c.part(LIMB(10, 34 + by, 9.5, 36 + by * .5, 2.4), W, k=-1)  # feet on the familiars' row
-    c.part(LIMB(22, 34 + by, 22.5, 36 + by * .5, 2.4), W, k=-1)
+        hy, sy = F.wave(4) * .45, F.wave(4, 1) * .4
+    if s == "working":  # nibbling, or reading: the head bobs down, the front feet tap in turn
+        k = math.floor(T * 6) % 2
+        hy, lift = .4 + k, (1, 0) if k else (0, 1)
+        if has("beat"):  # with frames in between
+            hy, lift = .4 + F.beat(2 / 3), (F.beat(2 / 3), F.beat(2 / 3, .5))
+    if s == "speaking":  # it nods with the voice
+        hy, mouth = -V * 1.2 + F.wave(.5) * .7 * V, V
+    if s == "needs":  # the head stretches up and out on its neck, a front foot waves
+        hy, eye, mouth = -6 + math.sin(A * TAU) * .8 * F.lively, "wide", .4
+        wave_ = F.wave(1, 1) * 1.4 * F.lively
+    if s == "done":  # head up, happy, a little shell wiggle
+        hy, eye, mouth, wig = -2 + F.wave(1, 1) * .4, "happy", .5, F.wave(1) * .6
+    if s == "failed":  # all the way in, the whole row (it repeats: no coming out again)
+        hide = 1
+    if s == "listen":  # the head raised and tilted, attentive
+        hy, tilt, eye = -2.5 + F.wave(1) * .4, .16 + F.wave(1, 1) * .05, "wide"
+    sx, top = 20 + wig, 27 + hide * 6  # the shell's middle, and the line of its rim
+    # the back legs, behind the shell at its sides, a little higher than the front ones
     if not hide:
-        c.part(LIMB(24, 31 + by, 29 + hx, 27 + hy + by, 2.7, 2.4), W)
-        c.part(ELL(30.5 + hx, 25.5 + hy + by, 4.9, 4.4), W)
-    c.part(DOME(16, 31 + by + hide, 12.4, 13.4, 32.5 + by + hide), C)
-    for x, y, a, b in ((9, 24, 3.2, 3.4), (16.5, 21.5, 3.9, 3.8), (23.5, 25, 3, 3.4), (13, 29.5, 3, 2), (20.5, 29.5, 3.1, 2)):
-        c.part(ELL(x, y + by + hide, a, b), D, cast=0)
-    c.part(BOX(16, 33 + by + hide, 13, 1.3), ramp(tint(col, .25)))
-    if leg:
-        c.part(LIMB(26, 33 + by, 30, 34 - leg + by, 2), W)
-    if hide:
-        c.dot(25, 31, K, 4, 3)
-        if math.floor(T * 2) % 4 != 3:  # it peeks out, and blinks once in the row
-            c.dot(26, 32, WH)
-            c.dot(28, 32, WH)
-        F.smoke(16, 18)
+        for x in (6, 34):
+            c.part(ELL(x, 32.6, 2.6, 2.1), Wa, k=-1)
+    # the rim: a light band under the dome, thick at the front and thin at the sides
+    c.part(ELL(sx, top + 1, 15.6, 4), Rm, flat=3)
+    for x in (-12.5, -7, 7, 12.5):  # the rim's own little plates
+        c.part(BOX(sx + x, top + 2.5, .4, 1.4 if abs(x) < 10 else .6), Rm, flat=1, cast=0)
+    # the dome, dark, then its plates over it: the gaps between them are the seams
+    a, b = 15.2, 16.5 - sy
+    c.part(DOME(sx, top + 1, a, b, top + 1.5), D, flat=1)
+    seeds = [(0, -9.5), (-10.5, -6.5), (10.5, -6.5), (-6.5, -.5), (6.5, -.5), (0, -19)]
+
+    def plates(p, q):
+        u, v = (p - sx) / a, (q - top - 1) / b
+        if u * u + v * v > .9 or q > top + 1:
+            return None
+        X, Y = p - sx, q - top - 1
+        d = sorted(math.hypot(X - x, (Y - y) * 1.15) for x, y in seeds)
+        if d[1] - d[0] < 1.5:
+            return None
+        return (u * .8, (v + .5) * .75)
+    c.part(SHAPE(plates, (sx - a, top + 1 - b, sx + a, top + 1)), C, cast=0)
+    if hide:  # dark openings where the head and the legs went in, eyes peeking out of the front one
+        Hd = ramp(tint(col, -.75))
+        c.part(ELL(20, top + 3, 5.6, 2.3), Hd, flat=2, cast=0)
+        for x in (9, 31):
+            c.part(ELL(x, top + 3.3, 2.6, 1.5), Hd, flat=2, cast=0)
+        if math.floor(T * 2) % 4 != 3:  # it blinks once in the row
+            for x in (17, 22):
+                c.dot(x, top + 2.5, WH, 2, 2)
+            c.dot(18, top + 3.5, K)
+            c.dot(22, top + 3.5, K)
+        else:
+            c.dot(17, top + 3.5, Hd[3], 2, 1)
+            c.dot(22, top + 3.5, Hd[3], 2, 1)
+        F.smoke(sx, top + 1 - b - 2)
+        return
+    # the front legs, stubby, on the line it stands on; the right one waves while it needs you
+    Ln = ramp(tint(legs, -.62))  # a dark line round the legs and the face, where they lie on the shell
+    if has("selective"):  # LOOK 2: the line in the legs' own outline tone, as the engine draws round them, not a near-black
+        Ln = Wa
+    for i, x in enumerate((10, 30)):
+        sd = -1 if i == 0 else 1
+        if i == 1 and wave_ is not None:
+            fx, fy = 33.5 + wave_ * .6, 25 - wave_
+            c.part(LIMB(29, 31, fx, fy, 3.2, 2.9), Ln, flat=1, cast=0)
+            c.part(LIMB(29, 31, fx, fy, 2.3, 2), Wa)
+            c.part(ELL(fx + .2, fy - .5, 2.3, 2.1), Wa)
+            continue
+        up = lift[i]
+        c.part(LIMB(x - sd * .3, 31.5, x + sd * .3, 35 - up, 3.4), Ln, flat=1, cast=0)
+        c.part(LIMB(x - sd * .3, 31.5, x + sd * .3, 35 - up, 2.5), Wa)
+        c.part(ELL(x + sd * .6, 36.6 - up, 3.3, 1.7), Wa, k=-1)
+    # the head: a neck when it stretches, then the round face (its middle on whole pixels)
+    hc = _round(30 + hy)
+    if hc < 28:
+        c.part(LIMB(20, 33, 20, hc + 3, 3.1), Ln, flat=1, cast=0)
+        c.part(LIMB(20, 33, 20, hc + 3, 2.2), Wa, k=-1)
+    c.part(RE(20, hc, 8.3, 7.1, tilt) if tilt else ELL(20, hc, 8.3, 7.1), Ln, flat=1, cast=0)
+    c.part(RE(20, hc, 7.4, 6.2, tilt) if tilt else ELL(20, hc, 7.4, 6.2), W)
+    E = hc - 2
+    dy = 1 if tilt else 0  # tilted: the far eye a pixel higher
+    if eye == "happy":
+        F.eyes([16, 22], E - 1, "happy")
     else:
-        X, Y = _round(31 + hx), _round(24 + hy + by)
-        if s == "done":
-            F.eyes([X - 1], Y - 1, "happy")
-        elif has("wide"):
-            F.eyes([X], Y - 1, "wide" if s in ("needs", "listen") else "open", 3)
-        else:
-            c.dot(X, Y - 1, K, 2, 4 if s in ("needs", "listen") else 3)
-            c.dot(X, Y - 1, WH)
-        if jaw > .15:
-            c.dot(X + 1, Y + 4, K, 3, 3 if jaw > .5 else 2)
-        else:
-            c.dot(X + 1, Y + 4, W[1], 3, 1)
+        look = 1 if s == "working" else 0  # eyes down at what it reads
+        F.eyes([16], E + look, eye, 3)
+        F.eyes([22], E + look - dy, eye, 3)
+    c.dot(14, E + 3, ramp("#ff9aa8")[3], 2, 1, .75)
+    c.dot(24, E + 3 - dy, ramp("#ff9aa8")[3], 2, 1, .75)
+    if mouth > .08:
+        F.mouth(20, E + 4, mouth)
+    else:  # a small shy smile
+        c.dot(18, E + 4, K)
+        c.dot(19, E + 5, K, 2, 1)
+        c.dot(21, E + 4, K)
+
+
+# The shellback's face and legs: green, or tan on a green shell (2026-11-26, a review: on the
+# green session colors its face merged with the shell).
+SHELL_SKIN = {False: ("#a9c47f", "#7f9f57"), True: ("#c9a67a", "#9a7a54")}
+
+
+def _greenish(color: str) -> bool:
+    """A color whose hue is within about 40 degrees of green (120), and not a grey."""
+    h, l, s = colorsys.rgb_to_hls(*(v / 255 for v in _rgb(color)))
+    return s > .15 and abs((h * 360 - 120 + 180) % 360 - 180) <= 40
 
 
 def toadstool(F: Frame, col: str):
+    """Grumpy, in one piece: a stout stem that flares up into the cap's gills, the face on the stem.
+    (Redrawn 2026-11-26; the author: "the mushroom person, like the head seems very detached from
+    the body".) A frown and brows while it idles and works."""
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
-    C, W, G = ramp(col), ramp("#ead9b6"), ramp("#c9b28a")
-    cy, ct, by, ra, br = 0.0, 0.0, 0, 0, 1
-    if s == "speaking":
-        cy = -_round(V * 3) + F.wave(.5) * .4 * V  # the cap nods as it talks, not at all in silence
-    if s == "needs":
-        cy, ct, ra, br = -2 + _round(math.sin(A * TAU) * .9 * F.lively), 3.5, 9 + F.wave(1, 1) * 1.5 * F.lively, 0
+    C, W, G, Ar = ramp(col), ramp("#ead9b6"), ramp("#b89470"), ramp("#cfae80")
+    cy, ct, ra, la, br, lean, look = 0.0, 0.0, 0.0, 0.0, 1, 0.0, 0
+    lh = None  # where the left hand is cupped, while it listens
+    if s == "speaking":  # the cap bounces with the voice, up to three pixels
+        cy = -V * 3 + F.wave(.5) * .4 * V
+    if s == "needs":  # it waves high, the cap tipped towards the mark
+        cy, ct, ra, br = -1 + math.sin(A * TAU) * .7 * F.lively, 3, 9 + F.wave(1, 1) * 1.5 * F.lively, 0
     if s == "done":
-        if not has("beat"):
-            cy = -_round(math.sin(_clamp(A / .8) * math.pi) * 3) if A < .8 else 0
-        else:  # the cap pops up and settles, between whole pixels
-            cy = -math.sin(_clamp(A / .8) * math.pi) * 3 if A < .8 else 0
-        ra, br = 9 + F.wave(1) * .8, -1
+        ra, la, br, cy = 9 + F.wave(1) * .7, 9 - F.wave(1) * .7, -1, -.5 + F.wave(1, 1) * .4
     if s == "failed":
-        cy, ct = 5, -1.5
-    la = 0.0
+        cy, ct, lean = 3 + F.wave(2) * .3, -2, -1
     if s == "working":
-        if not has("beat"):
-            by = math.floor(T * 6) % 2
-            ra = 3 if by else 0
-            la = 0 if by else 4
-        else:  # the arms in turn with frames between, the body still
+        k = math.floor(T * 6) % 2
+        ra, la = (3, 0) if k else (0, 3)
+        if has("beat"):  # in turn, with frames in between
             ra, la = 3 * F.beat(2 / 3), 3 * F.beat(2 / 3, .5)
-    if s == "listen":
-        cy, ct, ra, br = -2 + F.wave(1) * .5, 3, 10 + F.wave(1, 1) * .8, 0
+    if s == "listen":  # a hand cupped to the side of its face, the cap tipped to that side, eyes to it
+        cy, ct, br, look, lean = -.5 + F.wave(1) * .4, -3, 0, -1, -.6
+        lh = (11 + F.wave(1, 1) * .4, 24.5)
     if s == "idle":
         cy = F.wave(4) * .4
-    c.part(ELL(16, 36.8, 2.8, 1.6), W, k=-1)
-    c.part(ELL(24, 36.8, 2.8, 1.6), W, k=-1)
-    c.part(ELL(20, 30.5 + by * .5, 7, 6.8), W)
-    c.part(LIMB(14, 30, 11, 33.5 - la, 1.8), W, k=-1)
-    c.part(LIMB(26, 30, 29.5 + (.5 if ra > 5 else 0), 33.5 - ra, 1.8), W, k=-1)
-    X, y = 20 + ct * .5, 22.5 + cy
-    c.part(ELL(X, y + .6, 11, 2.6), G, k=-1)
+    c.part(ELL(15.5, 36.8, 2.8, 1.6), W, k=-1)
+    c.part(ELL(24.5, 36.8, 2.8, 1.6), W, k=-1)
+    X, y = 20 + ct * .4 + lean, 19.5 + cy
+
+    # the stem: wide at the foot, narrowing up, then flaring out into the gills under the cap
+    def stem(p, q):
+        if not y < q < 37:
+            return None
+        mid = 20 + (X - 20) * (34 - q) / 14
+        d = q - y
+        w = 5.2 + d * .17 + 2.4 * max(0, 1 - d / 5) ** 2
+        return ((p - mid) / 8, (q - 30) / 8) if abs(p - mid) <= w else None
+    c.part(SHAPE(stem, (8, y, 32, 37)), W)
+    # arms a tone apart from the stem
+    if lh:
+        c.part(LIMB(26.5, 29, 29, 33, 1.8), Ar)
+        c.part(LIMB(13.5, 29, lh[0] + .5, lh[1] + 1, 1.8), Ar)
+        c.part(ELL(lh[0], lh[1] - .5, 2.4, 2.8), Ar)  # the hand cupped behind where an ear would be
+        hx, hy2 = _round(lh[0]), _round(lh[1] - .5)
+        c.dot(hx + 1, hy2 - 1, Ar[1], 1, 3)  # the hollow of the hand, open to the side
+        for j in range(2):  # sound coming in, arc by arc
+            k = F.cycle(1, j / 2)
+            r = 2 + (1 - k) * 4
+            for q in (-1, 0, 1):
+                c.dot(hx - 2 - r + abs(q) * .8, hy2 + q * 1.6, "#7fd4f5", 1, 1, min(1, (1 - k) * 2) * .9)
+    else:
+        c.part(LIMB(13.5, 29, 10.5 - la * .2, 33 - la, 1.8), Ar)
+        c.part(LIMB(26.5, 29, 29.5 + (.5 if ra > 5 else 0), 33 - ra, 1.8), Ar)
+    # the gills: an underside a little wider than the stem, with darker lines from the rim to the stem
+    c.part(ELL(X, y + 1.3, 9.6, 3.3), G, flat=2)
+    for sd in (-1, 1):
+        for x0, x1 in ((7.6, 5.6), (3.4, 2.6)):
+            for k in range(3):
+                c.dot(X + sd * (x0 + (x1 - x0) * k / 2), y + 1.6 + k, G[0])
 
     def cap(p, q):
-        u, v, cut = (p - X) / 14, (q - y) / 13.5, y + ct * (p - X) * .045
+        # tipped, its rim rises on one side and sinks on the other, never below the gills
+        u, v, cut = (p - X) / 13.5, (q - y) / 12, y + 1 + _clamp(ct * (p - X) * .05, -2, .5)
         return (u, v) if u * u + v * v <= 1 and q < cut else None
-    c.part(SHAPE(cap, (X - 14, y - 13.5, X + 14, y + 4)), C)
-    for a, b, w, h in ((-6.5, -5.5, 2.5, 2.2), (1, -9, 3, 2.5), (7.5, -4.5, 2.3, 2), (-1, -2.8, 1.7, 1.3), (-10.5, -2, 1.3, 1.2)):
+    c.part(SHAPE(cap, (X - 14, y - 12, X + 14, y + 3)), C)
+    for a, b, w, h in ((-6.5, -5.5, 2.5, 2.2), (1, -8.5, 3, 2.4), (7.5, -4, 2.3, 2), (-1, -2.5, 1.7, 1.3), (-10.5, -1.5, 1.3, 1.1)):
         c.part(ELL(X + a, y + b, w, h), ramp("#fff3df"), cast=0)
+    ey = 26 - (1 if s in ("needs", "done") else 0) + (1 if s == "failed" else 0)
+    ex = _round(20 + (X - 20) * .5)
     if s == "failed":
-        c.dot(17, 33, K)
-        c.dot(18, 32, K, 4, 1)
-        c.dot(22, 33, K)
-        F.smoke(20, 9)
+        F.eyes([ex - 4, ex + 3], ey, "shut")
+        c.dot(ex - 2, ey + 6, K)
+        c.dot(ex - 1, ey + 5, K, 4, 1)
+        c.dot(ex + 3, ey + 6, K)
+        F.smoke(X, y - 10)
     else:
-        ey = 27 - (1 if s in ("needs", "done") else 0)
         if s == "done":
-            F.eyes([16, 23], ey, "happy")
+            F.eyes([ex - 4, ex + 3], ey, "happy")
         else:
-            F.eyes([16, 22], ey, "wide" if s in ("needs", "listen") else "open", 2)
-            if br > 0:
-                c.dot(15, ey - 1, K, 2, 1)
-                c.dot(17, ey, K)
-                c.dot(23, ey - 1, K, 2, 1)
-                c.dot(22, ey, K)
-        F.mouth(20, 32, V if s == "speaking" else .4 if s == "needs" else .5 if s == "done" else 0)
-        if s in ("idle", "working"):
-            c.dot(18, 33, K)
-            c.dot(21, 33, K)
-    if s == "speaking" and V > .3:
-        for i in range(4):
-            k = F.cycle(1, i * .25)
-            c.dot(X + (-12, -5, 6, 12)[i] * (1 + k * .2), y - 6 - k * 9, "#fff0d8", 1, 1, 1 - k)
+            F.eyes([ex - 4 + look, ex + 2 + look], ey, "wide" if s == "needs" else "open", 2)
+            if br > 0:  # brows down at the middle: grumpy
+                c.dot(ex - 5, ey - 1, K, 2, 1)
+                c.dot(ex - 3, ey, K)
+                c.dot(ex + 3, ey - 1, K, 2, 1)
+                c.dot(ex + 2, ey, K)
+        if s == "listen":  # a small, curious mouth
+            c.dot(ex - 1, ey + 5, K, 2, 1)
+        else:
+            F.mouth(ex, ey + 5, V if s == "speaking" else .4 if s == "needs" else .5 if s == "done" else 0)
+            if s in ("idle", "working"):  # the corners of its frown, as it always had (the review: it lost them)
+                c.dot(ex - 2, ey + 6, K)
+                c.dot(ex + 1, ey + 6, K)
 
 
-FAMILIARS = [lantern, ember, sprout, shellback, toadstool]
+def axolotl(F: Frame, col: str):
+    """Sweet: frilly gills that flutter with the voice, a wide smile, cheeks that blush."""
+    s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
+    C, B, Gl = ramp(col), ramp(tint(col, .3)), ramp(tint(col, -.2))
+    spread, droop, eye, blush, tl, hy = .3, 0.0, "open", .45, 0.0, 0.0
+    L, R = (11.5, 32), (28.5, 32)  # where the hands are
+    if s == "idle":
+        spread = .3 + F.wave(2) * .06
+    if s == "speaking":
+        spread, hy = .2 + V * .8 + F.wave(1 / 3) * .05 * V, -V * 1.2
+    if s == "needs":  # it waves one hand high and out to the side, the gills up
+        spread, eye, hy = .9 + F.wave(.5) * .06 * F.lively, "wide", -.5
+        R = (35 + F.wave(1) * 1.2 * F.lively, 22.5 - F.wave(1, 1) * 1.2 * F.lively)  # up high and out, clear of the cheek
+    if s == "working":
+        k = math.floor(T * 6) % 2
+        spread = .35 + k * .1
+        L, R = ((11.5, 29), (28.5, 32)) if k else ((11.5, 32), (28.5, 29))
+        if has("beat"):  # in turn, with frames in between
+            spread, L, R = .4, (11.5, 32 - 3 * F.beat(2 / 3)), (28.5, 32 - 3 * F.beat(2 / 3, .5))
+    if s == "done":  # both hands up and out, cheeks pink, the gills fanning
+        spread, eye, blush, hy = .85 + abs(F.wave(1)) * .1, "happy", 1, -.5
+        L, R = (5.5 - F.wave(1) * .6, 24 - abs(F.wave(1)) * .8), (34.5 + F.wave(1) * .6, 24 - abs(F.wave(1)) * .8)
+    if s == "failed":
+        droop, eye, blush, hy = 1, "shut", 0, 1 + F.wave(2) * .3
+    if s == "listen":  # the head tilted towards you, the gills perked up and quivering
+        spread, eye, tl = 1.05 + F.wave(.5) * .05, "wide", .16
+        R = (30, 29.5)
+
+    def rot(x, y):  # the head tilts about the neck
+        dx, dy = x - 20, y - 27
+        return 20 + dx * math.cos(tl) - dy * math.sin(tl), 27 + dx * math.sin(tl) + dy * math.cos(tl)
+    hx, hc = rot(20, 20 + hy)
+    head = RE(hx, hc, 10, 7.2, tl)
+    # tail behind, to one side
+    c.part(LIMB(24, 33, 33, 30 + F.wave(3), 2.6, 1.2), C, k=-1)  # a slow swish; still while it talks
+    c.part(ELL(15, 36.6, 2.8, 1.6), C, k=-1)
+    c.part(ELL(25, 36.6, 2.8, 1.6), C, k=-1)
+    c.part(ELL(20, 31.5, 7, 5.5), C)
+    c.part(ELL(20, 32.5, 4, 3.6), B, flat=3, cast=0)  # the belly, flat and a little lighter
+    # gills: three fronds each side, fanning up with `spread`, hanging when it fails: a thin spine
+    # with single pixels of fringe on alternate sides, its tip the lightest
+    fringe = []
+    for sd in (-1, 1):
+        for i, base in enumerate((-.55, 0, .55)):
+            a = base * (.6 + spread * .7) + (.9 if droop else -.25 * spread) - sd * tl
+            x0, y0 = rot(20 + sd * 8.5, 18.5 + i * 2 - 2 + hy)
+            ln = 5 + spread * 1.5 - droop
+            dx, dy = sd * math.cos(a), math.sin(a)
+            c.part(LIMB(x0, y0, x0 + dx * ln, y0 + dy * ln, .95, .75), Gl)
+            for j, t in enumerate((.5, .75)):
+                side = (1 if j % 2 else -1) * (1 if i != 1 else -1)
+                fringe.append((x0 + dx * ln * t - dy * side * 1.7, y0 + dy * ln * t + dx * side * 1.7, Gl[4]))
+            fringe.append((x0 + dx * (ln + 1), y0 + dy * (ln + 1), Gl[5]))
+    c.part(head, C)
+    for x, y, tone in fringe:  # where the head does not cover them
+        if not head[0](_round(x) + .5, _round(y) + .5):
+            c.dot(x, y, tone)
+    # arms in the body's color, a tone down: a raised one is an arm, not a white stick across the cheek
+    for sx, (x, y) in ((14, L), (26, R)):
+        c.part(LIMB(sx, 28.5, x, y, 1.6, 1.4), C, k=-1)
+        if y < 27:  # a raised hand: a little paw at its end, in the belly's lighter tone
+            c.part(ELL(x, y - .3, 1.9, 1.9), B)
+
+    def at(x, y):
+        X, Y = rot(x, y + hy)
+        return _round(X), _round(Y)
+    (e1x, e1y), (e2x, e2y) = at(13, 17), at(25, 17)
+    if e1y == e2y:
+        F.eyes([e1x, e2x], e1y, eye, 2)
+    else:  # tilted: each eye at its own height
+        F.eyes([e1x], e1y, eye, 2)
+        F.eyes([e2x], e2y, eye, 2)
+    for x in (11, 27):
+        bx, by = at(x, 22)
+        c.dot(bx, by, "#ff6f91", 2, 1, blush)
+    mx, my = at(20, 22)
+    if s == "failed":
+        c.dot(mx - 3, my + 2, K)
+        c.dot(mx - 2, my + 1, K, 4, 1)
+        c.dot(mx + 2, my + 2, K)
+        F.smoke(20, 12)
+    elif s == "speaking" and V > .08 or s == "needs":
+        F.mouth(mx, my, V if s == "speaking" else .4)
+    else:
+        c.dot(mx - 4, my, K)
+        c.dot(mx - 3, my + 1, K, 6, 1)
+        c.dot(mx + 3, my, K)
+
+
+def dragon(F: Frame, col: str):
+    """Proud: a whelp in the session's color, short horns curving back, a muzzle, bat wings that
+    spread, a little fire. Idle, it holds its chin up, its eyes half shut and its chest out, and
+    snorts a little smoke. (The author, 2026-11-26: "dragon not crazy, especially the wings".)"""
+    s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
+    dead = s == "failed"
+    C = ramp(tint(col, -.25) if dead else col)
+    # the wings' membrane a little darker than the body, so arms in front of them stand out; its
+    # bones a tone darker again
+    B, H, M = ramp(tint(tint(col, -.25) if dead else col, .45)), ramp("#f3e2b8"), ramp(tint(col, -.14))
+    wing, la, ra, mouth, eye, hy, chin, puff = .25, 0, 0, 0.0, "open", 0.0, 0, 0.0
+    if s == "idle":  # proud: chin up, eyes half shut, chest out
+        wing, eye, chin, puff = .25 + F.wave(4) * .3, "smug", 1, 1.0
+    if s == "speaking":
+        mouth, wing = V, .25 + V * .45 + F.wave(.5) * .12 * V
+    if s == "needs":  # quick little flaps, kept low on the right, clear of the mark
+        wing, ra, mouth, eye = .32 + abs(F.wave(.5)) * .18 * F.lively, 10 + F.wave(1, 1) * 1.2 * F.lively, .5, "wide"
+    if s == "working":
+        k = math.floor(T * 6) % 2
+        la, ra = (3, 0) if k else (0, 3)
+        wing = .2 + k * .06
+        if has("beat"):  # in turn, with frames in between
+            la, ra, wing = 3 * F.beat(2 / 3), 3 * F.beat(2 / 3, .5), .23
+    if s == "done":  # wings spread wide, flapping once a second
+        wing, la, ra, mouth, eye = .85 + F.wave(1) * .14, 9, 9, .6, "happy"
+    if dead:
+        wing, eye, hy = -.35 + F.wave(2) * .04, "x", 1
+    if s == "listen":
+        wing, ra, eye = .5 + F.wave(1) * .06, 6, "wide"
+    # wings behind: a bat's wing, an arm up to the wrist, two fingers down from it, membrane between
+    for sd in (-1, 1):
+        sx, w = 20 + sd * 5, wing
+        wx, wy = sx + sd * (6 + w * 2), 15 - w * 6
+        tips = [(wx + sd * (4 + w), wy + 4.5 - w * 2), (wx + sd * 2, wy + 12.5 - w * .75)]
+        edge = ((tips[0][0] + tips[1][0]) / 2 - sd * 1.8, (tips[0][1] + tips[1][1]) / 2)  # curving in between the tips
+        c.part(POLY([(sx, 23.5), (wx, wy), tips[0], edge, tips[1], (sx + sd * 3, 29), (sx, 29)]), M)
+        c.part(LIMB(sx, 23.5, wx, wy, .65), M, flat=2, cast=0)
+        for tip in tips:
+            c.part(LIMB(wx, wy, tip[0] - sd * .4, tip[1] - .2, .5), M, flat=2, cast=0)
+    # the tail, curling out to the right, a spade at its tip
+    c.part(LIMB(25, 34, 31, 35, 2.4, 1.6), C, k=-1)
+    c.part(LIMB(31, 35, 33.5, 31.5, 1.6, 1), C, k=-1)
+    c.part(POLY([(32.5, 31.8), (35.5, 28.8), (35, 32.6)]), M, flat=3)
+    c.part(ELL(15.5, 36.6, 3, 1.8), C, k=-1)
+    c.part(ELL(24.5, 36.6, 3, 1.8), C, k=-1)
+    c.part(ELL(20, 30.5 - puff * .5, 8 + puff * .4, 6.8 + puff * .5), C)  # the chest a pixel out when proud
+    c.part(ELL(20, 32 - puff * .5, 4.8 + puff * .4, 4.6 + puff * .5), B, flat=3, cast=0)  # a flat, lighter belly
+    # the head: short horns curving back to a point, a small crest, the skull, then the muzzle
+    for sd in (-1, 1):
+        c.part(POLY([(20 + sd * 3, 10.2 + hy), (20 + sd * 4.6, 7.4 + hy), (20 + sd * 6.6, 5.6 + hy), (20 + sd * 8.6, 5.2 + hy),
+                     (20 + sd * 7, 7 + hy), (20 + sd * 6.4, 10.4 + hy)]), H)
+    c.part(POLY([(18.6, 9.5 + hy), (20, 6.5 + hy), (21.4, 9.5 + hy)]), M, flat=3)
+    c.part(ELL(20, 15 + hy, 8.4, 6.6), C)
+    c.part(ELL(20, 20.3 + hy - chin, 4.6, 4), C)  # the muzzle, standing out below the skull
+    c.part(LIMB(13, 27, 10.5 - la * .2, 31 - la, 1.8), C)
+    c.part(LIMB(27, 27, 29.5 + (.5 if ra > 5 else 0), 31 - ra, 1.8), C)
+    E = _round(13 + hy)
+    if eye == "smug":  # half shut: a lid across the top of each eye, the pupil under it
+        for i, x in enumerate((15, 23)):
+            c.dot(x - (1 if i == 0 else 0), E + 1, K, 3, 1)
+            c.dot(x, E + 2, K, 2, 1)
+            c.dot(x + (1 if i == 0 else 0), E + 2, WH)
+    else:
+        F.eyes([15, 23], E, eye, 3)
+    ny = E + 5 - chin
+    for x in (18, 22):  # nostrils: small slits on top of the muzzle
+        c.dot(x, ny, C[1])
+    if dead:  # it sneezed: soot on its face, smoke out of both nostrils, drifting out past its cheeks
+        c.dot(16, E + 6, "#3a3440", 3, 1, .8)
+        c.dot(22, E + 7, "#3a3440", 3, 1, .8)
+        c.dot(19, E + 8, C[0], 3, 1)
+        for x in (18, 22):
+            sd = 1 if x > 20 else -1
+            for i in range(3):
+                k = F.cycle(2, i / 3 + (.5 if sd > 0 else 0))
+                r = 1 if k < .3 else 2
+                c.dot(x + sd * (1 + k * 12) - (r - 1) / 2, ny - 1 - k * 6, "#d4dae4", r, r, min(1, k * 6) * (1 - k * .6))
+        return
+    my = E + 8 - chin
+    if mouth > .08:
+        F.mouth(20, my, mouth)
+    else:
+        c.dot(18, my, C[0], 4, 1)
+    if s == "idle":  # a snort once in the row: two wisps out of the nostrils, down and out
+        k = F.cycle(4)
+        if .6 <= k < .8:
+            q = (k - .6) / .2
+            for x in (18, 22):
+                c.dot(x + (1 if x > 20 else -1) * _round(1 + q * 3), ny + 1 + _round(q * 1.5), "#e4e8f0", 1, 1, 1 - q * .7)
+    if s == "speaking" and V > .7:  # a puff of fire out of the side of its mouth
+        k = F.cycle(.5)
+        for j, (dx, dy, r) in enumerate(((5.5, -1, 2.3), (9.5, -4, 3.1), (13.5, -7.5, 3.6))):
+            q = r * (.75 + .25 * math.sin((k + j / 3) * TAU))
+            c.part(ELL(20 + dx + k, my + dy - k, q, q * .85), ramp("#f04a2a"), k=1, cast=0)
+            c.part(ELL(20 + dx + k - .3, my + dy - k + .2, q * .6, q * .55), ramp("#ffd84a"), flat=4, cast=0)
+    if s == "done" and A < 3:
+        for i in range(5):
+            k = (A * 1.6 + i / 5) % 1
+            c.dot(20 + math.sin(i * 2.1 + k * 4) * (2 + k * 5), my - 1 - k * 14, "#fff0a0" if k < .3 else "#ffb347" if k < .65 else "#e2593c", 1, 1, 1 - k * .8)
+    if s == "working":  # smoke rings while it thinks
+        k = F.cycle(2)
+        for dx, dy, w in ((0, -1, 2), (0, 1, 2), (-1, 0, 1), (2, 0, 1)):
+            c.dot(28 + k * 5 + dx, 16 + hy - k * 10 + dy, "#c9cfdb", w, 1, 1 - k)  # rising beside the head
+
+
+FAMILIARS = [lantern, ember, sprout, shellback, toadstool, axolotl, dragon]
 
 # ---- the operators: one job, five people --------------------------------------------------------
 
@@ -1332,13 +1644,15 @@ class Sheets:
         look = LOOK if look is None else look
         return os.path.join(self.folder, f"{style}-{kind}-{color.lstrip('#').lower()}-{f'look{look}-' if look != 1 else ''}{_SOURCE}.png")
 
-    def path(self, style: str, color: str, look: int | None = None) -> str:
+    def path(self, style: str, color: str, look: int | None = None, kind: int | None = None) -> str:
         """The overlay's path to this session's sheet, or "" while it is being drawn. `look`:
-        1 classic, 2 refined, 3 the two mixed; `LOOK` when not given."""
+        1 classic, 2 refined, 3 the two mixed; `LOOK` when not given. `kind`: which figure (`pick`);
+        the color's when not given."""
         if style not in STYLES or not color:
             return ""
         look = LOOK if look is None else look
-        key = (style, kind_of(color), color, look if look in PARTS and style != "sketch" else 1)
+        kind = kind_of(color, kinds(style)) if kind is None else kind % kinds(style)
+        key = (style, kind, color, look if look in PARTS and style != "sketch" else 1)
         with self._lock:
             if key in self._ready:
                 return self._ready[key]
