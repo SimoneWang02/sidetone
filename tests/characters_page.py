@@ -70,7 +70,7 @@ const DATA = __DATA__;
 const MOMENTS=[["idle","Idle"],["working","Working"],["speaking","Speaking"],["needs","Needs You"],["done","Done"],["failed","Failed"],["listen","Listening"]];
 const SIZES=[["In the List",35],["Inside",66],["On the Edge",88],["Up Close",176]];
 const L=DATA.layout, FPS=L.fps, ROWS=L.rows, CELL=L.cell;
-let style="familiars", size=88, paused=matchMedia("(prefers-reduced-motion: reduce)").matches, started=performance.now();
+let style=DATA.first, size=88, paused=matchMedia("(prefers-reduced-motion: reduce)").matches, started=performance.now();
 const images={}, cells=[];
 for(const s of Object.keys(DATA.styles))DATA.styles[s].forEach((f,i)=>{const im=new Image();im.src=f.file;images[s+i]=im});
 const el=id=>document.getElementById(id);
@@ -104,21 +104,30 @@ build();requestAnimationFrame(tick);
 """
 
 
-def main(out: str) -> None:
+def write(out: str, groups, title: str = "Sidetone Characters") -> str:
+    """groups: (key, label, about, [(name, color, png bytes)], cell size) for each button."""
     os.makedirs(os.path.join(out, "sheets"), exist_ok=True)
-    styles = {}
-    for style in characters.STYLES:
-        styles[style] = []
-        for i, color in enumerate(COLORS[:5]):
-            name = f"sheets/{style}-{i}.png"
-            with open(os.path.join(out, name), "wb") as f:
-                f.write(characters.sheet(style, characters.kind_of(color), color))
-            styles[style].append({"file": name, "color": color, "name": NAMES[style][i], "cell": characters.cell(style)})
-    data = {"layout": characters.LAYOUT, "styles": styles, "about": ABOUT,
-            "names": {"familiars": "Familiars", "operators": "Operators", "sketch": "Sketch"}}
+    styles, about, names = {}, {}, {}
+    for key, label, text, figures, cell in groups:
+        styles[key], about[key], names[key] = [], text, label
+        for i, (name, color, data) in enumerate(figures):
+            path = f"sheets/{key}-{i}.png"
+            with open(os.path.join(out, path), "wb") as f:
+                f.write(data)
+            styles[key].append({"file": path, "color": color, "name": name, "cell": cell})
+    data = {"layout": characters.LAYOUT, "styles": styles, "about": about, "names": names, "first": groups[0][0]}
     with open(os.path.join(out, "index.html"), "w") as f:
-        f.write(PAGE.replace("__DATA__", json.dumps(data)))
-    print(os.path.join(out, "index.html"))
+        f.write(PAGE.replace("__DATA__", json.dumps(data)).replace("<title>Sidetone Characters</title>", f"<title>{title}</title>")
+                .replace("<h1>Sidetone Characters</h1>", f"<h1>{title}</h1>"))
+    return os.path.join(out, "index.html")
+
+
+def main(out: str) -> None:
+    groups = []
+    for style in characters.STYLES:
+        figures = [(NAMES[style][i], color, characters.sheet(style, characters.kind_of(color), color)) for i, color in enumerate(COLORS[:5])]
+        groups.append((style, {"familiars": "Familiars", "operators": "Operators", "sketch": "Sketch"}[style], ABOUT[style], figures, characters.cell(style)))
+    print(write(out, groups))
 
 
 if __name__ == "__main__":
