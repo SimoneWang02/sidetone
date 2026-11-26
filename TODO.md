@@ -221,6 +221,23 @@ voice, and the wait for the transcript.
       The scripts are in `clone/` (its README says how to set it up).
       The author, 2026-11-22: "that's a side quest, it's not urgent"; so it comes last in
       this step.
+      The author, 2026-11-26: "I want to register my voice and I want to make it very
+      conversational, like very casual ... what are the factors?" Kept by then: 450
+      recordings, 101 min (91 English, 11 Italian), past the hour that step (2) waits for,
+      and all of it them talking to Claude, so casual already. What decides how casual a
+      clone sounds, largest first: the model under it (a clone is that model's way of
+      speaking in their tone, and Chatterbox is below Kokoro in the blind votes, 1021 to
+      1060); the example clip, whose manner is copied along with the tone (`build_voice.py`
+      takes the longest recordings, not the most relaxed); the words of the spoken line
+      (written sentences sound read out in any voice; their 450 transcripts show how they
+      talk); a fine-tune, which adds their rhythm and habits but in the study never raised a
+      model's rank; the model's own controls. Ming-3.0-tts, in the trial folder since the
+      same day, clones from a recording and takes a manner in plain words; by its own README
+      it is first of the free models where every model clones the same 8 voices (1069, 13th
+      overall), the test where Eleven v4 falls to sixth. Another session timed its ready
+      voices that day (`ming.json` there): a line takes about 0.9 of its length, whole
+      lines only. **To decide:** five of their lines in their own voice, by Ming and by
+      Chatterbox from one relaxed example, on a page for their ears.
 
 ## 4. Small extras
 
