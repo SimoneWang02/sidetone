@@ -652,10 +652,20 @@ on to the release ("let's go to publish unless there's something else to impleme
       aloud), the overlay would take the picture, and what the overlay can add that a chat
       window cannot is pointing: a ring drawn on the screen where to click. Notes for
       whoever builds it:
-      - Look first at what the Claude app does today (a key that opens it with a picture
-        of the screen, and working the desktop itself; from memory on that day, not
-        checked), so this does not repeat it. What would be new: asked and answered by
-        voice with the window in front untouched, and the pointing.
+      - Looked up the same day, when the author asked whether it exists already ("Maybe you
+        just haven't done your research"): it does, though not from Claude on Windows.
+        Microsoft's Copilot Vision in Windows 11 (Win+C or the Copilot key, a voice chat,
+        then sharing the screen) sees the desktop, answers by voice and "might highlight
+        parts of the screen, but it won't click, type, or scroll"; its support page asks
+        for a Microsoft 365 subscription on a personal account. So the pointing told of
+        above is not new. The Claude app's quick entry (a picture of a region or a window,
+        dictation) is "currently only available for macOS users" and answers in text; on
+        Windows the app has computer use, where Claude works the desktop itself rather
+        than guiding. ChatGPT's and Gemini's Windows apps have voice or a key; seeing the
+        screen there was not confirmed. Claude's advice: not worth building here; try
+        Copilot Vision first to learn whether the idea helps in practice. All that would be
+        left as new is Claude being the one that answers, on Windows. The author's answer
+        is open.
       - A picture on the press only, never on its own; the window in front by default, the
         whole screen as a setting. It would be the first thing here that sends what is on
         the screen away from the machine, so the settings window has to say so.
