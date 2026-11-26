@@ -358,6 +358,12 @@ Roughly easiest first, the larger ones after.
       session's row to "working" after the session's own turn has ended (they do, as before:
       with companions on, the large figure goes between cheering and working). The "Agents"
       figure and the panel rows of the first idea are not built.
+      The author, same evening, of a page to try it (`tests/companions_page.py`): "it looks
+      good. Can we build that?", and turned the setting on themselves. On their overlay since
+      then, with a test subagent of this session listed by the live hub. **The two new hooks
+      are not in their `~/.claude/settings.json` yet** (`install.sh --hooks-only`, theirs to
+      run): until then a companion leaves when the turn ends, without its cheer. What they
+      think of it live is not said yet.
 
 ### Larger extras
 
