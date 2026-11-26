@@ -26,13 +26,16 @@ from typing import Callable
 
 N = 40  # a cell is N by N pixels
 FLOOR = 38  # the row the figures stand on
-FPS = 8  # frames a second, for every moment
+# Frames a second, for every moment: 12 since 2026-11-26 (8 before; the author: "could we put
+# more FPS?"), as smooth as hand-made pixel art usually moves; the sheets are half as long again.
+FPS = 12
 TAU = math.tau
 STYLES = ("familiars", "operators")
 # The sheet: each row a moment and how many frames it has. Speaking has a row for each of four
 # loudnesses; needs you and done have a first part that plays once, then a part that repeats.
-ROWS = [("idle", 32), ("working", 16), ("speaking0", 8), ("speaking1", 8), ("speaking2", 8), ("speaking3", 8),
-        ("needs", 40), ("needs_hold", 8), ("done", 32), ("done_hold", 8), ("failed", 16), ("listen", 16)]
+SECONDS = [("idle", 4), ("working", 2), ("speaking0", 1), ("speaking1", 1), ("speaking2", 1), ("speaking3", 1),
+           ("needs", 5), ("needs_hold", 1), ("done", 4), ("done_hold", 1), ("failed", 2), ("listen", 2)]
+ROWS = [(name, seconds * FPS) for name, seconds in SECONDS]
 LOUD = [0.0, 0.3, 0.6, 0.95]  # the loudness each speaking row is drawn at
 LAYOUT = {"cell": N, "fps": FPS, "rows": {name: [i, count] for i, (name, count) in enumerate(ROWS)}}
 WIDTH = max(count for _, count in ROWS) * N
@@ -651,7 +654,7 @@ def operator(F: Frame, col: str, i: int, lag: list):
 
     def Y(v):
         return v + by
-    lag[0] = cy if lag[0] is None else lag[0] + (cy - lag[0]) * .32  # the hair lands a moment after the head
+    lag[0] = cy if lag[0] is None else lag[0] + (cy - lag[0]) * (1 - .68 ** (8 / FPS))  # the hair lands a moment after the head
     hc = cy + _clamp(lag[0] - cy, -1.6, 1.6)
     sw = math.sin(T * 2.3 + i) * .6 + ((V - .3) * 1.6 if s == "speaking" else 0) + (math.sin(A * TAU * 1.5) * 1.4 if s == "needs" and A < 5 else 0)
     head = (cx - 13, cy - 14, cx + 13, cy + 12)
