@@ -69,14 +69,14 @@ class Drawing(unittest.TestCase):
         self.assertNotEqual(quiet, loud)
 
     def test_each_session_keeps_its_figure_by_its_color(self):
-        self.assertEqual(characters.kinds("familiars"), 7)
+        self.assertEqual(characters.kinds("familiars"), 8)
         self.assertEqual(characters.kinds("operators"), 5)
-        self.assertEqual([characters.kind_of(c, 7) for c in COLORS[:8]], [0, 1, 2, 3, 4, 5, 6, 0])
+        self.assertEqual([characters.kind_of(c, 8) for c in COLORS[:9]], [0, 1, 2, 3, 4, 5, 6, 7, 0])
         self.assertEqual([characters.kind_of(c, 5) for c in COLORS[:6]], [0, 1, 2, 3, 4, 0])
-        self.assertEqual(characters.kind_of("#8ab4ff", 7), 0)  # the color as the config may write it
-        own = characters.kind_of("#123456", 7)
-        self.assertEqual(characters.kind_of("#123456", 7), own)
-        self.assertIn(own, range(7))
+        self.assertEqual(characters.kind_of("#8ab4ff", 8), 0)  # the color as the config may write it
+        own = characters.kind_of("#123456", 8)
+        self.assertEqual(characters.kind_of("#123456", 8), own)
+        self.assertIn(own, range(8))
         # by color, the pick the hub has always made: the first five colors keep their five figures
         for style in ("familiars", "operators"):
             self.assertEqual([characters.pick(style, c, "any-session") for c in COLORS[:5]], [0, 1, 2, 3, 4])
@@ -85,7 +85,7 @@ class Drawing(unittest.TestCase):
     def test_at_random_a_session_keeps_one_figure_for_its_life(self):
         # overlay.character_pick "random"
         ids = [f"5f0c{i:04x}-1a2b-4c3d-8e9f-{i * 7919:012x}" for i in range(140)]
-        for style, count in (("familiars", 7), ("operators", 5)):
+        for style, count in (("familiars", 8), ("operators", 5)):
             got = [characters.pick(style, COLORS[0], sid, "random") for sid in ids]
             self.assertEqual(got, [characters.pick(style, COLORS[0], sid, "random") for sid in ids])  # the same every time
             self.assertEqual(got, [characters.pick(style, COLORS[3], sid, "random") for sid in ids])  # whatever its color

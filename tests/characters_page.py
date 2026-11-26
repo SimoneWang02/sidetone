@@ -17,7 +17,7 @@ from state import COLORS  # noqa: E402
 
 NAMES = {
     "familiars": ["Lantern, calm", "Ember, excitable", "Sprout, sleepy", "Shellback, shy", "Toadstool, grumpy",
-                  "Axolotl, sweet", "Dragon, proud"],
+                  "Axolotl, sweet", "Dragon, proud", "Mimic, sneaky"],
     "operators": ["Hoodie with cat ears", "Pendant", "Bandana", "Earbuds and a beard", "Aerial and a scarf"],
     "sketch": ["Blue session", "Orange session", "Violet session", "Teal session", "Pink session"],
 }

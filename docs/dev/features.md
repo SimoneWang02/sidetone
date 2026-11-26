@@ -353,9 +353,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     side view, "the one that I like the least"), a grumpy toadstool (one piece, the cap on its
     stem: "the head seems very detached from the body"), a sweet axolotl (gills as fronds that
     fan with the voice) and a proud dragon whelp (two-finger wings, smug in idle, a snort of
-    smoke). Previewed, reviewed by subagents (a pixel-art critic among them) and simplified
-    before going in. A mimic (a treasure chest) is held for a rework in
-    `docs/dev/looks/familiars_next.py`. Character Pick (`overlay.character_pick`): by session
+    smoke), and since its rework a sneaky mimic (an innocent treasure chest nearly shut, eyes
+    glinting in the gap, fangs when it opens, wooden planks with its metal in the session's
+    color; the author: "It looks good ... you can put that"), eight in all. Previewed, reviewed
+    by subagents (a pixel-art critic among them) and simplified before going in. Character Pick (`overlay.character_pick`): by session
     color (`kind_of(color, kinds(style))`, the default) or at random, which is the session id's
     crc32, so a session keeps its figure for its whole life ("maybe someone want the companion
     to be random"); the 6th and 7th colors now get the axolotl and the dragon. Operators: five people on

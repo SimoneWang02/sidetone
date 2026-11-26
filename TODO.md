@@ -324,8 +324,8 @@ Roughly easiest first, the larger ones after.
       the request card, a third Character Place. Built 2026-11-26 ("you can put them"): seven
       familiars (the toadstool in one piece, the shellback on all fours, an axolotl, a dragon),
       the Mix as the one look, and Character Pick (by color or at random); **not yet tried live
-      by the author**. Open: the mimic, held for a rework (eyes glinting in the gap, fangs, a
-      plank front; `docs/dev/looks/familiars_next.py`); ghost and owl offered, not drawn; the
+      by the author**. The mimic in too since its rework (eight familiars). Open: ghost and owl
+      offered, not drawn; the
       Classic and Refined branches in `hub/characters.py`, kept only for comparison pages, to
       fold away once the author is sure. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
