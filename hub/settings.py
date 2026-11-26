@@ -253,8 +253,9 @@ SECTIONS = [
         choice("overlay.character_place", "Character Place", "On the bubble's edge, so the bubble keeps its size, or inside it "
                "beside the words, smaller.", ("edge", "On the Edge"), ("inside", "Inside")),
         choice("overlay.character_look", "Character Look", "How the pixel figures are drawn. Refined: edges that show on the "
-               "dark glass, softer shadows, one light from the top left, a sign while listening. The Sketch keeps its own.",
-               ("classic", "Classic"), ("refined", "Refined")),
+               "dark glass, softer shadows, one light from the top left, a sign while listening. Mix: Classic's shading with "
+               "Refined's edges, sparks, sign and eyes. The Sketch keeps its own.",
+               ("classic", "Classic"), ("mix", "Mix"), ("refined", "Refined")),
         switch("overlay.character_details", "Character in the Details", "With the details out too: on their edge in "
                "Selected Session, small beside each session in All Sessions. Only a session with news moves."),
         # From the review of 2026-11-25; off for a new install since the 26th (the author did not like it on the screen).

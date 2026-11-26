@@ -41,16 +41,18 @@ SIZES = [("In the List", 35), ("List, Whole Pixels", 44), ("Inside", 66), ("On t
 NAMES = characters_page.NAMES["familiars"] + [n for n, _, _ in familiars_next.FIGURES]
 
 
-def page(out: str, groups) -> str:
-    path = characters_page.write(out, groups, title=TITLE)
+def page(out: str, groups, title: str = TITLE, intro: str = INTRO, changes=CHANGES) -> str:
+    """The page of tests/characters_page.py with an introduction, a list of changes and a choice of
+    scaling at the fractional sizes (look3.py makes its page with this one too)."""
+    path = characters_page.write(out, groups, title=title)
     html = open(path).read()
 
     def swap(old: str, new: str) -> None:
         nonlocal html
         assert old in html, old  # tests/characters_page.py's page changed: update this one
         html = html.replace(old, new)
-    swap(characters_page.PAGE.split("<header>")[1].split("</header>")[0].replace("<h1>Sidetone Characters</h1>", f"<h1>{TITLE}</h1>"),
-         f"<h1>{TITLE}</h1><p>{INTRO}</p>")
+    swap(characters_page.PAGE.split("<header>")[1].split("</header>")[0].replace("<h1>Sidetone Characters</h1>", f"<h1>{title}</h1>"),
+         f"<h1>{title}</h1><p>{intro}</p>")
     swap('<div class="group"><button type="button" id="replay">',
          '<div class="group" id="scaling" role="group" aria-label="Fractional sizes"><span>35 and 66 px</span></div>\n'
          '  <div class="group"><button type="button" id="replay">')
@@ -62,7 +64,7 @@ def page(out: str, groups) -> str:
     # nearest neighbour at whole multiples of the cell; at a fraction, as the toggle says
     swap("g.imageSmoothingEnabled=c.smooth;", "g.imageSmoothingEnabled=c.smooth||(smooth&&(c.cv.width%c.cell)!==0);")
     swap('<p class="note">Sizes are the overlay\'s:',
-         '<ul class="changes">' + "".join(f"<li><b>{a}.</b> {b}</li>" for a, b in CHANGES) + '</ul>\n<p class="note">Sizes are the overlay\'s:')
+         '<ul class="changes">' + "".join(f"<li><b>{a}.</b> {b}</li>" for a, b in changes) + '</ul>\n<p class="note">Sizes are the overlay\'s:')
     swap("Up Close is twice the edge.", "Up Close is twice the edge. List, Whole Pixels is the list at the drawing's own size (44), as a proposal: no fraction, nothing to smooth.")
     swap(".note{", ".changes{margin:0;padding-left:20px;color:var(--soft);max-width:80ch;display:grid;gap:4px}.changes b{color:var(--fg)}\n.note{")
     with open(path, "w") as f:

@@ -39,7 +39,7 @@ def toadstool(F: Frame, col: str):
     if s == "working":
         k = math.floor(T * 6) % 2
         ra, la = (3, 0) if k else (0, 3)
-        if ch.LOOK != 1:  # in turn, with frames in between
+        if ch.has("beat"):  # in turn, with frames in between
             ra, la = 3 * F.beat(2 / 3), 3 * F.beat(2 / 3, .5)
     if s == "listen":  # a hand cupped to the side of its face, the cap tipped to that side, eyes to it
         cy, ct, br, look, lean = -.5 + F.wave(1) * .4, -3, 0, -1, -.6
@@ -126,7 +126,7 @@ def shellback(F: Frame, col: str):
     if s == "working":  # nibbling, or reading: the head bobs down, the front feet tap in turn
         k = math.floor(T * 6) % 2
         hy, lift = .4 + k, (1, 0) if k else (0, 1)
-        if ch.LOOK != 1:  # with frames in between
+        if ch.has("beat"):  # with frames in between
             hy, lift = .4 + F.beat(2 / 3), (F.beat(2 / 3), F.beat(2 / 3, .5))
     if s == "speaking":  # it nods with the voice
         hy, mouth = -V * 1.2 + F.wave(.5) * .7 * V, V
@@ -181,7 +181,7 @@ def shellback(F: Frame, col: str):
     # the front legs, stubby, on the line it stands on; the right one waves while it needs you
     Ln = ramp(tint("#7f9f57", -.62))  # a dark line round the legs and the face, where they lie on the shell
     line = True
-    if ch.LOOK != 1:  # LOOK 2: the line in the legs' own outline tone, as the engine draws round them, not a near-black
+    if ch.has("selective"):  # LOOK 2: the line in the legs' own outline tone, as the engine draws round them, not a near-black
         Ln = Wa
     for i, x in enumerate((10, 30)):
         sd = -1 if i == 0 else 1
@@ -242,7 +242,7 @@ def dragon(F: Frame, col: str):
         k = math.floor(T * 6) % 2
         la, ra = (3, 0) if k else (0, 3)
         wing = .2 + k * .06
-        if ch.LOOK != 1:  # in turn, with frames in between
+        if ch.has("beat"):  # in turn, with frames in between
             la, ra, wing = 3 * F.beat(2 / 3), 3 * F.beat(2 / 3, .5), .23
     if s == "done":  # wings spread wide and flapping
         wing, la, ra, mouth, eye = .85 + F.wave(.5) * .12, 9, 9, .6, "happy"
@@ -337,7 +337,7 @@ def mimic(F: Frame, col: str):
     if s == "needs":
         op, eye, gold = 5 + math.sin(A * TAU) * .8 * F.lively, "wide", True
     if s == "working":  # an even chatter, four times a second
-        op = 1 + (math.floor(T * 4) % 2) * 2 if ch.LOOK == 1 else 1 + 1.6 * F.beat(.5)
+        op = 1 + (math.floor(T * 4) % 2) * 2 if not ch.has("beat") else 1 + 1.6 * F.beat(.5)
     if s == "done":
         op, eye, gold, tongue = 6 + F.wave(1) * .5, "happy", True, 1
     if s == "failed":  # the lid knocked askew, down on one side
@@ -426,7 +426,7 @@ def axolotl(F: Frame, col: str):
         k = math.floor(T * 6) % 2
         spread = .35 + k * .1
         L, R = ((11.5, 29), (28.5, 32)) if k else ((11.5, 32), (28.5, 29))
-        if ch.LOOK != 1:  # in turn, with frames in between
+        if ch.has("beat"):  # in turn, with frames in between
             spread, L, R = .4, (11.5, 32 - 3 * F.beat(2 / 3)), (28.5, 32 - 3 * F.beat(2 / 3, .5))
     if s == "done":  # both hands up and out, cheeks pink, the gills fanning
         spread, eye, blush, hy = .85 + abs(F.wave(1)) * .1, "happy", 1, -.5

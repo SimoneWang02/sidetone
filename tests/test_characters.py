@@ -200,11 +200,17 @@ class Sheets(unittest.TestCase):
         # overlay.character_look; the author, 2026-11-26: "I kinda prefer the default maybe. Let me try both."
         folder = tempfile.mkdtemp(prefix="cs-sprites-")
         sheets = characters.Sheets(folder)
-        self.assertNotEqual(sheets.name("familiars", 0, COLORS[0], 2), sheets.name("familiars", 0, COLORS[0], 1))
+        names = {sheets.name("familiars", 0, COLORS[0], look) for look in (1, 2, 3)}
+        self.assertEqual(len(names), 3)
+        self.assertIn("-look3-", sheets.name("familiars", 0, COLORS[0], 3))
         was = characters.LOOK
-        classic, refined = characters.sheet("familiars", 1, COLORS[1], 1), characters.sheet("familiars", 1, COLORS[1], 2)
-        self.assertNotEqual(classic, refined)
+        drawn = {characters.sheet("familiars", 1, COLORS[1], look) for look in (1, 2, 3)}
+        self.assertEqual(len(drawn), 3)
         self.assertEqual(characters.LOOK, was)
+        sheets._busy = True  # nothing drawn: only what is asked for
+        sheets.path("sketch", COLORS[0], 3)  # the sketch has one look: its first
+        sheets.path("familiars", COLORS[0], 3)
+        self.assertEqual([key[3] for key in sheets._wanted[:2]], [1, 3])
 
     def test_a_sheet_already_on_disk_is_not_drawn_again(self):
         folder = tempfile.mkdtemp(prefix="cs-sprites-")
@@ -218,11 +224,13 @@ class Sheets(unittest.TestCase):
 
 class Look2:
     """The same checks with the engine's second look (characters.LOOK = 2), put back afterwards:
-    the look is chosen by one constant, and both must keep every rule."""
+    the look is chosen by one constant, and every look must keep every rule."""
+    look = 2
+
     @classmethod
     def setUpClass(cls):
         cls.was = characters.LOOK
-        characters.LOOK = 2
+        characters.LOOK = cls.look
         super().setUpClass()
 
     @classmethod
@@ -250,6 +258,63 @@ class SheetLook2(Look2, unittest.TestCase):
     test_needs_you_holds_up_its_mark_and_done_settles = Sheet.test_needs_you_holds_up_its_mark_and_done_settles
 
 
+class Look3(Look2):
+    """LOOK 3, the two mixed (2026-11-26): Classic's tones and motion, Refined's eyes and signs."""
+    look = 3
+
+
+class DrawingLook3(Look3, DrawingLook2):
+    pass
+
+
+class SheetLook3(Look3, SheetLook2):
+    pass
+
+
+class Look3Mix(Look3, unittest.TestCase):
+    def test_the_tones_are_classic_with_an_outline_that_shows(self):
+        # The comparison of 2026-11-26: Classic's shading has the volume and punch; its outline
+        # was 1.0 to 1.25:1 against the glass for most colors.
+        glass = characters.luminance(characters.GLASS)
+        for color in COLORS + characters.SKIN + ["#3a3f58", "#fff3df"]:
+            R = characters.ramp(color)
+            characters.LOOK = 1
+            classic = characters.ramp(color)
+            characters.LOOK = 3
+            self.assertEqual(R[3:], classic[3:], color)  # the color and its lights as Classic's
+            L = [characters.oklch(t)[0] for t in R]
+            self.assertLessEqual(L[0], L[1], color)  # the outline no lighter than any shadow
+            if color in COLORS[:8]:  # the colors handed out first: the darkest shadow leaves room
+                self.assertGreater((characters.luminance(R[0]) + .05) / (glass + .05), 1.5, color)
+        # pale colors' shadows not at full strength: no lime under a pale green, no royal blue
+        for color, tone in (("#DAF0B8", 1), ("#8AB4FF", 1)):
+            self.assertLess(characters.oklch(characters.ramp(color)[tone])[1], .2, color)
+
+    def test_it_moves_as_classic_while_working(self):
+        # Held poses, not the eased cycles of LOOK 2: the figure's own pixels where Classic's are.
+        def solid(cell):
+            return bytes(cell[i] > 200 for i in range(3, len(cell), 4))
+        for style, kinds in (("familiars", range(1, 5)), ("operators", range(5))):
+            for kind in kinds:
+                for i in range(0, 24, 3):
+                    t = i / characters.FPS
+                    mix = characters.frame(style, kind, COLORS[kind], "working", t, t, 0)
+                    characters.LOOK = 1
+                    classic = characters.frame(style, kind, COLORS[kind], "working", t, t, 0)
+                    characters.LOOK = 3
+                    self.assertEqual(solid(mix), solid(classic), (style, kind, i))
+
+    def test_the_lantern_glows_about_as_much_as_classic(self):
+        # The author found the refined lantern dull; done is where its glow is widest.
+        def glow(look):
+            characters.LOOK = look
+            cell = characters.frame("familiars", 0, COLORS[0], "done", 5.0, 5.0, 0)
+            characters.LOOK = 3
+            return sum(cell[i] for i in range(3, len(cell), 4) if 0 < cell[i] < 200)
+        self.assertGreater(glow(3), glow(1) * .8)
+        self.assertGreater(glow(3), glow(2) * 2)
+
+
 class Look2Ramps(Look2, unittest.TestCase):
     def test_the_outline_shows_on_the_glass_and_the_tones_stay_apart(self):
         # The review, 2026-11-26: the outline tone was 1.00 to 1.25 against the glass for 16 of
@@ -268,7 +333,7 @@ class Look2Ramps(Look2, unittest.TestCase):
 
 
 class PreviewsBothLooks(unittest.TestCase):
-    """The previews in docs/dev/looks/familiars_next.py keep the rules too, in both looks."""
+    """The previews in docs/dev/looks/familiars_next.py keep the rules too, in every look."""
     @classmethod
     def setUpClass(cls):
         sys.path.insert(0, os.path.join(ROOT, "docs", "dev", "looks"))
@@ -285,7 +350,7 @@ class PreviewsBothLooks(unittest.TestCase):
     def test_feet_edges_and_rows(self):
         n = characters.N
         edges = [(x, 0) for x in range(n)] + [(0, y) for y in range(n)] + [(n - 1, y) for y in range(n)]
-        for look in (1, 2):
+        for look in (1, 2, 3):
             characters.LOOK = look
             for i, color in enumerate(self.colors):
                 kind = self.base + i
