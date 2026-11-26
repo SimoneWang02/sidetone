@@ -21,6 +21,7 @@ import zlib
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # run with -I, so add our own dir
 import collections  # noqa: E402
 
+import characters  # noqa: E402
 import claude_sessions  # noqa: E402
 import language  # noqa: E402
 import overlay as overlay_mod  # noqa: E402
@@ -57,6 +58,9 @@ class Hub(Permissions, Talk, Headset):
         self.sessions = Sessions(cfg.voice_pool, cfg.voices, os.path.join(cfg.state, "voices.json"), colors=cfg.colors)
         self.last_event = time.monotonic()
         self.overlay = None  # anything with send(dict); set by main() or the tests
+        # Each session's character, drawn once into a sheet the overlay reads (hub/characters.py).
+        # main() points it at a folder Windows can read; until then it draws into the state folder.
+        self.sheets = characters.Sheets(os.path.join(cfg.state, "characters"), done=self.publish)
         self.terminals = terminal_mod.Terminals(cfg.terminal)  # marks each session's own terminal
         self._shown: dict | None = None  # last state sent to the overlay, to skip repeats
         self.plan: dict | None = None  # the plan's usage as last read (see Talk.usage), for the overlay
@@ -787,6 +791,8 @@ class Hub(Permissions, Talk, Headset):
                 "speaking": s.id == speaking,
                 "target": len(self.sessions.by_id) > 1 and self._target() is s,  # in focus: follow-ups go here
                 "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
+                # Its character's sheet ("" for none, or while it is being drawn).
+                "sprite": self.sheets.path(self.cfg.overlay.get("character", "none"), s.color),
             } for s in self.sessions.by_id.values() for figures in [self._figures(s)]]
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)]
@@ -827,7 +833,8 @@ class Hub(Permissions, Talk, Headset):
         if new_keys:  # claim allow/deny/cancel only while they can do something
             self.overlay.send({"type": "keys", "live": keys})
         if new_rows:
-            self.overlay.send({"type": "state", "sessions": rows, "history": history, "usage": bars, "muted": muted})
+            self.overlay.send({"type": "state", "sessions": rows, "history": history, "usage": bars, "muted": muted,
+                               "sprite_layout": characters.LAYOUT})
 
     def _figures(self, s) -> dict:
         """What can be said in figures about a session right now. For each (see
@@ -1008,6 +1015,10 @@ def main() -> int:
         script = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "overlay", "overlay.ps1")
         hub.overlay = overlay_mod.Overlay(script, cfg.overlay, on_message=hub.on_overlay,
                                           log=lambda line: log(cfg, "hub.log", line))
+        folder = overlay_mod.windows_folder()
+        if folder:  # beside the overlay's program, where Windows reads it
+            hub.sheets.folder, hub.sheets.windows = os.path.join(folder, "characters"), overlay_mod.windows_path
+        hub.sheets.log = lambda line: log(cfg, "hub.log", line)
         if Meter.available() and not isinstance(hub.speech.engine, NullEngine):
             hub.speech.meter = Meter()  # the overlay's voice wave follows the real sound
         hub.publish()  # starts the window now, so it is ready before the first session speaks

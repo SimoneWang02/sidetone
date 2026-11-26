@@ -209,7 +209,10 @@ Roughly easiest first, the larger ones after.
       Character choice of Familiars, Operators, Sketch or None). Then: one size (the small one);
       the sketches told apart by more than color (tried, then undone: "I prefer the previous version
       where they are all the same ... They don't seem very polished"); On the Edge "is cool"; Inside smaller so the
-      bubble keeps its height. Done, **not seen by them yet**. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      bubble keeps its height. Then "these previews look good. You can build them": Familiars and
+      Operators built as the setting Character (none by default) and Character Place, in the
+      bubble only (`docs/dev/features.md`). Seen in pictures, **not yet tried live by the
+      author**. Not built: the sketch, a character in the request card and the details rows. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.

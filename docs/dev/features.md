@@ -298,6 +298,42 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     their lights; their words get smaller too, which at twenty sessions on a 768 px screen
     (68 %) is small. With the default place and a 48 px taskbar nothing changes up to 21
     sessions on a 1080p screen at 100 %, 16 at 125 %, 12 at 150 %, 14 on a 768 px laptop.
+- Character (`overlay.character`: none, familiars, operators; none by default) and Character
+  Place (`overlay.character_place`: edge, inside), in the Overlay section (2026-11-25). A small
+  pixel-art figure with the bubble that acts what its session is doing. Where it came from:
+  the 50-design prompt (`docs/dev/overlay-redesign-prompt.md`), then plushies ("very AI
+  generated"), an aquarium (lovely large, "incredibly small" as an overlay), twelve sketched
+  alternatives ("I like none of them"), six looks for the bubble, and the author's taste
+  ("I love pixel art ... I play a lot of games"); of the last previews, "all three of them are
+  pretty good. So we can just put them as selection by the user ... You can build them". The
+  previews are in `docs/dev/looks/` (`characters.html` is the one built from).
+  - Familiars: five creatures, each with a temper and its own acting (a calm lantern whose
+    flame flares with the voice, an excitable ember, a sleepy sprout, a shy shellback that
+    hides in its shell when its session fails, a grumpy toadstool). Operators: five people on
+    the line, each with their own headset and something of their own (hoodie with cat ears, a
+    pendant, a bandana, earbuds and a beard, an aerial and a scarf). The third look shown, a
+    pencil sketch, is not built.
+  - `hub/characters.py` draws them, ported from the previews' JavaScript: shapes filled in
+    flat bands of tone on a 40 by 40 grid, a contact shadow where a part lies on another, an
+    outline in the part's darkest tone, then single pixels. Each session gets a sheet: one
+    row of 40 px cells for each moment (idle 32 frames, working 16, speaking at four
+    loudnesses 8 each, needs 40 then 8 repeated, done 32 then 8, failed 16, listening 16; 8
+    frames a second, `LAYOUT`), as a PNG. Its figure follows its color (`kind_of`), so a project
+    keeps its own. Measured: 0.35 s for a familiar's sheet, 0.84 s for an operator's, about
+    30 kB, drawn once in a thread (`Sheets`) and kept beside the overlay's program in
+    `%LOCALAPPDATA%\sidetone\characters`, named by the drawing's own version.
+  - The hub sends each row's sheet (`sprite`, "" while it is drawn) and the layout
+    (`sprite_layout`) with the state. The overlay (`Sprite`) only crops a cell: the bubble's
+    session's moment (listening if you are talking to it, speaking, else its state), the time
+    since that moment began, and while it speaks the loudness of its voice for the row. It
+    hops up from the bubble in a fifth of a second when the moment changes. Edge: in a window
+    of its own (`perch`, see-through, click-through, no blur) on the bubble's top edge, at
+    its end away from the bar, 80 px; the bubble keeps its size ("On the edge is cool").
+    Inside: 60 px in the bubble beside the words, which grows 50 px wider and no taller
+    ("decrease the size to make them fit").
+  - Seen in pictures (`overlay_check.py --only=character`): both kinds, both places,
+    speaking, needs you, done, failed. **Not seen live by the author yet**; not in the
+    request card or the details rows yet, and Reduce Motion holds the first frame.
     It counts lights of the usual height: rows grown by `row_lines` 2 or 3 can still pass
     the screen.
   - Both settings have their new-install values built into the window, so an overlay

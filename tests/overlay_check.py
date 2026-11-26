@@ -831,6 +831,40 @@ def free_place(room=420):
     return None
 
 
+# A character beside the bubble (2026-11-25, overlay.character): each kind, on the bubble's edge
+# and inside it, speaking, needing you, done and failed. Held still, so each picture is the
+# moment's first frame; the sheets are drawn here as the hub would draw them.
+if not ONLY or ONLY.startswith("character"):
+    import characters  # noqa: E402
+    folder = os.path.join(overlay.windows_folder() or out, "characters")
+    os.makedirs(folder, exist_ok=True)
+    SHEETS = {}
+    for style in characters.STYLES:
+        for color in COLORS:
+            path = os.path.join(folder, f"check-{style}-{color.lstrip('#')}.png")
+            with open(path, "wb") as f:
+                f.write(characters.sheet(style, characters.kind_of(color), color))
+            SHEETS[style, color] = win(path)
+    MOMENTS = [("speaking", "api-server", "done", SAID), ("needs", "web-app", "needs_you", "asks: Which drink would you like?"),
+               ("done", "sidetone", "done", "Pushed, all up to date."), ("failed", "data-pipeline", "failed", "I hit an error: rate limit")]
+    for style in characters.STYLES:
+        for place in ("edge", "inside"):
+            look(character=style, character_place=place)
+            for moment, name, state, text in MOMENTS:
+                rows = sessions(name if moment == "speaking" else None)
+                for row in rows:
+                    row["sprite"] = SHEETS[style, row["color"]]
+                    if row["name"] == name and moment != "speaking":
+                        row["state"] = state
+                send(type="state", sessions=rows, history=HISTORY, sprite_layout=characters.LAYOUT)
+                send(type="flash", state=state, name=name, text=text, seconds=6)
+                if moment == "speaking":
+                    send(type="wave", name=name, levels=voice(9), step=0.04, delay=0.0)
+                shot(f"character-{style}-{place}-{moment}", 1.4)
+                send(type="flash", name=name, text="", seconds=0)
+                time.sleep(0.6)
+    look(character="none")
+
 if "--glass" in sys.argv:
     spot = free_place()
     if not spot:

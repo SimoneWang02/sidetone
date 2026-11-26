@@ -57,6 +57,15 @@ DEFAULTS = {
     # out: a closed bar then says which session a light is, in the color of its name and of its
     # terminal's tint. The island has its dash under the light instead.
     "session_tick": True,
+    # A small pixel-art figure beside the speech bubble that acts what its session is doing
+    # (hub/characters.py): none | familiars (five creatures with five tempers) | operators (five
+    # people on the line). The author, 2026-11-25: "put them as selection by the user ... You can
+    # build them". None by default, so that what people know does not change by itself.
+    "character": "none",
+    # Where it stands: edge = on the bubble's top edge, so the bubble keeps its size (the author:
+    # "On the edge is cool") | inside = in the bubble beside the words, smaller, so that the bubble
+    # is no taller ("decrease the size to make them fit").
+    "character_place": "edge",
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
     # Held to take hold of the bar with the mouse: drag it, or turn the wheel on it. "" (the
@@ -212,6 +221,29 @@ ASSEMBLIES = ["PresentationFramework", "PresentationCore", "WindowsBase", "Syste
 
 def _windows_path(path: str) -> str:
     return subprocess.run(["wslpath", "-w", path], capture_output=True, text=True, check=True).stdout.strip()
+
+
+def windows_path(path: str) -> str:
+    return _windows_path(path)
+
+
+_folder: list[str] = []
+
+
+def windows_folder() -> str:
+    """%LOCALAPPDATA%\\sidetone as WSL sees it, where the overlay's program lives; "" off Windows."""
+    if not _folder:
+        try:
+            powershell = shutil.which("powershell.exe") or ""
+            windows = powershell.split("/System32/")[0]
+            appdata = subprocess.run(["cmd.exe", "/c", "echo %LOCALAPPDATA%"], capture_output=True, text=True, cwd=windows,
+                                     timeout=20).stdout.strip() if powershell else ""
+            folder = subprocess.run(["wslpath", "-u", appdata], capture_output=True, text=True, check=True).stdout.strip() \
+                if appdata and "%" not in appdata else ""
+            _folder.append(os.path.join(folder, "sidetone") if folder else "")
+        except (OSError, subprocess.SubprocessError):
+            _folder.append("")
+    return _folder[0]
 
 
 def build(source: str, log: Callable[[str], None] = lambda line: None) -> str | None:

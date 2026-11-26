@@ -1001,6 +1001,99 @@ namespace ClaudeSpeaks
     // and the height of what it holds. The blur cannot fade (it is all or nothing), so growing the
     // window is what makes the glass appear smoothly. Its top left corner stays put while it
     // grows, which is the only way a see-through window resizes without a flicker.
+    // A session's character beside the bubble (hub/characters.py draws its sheet): one cell of the
+    // sheet at a time, picked by the moment (idle, working, speaking, needs, done, failed, listen),
+    // the time since it began and, while the session speaks, how loud the voice is. Needs and done
+    // play their first part once, then repeat their last. It hops up when the moment changes.
+    class Sprite
+    {
+        static readonly Dictionary<string, BitmapSource> sheets = new Dictionary<string, BitmapSource>();
+        static readonly Dictionary<string, BitmapSource> cells = new Dictionary<string, BitmapSource>();
+        public static int Cell = 40, Fps = 8;
+        public static readonly Dictionary<string, int[]> Rows = new Dictionary<string, int[]>();  // name -> its row, how many frames
+        public readonly Image Image = new Image { Stretch = Stretch.Fill, IsHitTestVisible = false };
+        readonly TranslateTransform hop = new TranslateTransform();
+        string path = "", moment = "", shown = "";
+        double since;
+
+        public Sprite(double size)
+        {
+            Image.Width = Image.Height = size;
+            RenderOptions.SetBitmapScalingMode(Image, BitmapScalingMode.NearestNeighbor);
+            Image.RenderTransform = hop;
+        }
+
+        public static void Layout(Dictionary<string, object> layout)
+        {
+            if (layout.ContainsKey("cell")) Cell = (int)Convert.ToDouble(layout["cell"], CultureInfo.InvariantCulture);
+            if (layout.ContainsKey("fps")) Fps = Math.Max(1, (int)Convert.ToDouble(layout["fps"], CultureInfo.InvariantCulture));
+            var rows = layout.ContainsKey("rows") ? layout["rows"] as Dictionary<string, object> : null;
+            if (rows == null) return;
+            Rows.Clear();
+            foreach (var r in rows)
+            {
+                var v = r.Value as object[];
+                if (v != null && v.Length == 2) Rows[r.Key] = new[] { (int)Convert.ToDouble(v[0], CultureInfo.InvariantCulture), (int)Convert.ToDouble(v[1], CultureInfo.InvariantCulture) };
+            }
+        }
+
+        static BitmapSource Sheet(string file)
+        {
+            BitmapSource sheet;
+            if (sheets.TryGetValue(file, out sheet)) return sheet;
+            try
+            {
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;  // read now, so the file is not held open
+                image.UriSource = new Uri(file);
+                image.EndInit();
+                image.Freeze();
+                sheet = image;
+            }
+            catch (Exception) { sheet = null; }  // not there (yet): nothing is drawn
+            sheets[file] = sheet;
+            return sheet;
+        }
+
+        // Draws the cell for now; false when there is nothing to draw.
+        public bool Show(string file, string state, double loudness, double now, bool still)
+        {
+            if (file.Length == 0 || Rows.Count == 0) { Image.Source = null; shown = ""; return false; }
+            if (state != moment || file != path) { moment = state; path = file; since = now; }
+            double age = now - since, a = age;
+            string row = state;
+            if (state == "speaking") row = "speaking" + (loudness < 0.12 ? 0 : loudness < 0.4 ? 1 : loudness < 0.7 ? 2 : 3);
+            int[] first;
+            if ((state == "needs" || state == "done") && Rows.TryGetValue(state, out first) && (still || a * Fps >= first[1]))
+            {
+                row = state + "_hold";
+                a = still ? 0 : a - first[1] / (double)Fps;
+            }
+            int[] r;
+            if (!Rows.TryGetValue(row, out r)) return false;
+            int column = still ? 0 : (int)Math.Floor(a * Fps) % r[1];
+            string key = file + "|" + r[0] + "|" + column;
+            if (key != shown)
+            {
+                BitmapSource sheet = Sheet(file), cell;
+                if (sheet == null || (r[0] + 1) * Cell > sheet.PixelHeight || (column + 1) * Cell > sheet.PixelWidth) return false;
+                if (!cells.TryGetValue(key, out cell))
+                {
+                    cell = new CroppedBitmap(sheet, new Int32Rect(column * Cell, r[0] * Cell, Cell, Cell));
+                    cell.Freeze();
+                    cells[key] = cell;
+                }
+                Image.Source = cell;
+                shown = key;
+            }
+            // It hops up from the bubble in a fifth of a second, in whole steps of its own pixels.
+            double step = Image.Height / Cell;
+            hop.Y = still || state == "idle" ? 0 : Math.Round((1 - Ui.EaseOut(age / 0.2)) * 8) * step;
+            return true;
+        }
+    }
+
     class Glass : Window
     {
         const int GWL_EXSTYLE = -20, GWL_STYLE = -16, WS_MINIMIZEBOX = 0x20000, WS_SYSMENU = 0x80000;
@@ -1078,8 +1171,18 @@ namespace ClaudeSpeaks
 
         // The whole of what it holds drawn bigger or smaller (overlay.size), its edge kept one
         // pixel; an unfolding window is as much wider.
+        double scale = 1;
+
+        public void Widen(double width)
+        {
+            if (!Unfolds || width == baseWidth) return;
+            baseWidth = width;
+            Width = Math.Round(baseWidth * scale);
+        }
+
         public void Zoom(double scale)
         {
+            this.scale = scale;
             var inside = Panel.Child as FrameworkElement;
             if (inside != null) inside.LayoutTransform = scale == 1 ? Transform.Identity : new ScaleTransform(scale, scale);
             if (Unfolds) Width = Math.Round(baseWidth * scale);
@@ -2683,6 +2786,7 @@ namespace ClaudeSpeaks
             Width = 3, Height = 18, CornerRadius = new CornerRadius(1.5), VerticalAlignment = VerticalAlignment.Center,
             Visibility = Visibility.Collapsed, IsHitTestVisible = false,
         };
+        public string Sprite = "";  // the sheet of its character, "" for none
         public string Name = "", Color = "", Title = "", State = "", FlashText, TalkKind, TalkText = "";  // TalkKind: null unless push-to-talk is about this session
         public readonly Badge Badge = new Badge { Visibility = Visibility.Collapsed };
         Brush talkInk = Brushes.White;  // white for your words, dim for a note, the microphone's color for what to do
@@ -2748,6 +2852,7 @@ namespace ClaudeSpeaks
             Orb.SetContext(s.ContainsKey("context") && s["context"] != null ? Convert.ToDouble(s["context"], CultureInfo.InvariantCulture) : -1);
             if (before.Length > 0 && (before != State || was != Speaking)) Orb.Changed = Ui.Now;  // the light pops
             Wave.Synthetic = s.ContainsKey("synth") && Convert.ToBoolean(s["synth"]);
+            Sprite = Overlay.Str(s, "sprite");
             if (Speaking && !was) Wave.Since = Ui.Now;
             if (!Speaking && was) Wave.Clear();
             Overlay.Heading(line1, Name, Title, Color);
@@ -2846,6 +2951,14 @@ namespace ClaudeSpeaks
         // end of the bar (overlay.muted_mark, off: the author did not like it there and chose a
         // line in the details, muted_line). A window of its own, so the lights and rows stay put.
         readonly Glass muteChip = new Glass(0);
+        // The session's character: on the bubble's top edge in a window of its own with nothing
+        // but the figure (so the bubble keeps its size), or inside the bubble beside the words,
+        // smaller (`character`, `character_place`).
+        readonly Glass perch = new Glass(0);
+        readonly Sprite edgeSprite = new Sprite(80), innerSprite = new Sprite(60);
+        readonly DispatcherTimer spriteTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+        string character = "none", characterPlace = "edge";
+        const double InnerRoom = 50;  // what the bubble grows by, and its words move right by, with a character inside
         const double ChipSize = 32, ChipGap = 4;
         bool muted, mutedMark;
         readonly StackPanel lights = new StackPanel { Margin = new Thickness(3) };
@@ -3007,7 +3120,7 @@ namespace ClaudeSpeaks
             }
             if (size == zoom) return false;
             zoom = size;
-            foreach (Glass g in new[] { rail, panel, bubble, muteChip }) g.Zoom(zoom);
+            foreach (Glass g in new[] { rail, panel, bubble, muteChip, perch }) g.Zoom(zoom);
             return true;
         }
         string mode = "dots", corner = "top-right", glass = "blur", bubbleShows = "";
@@ -3094,7 +3207,16 @@ namespace ClaudeSpeaks
             var layers = new Grid();
             layers.Children.Add(bubbleStrip);
             layers.Children.Add(bubbleWords);
+            innerSprite.Image.HorizontalAlignment = HorizontalAlignment.Left;
+            innerSprite.Image.VerticalAlignment = VerticalAlignment.Center;
+            innerSprite.Image.Margin = new Thickness(6, -4, 0, -4);
+            innerSprite.Image.Visibility = Visibility.Collapsed;
+            layers.Children.Add(innerSprite.Image);
             bubble.Body = layers;
+            perch.Panel.BorderThickness = new Thickness(0);
+            perch.Panel.Background = Brushes.Transparent;
+            perch.Body = edgeSprite.Image;
+            spriteTimer.Tick += delegate { UpdateSprite(); };
 
             rail.SizeChanged += delegate { Place(); };
             bannerTimer.Tick += delegate { bannerTimer.Stop(); StopSpin(); hasBanner = false; Render(); };
@@ -3109,7 +3231,7 @@ namespace ClaudeSpeaks
             holdTimer.Tick += delegate { if (!Down((int)heldKey)) EndHold(); };
             // Other always-on-top windows (and some games) push us down; climb back regularly.
             topTimer.Interval = TimeSpan.FromSeconds(2);
-            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); muteChip.Raise(); };
+            topTimer.Tick += delegate { rail.Raise(); panel.Raise(); bubble.Raise(); muteChip.Raise(); perch.Raise(); };
 
             HwndSource.FromHwnd(hwnd).AddHook(WndProc);
             SetGlass();
@@ -3201,6 +3323,9 @@ namespace ClaudeSpeaks
                     SetZoom(Num(msg, "size", 100));
                     if (msg.ContainsKey("working_motion")) Ui.WorkingCalm = Str(msg, "working_motion") != "lively";
                     if (msg.ContainsKey("session_tick")) sessionTick = Convert.ToBoolean(msg["session_tick"]);
+                    if (msg.ContainsKey("character")) character = Str(msg, "character");
+                    if (msg.ContainsKey("character_place")) characterPlace = Str(msg, "character_place") == "inside" ? "inside" : "edge";
+                    bubbleShows = "";  // the bubble is laid out again, with or without room for a character
                     if (msg.ContainsKey("talk_text")) Ui.TalkText = Str(msg, "talk_text");
                     if (msg.ContainsKey("talk_text_color")) Ui.SetTalkColor(Str(msg, "talk_text_color"));
                     if (msg.ContainsKey("waiting_color")) Ui.SetWaitingColor(Str(msg, "waiting_color"));
@@ -3269,6 +3394,7 @@ namespace ClaudeSpeaks
                     history = msg.ContainsKey("history") ? (object[])msg["history"] : new object[0];
                     usage = msg.ContainsKey("usage") && msg["usage"] is object[] ? (object[])msg["usage"] : new object[0];
                     muted = msg.ContainsKey("muted") && Convert.ToBoolean(msg["muted"]);
+                    if (msg.ContainsKey("sprite_layout") && msg["sprite_layout"] is Dictionary<string, object>) Sprite.Layout((Dictionary<string, object>)msg["sprite_layout"]);
                     // The focus moved to another session (arrows, wheel, another terminal, or it
                     // spoke): the card and the history are about that one now, not about the one
                     // the mouse was on last. A mouse that is on a row right now still has its say.
@@ -3604,7 +3730,7 @@ namespace ClaudeSpeaks
                     if (row.Saying && (found == null || row.Speaking || (!found.Speaking && row.FlashUntil > found.FlashUntil))) found = row;
                 }
             bool orphan = away && talking && (found == null || found.TalkKind == null);  // push-to-talk with no session to show it on
-            if (found == null && !orphan) { bubble.Goal = 0; return; }
+            if (found == null && !orphan) { bubble.Goal = 0; UpdateSprite(); return; }
             talker = orphan ? null : found;
             // The first line is always the session's name and title; push-to-talk shows as a sign
             // at its right and as words underneath.
@@ -3630,7 +3756,43 @@ namespace ClaudeSpeaks
                 bubbleStrip.NewestRight = corner.EndsWith("right");
             }
             if (bubble.Goal == 0) bubbleAt = Ui.Now;
+            bool inside = character != "none" && characterPlace == "inside" && talker != null && talker.Sprite.Length > 0;
+            bubble.Widen(inside ? BubbleWidth + InnerRoom : BubbleWidth);
+            bubbleWords.Margin = new Thickness(inside ? 14 + InnerRoom : 14, 8, 14, 10);
             bubble.Goal = bubble.Natural();
+            UpdateSprite();
+        }
+
+        // The character of the session the bubble is about: what it acts, and where it stands.
+        void UpdateSprite()
+        {
+            Row r = talker;
+            bool want = character != "none" && r != null && r.Sprite.Length > 0 && bubble.Goal > 0;  // the bubble may not be on screen yet: the timer looks again
+            string state = "";
+            if (want)
+            {
+                bool listening = r.TalkKind != null && talkState == "listening";
+                state = listening ? "listen" : r.Speaking ? "speaking" : r.State == "needs_you" ? "needs"
+                    : r.State == "done" || r.State == "failed" || r.State == "working" ? r.State : "idle";
+            }
+            double now = Ui.Now, loud = want && r.Speaking ? r.Wave.At(now - Wave.Lag) : 0;
+            bool edge = characterPlace == "edge";
+            bool onEdge = want && edge && bubble.IsVisible && bubble.Open > 0.85 && edgeSprite.Show(r.Sprite, state, loud, now, still);
+            bool inside = want && !edge && innerSprite.Show(r.Sprite, state, loud, now, still);
+            innerSprite.Image.Visibility = inside ? Visibility.Visible : Visibility.Collapsed;
+            if (onEdge)
+            {
+                // On the bubble's top edge, at its end away from the bar; its feet (two rows above
+                // the cell's bottom) on the edge.
+                Rect work = WorkArea();
+                double tall = 80 * zoom, foot = 2 * tall / Sprite.Cell;
+                perch.Left = corner.EndsWith("right") || Island ? bubble.Left + 6 * zoom : bubble.Left + bubble.Width - tall - 6 * zoom;
+                perch.Top = Math.Max(work.Top, bubble.Top - tall + foot + 1);
+                if (!perch.IsVisible) { perch.Show(); perch.Raise(); }
+            }
+            else if (perch.IsVisible) perch.Hide();
+            if (want) { if (!spriteTimer.IsEnabled) spriteTimer.Start(); }
+            else if (spriteTimer.IsEnabled) spriteTimer.Stop();
         }
 
         // --- motion ---------------------------------------------------------------------------------
@@ -5193,6 +5355,7 @@ namespace ClaudeSpeaks
             {
                 if (panel.IsVisible) pieces.Add(panel.Area());
                 if (bubble.IsVisible) pieces.Add(bubble.Area());
+                if (perch.IsVisible) pieces.Add(perch.Area());
                 if (muteChip.IsVisible) pieces.Add(muteChip.Area());
                 if (settings != null && settings.IsOpen)
                 {

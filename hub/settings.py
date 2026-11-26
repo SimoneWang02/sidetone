@@ -226,6 +226,12 @@ SECTIONS = [
         choice("overlay.working_motion", "Working Light", "How the light of a session at work moves: a slow turn, so that "
                "only a session that needs you moves fast, or the quick spin it had at first.",
                ("calm", "Calm"), ("lively", "Lively")),
+        # 2026-11-25, after the previews in docs/dev/looks/: the author chose these two kinds.
+        choice("overlay.character", "Character", "A small figure beside the bubble that acts what its session is doing: "
+               "speaking, needing you, done, failed. Each session keeps its own.",
+               ("none", "None"), ("familiars", "Familiars"), ("operators", "Operators")),
+        choice("overlay.character_place", "Character Place", "On the bubble's edge, so the bubble keeps its size, or inside it "
+               "beside the words, smaller.", ("edge", "On the Edge"), ("inside", "Inside")),
         switch("overlay.session_tick", "Session Color on the Bar", "A small tick of each session's color beside its light: "
                "the color of its name in the details and of its terminal."),
         choice("overlay.history", "History Shows", "What was said last, when the mouse rests on the details: by this session, or by all of them.",
