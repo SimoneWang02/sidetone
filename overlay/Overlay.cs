@@ -3119,7 +3119,7 @@ namespace ClaudeSpeaks
         bool moving, dragging, catching, hover, peek, peekForced, opaque, hasRequest, hasBanner, running, still, stillAsked;
         double zoom = 1;  // the bar, the details and the bubble drawn this much bigger or smaller: overlay.size, or less (Fit)
         double asked = 1;  // overlay.size as it was set
-        bool sessionTick = true;  // `session_tick`: each light in the bar has a tick of its session's color
+        bool sessionTick = false;  // `session_tick`: each light in the bar has a tick of its session's color
 
         // A new size, in percent; true if it changed anything.
         bool SetZoom(double percent)

@@ -55,8 +55,12 @@ DEFAULTS = {
     "working_motion": "calm",
     # A tick of each session's color beside its light in the bar, on the side the details come
     # out: a closed bar then says which session a light is, in the color of its name and of its
-    # terminal's tint. The island has its dash under the light instead.
-    "session_tick": True,
+    # terminal's tint. The island has its dash under the light instead. Off since 2026-11-26:
+    # the author, seeing it live for a day: "visually I don't like it much". Two colors on
+    # each light, and the first two sessions' (a blue, an orange) are nearly those of
+    # "working" and "needs you"; and the details come out with every name whenever a session
+    # needs you, so the tick only serves a bar that is closed and calm.
+    "session_tick": False,
     # A small pixel-art figure beside the speech bubble that acts what its session is doing
     # (hub/characters.py): none | familiars (five creatures with five tempers) | operators (five
     # people on the line). The author, 2026-11-25: "put them as selection by the user ... You can

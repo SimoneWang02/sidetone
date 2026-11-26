@@ -30,11 +30,13 @@ these come before anything new.
       Light": one turn in 5 s, where it spun as fast as "needs you" pulses); a tick of each
       session's color beside its light (`overlay.session_tick`, "Session Color on the Bar");
       and the whole overlay drawn smaller when the bar would pass the end of the screen (no
-      setting). Compiled and in the unit tests, **not seen on a screen by anyone yet**: no
-      pictures, and the live overlay was not restarted. To see the first two:
-      `sidetone overlay restart`; the two settings are in the window after
-      `sidetone hub restart`. The third needs more sessions than the screen holds (14 to 21),
-      or a picture from `tests/overlay_check.py` with made-up ones, which has no such view yet.
+      setting). Live on the author's screen since 2026-11-26. The tick: seen, "visually I
+      don't like it much", so off for a new install from that day and kept as a setting; a
+      hub from before the change still sends it on until `sidetone hub restart` (or the
+      switch in the settings window). The working light: **nothing said of it yet**. The
+      shrinking: **not seen by anyone yet**, it needs more sessions than the screen holds
+      (14 to 21), or a picture from `tests/overlay_check.py` with made-up ones, which has no
+      such view yet.
 
 - [ ] Clearing progress (2026-11-24, `clear_progress`): a turning ring and "Clearing sidetone 2…"
       until it is done, and no second /clear typed meanwhile. Tests and pictures only, **not yet

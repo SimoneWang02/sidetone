@@ -212,6 +212,11 @@ tests; not seen on a screen by anyone yet. What differs from the plan below: the
 shrinks the whole overlay (bar, details and bubble, as the Size setting does) and has no
 setting, where the plan had rows of one line.
 
+2026-11-26, the second step judged on the screen and turned off: the author, with it live,
+"visually I don't like it much", and yes to off for a new install (it stays as a setting).
+The review's own reading of why is under step 2 below. The closed bar is back to saying what,
+not who; problem 2 is open again.
+
 ### 1. Calm the working light (problem 3)
 
 The smallest change, and the one felt all day.
@@ -238,6 +243,14 @@ The smallest change, and the one felt all day.
 - Risk: api-server's orange next to the amber of "needs you". The tick is small and at the edge,
   never on the disc, so place tells the two apart. To check in a picture.
 - Setting: Session Color On The Bar, on or off.
+- Judged live, 2026-11-26: off. The risk above was real and worse than written: the first two
+  sessions get a blue and an orange (`#8AB4FF`, `#FFA24D`), nearly the colors of "working" and
+  "needs you", so two sessions are enough for a tick to read as a second state, and place did
+  not tell them apart. Two colors on every light is one too many. And the need was smaller
+  than this review made it: whenever a session needs you the details are out with every name,
+  so the tick served only a bar that is closed and calm. A guess at what would say who
+  without a second color: the figure each session keeps (`overlay.character`, the other
+  session's work), which is shape, not color.
 
 ### 3. Fit twenty (problem 1)
 
@@ -282,3 +295,6 @@ is now.
 
 A guess, to be checked when built: glance 4 to 5, twenty sessions 2 to 4, footprint 5, motion 3
 to 4 or 5, buildable 5, charm 2 to 3. About 25 of 30, against 21 today.
+
+With the tick off (2026-11-26) the glance stays at 4 and does not rise toward 5: 24 to 25 of
+30, still a guess.

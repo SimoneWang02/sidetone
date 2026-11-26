@@ -234,6 +234,7 @@ SECTIONS = [
                "beside the words, smaller.", ("edge", "On the Edge"), ("inside", "Inside")),
         switch("overlay.character_details", "Character in the Details", "With the details out too: on their edge in "
                "Selected Session, small beside each session in All Sessions. Only a session with news moves."),
+        # From the review of 2026-11-25; off for a new install since the 26th (the author did not like it on the screen).
         switch("overlay.session_tick", "Session Color on the Bar", "A small tick of each session's color beside its light: "
                "the color of its name in the details and of its terminal."),
         choice("overlay.history", "History Shows", "What was said last, when the mouse rests on the details: by this session, or by all of them.",

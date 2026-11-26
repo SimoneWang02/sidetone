@@ -84,15 +84,16 @@ class Colors(unittest.TestCase):
 class Lights(unittest.TestCase):
     def test_the_calm_working_light_and_the_session_tick_are_read_by_the_window(self):
         # Both from the review of 2026-11-25. A window started by a hub from before them is sent
-        # neither, so the window's own values must be what a new install has.
+        # neither, so the window's own values must be what a new install has. The tick is off
+        # since 2026-11-26: the author did not like it on the screen.
         with open(os.path.join(ROOT, "overlay", "Overlay.cs"), encoding="ascii") as f:
             source = f.read()
         self.assertEqual(overlay.DEFAULTS["working_motion"], "calm")
-        self.assertIs(overlay.DEFAULTS["session_tick"], True)
+        self.assertIs(overlay.DEFAULTS["session_tick"], False)
         self.assertIn('Str(msg, "working_motion") != "lively"', source)
         self.assertIn("public static bool WorkingCalm = true;", source)
         self.assertIn('msg.ContainsKey("session_tick")', source)
-        self.assertIn("bool sessionTick = true;", source)
+        self.assertIn("bool sessionTick = false;", source)
 
 
 if __name__ == "__main__":

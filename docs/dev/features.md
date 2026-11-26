@@ -273,15 +273,23 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   read when the settings come). Seen in the settings window's picture.
 - Three fixes from the review of the overlay (2026-11-25, `docs/dev/overlay-review.md`: the
   author chose to improve today's overlay over the 50 designs, and of a drawn preview of the
-  three said "all three steps look good"). Compiled and in the unit tests; **no pictures and
-  not seen live yet**.
+  three said "all three steps look good"). Compiled and in the unit tests, no pictures. Live
+  on the author's screen since the 26th: the tick seen and turned off (below), nothing said
+  yet of the working light, the third **not seen by anyone yet**.
   - Working Light (`overlay.working_motion`, calm; "Working Light" in the Overlay section,
     Calm or Lively). The review found the working arc at 0.73 turns a second beside the
     pulse of "needs you" at 0.72: the commonest state and the urgent one at one tempo. Calm:
     one turn in 5 s, the arc of one length (1.6 rad), the dot at rest (`Ui.WorkingCalm`, in
     `Orb.OnRender`). Lively is the motion it had. The frames still run while a session works.
-  - Session Color on the Bar (`overlay.session_tick`, on). A closed bar said what each
-    session was doing and not which session it was. `Row.Tick`: 3 by 18 px in the session's
+  - Session Color on the Bar (`overlay.session_tick`, off). On for one day: the author,
+    2026-11-26, with it live, by voice: "at the right side right now of each bowl [light]
+    there's a bar displaying the color of this session. Like visually I don't like it
+    much", and yes to off for a new install. Why it looked wrong: two colors on every light, the state's and the session's,
+    and the first two sessions' colors (`#8AB4FF`, `#FFA24D`) are nearly those of "working"
+    and "needs you", so the tick read as a second state; and it is there all the time for
+    a bar that is closed and calm, since the details come out with every name whenever a
+    session needs you. Kept as a setting. What it was for: a closed bar says what each
+    session is doing and not which session it is. `Row.Tick`: 3 by 18 px in the session's
     color, 2 px inside the bar's edge on the side the details come out (1 px clear of the
     frame round the light in focus), in the bar layout only; the island keeps its dash
     (`Pip`). It is the color of the name in the details and of the terminal's tint. Not drawn
