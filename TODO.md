@@ -33,15 +33,6 @@ these come before anything new.
       `idle` for "at its prompt": the clear key there may wait as for a busy session, and a
       turn interrupted with Escape may go on showing as working (`docs/dev/facts.md`).
 
-- [ ] The details folding away (2026-11-26, the author by voice: "when the detail box
-      closes, I think that animation can be improved"; see `docs/dev/features.md`). They said
-      no more than that, so what was changed is Claude's reading of the numbers: the fold took
-      430 ms, most of it an empty strip of glass creeping shut; now 180 ms, what it holds
-      leaving first, back toward the bar. `overlay.close_motion`: `swift`, or `spring` as it
-      was ("Details Closing" in the settings window, after a hub restart). The bubble folds
-      the same way. **Not seen by the author yet**: measured on a test overlay, never watched.
-      To answer: is this what bothered them, and is 180 ms right. Needs `sidetone overlay restart`.
-
 - [ ] One session muted by itself (2026-11-26, the author by voice: "I have 5 sessions right
       now and I mute 3 of them because I want to focus on 2"; see `docs/dev/features.md`).
       Ctrl+Alt+Shift+M mutes the session in focus and unmutes it; `sidetone mute [PROJECT]`
@@ -760,6 +751,16 @@ on to the release ("let's go to publish unless there's something else to impleme
 Kept for the history: what was asked, what was found, and the author's words on it.
 
 ### Tried by hand
+
+- [x] The details folding away (2026-11-26, the author by voice: "when the detail box
+      closes, I think that animation can be improved"; see `docs/dev/features.md`). They said
+      no more than that, so what was changed was Claude's reading of the numbers: the fold took
+      430 ms, most of it an empty strip of glass creeping shut; now 180 ms, what it holds
+      leaving first, back toward the bar. `overlay.close_motion`: `swift`, or `spring` as it
+      was ("Details Closing" in the settings window). The bubble folds the same way. Live on
+      the author's screen the same day, and seen by them: "It's good. I like it." Not asked
+      apart: the bubble's fold, and the line in the settings window, which their hub did not
+      have yet.
 
 - [x] Your words in the terminal (2026-11-26, `words_in_terminal`, "Your Words in the Terminal"
       under Talking, off for a new install; the author: "put it as a setting, default as no ...

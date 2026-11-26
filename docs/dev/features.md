@@ -288,6 +288,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   went back toward the bar. Not changed: opening, and an open panel taking a new height.
   Whole-window fading was left out: the blur behind the glass belongs to the window's
   rectangle, not to what WPF draws, so it would stay as a clear patch and then jump away.
+  The author, having seen it on their screen the same day: "It's good. I like it."
 - Three fixes from the review of the overlay (2026-11-25, `docs/dev/overlay-review.md`: the
   author chose to improve today's overlay over the 50 designs, and of a drawn preview of the
   three said "all three steps look good"). Compiled and in the unit tests, no pictures. Live
