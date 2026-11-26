@@ -569,6 +569,19 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   wrong in 100 on their own English test set (AA-WER): ElevenLabs Scribe v3 1.95 and Scribe v2
   2.18 (3.67 dollars per 1000 minutes), Whisper large-v3 4.07 to 4.53 by host, large-v3-turbo
   4.62 (Groq's). None of it is the author's voice, and none was measured here.
+- Kokoro, by its own card (huggingface.co/hexgrad/Kokoro-82M, read 2026-11-26): 82 million
+  parameters, Apache 2.0, built on StyleTTS 2 and ISTFTNet, v1.0 on 2025-01-27, trained on "a
+  few hundred hours of audio" for "about $1000 for 1000 hours of A100"; 8 languages, 54 voices.
+- Free voices above Kokoro (2026-11-26, the same blind votes, the list of models whose weights
+  are published; what each needs is from write-ups found by a search, not tried here): Fish
+  Audio Drama 3 1278 (35 billion parameters, said to need a 48 GB card; free under 500,000
+  dollars of revenue a year); Breeze TTS 2 1229 (English and Chinese, about 7.7 GB of card
+  memory, 12 GB advised; weights for research and non-commercial use only); Ming-3.0-tts
+  1181; Gradium's Phonon 31M 1108 (English only, Apache 2.0, a 64.5 MB file, on the
+  processor, first sound in 7 ms by its maker's count, `pip install ptts`); Fish Audio S2 Pro
+  1104; Step Audio EditX 1101; Mistral's Voxtral TTS 1094; NVIDIA's Magpie 1064; Kokoro 1060.
+  Below it: Chatterbox 1021 (the author's ears said the same on 2026-11-19), XTTS v2 917.
+  No time to first sound for Eleven v4 was found; "Eleven v4 Turbo" scores the same as v4.
 - The voice read back by the speech model (2026-11-26): 80 lines the hub really spoke (2,800
   words), made by Kokoro at speed 1.1 and written down by `large-v3-turbo`. Words that differ:
   Heart 1.5%, Bella 1.0%, Emma 1.7% (as British, the way the hub asks), nearly all of them a

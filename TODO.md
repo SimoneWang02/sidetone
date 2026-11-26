@@ -114,6 +114,14 @@ voice, and the wait for the transcript.
       free ElevenLabs account, a page with five of their lines by Heart, Flash and Eleven v4,
       unnamed, and twenty of their recordings written by Scribe beside ours. That sends those
       lines and recordings to ElevenLabs. An optional engine only if their ears say so.
+      Then: "can we make ourselves a model that's basically V4?" Not by training one: Kokoro
+      took a few hundred hours of audio and about 1000 dollars, and the best free model on
+      the list is 400 times its size and needs a 48 GB card to run. What fits this machine
+      (`docs/dev/facts.md`): Gradium's Phonon 31M (English, Apache 2.0, smaller than Kokoro,
+      picked over it a little more than half the time) and Breeze TTS 2 (English and Chinese,
+      picked over Kokoro nearly 3 times in 4, fills most of the RTX 5070, and its weights are
+      for non-commercial use, so never bundled). **To decide:** try both on the card in a
+      trial environment and put the author's own lines by each beside Heart on a page to hear.
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a
