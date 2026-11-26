@@ -1009,12 +1009,13 @@ namespace ClaudeSpeaks
     {
         static readonly Dictionary<string, BitmapSource> sheets = new Dictionary<string, BitmapSource>();
         static readonly Dictionary<string, BitmapSource> cells = new Dictionary<string, BitmapSource>();
-        public static int Cell = 40, Fps = 8;
+        public static int Cell = 40, Fps = 8, RowCount = 1;  // Cell: the pixel styles' cell, which sizes every figure on screen
         public static readonly Dictionary<string, int[]> Rows = new Dictionary<string, int[]>();  // name -> its row, how many frames
         public readonly Image Image = new Image { Stretch = Stretch.Fill, IsHitTestVisible = false };
         readonly TranslateTransform hop = new TranslateTransform();
         string path = "", moment = "", shown = "";
         double since;
+        int drawnAt;  // the cell size of the sheet shown last, so the scaling follows it
 
         public bool Size(double size)
         {
@@ -1036,10 +1037,12 @@ namespace ClaudeSpeaks
             var rows = layout.ContainsKey("rows") ? layout["rows"] as Dictionary<string, object> : null;
             if (rows == null) return;
             Rows.Clear();
+            RowCount = 1;
             foreach (var r in rows)
             {
                 var v = r.Value as object[];
                 if (v != null && v.Length == 2) Rows[r.Key] = new[] { (int)Convert.ToDouble(v[0], CultureInfo.InvariantCulture), (int)Convert.ToDouble(v[1], CultureInfo.InvariantCulture) };
+                if (v != null && v.Length == 2) RowCount = Math.Max(RowCount, Rows[r.Key][0] + 1);
             }
         }
 
@@ -1083,10 +1086,20 @@ namespace ClaudeSpeaks
             if (key != shown)
             {
                 BitmapSource sheet = Sheet(file), cell;
-                if (sheet == null || (r[0] + 1) * Cell > sheet.PixelHeight || (column + 1) * Cell > sheet.PixelWidth) return false;
+                if (sheet == null) return false;
+                // A style's cell size is its sheet's height over its rows: the pixel styles' are
+                // Cell, doubled on screen with hard edges; the pencil sketch's are larger, drawn
+                // with smooth edges, and only ever made smaller.
+                int size = sheet.PixelHeight / RowCount;
+                if ((r[0] + 1) * size > sheet.PixelHeight || (column + 1) * size > sheet.PixelWidth) return false;
+                if (size != drawnAt)
+                {
+                    drawnAt = size;
+                    RenderOptions.SetBitmapScalingMode(Image, size > Cell ? BitmapScalingMode.HighQuality : BitmapScalingMode.NearestNeighbor);
+                }
                 if (!cells.TryGetValue(key, out cell))
                 {
-                    cell = new CroppedBitmap(sheet, new Int32Rect(column * Cell, r[0] * Cell, Cell, Cell));
+                    cell = new CroppedBitmap(sheet, new Int32Rect(column * size, r[0] * size, size, size));
                     cell.Freeze();
                     cells[key] = cell;
                 }

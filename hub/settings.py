@@ -232,7 +232,7 @@ SECTIONS = [
         {"key": "overlay.character", "kind": "pick", "name": "Character",
          "help": "A small figure beside the bubble that acts what its session is doing: speaking, needing you, done, "
                  "failed. Each session keeps its own.",
-         "options": [["none", "None"], ["familiars", "Familiars"], ["operators", "Operators"]]},
+         "options": [["none", "None"], ["familiars", "Familiars"], ["operators", "Operators"], ["sketch", "Sketch"]]},
         choice("overlay.character_place", "Character Place", "On the bubble's edge, so the bubble keeps its size, or inside it "
                "beside the words, smaller.", ("edge", "On the Edge"), ("inside", "Inside")),
         switch("overlay.character_details", "Character in the Details", "With the details out too: on their edge in "

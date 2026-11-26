@@ -63,7 +63,8 @@ DEFAULTS = {
     "session_tick": False,
     # A small pixel-art figure beside the speech bubble that acts what its session is doing
     # (hub/characters.py): none | familiars (five creatures with five tempers) | operators (five
-    # people on the line). The author, 2026-11-25: "put them as selection by the user ... You can
+    # people on the line) | sketch (one operator in pencil, the scarf in the session's color;
+    # hub/sketch.py, 2026-11-26). The author, 2026-11-25: "put them as selection by the user ... You can
     # build them". None by default, so that what people know does not change by itself.
     "character": "none",
     # Where it stands: edge = on the bubble's top edge, so the bubble keeps its size (the author:

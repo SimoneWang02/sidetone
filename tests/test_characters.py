@@ -53,7 +53,7 @@ class Drawing(unittest.TestCase):
             for kind in range(5):
                 for moment in MOMENTS:
                     cell = characters.frame(style, kind, COLORS[kind], moment, 0.5, 0.5, 0.6)
-                    self.assertEqual(len(cell), characters.N * characters.N * 4)
+                    self.assertEqual(len(cell), characters.cell(style) ** 2 * 4)
                     self.assertGreater(opaque(cell), 150, (style, kind, moment))
 
     def test_the_same_moment_is_drawn_the_same_every_time(self):
@@ -75,15 +75,31 @@ class Drawing(unittest.TestCase):
 
     def test_nothing_is_cut_off_at_the_top_or_the_sides(self):
         # The author, 2026-11-26: "the animation seems cut"; leaves and hair ran past the cell.
-        n = characters.N
-        edges = [(x, 0) for x in range(n)] + [(0, y) for y in range(n)] + [(n - 1, y) for y in range(n)]
         for style in characters.STYLES:
+            n = characters.cell(style)
+            edges = [(x, 0) for x in range(n)] + [(0, y) for y in range(n)] + [(n - 1, y) for y in range(n)]
             for kind in range(5):
                 for name, count in characters.ROWS:
                     s, t0, a0, v = characters._moment(name)
                     for i in (0, count // 3, 2 * count // 3):
                         cell = characters.frame(style, kind, COLORS[kind], s, t0 + i / characters.FPS, a0 + i / characters.FPS, v)
                         self.assertFalse(any(cell[(y * n + x) * 4 + 3] > 40 for x, y in edges), (style, kind, name, i))
+
+    def test_the_sketch_is_one_operator_in_the_session_color(self):
+        # The author, 2026-11-26: "it's missing the hand-drawn operators"; one for all, the scarf in the session's color.
+        def colored(cell, color):
+            r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5))
+            return sum(1 for i in range(0, len(cell), 4) if cell[i + 3] > 200 and abs(cell[i] - r) + abs(cell[i + 1] - g) + abs(cell[i + 2] - b) < 30)
+        blue = characters.frame("sketch", 0, COLORS[0], "idle", 0, 0, 0)
+        orange = characters.frame("sketch", 1, COLORS[1], "idle", 0, 0, 0)
+        self.assertGreater(colored(blue, COLORS[0]), 300)
+        self.assertEqual(colored(blue, COLORS[1]), 0)
+        self.assertGreater(colored(orange, COLORS[1]), 300)
+
+    def test_the_sketch_has_smooth_edges(self):
+        cell = characters.frame("sketch", 0, COLORS[0], "speaking", 0.5, 0.5, 0.6)
+        between = sum(1 for i in range(3, len(cell), 4) if 20 < cell[i] < 235)
+        self.assertGreater(between, 300)  # lines fade at their edges, not whole pixels
 
     def test_shadows_of_skin_do_not_turn_red(self):
         r, g, b = characters.ramp("#f2c9a4")[1]
@@ -116,6 +132,20 @@ class Sheet(unittest.TestCase):
 
     def test_the_sheet_is_the_same_each_time_it_is_drawn(self):
         self.assertEqual(characters.sheet("familiars", 3, COLORS[3]), self.sheet)
+
+
+class SketchSheet(unittest.TestCase):
+    def test_its_cells_are_twice_as_large_and_every_frame_is_drawn(self):
+        data = characters.sheet("sketch", 2, COLORS[2])
+        width, height, rgba = unpng(data)
+        n = characters.cell("sketch")
+        self.assertEqual(n, 2 * characters.N)
+        self.assertEqual((width, height), (characters.WIDTH * 2, characters.HEIGHT * 2))  # the overlay reads the cell from the height
+        for name, count in characters.ROWS:
+            r = characters.LAYOUT["rows"][name][0]
+            for column in range(count):
+                cell = b"".join(rgba[((r * n + y) * width + column * n) * 4:((r * n + y) * width + (column + 1) * n) * 4] for y in range(n))
+                self.assertGreater(opaque(cell), 1000, (name, column))
 
 
 class Sheets(unittest.TestCase):

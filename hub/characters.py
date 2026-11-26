@@ -34,7 +34,7 @@ FLOOR = 38  # the row the figures stand on, in the drawing's own rows
 # more FPS?"), as smooth as hand-made pixel art usually moves; the sheets are half as long again.
 FPS = 12
 TAU = math.tau
-STYLES = ("familiars", "operators")
+STYLES = ("familiars", "operators", "sketch")  # sketch: the pencil operator, in hub/sketch.py
 # The sheet: each row a moment and how many frames it has. Speaking has a row for each of four
 # loudnesses; needs you and done have a first part that plays once, then a part that repeats.
 SECONDS = [("idle", 4), ("working", 2), ("speaking0", 1), ("speaking1", 1), ("speaking2", 1), ("speaking3", 1),
@@ -48,7 +48,16 @@ HEIGHT = len(ROWS) * N
 # that one gets the same figure every time.
 from state import COLORS  # noqa: E402
 
-_SOURCE = hashlib.sha1(open(__file__, "rb").read()).hexdigest()[:8]  # a new drawing makes new sheets
+import sketch  # noqa: E402
+
+# A new drawing makes new sheets.
+_SOURCE = hashlib.sha1(b"".join(open(f, "rb").read() for f in (__file__, sketch.__file__))).hexdigest()[:8]
+
+
+def cell(style: str) -> int:
+    """How many pixels a side a style's cells are: the pencil lines are drawn at twice the size,
+    with smooth edges, and shown at their own size (the overlay finds it from the sheet's height)."""
+    return sketch.CELL if style == "sketch" else N
 
 
 def kind_of(color: str) -> int:
@@ -843,6 +852,8 @@ def operator(F: Frame, col: str, i: int, lag: list):
 
 def frame(style: str, kind: int, color: str, s: str, T: float, A: float, V: float, lag: list | None = None) -> bytearray:
     """One cell, as RGBA."""
+    if style == "sketch":
+        return sketch.frame(kind, color, s, T, A, V)
     F = Frame(s, T, A, V)
     if style == "operators":
         operator(F, color, kind, lag if lag is not None else [None])
@@ -867,7 +878,9 @@ def _moment(name: str) -> tuple[str, float, float, float]:
 
 def sheet(style: str, kind: int, color: str) -> bytes:
     """Every cell of one figure in one color, as a PNG."""
-    rgba = bytearray(WIDTH * HEIGHT * 4)
+    n = cell(style)
+    width, height = max(count for _, count in ROWS) * n, len(ROWS) * n
+    rgba = bytearray(width * height * 4)
     for row, (name, count) in enumerate(ROWS):
         s, t0, a0, v = _moment(name)
         lag: list = [None]
@@ -877,11 +890,11 @@ def sheet(style: str, kind: int, color: str) -> bytes:
             for i in range(count):
                 frame(style, kind, color, s, t0 + i / FPS, a0 + i / FPS, v, lag)
         for i in range(count):
-            cell = frame(style, kind, color, s, t0 + i / FPS, a0 + i / FPS, v, lag)
-            for y in range(N):
-                start = ((row * N + y) * WIDTH + i * N) * 4
-                rgba[start:start + N * 4] = cell[y * N * 4:(y + 1) * N * 4]
-    return png(WIDTH, HEIGHT, rgba)
+            drawn = frame(style, kind, color, s, t0 + i / FPS, a0 + i / FPS, v, lag)
+            for y in range(n):
+                start = ((row * n + y) * width + i * n) * 4
+                rgba[start:start + n * 4] = drawn[y * n * 4:(y + 1) * n * 4]
+    return png(width, height, rgba)
 
 
 def png(width: int, height: int, rgba: bytes) -> bytes:

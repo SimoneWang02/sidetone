@@ -276,8 +276,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   three said "all three steps look good"). Compiled and in the unit tests, no pictures. Live
   on the author's screen since the 26th: the tick seen and turned off (below), nothing said
   yet of the working light, the third **not seen by anyone yet**.
-  - Working Light (`overlay.working_motion`, calm; "Working Light" in the Overlay section,
-    Calm or Lively). The review found the working arc at 0.73 turns a second beside the
+  - Working Light (`overlay.working_motion`, calm or lively; in the Overlay section for a
+    day, then only in `config.json`: the author, 2026-11-26, "I don't think is needed ...
+    just put a single spinning speed", and calm stays). The review found the working arc at 0.73 turns a second beside the
     pulse of "needs you" at 0.72: the commonest state and the urgent one at one tempo. Calm:
     one turn in 5 s, the arc of one length (1.6 rad), the dot at rest (`Ui.WorkingCalm`, in
     `Orb.OnRender`). Lively is the motion it had. The frames still run while a session works.
