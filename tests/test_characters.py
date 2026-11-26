@@ -341,7 +341,10 @@ class Look3Mix(Look3, unittest.TestCase):
             characters.LOOK = 1
             classic = characters.ramp(color)
             characters.LOOK = 3
-            self.assertEqual(R[3:], classic[3:], color)  # the color and its lights as Classic's
+            if 100 <= characters.oklch(color)[2] <= 165:  # a green: toned down ("very, very bright")
+                self.assertLess(characters.oklch(R[3])[1], characters.oklch(classic[3])[1], color)
+            else:
+                self.assertEqual(R[3:], classic[3:], color)  # the color and its lights as Classic's
             L = [characters.oklch(t)[0] for t in R]
             self.assertLessEqual(L[0], L[1], color)  # the outline no lighter than any shadow
             if color in COLORS[:8]:  # the colors handed out first: the darkest shadow leaves room

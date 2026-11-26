@@ -291,6 +291,11 @@ def _ramp3(color: str) -> list[tuple[int, int, int]]:
     # brightest, so its shadows keep about the color's own strength and stay near its hue.
     h0 = oklch(color)[2]
     if 100 <= h0 <= 165:
+        # and its body, light and highlights toned down: still the session's green, not lime
+        # (then: "still ... very green. Very, very bright")
+        for i in (3, 4, 5):
+            L, C, H = oklch(out[i])
+            out[i] = from_oklch(L - .12 + .02 * (i - 3), C * .75, H)
         for i, t in enumerate(tones[1:], 1):
             d = (t[2] - h0 + 180) % 360 - 180
             if t[1] > Cc * 1.05 or abs(d) > 20:
