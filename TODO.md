@@ -256,13 +256,17 @@ Roughly easiest first, the larger ones after.
       bubble only (`docs/dev/features.md`). Seen in pictures, **not yet tried live by the
       author**. In the details too since 2026-11-26 (Character in
       the Details), at 12 frames a second, with room above each figure so nothing is cut off
-      (the author saw it live and asked for those). Not built: the sketch, a character in the
-      request card, a third Character Place or more than five kinds per style. **Next**: the
-      hand-drawn operators (the pencil "Sketch" of `docs/dev/looks/characters.html`, one
-      operator for all, the scarf in the session's color) as a fourth choice of Character, now
-      a drop-down (2026-11-26: "a select would be better, because it's missing the hand-drawn
-      operators"). Pencil lines want smooth edges, not pixels: drawn larger, with coverage, in
-      `hub/characters.py`, and shown at their own size, not doubled. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
+      (the author saw it live and asked for those). The hand-drawn operators built 2026-11-26
+      as a fourth choice, Sketch, in Character, now a drop-down ("a select would be better,
+      because it's missing the hand-drawn operators"): smooth pencil lines, shown at their own
+      size; seen in pictures, **not yet tried live by the author**. Not built: a character in
+      the request card, a third Character Place. **Previewed, to decide** (2026-11-26,
+      `docs/dev/looks/familiars_next.py`, a page of every moment from real sheets): the
+      toadstool in one piece ("the head seems very detached from the body"), the shellback
+      facing you ("the one that I like the least ... Revamp it", keep it), and new familiars,
+      a dragon whelp, a mimic, an axolotl; ghost and owl offered, not drawn. Then: more than
+      five per style ("We're not limited by 5") and a way to give them out other than by color
+      in order ("maybe someone want the companion to be random"): a setting, by color or random. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
       can draw the fur (a picture for each part, made once), and Clawd only with Anthropic's leave.
