@@ -77,6 +77,19 @@ Questions for the author; nothing to build until they answer.
 What gets in the way every day: words heard in the wrong language, lines read by the wrong
 voice, and the wait for the transcript.
 
+- [ ] Names the speech model should know (the author, by voice, 2026-11-26, about the
+      microphone in Claude's own apps: "it seems very precise, accurate. So, can we imitate?
+      ... Can we use that?"). Theirs cannot be used: it runs on Anthropic's servers for their
+      own apps only, with no interface for another program, and it has no Chinese and one
+      language at a time (`docs/dev/facts.md`). What it has that ours lacks: the project's name
+      and branch given to the model as hints, and the words shown while you speak. Measured
+      the same day on the 407 kept recordings: with "Claude, Sidetone" as hints, "Claude" is
+      written right 19 times of 26 where it is 12 now, "Sidetone" 4 times where it is never,
+      with no time added; a list of 19 words did better on "Claude" but put words in nobody
+      said. **To decide:** build it as a setting, off or on by default: "Claude" and the names
+      of the open sessions' projects by themselves, plus a short "Words To Know" line of the
+      user's own. The words while you speak are a larger piece (Whisper read again every half
+      second on the card), not looked into yet.
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a

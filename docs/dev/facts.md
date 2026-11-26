@@ -519,6 +519,27 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   for Italian), 15 after English, 0.70 s each. So the larger model fixes "Procedi" and most
   short Italian after Italian, but one syllable stays too short for either, and a short
   Italian answer right after English is still mostly heard as English.
+- Claude's own dictation (2026-11-26, code.claude.com/docs/en/voice-dictation and
+  claude.com/docs/office-agents/dictation): the sound goes to Anthropic's servers and a
+  speech-to-text company under contract writes the words; neither the company nor the model is
+  named. Only with a claude.ai sign-in (not an API key), free, not counted in `/usage`, and no
+  public interface another program can call: the Claude API has no speech-to-text. The words
+  appear while you speak. "Tuned for coding vocabulary", with the project's name and the git
+  branch added as hints. One language at a time, the `language` setting, of 20: English and
+  Italian are there, Chinese is not, and nothing switches by itself.
+- Names as hints to Whisper (2026-11-26): the author's 407 kept recordings (90 minutes; 376
+  English, 31 Italian) through the hub's `Transcriber`, `large-v3-turbo` on the card, with
+  faster-whisper's `hotwords`. As it runs now: "Claude" written 12 times and "cloud" or
+  "clawed" 14; "Sidetone" never, "side tone" 3 times. With `hotwords="Claude, Sidetone"`:
+  Claude 19, cloud 7, Sidetone 4 (also from "scyton"), no time added (median 0.19 s), no
+  recording's language changed, nothing invented. With 19 words (those two and Kokoro, Whisper,
+  Piper, overlay, hub, hooks, hotkey, push-to-talk, GitHub, WSL, tmux, VS Code, Fable, Opus,
+  Sonnet, Haiku): Claude 27, cloud 1, "five coding" became "Vibe coding", but 4 recordings
+  got words nobody said ("Closed captioning by" twice, "Visual Studio Code" as "VSL Studio
+  Code" twice) and "Client data?" became "Claude and Data". So a few names help and a long
+  list harms. Either way 3.5 to 4.3% of all words change, mostly punctuation-like ("all
+  right" / "alright", "eight" / "8"). `beam_size=5` in place of 1 fixed none of the names and
+  took 0.24 s where 1 takes 0.20.
 - From the talk key to the reply's first sound (2026-11-22, the author's last 12 spoken
   messages to one session, both models on the RTX 5070): release delay 0.4 s (`talk_tail`);
   transcription 0.14 to 0.5 s; from the transcript (the kept recording's time, in ms) to Claude
