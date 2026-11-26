@@ -95,6 +95,15 @@ class Lights(unittest.TestCase):
         self.assertIn('msg.ContainsKey("session_tick")', source)
         self.assertIn("bool sessionTick = false;", source)
 
+    def test_the_swift_close_is_what_the_window_has_by_itself(self):
+        # 2026-11-26: the details fold away in a set time, the spring kept as the other choice.
+        # As above: a hub from before it sends no close_motion, and the window must not need it.
+        with open(os.path.join(ROOT, "overlay", "Overlay.cs"), encoding="ascii") as f:
+            source = f.read()
+        self.assertEqual(overlay.DEFAULTS["close_motion"], "swift")
+        self.assertIn('public static string Fold = "swift";', source)
+        self.assertIn('Glass.Fold = Str(msg, "close_motion", "swift")', source)
+
 
 if __name__ == "__main__":
     unittest.main()

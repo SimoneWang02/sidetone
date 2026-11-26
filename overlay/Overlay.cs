@@ -1162,6 +1162,14 @@ namespace ClaudeSpeaks
         // How an open window takes a new height (overlay.resize): instant = at once; quick = it grows
         // at once, so nothing is cut off, and shrinks in about a tenth of a second.
         public static string Resize = "quick";
+        // How it folds away (overlay.close_motion): swift = in FoldTakes seconds from whatever
+        // height it has, gently at first and with no slow last pixels | spring = on a spring
+        // without a bounce, as until 2026-11-26. Measured on 125 px of details, that spring took
+        // 430 ms, 290 of them as an empty strip of glass under 23 px tall, the last 2 px for 130.
+        public static string Fold = "swift";
+        public const double FoldTakes = 0.18;
+        public double Away;  // seconds it has been folding away; 0 while it is wanted
+        double foldFrom;  // the height it began to fold away from
         FrameworkElement body;
         double speed, baseWidth;
 
@@ -1240,13 +1248,15 @@ namespace ClaudeSpeaks
 
         // One step of unfolding or folding away; true while it is still moving. It opens like a
         // soft spring (it starts gently, arrives quickly, goes a touch too far and settles) and
-        // folds away without the bounce.
+        // folds away without the bounce, in a set time (Fold).
         public bool Step(double dt, bool instantly)
         {
             if (Goal > 0) Full = Goal;
             if (Goal > 0 && !IsVisible) { Tall = Math.Min(Tall, Goal); speed = 0; Height = Math.Max(1, Tall); Show(); }
             bool moving = Math.Abs(Goal - Tall) >= 0.4 || Math.Abs(speed) > 5;
             if (Goal == 0) settled = false;
+            if (Goal > 0) Away = 0;
+            else if (moving) { if (Away == 0) foldFrom = Tall; Away += dt; }
             // Opening: a soft spring of about half a second. Already open, a new height (the history
             // of another session under the mouse) is taken at once: with the soft spring it never
             // caught up while the mouse went from row to row and what was below the old height
@@ -1262,6 +1272,14 @@ namespace ClaudeSpeaks
                 Tall += (Goal - Tall) * (1 - Math.Exp(-dt / 0.03));  // 95% of the way in 90 ms; a new goal takes over from wherever it is
                 speed = 0;
                 if (Math.Abs(Goal - Tall) < 0.4) Tall = Goal;
+            }
+            else if (Goal == 0 && Fold == "swift")
+            {
+                // Slow, fast, slow, and over when the time is: a spring's last pixels take as long
+                // as all the rest. Opened again half way, the spring below goes on from this height.
+                double share = Ui.Clamp(Away / FoldTakes);
+                Tall = share >= 1 ? 0 : foldFrom * (1 - share * share * (3 - 2 * share));
+                speed = 0;
             }
             else
             {
@@ -3101,6 +3119,8 @@ namespace ClaudeSpeaks
         readonly TextBlock bubbleLine1 = new TextBlock(), bubbleLine2 = new TextBlock();
         readonly StackPanel bubbleWords = new StackPanel { Margin = new Thickness(14, 8, 14, 10) };
         readonly TranslateTransform bubbleSlide = new TranslateTransform();
+        readonly TranslateTransform leave = new TranslateTransform();  // the details' contents on their way out
+        const double LeaveTakes = 0.09, LeaveBy = 12;
         readonly WaveStrip bubbleStrip = new WaveStrip();
         readonly Badge bubbleBadge = new Badge { Visibility = Visibility.Collapsed };
         readonly Dictionary<string, Row> rows = new Dictionary<string, Row>();
@@ -3264,6 +3284,7 @@ namespace ClaudeSpeaks
             metricsCard.Child = cardLayers;
             Section(historyBox, metricsLine, metricsCard, historyLines);
             panel.Body = sections;
+            sections.RenderTransform = leave;
             Stack();
 
             // The speech bubble: who is talking, the sentence, and the voice flowing behind it.
@@ -3450,6 +3471,7 @@ namespace ClaudeSpeaks
                     if (msg.ContainsKey("hover")) hoverOpens = Str(msg, "hover") != "keys";
                     if (msg.ContainsKey("panel_drag")) panelDrag = Convert.ToBoolean(msg["panel_drag"]);
                     if (msg.ContainsKey("resize")) Glass.Resize = Str(msg, "resize", "quick");
+                    if (msg.ContainsKey("close_motion")) Glass.Fold = Str(msg, "close_motion", "swift");
                     if (msg.ContainsKey("talk_frees_keys")) freeKeys = Convert.ToBoolean(msg["talk_frees_keys"]);
                     if (msg.ContainsKey("share_taken_keys")) shareTaken = Convert.ToBoolean(msg["share_taken_keys"]);
                     if (msg.ContainsKey("muted_mark")) mutedMark = Convert.ToBoolean(msg["muted_mark"]);
@@ -3961,8 +3983,13 @@ namespace ClaudeSpeaks
             if (panel.IsVisible)
             {
                 // Each row slides out from the bar and fades in, a moment after the one above it.
-                bool closing = panel.Goal == 0;
-                sections.Opacity = closing ? Ui.Clamp(panel.Open * 1.6 - 0.3) : 1;
+                // Folding away swiftly, all it holds goes first and together: fainter and a little
+                // back toward the bar, gone when the glass is half folded (LeaveTakes), so the glass
+                // is not left empty for long. On the spring it only fades, with the height.
+                bool closing = panel.Goal == 0, swift = closing && Glass.Fold == "swift";
+                double left = swift ? Ui.Clamp(panel.Away / LeaveTakes) : 0;
+                sections.Opacity = swift ? 1 - left : closing ? Ui.Clamp(panel.Open * 1.6 - 0.3) : 1;
+                leave.X = left * left * (right ? LeaveBy : -LeaveBy);
                 for (int i = 0; i < order.Count; i++)
                 {
                     double shown = still || closing ? 1 : Ui.EaseOut((now - openedAt - 0.03 * i) / 0.26);

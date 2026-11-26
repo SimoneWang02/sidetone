@@ -117,6 +117,12 @@ DEFAULTS = {
     # How the open details take a new height when the mouse goes to another session: quick = they
     # grow at once and shrink in about a tenth of a second | instant = both at once
     "resize": "quick",
+    # How the details and the bubble fold away: swift = in 180 ms, slow, fast, slow, what they hold
+    # gone in the first 90 and a little back toward the bar | spring = on a spring with no bounce,
+    # as until 2026-11-26 (the author: "when the detail box closes, I think that animation can be
+    # improved"). Measured on 125 px of details, the spring took 430 ms, 290 of them as an empty
+    # strip of glass creeping shut.
+    "close_motion": "swift",
     # What the history under the kept-out details shows: session = the lines of the session the
     # mouse is on (before it touched one: the session in focus) | all = every session's lines
     "history": "session",

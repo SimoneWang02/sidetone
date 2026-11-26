@@ -18,6 +18,15 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
+- [ ] The details folding away (2026-11-26, the author by voice: "when the detail box
+      closes, I think that animation can be improved"; see `docs/dev/features.md`). They said
+      no more than that, so what was changed is Claude's reading of the numbers: the fold took
+      430 ms, most of it an empty strip of glass creeping shut; now 180 ms, what it holds
+      leaving first, back toward the bar. `overlay.close_motion`: `swift`, or `spring` as it
+      was ("Details Closing" in the settings window, after a hub restart). The bubble folds
+      the same way. **Not seen by the author yet**: measured on a test overlay, never watched.
+      To answer: is this what bothered them, and is 180 ms right. Needs `sidetone overlay restart`.
+
 - [ ] One session muted by itself (2026-11-26, the author by voice: "I have 5 sessions right
       now and I mute 3 of them because I want to focus on 2"; see `docs/dev/features.md`).
       Ctrl+Alt+Shift+M mutes the session in focus and unmutes it; `sidetone mute [PROJECT]`

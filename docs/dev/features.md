@@ -271,6 +271,23 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   not move, and "Release to send" does not glint. The live voice levels still move. It is
   also on while Windows' "Animation effects" are off (`SystemParameters.ClientAreaAnimation`,
   read when the settings come). Seen in the settings window's picture.
+- How the details fold away (2026-11-26, `overlay.close_motion`: `swift`, or `spring` as it
+  was; "Details Closing" in the Overlay section; `Glass.Fold`, `Glass.Away`, `FoldTakes`,
+  `LeaveTakes`, `LeaveBy` in `Overlay.cs`). The author, by voice: "when the detail box closes,
+  I think that animation can be improved". Measured first, on a test overlay asked for its
+  windows' places as fast as it answers (about 100 heights a second; the window takes a new
+  height every 10 ms whatever the frame rate): from Selected Session, 125 px tall, the spring
+  was half shut after 83 ms, at a tenth after 193 ms, and gone after 430 ms, the last 2 px
+  alone for 130 ms; what it holds had faded out by 143 ms, so for 290 ms an empty strip of
+  glass crept shut. Swift: the height goes from wherever it is to nothing in 180 ms, slow,
+  fast, slow (`3x² - 2x³`), with no last pixels to wait for; what it holds fades in the first
+  90 ms and moves 12 px back toward the bar, the way the rows came in, all of it together.
+  Measured the same way: half after 95 ms, a tenth after 151 ms, gone after 180 ms (188 ms from
+  All Sessions, 323 px); opened again 90 ms into the fold, it grows on from that height on the
+  opening spring. The bubble folds the same way (one `Glass.Step` for both); its words already
+  went back toward the bar. Not changed: opening, and an open panel taking a new height.
+  Whole-window fading was left out: the blur behind the glass belongs to the window's
+  rectangle, not to what WPF draws, so it would stay as a clear patch and then jump away.
 - Three fixes from the review of the overlay (2026-11-25, `docs/dev/overlay-review.md`: the
   author chose to improve today's overlay over the 50 designs, and of a drawn preview of the
   three said "all three steps look good"). Compiled and in the unit tests, no pictures. Live

@@ -234,6 +234,11 @@ SECTIONS = [
                "comes on top of this.", 75, 150, 5, "%"),
         switch("overlay.still", "Reduce Motion", "The overlay opens and changes at once, with no springs, slides or glints. "
                "It is on by itself while Windows' animation effects are off."),
+        # 2026-11-26, the author: "when the detail box closes, I think that animation can be
+        # improved". Swift is the new one; the spring is how it was.
+        choice("overlay.close_motion", "Details Closing", "How the details and the bubble fold away: swiftly, in a fifth of "
+               "a second, or on a soft spring, which takes about twice as long.",
+               ("swift", "Swift"), ("spring", "Soft Spring")),
         # From the review of the overlay (docs/dev/overlay-review.md), 2026-11-25. "Working Light"
         # (overlay.working_motion: calm, lively) left the window on 2026-11-26, the author: "I
         # don't think is needed ... just put a single spinning speed". Calm stays; still read from
