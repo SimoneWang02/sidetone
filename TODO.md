@@ -171,6 +171,12 @@ voice, and the wait for the transcript.
       voices that day (`ming.json` there): a line takes about 0.9 of its length, whole
       lines only. **To decide:** five of their lines in their own voice, by Ming and by
       Chatterbox from one relaxed example, on a page for their ears.
+      Then: "if we use Kokoro to clone my voice, would the result be better?" Kokoro cannot
+      copy a voice (KVoiceWalk under "Voice cloning" below only searches for a vector near
+      it: the tone, not the manner). Its lead over Chatterbox is 39 points, 11 picks in 20,
+      and is for ready voices, not for likeness. Phonon's published model does not copy one
+      either (`docs/dev/facts.md`). So the voices that start at once do not copy, and the
+      ones that copy (Chatterbox, Ming) take about as long as the line.
 
 ## 4. Small extras
 

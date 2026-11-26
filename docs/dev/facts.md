@@ -590,7 +590,9 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   its catalog (Harper, Hadley and Preston tried), no speed setting, 24 kHz, English only.
   Five lines the hub had spoken, by those three and by Heart at 1.1, are on a page with the
   voices under letters and every clip at one loudness (`index.html` there; the key: A Hadley,
-  B Heart, C Harper, D Preston), opened for the author the same night.
+  B Heart, C Harper, D Preston), opened for the author the same night. It does not copy a
+  voice: `ptts` has `clone_voice` (from about 10 s at 24 kHz), but this model answers
+  `supports_voice_cloning` with False.
 - Ming-3.0-tts-0.5B tried here (2026-11-26, on the author's "Ok, prova Ming allora";
   github.com/inclusionAI/Ming-3.0-tts at c88c023 and huggingface.co/inclusionAI/Ming-3.0-tts-0.5B,
   MIT for code and weights by both pages; `ming-src`, `ming-venv` (7.3 GB) and `ming-0.5b`
