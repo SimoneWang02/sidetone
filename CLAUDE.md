@@ -123,6 +123,11 @@ Where the code is:
   the inherited `CLAUDE*` variables; `--setting-sources project` keeps the user's hooks out,
   `--permission-mode default` makes it ask), driven with `send-keys`, read with `capture-pane`.
   Wait between steps with `python3 -c "import time; time.sleep(2)"`.
+  With the hooks in that project's `.claude/settings.json` (`hooks/settings-snippet.json`) it
+  gets a silent hub of its own, away from the author's, from `CS_RUN`, `CS_STATE`,
+  `XDG_CONFIG_HOME` (its `sidetone/config.json`), `SIDETONE_OVERLAY=off`, `SIDETONE_TTS=null`
+  and `SIDETONE_TERMINAL=off`; `sidetone follow-up -s NAME TEXT` under the same variables
+  speaks to it. `CS_RUN` must be short: a socket's path ends at 108 characters.
 - `sidetone hub stop` and `uninstall.sh` act on the real hub of this `XDG_RUNTIME_DIR` even
   with a fake `HOME`; a test that runs `uninstall.sh` needs `--keep-vscode` or a stand-in `code`.
 - Keep `hooks/display.sh` fast: Claude Code holds each streamed batch until it returns
