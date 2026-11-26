@@ -1318,12 +1318,25 @@ def dragon(F: Frame, col: str):
             q = (k - .6) / .2
             for x in (18, 22):
                 c.dot(x + (1 if x > 20 else -1) * _round(1 + q * 3), ny + 1 + _round(q * 1.5), "#e4e8f0", 1, 1, 1 - q * .7)
-    if s == "speaking" and V > .7:  # a puff of fire out of the side of its mouth
-        k = F.cycle(.5)
-        for j, (dx, dy, r) in enumerate(((5.5, -1, 2.3), (9.5, -4, 3.1), (13.5, -7.5, 3.6))):
-            q = r * (.75 + .25 * math.sin((k + j / 3) * TAU))
-            c.part(ELL(20 + dx + k, my + dy - k, q, q * .85), ramp("#f04a2a"), k=1, cast=0)
-            c.part(ELL(20 + dx + k - .3, my + dy - k + .2, q * .6, q * .55), ramp("#ffd84a"), flat=4, cast=0)
+    if s == "speaking":
+        # A puff of fire once a second out of the side of its mouth, drifting out and up, cooling to
+        # smoke. Every speaking row draws the same puff at the same moment, only smaller when
+        # quieter, so it carries on as the voice changes row (the author, 2026-11-26: they
+        # "disappear immediately ... a separate animation for the flames that retain in time");
+        # with no voice none is born, but one on its way finishes.
+        k, g = F.cycle(1), .55 + .45 * V
+        for j in range(3):
+            q = k - j * .1
+            if not 0 <= q < 1 or (V < .1 and q < .35):
+                continue
+            x, y, r = 26 + q * 9, my - q * 10, (1.4 + 2.6 * math.sin(q * math.pi)) * g
+            if q < .7:
+                c.part(ELL(x, y, r, r * .85), ramp("#f04a2a"), k=1, cast=0)
+                c.part(ELL(x - .3, y + .2, r * .6, r * .55), ramp("#ffd84a"), flat=4, cast=0)
+                if r > 2:  # a white-hot heart, so it shows on an orange dragon too
+                    c.dot(x - .5, y, "#fff6d0")
+            else:
+                c.dot(x, y, "#b8bec9", 2 if r > 1.5 else 1, 2 if r > 1.5 else 1, (1 - q) / .3)
     if s == "done" and A < 3:
         for i in range(5):
             k = (A * 1.6 + i / 5) % 1
