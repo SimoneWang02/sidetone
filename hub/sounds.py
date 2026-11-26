@@ -12,14 +12,10 @@ import subprocess
 import threading
 
 RATE = 24000
-# Silence after each sound, so its stream does not close while the last notes are still on the
-# way to Windows. Without it the author heard "something scratching" after every sound
-# (2026-11-19), though what Linux played, recorded from the speakers' output, faded cleanly to
-# silence: the stutter is in WSL's link to Windows' speakers as the stream closes. With 0.3 s
-# of silence on both sides and a 150 ms buffer it was clean ("the last two were clean").
-# Without the silence before, the first sound after a quiet spell still had "a very very brief
-# scratch at the end" (the link to Windows sleeps after a few seconds and wakes with it); 0.1 s
-# before was clean twice, 8 s apart, and is too short to make the sound feel late.
+# Silence after each sound (and a little before), so its stream does not close while the last
+# notes are still on the way to Windows: WSL's link to Windows' speakers scratches as a stream
+# closes, and sleeps after a few seconds. Measured clean with 0.3 s after, 0.1 s before and a
+# 150 ms buffer.
 LEAD = 0.1
 TAIL = 0.3
 LATENCY_MS = 150
@@ -32,13 +28,10 @@ TONES = {
     # The mute key: lower and slower than the three above, so they are not taken for them.
     "voice_off": [(392.0, 0.09), (261.6, 0.2)],
     "voice_on": [(261.6, 0.09), (392.0, 0.2)],
-    # A conversation cleared: a quick run down four notes, like a sweep, not taken for "sent"
-    # (the author, 2026-11-21: "whenever I clear, I don't think I should ... hear the sound ...
-    # of sending a message").
+    # A conversation cleared: a quick run down four notes, like a sweep, not taken for "sent".
     "cleared": [(1046.5, 0.045), (784.0, 0.045), (659.3, 0.045), (523.3, 0.12)],
     # A session ended with the end key: down a minor third and then to the octave below, slower
-    # than "cleared" and ending lower than "voice_off", like a door shutting (the author,
-    # 2026-11-22: "it doesn't have a sound ... it's a negative thing").
+    # than "cleared" and ending lower than "voice_off", like a door shutting.
     "ended": [(392.0, 0.06), (311.1, 0.06), (196.0, 0.17)],
 }
 

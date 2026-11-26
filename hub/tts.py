@@ -26,13 +26,9 @@ FEEDBACK = {"allowed", "denied", "notice"}
 KOKORO_LANG = {"a": "en-us", "b": "en-gb", "e": "es", "f": "fr-fr", "h": "hi", "i": "it", "j": "ja", "p": "pt-br", "z": "cmn"}
 # The voices for a language, best first, shared out so that sessions sound different in it too
 # (the first session gets the first). Those not installed are skipped; `language_voices` in
-# config.json gives a list of one's own. Italian: the three the author kept of seven heard
-# (2026-11-19), Piper's Paola, then Kokoro's Sara and Nicola.
-# Best first (the author, 2026-11-21: "set my voices ... first the best one"). Italian: Kokoro's
-# two (graded C) before Piper's Paola, which is quicker but less natural; Paola was first until
-# then. Chinese: Kokoro's Chinese model (v1.1-zh), the four clearest as measured
-# (settings.CHINESE_CLARITY), two women and two men; until then the four the author picked by
-# ear on 2026-11-19 (zf_001, zm_009, zf_002, zm_010), which ranked 33, 34, 88 and 98 of 100.
+# config.json gives a list of one's own. Italian: Kokoro's two (graded C) before Piper's Paola,
+# which is quicker but less natural. Chinese: Kokoro's Chinese model (v1.1-zh), the four
+# clearest as measured (settings.CHINESE_CLARITY), two women and two men.
 PREFERRED_VOICE = {"it": ["if_sara", "im_nicola", "piper:it_IT-paola-medium"],
                    "zh": ["zh:zf_049", "zh:zf_006", "zh:zm_056", "zh:zm_057"]}
 # A short recording of each voice the settings window lists before it is downloaded, saying the
@@ -102,12 +98,10 @@ class KokoroEngine:
 
     RATE = 24000
     GAP = b"\0" * int(RATE * 0.15) * 2  # silence between parts (16-bit mono)
-    # The way sounds.py plays its short sounds, which cured the same scratches there: a 150 ms
-    # buffer, and a little silence before and after, so WSL's link to Windows' speakers is awake
-    # when the voice starts and does not close on its last syllable. With a 50 ms buffer and no
-    # silence the author heard scratches at the start of a line through AirPods (2026-11-21); the
-    # same line with a larger buffer was clean ("only the first one has scratches"). 150 ms, as
-    # the sounds have, still left "a bit of scratches"; 300 ms.
+    # The way sounds.py plays its short sounds: a large buffer, and a little silence before and
+    # after, so WSL's link to Windows' speakers is awake when the voice starts and does not close
+    # on its last syllable. Measured through AirPods: 50 ms and no silence scratched at the start
+    # of a line, 150 ms still a little, so 300 ms.
     LATENCY_MS = 300
     LEAD = b"\0" * int(RATE * 0.1) * 2
     TAIL = b"\0" * int(RATE * 0.3) * 2
@@ -127,8 +121,7 @@ class KokoroEngine:
         self.custom_dir = custom_dir  # the user's own voices, one .npy file each
         self.custom: dict = {}
         # Piper's voices, named "piper:<model>" (piper:it_IT-paola-medium): for languages whose
-        # Kokoro voices are poor. The author found Kokoro's Italian "troppo robotica" and Piper's
-        # Paola the best of those tried (2026-11-19). Model path and sample rate by name.
+        # Kokoro voices are poor. Model path and sample rate by name.
         self.piper_dir = piper_dir
         self.piper: dict[str, tuple[str, int]] = {}
         # Kokoro's Chinese model, "zh:<voice>" (zh:zf_001): its own files beside the main ones and
@@ -484,10 +477,9 @@ class Meter:
     # The recorder's buffer, as large as the voice's. PulseAudio runs the speakers with the
     # smallest buffer any of their streams asks for, a recorder of their monitor included: at 30 ms
     # the meter took the speakers from 130 ms (the most WSL's link gives) to 30, and the voice
-    # scratched through AirPods while the player alone was clean (the author, 2026-11-21: "I
-    # still hear scratches ... whenever I hear a preview"; `pactl list sinks`, "configured
-    # 30000 usec" with the meter, 130000 without). The recording then comes in bursts of about
-    # 170 ms, sent to the overlay together, which spaces them out.
+    # scratched (`pactl list sinks`: "configured 30000 usec" with the meter, 130000 without). The
+    # recording then comes in bursts of about 170 ms, sent to the overlay together, which spaces
+    # them out.
     LATENCY_MS = KokoroEngine.LATENCY_MS
 
     def __init__(self, device: str = "@DEFAULT_MONITOR@"):

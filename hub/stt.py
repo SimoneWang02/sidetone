@@ -137,12 +137,10 @@ def runs(stretches: list, languages: list, least_sure: float = 0.7, least_long: 
 class Named:
     """The speech model, asked which of the user's languages a recording is.
 
-    Working out the language used to be a pass of its own through the first half of the model,
-    about 0.6 s, before the pass that writes the words down (measured: 1.4 s for a sentence with
-    two languages named, 0.7 s with one). faster-whisper can also take the language from the pass
-    it makes anyway (`multilingual=True`), but then it takes the likeliest of all hundred. This
-    stands in for the model inside it and puts the likeliest of the named languages first, so
-    one pass does both. With no languages named it only notes what was heard.
+    faster-whisper can take the language from the pass it makes anyway (`multilingual=True`), but
+    then it takes the likeliest of all hundred. This stands in for the model inside it and puts
+    the likeliest of the named languages first, so one pass does both (a pass of its own cost
+    about 0.6 s). With no languages named it only notes what was heard.
     """
 
     def __init__(self, model, languages: list):
@@ -170,28 +168,23 @@ class Transcriber:
     some other language. English-only models (names ending in ".en") ignore it.
     """
 
-    # Leaning to the last language. A short recording is easily taken for another language:
-    # on 2026-11-19 four of the author's short Italian ones in a row came back as English or
-    # Chinese ("quanto ho usato?" as "One dosa, what the?"). Measured on short clips said by
-    # the voices: the wrong guesses were all unsure (0.65), real English ones 0.97 or more. So
-    # when the model is less sure than UNSURE of a language other than the one you last spoke
-    # clearly in, the recording is also written in that one, and kept that way unless the
-    # first reading is better by more than MARGIN (Whisper's own mean log-probability per token).
+    # Leaning to the last language. A short recording is easily taken for another language;
+    # measured on short clips, the wrong guesses were all unsure (0.65), real English ones 0.97
+    # or more. So when the model is less sure than UNSURE of a language other than the one you
+    # last spoke clearly in, the recording is also written in that one, and kept that way unless
+    # the first reading is better by more than MARGIN (Whisper's own mean log-probability per
+    # token).
     UNSURE = 0.9
     MARGIN = 0.1
     LONG = 4.0  # seconds; a recording this long tells its language well enough by itself
     # Mixed languages. Whisper takes one language per half minute, so a message that went from
-    # Italian to English to Chinese came back all English, the rest dropped or translated (the
-    # author, 2026-11-22). When a long recording leaves the model unsure (under UNSURE; 4 of the
-    # author's 87 long recordings, the mixed one among them at 0.66), the language of each
-    # stretch of speech between pauses is found too, and if they differ each run of one
-    # language is written in it. A stretch counts only when it is MIXED_LONG seconds or more
-    # and MIXED_SURE sure of its language, weighed among the languages you speak alone (the
-    # author's "试一下吧" was 0.9 s; an Italian stretch the model took for Hungarian still came
-    # out Italian among en, it and zh); others go with the stretch before them. Chosen on the
-    # author's recordings (the per-stretch likelihoods of all 78 with pauses): 0.7 split
-    # their three mixed ones and none of the others it would look at; 0.6 also split an
-    # Italian sentence with "side by side" in it, writing its Italian as English.
+    # Italian to English to Chinese came back all English. When a long recording leaves the
+    # model unsure (under UNSURE), the language of each stretch of speech between pauses is
+    # found too, and if they differ each run of one language is written in it. A stretch counts
+    # only when it is MIXED_LONG seconds or more and MIXED_SURE sure of its language, weighed
+    # among the languages you speak alone; others go with the stretch before them. 0.7 was
+    # chosen on real recordings: 0.6 also split an Italian sentence with an English phrase in
+    # it.
     MIXED_SURE = 0.7
     MIXED_LONG = 0.75
 

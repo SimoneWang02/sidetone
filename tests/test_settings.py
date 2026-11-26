@@ -198,7 +198,6 @@ class Chosen(SettingsCase):
         self.assertEqual(hub.cfg.talk_tail, 0.3)  # to the slider's step
 
     def test_one_volume_for_the_voice_and_the_sounds(self):
-        """The author, 2026-11-20: "do one thing for both so it's more consistent"."""
         hub = self.make()
         self.engine.volume = 1.0
         hub.sounds = type("Sounds", (), {"master": 1.0})()
@@ -224,7 +223,6 @@ class Chosen(SettingsCase):
                 self.assertEqual(settings._fit(item, settings.default(key)), settings.default(key), key)
 
     def test_a_section_is_reset_to_what_a_new_install_has(self):
-        """The author, 2026-11-20: "for each category ... a reset button at the end"."""
         hub = self.make()
         open(self.cfg.mute_file, "a").close()
         for key, value in (("speed", 1.4), ("label", "always"), ("overlay.layout", "island"), ("history_time", True)):
@@ -255,7 +253,6 @@ class Chosen(SettingsCase):
         self.assertEqual(described["mute"]["help"], "No voice for any session. The mute key does the same.")
 
     def test_the_summary_is_in_your_language_or_one_chosen(self):
-        """The author, 2026-11-20: "either dynamic ... or letting the user choose with a select"."""
         hub = self.make(reply_language="english")  # the old name of English
         self.assertEqual(settings.read(hub, "reply_language"), "en")
         item = settings.items(hub)["reply_language"]

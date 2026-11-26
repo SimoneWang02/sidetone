@@ -1,11 +1,7 @@
-"""The engine's second look beside its first: every familiar (the five in the overlay, then the five
-previews of familiars_next.py) and the operators, drawn with `characters.LOOK = 1` and then `2`.
-
-LOOK 2 is a pass on what every figure shares, after a pixel-art review (2026-11-26: "charming at
-2x and falls apart at 35 px, and most of the damage comes from the engine"). The page also shows
-the two sizes the overlay scales to by a fraction (35 px in the list, 66 in the bubble) either as
-today, nearest neighbour, which drops rows of pixels so that eyes shimmer, or smoothed; and the
-whole-pixel sizes (44, 88) that need neither.
+"""Every familiar and operator drawn with `characters.LOOK = 1` and then `2`, the engine's second
+look beside its first. The page also shows the two sizes the overlay scales to by a fraction (35 px
+in the list, 66 in the bubble) either as nearest neighbour, which drops rows of pixels so that eyes
+shimmer, or smoothed; and the whole-pixel sizes (44, 88) that need neither.
 
 Run: ~/.local/share/kokoro/venv/bin/python -I docs/dev/looks/look2.py OUT_DIR
 """

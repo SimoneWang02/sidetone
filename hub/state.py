@@ -9,32 +9,20 @@ import zlib
 from dataclasses import dataclass, field
 
 # Kokoro's clearest English voices, by the grades Kokoro gives them (VOICES.md of
-# hexgrad/Kokoro-82M: Heart A, Bella A-, Nicole and Emma B-, Michael, Fenrir and Puck C+, George
-# C), ordered so neighbours differ in accent and gender. Seven, not thirteen (the author,
-# 2026-11-21: "the English models are too many ... just keep the best ones"); the others graded
-# C or better are a tick away in the settings window. Nicole is not ticked at first (the author,
-# 2026-11-22: "I don't like it ... for other people, don't put it in the default selected"); she
-# stays in their own list, and in everyone's a tick away.
-# Best first, by Kokoro's grade (settings.KOKORO_GRADES): the first sessions get the clearest
-# voices. It took women and men in turn before (the author, 2026-11-21: "set my voices ... first
-# the best one").
+# hexgrad/Kokoro-82M), best first (settings.KOKORO_GRADES): the first sessions get the clearest
+# voices. Seven; the others graded C or better are a tick away in the settings window. Nicole is
+# not ticked at first.
 VOICE_POOL = [
     "af_heart", "af_bella", "bf_emma", "am_michael", "am_fenrir", "am_puck", "bm_george",
 ]
 
 # One color per session for its name in the overlay. Soft, easy to tell apart on dark glass,
 # and none of them the plain blue, amber, green or red the status lights use. The fifth is
-# nearly the microphone's pink; it was an orchid ("#F27FFF") for an hour on 2026-11-17, until
-# the author asked for the pink back and for the words that clashed with it to change instead.
-# There were ten until the same evening, some of them near twins: with four sessions open the
-# author had an orange ("#FFB86B") beside the yellow and said "there's not much contrast".
-# Now eight that are further apart, and who gets which is decided by distance (_color_for).
-# Then twelve more, since nobody knows how many sessions there will be (the author: "Can't
-# you just use a prefix palette of color? Like 10, 20, 30"). Those were worked out, each the
-# color furthest from all before it among colors light enough to read on dark glass and
-# clear of the status lights and of the white of titles; they are stronger than the first
-# eight, which is what keeps twenty apart: the nearest two of the twenty are 29 apart, of
-# thirty it would be 25, no better than the orange and yellow that started this.
+# nearly the microphone's pink. Eight that are far apart, and who gets which is decided by
+# distance (_color_for). Then twelve more, each the color furthest from all before it among
+# colors light enough to read on dark glass and clear of the status lights and of the white of
+# titles; they are stronger than the first eight, which is what keeps twenty apart: the
+# nearest two of the twenty are 29 apart, of thirty it would be 25.
 COLORS = ["#8AB4FF", "#FFA24D", "#B07CFF", "#7FDBCA", "#FF8FA3", "#F9E27D", "#B9F27C", "#FF7FD9",
           "#A98C68", "#0CC006", "#00FBAB", "#EDF11C", "#FE5910", "#ED44EC", "#8C9802", "#AA85A7",
           "#A3FA30", "#DAF0B8", "#FE4B93", "#F1B8FF"]
@@ -350,8 +338,7 @@ class Sessions:
     def stand_in(self, old: Session) -> None:
         """A session ended by /clear: its light stays, with its context at 0, until the session
         that follows it in the same terminal takes it (see touch), so the overlay's arc winds
-        back to nothing instead of the light going out and coming back (the author,
-        2026-11-21: "I want the animation of the arc of the context to go to reset to zero")."""
+        back to nothing instead of the light going out and coming back."""
         self.by_id["cleared:" + old.id] = Session(id="cleared:" + old.id, cwd=old.cwd, name=old.name, voice=old.voice,
                                                   color=old.color, order=old.order, context=0.0, standin=True, muted=old.muted)
         in_order = sorted(self.by_id.items(), key=lambda item: item[1].order)

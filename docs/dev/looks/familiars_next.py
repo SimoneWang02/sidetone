@@ -1,12 +1,7 @@
 """A familiar to come, as a preview: drawn with the overlay's own pixel engine (hub/characters.py),
-but not yet among its figures. The author, 2026-11-26: "I feel like the turtle is the one that I
-like the least. And the mushroom person, like the head seems very detached from the body", then
-"any other familiars who would be cool, dragons and stuff?", then "do a preview. Don't delete the
-turtle yet. Revamp it. We can maybe do more than 5". Of the previews: "improve but don't stray from
-the main idea", then "you can put them": the shellback and the toadstool redrawn, the axolotl and
-the dragon moved into hub/characters.py the same day. The mimic stays here, held for a rework.
-Every motion goes through `Frame.wave` or `Frame.cycle`, so that each row repeats without a jump;
-feet stay on row 42 of the 44.
+but not yet among its figures. The mimic stays here, held for a rework. Every motion goes through
+`Frame.wave` or `Frame.cycle`, so that each row repeats without a jump; feet stay on row 42 of the
+44.
 
 Run: ~/.local/share/kokoro/venv/bin/python -I docs/dev/looks/familiars_next.py OUT_DIR
 """

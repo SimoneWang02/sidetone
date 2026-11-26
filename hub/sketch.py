@@ -1,16 +1,16 @@
-"""The Sketch character: one operator with a headset in rough pencil, the same for every session
-but for the scarf and the headset, which are the session's color.
+"""The Sketch character: one operator with a headset in rough pencil, the same for every session but
+for the scarf and the headset, which are the session's color.
 
-The author, 2026-11-26, of the Character setting: "a select would be better, because it's
-missing the hand-drawn operators". Ported from the "Sketch" (`operator`) of
-`docs/dev/looks/characters.html`, which drew it on a canvas 100 units wide; here the same lines
-are drawn with smooth edges (the coverage of each pixel, not whole pixels), into a cell twice as
-large as the pixel styles' so that the overlay shows it at its own size on the edge, never
-doubled. The lines shake a little three times a second, as an animatic redrawn on each frame does.
+Ported from the "Sketch" (`operator`) of `docs/dev/looks/characters.html`, which drew it on a canvas
+100 units wide; here the same lines are drawn with smooth edges (the coverage of each pixel, not
+whole pixels), into a cell twice as large as the pixel styles' so that the overlay shows it at its
+own size on the edge, never doubled. The lines shake a little three times a second, as an animatic
+redrawn on each frame does.
 
-Changes from the preview, so that rows repeat without a jump and nothing leaves its cell: the
-head's sway while speaking and the arm while working go once a second (the rows are whole
-seconds long), it does not jump when done, and when it fails it sinks 7 units, not 9, with its feet kept on the ground.
+Changes from the preview, so that rows repeat without a jump and nothing leaves its cell: the head's
+sway while speaking and the arm while working go once a second (the rows are whole seconds long), it
+does not jump when done, and when it fails it sinks 7 units, not 9, with its feet kept on the
+ground.
 """
 from __future__ import annotations
 
@@ -129,7 +129,7 @@ def frame(kind: int, color: str, s: str, T: float, A: float, V: float) -> bytear
     if s == "needs":
         arm, brow, tilt, m = 1.5 + (math.sin(A * TAU) * .22 if A < 5 else 0), 1, -.1, .25
     if s == "done":
-        arm, lid, m = 1.1, 2, .2  # no jump (the author, 2026-11-26: "when they're done, they're jumping")
+        arm, lid, m = 1.1, 2, .2  # no jump when done: the author's choice
     if s == "failed":
         tilt, dy, brow = .38, 7.0, -1
     if s == "working":

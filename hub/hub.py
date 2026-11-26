@@ -138,12 +138,11 @@ class Hub(Permissions, Talk, Headset):
         """Update a session from any hook payload other than MessageDisplay."""
         if ev.get("session_id"):
             if ev.get("hook_event_name") == "StopFailure" and ev.get("agent_id"):
-                # A request of one of the session's agents failed. Claude Code reports it under
-                # the session's own id, and has no other event for it; the session's turn has
-                # not ended, its open requests stand, and it is told of the agent's end itself.
-                # Taken for the session's, each agent that met the usage limit said so in the
-                # session's voice, and the session said it again when the agent's end woke it
-                # (2026-11-26: five times from one session in forty seconds).
+                # A request of one of the session's agents failed: Claude Code reports it under
+                # the session's own id and has no other event for it. The session's turn has
+                # not ended and its open requests stand, so it is not taken for the session's
+                # own failure (else each agent at the usage limit says so in the session's
+                # voice).
                 error = str(ev.get("error") or "unknown").replace("_", " ")
                 log(self.cfg, "hub.log", f"an agent of [{ev['session_id'][:8]}] hit an error ({error}): not its session's, not said")
                 return
@@ -259,19 +258,13 @@ class Hub(Permissions, Talk, Headset):
             # Cleared with the clear key or by voice, in one of two terminals: the hub typed /clear
             # into the terminal this light is about, so the light goes with that terminal like any
             # cleared one, and the conversation that goes on in the other terminal is a session of
-            # its own from its next sign of life. The author, 2026-11-26, with the other one a tmux
-            # session nobody was looking at: "I cleared session 1. It's not cleared and it created
-            # this session."
+            # its own from its next sign of life.
             cleared_here = shared and ev.get("reason") == "clear" and sid in self._clearing
             if shared and not cleared_here:
-                # The same conversation is open in another terminal too (resumed there; the author,
-                # 2026-11-22: "two terminals that are pointing into the same session. If I close one
-                # ... the one in the overlay" went): it stays, name and lines too. `reconcile` takes
-                # it away once no terminal has it, and finds the terminal that is left. Cleared by
-                # hand in one of them, the same, as no hook says in which: the conversation goes on
-                # in the other, and the new one in the cleared terminal is a session of its own
-                # (found in the lab, 2026-11-22: it came back as "alpha 2" and its replies were
-                # not spoken).
+                # The same conversation is open in another terminal too (resumed there): it stays,
+                # name and lines too; `reconcile` takes it away once no terminal has it, and finds
+                # the terminal that is left. Cleared by hand in one of them, the same, as no hook
+                # says in which: the new one in the cleared terminal is a session of its own.
                 self._cleared(sid, ev.get("reason") == "clear")
                 ending.pids = []  # read again from the files; a second end before that is the last one
                 log(self.cfg, "hub.log", f"session [{sid[:8]}] ended in one terminal, still open in another")
@@ -472,10 +465,9 @@ class Hub(Permissions, Talk, Headset):
         title and place in the bar.
 
         Those are handed out in the order sessions turn up, and after a restart they turn up in
-        another order, so sessions of the same project swapped them (the author, 2026-11-17: "the
-        colors, like their status, might have influenced each other"). A session Claude Code
-        still lists is back at once, working if it is busy there. One that had a session file
-        and has none now ended meanwhile. The rest get theirs back when they next report.
+        another order, so sessions of the same project would swap them. A session Claude Code
+        still lists is back at once, working if it is busy there. One that had a session file and
+        has none now ended meanwhile. The rest get theirs back when they next report.
         """
         try:
             path = self._sessions_file()
@@ -515,7 +507,7 @@ class Hub(Permissions, Talk, Headset):
         """Write down who is who whenever that changed (owner-only, in the run folder: titles can
         hold words from a prompt). Call with the lock held."""
         # The last lines said go along, so that repeat and the history have something after a
-        # restart (the author pressed repeat after one and got "Nothing from ... yet").
+        # restart.
         kept = {"sessions": self.sessions.identities(), "focus": self.talk_target,
                 "history": [dict(e) for e in list(self.history)[-KEPT_LINES:]]}
         if kept == self._kept_sessions:
@@ -789,16 +781,13 @@ class Hub(Permissions, Talk, Headset):
             s = self.sessions.by_id.get(entry.get("session", ""))
             live = s is not None
             if live and self._muted():
-                # The voice is off: shown at its light instead (the author pressed repeat while
-                # muted, 2026-11-19, and heard the line).
+                # The voice is off: shown at its light instead of said.
                 self._flash(s, entry["text"], FLASH_LOOK.get(entry.get("kind", ""), entry.get("kind") or None))
         if self._muted():
             self.publish()
             return
         # Pressed again while the line is heard, as a replay or the first time: it starts over at
-        # once instead of being queued behind itself (the author, 2026-11-21: "I didn't get the
-        # first part. I clicked it again ... and it cued the next replay. I think it should
-        # immediately restart"). As a voice's preview does (`drop_src`).
+        # once instead of being queued behind itself, as a voice's preview does (`drop_src`).
         self.speech.drop_src(src)
         now = self.speech.current
         if now and now.text == entry["text"] and now.session == entry.get("session", ""):
@@ -940,10 +929,9 @@ class Hub(Permissions, Talk, Headset):
             # Newest first, and up to four lines of each session: the overlay shows those of the
             # session under the mouse, so one that talks a lot must not push the others out.
             each, history = collections.Counter(), []
-            # The overlay finds a session's lines by its name, and names come back: "sidetone 2"
-            # opened in the afternoon showed what another "sidetone 2" had said that morning
-            # (the author, 2026-11-22: "it somehow has a history"). A line of a session that has
-            # ended is left out once a live one has its name.
+            # The overlay finds a session's lines by its name, and names come back (a new
+            # "sidetone 2" would show an ended one's lines): a line of a session that has ended
+            # is left out once a live one has its name.
             named = {s.name: s.id for s in self.sessions.by_id.values()}
             for e in reversed(self.history):
                 if named.get(e["name"], e.get("session")) != e.get("session"):
@@ -969,12 +957,11 @@ class Hub(Permissions, Talk, Headset):
                                "quiet": quiet, "sprite_layout": characters.LAYOUT})
 
     def _muted_sessions_line(self) -> dict | None:
-        """The line that stays in the details while a session is muted by itself, under "Voice
-        is muted" when that is there too (the author, 2026-11-26: "it should stick there ... what
-        if I don't know how to disable it"): who is muted, and the key that gives the voice back.
-        The key acts on the session in focus, so the line says that it turns it on only while
-        that one is muted, and otherwise that the session has to be selected first. Several
-        muted: how many, as each one's row and light carry the speaker. Call with the lock held."""
+        """The line that stays in the details while a session is muted by itself, under "Voice is
+        muted" when that is there too: who is muted, and the key that gives the voice back. The key
+        acts on the session in focus, so the line says it turns the voice on only while that one is
+        muted, else that the session has to be selected first. Several muted: how many. Call with
+        the lock held."""
         quiet = [s for s in self.sessions.by_id.values() if s.muted and not s.standin]
         if not quiet:
             return None
@@ -1057,12 +1044,10 @@ class Hub(Permissions, Talk, Headset):
             with self.lock:
                 s = self.sessions.by_id.get(u.session)
                 if s:
-                    # A follow-up answers whoever spoke last. Not while the talk key is held, though:
-                    # moving the focus then moves who gets the words. Once the key is up they have
-                    # their session (`talk_end`), so a line that starts while they are being worked
-                    # out takes the focus like any other. Held back until they were sent, its card
-                    # in Selected Session stayed away for the whole line (the author, 2026-11-26:
-                    # "that session already starts talking but ... I don't see its detail box").
+                    # A follow-up answers whoever spoke last. Not while the talk key is held: moving
+                    # the focus then moves who gets the words. Once the key is up they have their
+                    # session (`talk_end`), so a line that starts while they are being worked out
+                    # takes the focus like any other.
                     if u.kind not in ("allowed", "denied", "progress") and not self._talking:
                         if self.talk_target and self.talk_target != s.id:  # who had it, and since when it is gone
                             self._focus_lost = (self.talk_target, time.monotonic())

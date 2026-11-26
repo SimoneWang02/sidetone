@@ -44,6 +44,10 @@ the author's asking, and the rest was moved unchanged:
   Left out, and only in `config.json`: paths and the hub's own internals, values another command
   sets (`whisper_model` from `sidetone languages`), and lines the author took out of the window
   (a comment in `SECTIONS` says when and why). Agreed 2026-11-21.
+- A comment says what the code cannot show: a constraint, a measured fact, a platform quirk, why
+  the obvious way was not taken. What the author said, when, and how a thing was before go in
+  `docs/dev/features.md`, not in the comment (the comments were cut back to this on 2026-11-26).
+  The one exception is the note in `settings.SECTIONS` on a line taken out of the window.
 - Default hotkeys must not clash with popular programs' own keys; a key another program holds is
   shared through the keyboard hook (`share_taken_keys`).
 - The hooks and the hub change together (a hub from before a tag change may not speak the line).

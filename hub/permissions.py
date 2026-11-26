@@ -294,13 +294,12 @@ class Permissions:
         return muted
 
     def mute_session(self, name: str | None = None, muted: bool | None = None) -> tuple[str, bool] | None:
-        """The key that mutes one session: the voice off for the session in focus (or the one
-        of that name), or on again, while the others go on speaking (the author, 2026-11-26: "I
-        have 5 sessions right now and I mute 3 of them because I want to focus on 2"). `muted`:
-        what it should be, or None to change it over. Muting cuts its line being said and drops
-        those it has waiting, but not its asking for you while `muted_asks` is on. Answered like
-        the mute key: a sound, and a moment's notice with the session's name. Returns its name
-        and whether it is now muted, or None when there is no such session."""
+        """The key that mutes one session: the voice off for the session in focus (or the one of
+        that name), or on again, while the others go on speaking. `muted`: what it should be, or
+        None to change it over. Muting cuts its line being said and drops those it has waiting,
+        but not its asking for you while `muted_asks` is on. Answered like the mute key: a
+        sound, and a moment's notice with the session's name. Returns its name and whether it is
+        now muted, or None when there is no such session."""
         with self.lock:
             s = (next((x for x in self.sessions.by_id.values() if x.name == name), None) if name else self._target())
             if not s or s.standin:

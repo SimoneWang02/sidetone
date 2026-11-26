@@ -292,13 +292,10 @@ class Talk:
         self._type_clear(s, text)
 
     def clear_key(self) -> None:
-        """The clear key: pressed once it asks, as the mute key's banner says what it did, with
-        the key that confirms beside it; pressed again within `CLEAR_TWICE` it clears the session
-        in focus as "clear the chat" does, and otherwise the question goes by itself. A
-        conversation cleared by a stray press could not be had back. The author, 2026-11-21:
-        "double click it to confirm"; then, having seen it asked in the permission prompt's box
-        with a cancel key: like "voice is muted", "Ctrl-Alt-C to confirm" at its right, gone in
-        three seconds, "there's no need for the backspace to cancel that"."""
+        """The clear key: pressed once it asks, with the key that confirms beside it; pressed
+        again within `CLEAR_TWICE` it clears the session in focus as "clear the chat" does, and
+        otherwise the question goes by itself (no cancel key needed). A conversation cleared by a
+        stray press could not be had back."""
         with self.lock:
             s = self._target()
             if not s:
@@ -329,15 +326,13 @@ class Talk:
     # --- opening and ending sessions -----------------------------------------------------------
 
     def new_session_key(self) -> None:
-        """The new-session key (the author, 2026-11-22: "Ctrl Alt plus and Ctrl Alt minus to add a
-        terminal session and remove it"): the editor opens a terminal split beside the one of the
-        session in focus, in that session's folder, and starts Claude Code in it (the extension
-        types `claude` itself; the hub only names the folder and the terminal to sit beside). The
+        """The new-session key: the editor opens a terminal split beside the one of the session in
+        focus, in that session's folder, and starts Claude Code in it (the extension types
+        `claude` itself; the hub only names the folder and the terminal to sit beside). The
         session that starts there gets the focus. With no session, or one whose terminal is in no
         editor, a terminal of its own in any editor that can open one. With `terminal.new_session`
-        "tab" it is always a terminal of its own (2026-11-26), still in the editor that holds the
-        terminal of the session in focus, and in that session's folder: the hub names no terminal
-        to sit beside, which the extension has taken since 0.5.0."""
+        "tab" it is always a terminal of its own: the hub names no terminal to sit beside (the
+        extension from 0.5.0 takes that)."""
         with self.lock:
             s = self._target()
             tty = s.tty if s and s.tty else ""
@@ -566,8 +561,7 @@ class Talk:
             self._clear_wanted = (s.tty, time.monotonic())
         if not (late and self._talk_held()):
             # Nothing on the light: the arc winding back to 0 shows it is done, and "sent" is for
-            # words that went to a session (the author, 2026-11-21: "I don't think I should see
-            # and hear the sound and the icon of sending a message").
+            # words that went to a session.
             self._talk(None)
         log(self.cfg, "hub.log", f"clear [{s.id[:8]}] /clear asked of the editor for its terminal ({s.tty}): {text[:80]}")
         old = self._clearing.pop(s.id, None)
@@ -934,10 +928,8 @@ class Talk:
     def _leave_for_step(self, sid: str) -> None:
         """Put the words waiting for a busy session where its hook (hooks/stop.sh) finds them
         after the step it is on: Claude reads them then, within the same reply, instead of at
-        its end (the author, 2026-11-21, on correcting a session while it works: "instead of
-        queuing audios, I'm putting more info into the request"). They stay in followups until
-        the hook has taken them, so the cancel key can still take them back. Call with the lock
-        held."""
+        its end. They stay in followups until the hook has taken them, so the cancel key can
+        still take them back. Call with the lock held."""
         self._sync_steer(sid)
         texts = [t for t in self.followups.get(sid, []) if t != TAKE_BACK]
         if not texts or self.cfg.followup_when != "step":
@@ -1034,10 +1026,8 @@ class Talk:
 
     def _unsendable(self) -> Sent | None:
         """The follow-up the cancel key would take back right now, if any: one still waiting in
-        the hub for a busy session, however long ago it went (the author, 2026-11-21, on a time
-        limit: "I would increase into infinity"; after it, the cancel key stopped the session's
-        work while the words still went to it later), or one the session got in the last
-        `unsend_seconds`, which is then stopped (it would be anyway, by `cancel_stops`)."""
+        the hub for a busy session, however long ago it went, or one the session got in the
+        last `unsend_seconds`, which is then stopped (it would be anyway, by `cancel_stops`)."""
         sent = self._sent
         if not sent:
             return None
@@ -1493,9 +1483,7 @@ class Talk:
         # A step that only reports (your words went out, it stopped) or only waits (they are
         # being worked out) gives way to a sentence that is being said; what you are doing right
         # now (talking, a go-ahead to give, a question on the side) and what went wrong keep the
-        # bubble. The waiting too since 2026-11-26: a line that began as the key came up was
-        # heard for a second or two behind "Working out what you said" (the author: "I want to
-        # immediately see the voice going off").
+        # bubble.
         quiet = quiet or (state in ("transcribing", "sent", "queued", "stopped", "focus") and not self.cfg.overlay.get("sent_first"))
         self._talk_shown = (state, text, hint) if state in ("listening", "ready") else None
         self._aside_shown = None  # whatever is shown now, it is not a side question being answered

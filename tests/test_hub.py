@@ -223,7 +223,7 @@ class LabelsAndVoices(HubCase):
         self.assertEqual(self.spoken(), ["Hello."])
 
     def test_the_name_is_said_first_only_when_asked_for(self):
-        hub = self.make()  # "never" by default since 2026-11-20
+        hub = self.make()  # "never" by default
         hub.on_event(ev("SessionStart", sid="b", cwd="/work/web_app"))
         hub.on_display(ev("MessageDisplay", sid="a", cwd="/work/api-server", delta=tag("Tests pass.")))
         self.assertEqual(self.spoken(), ["Tests pass."])
@@ -1374,7 +1374,6 @@ class PushToTalk(HubCase):
         self.assertEqual(set(self.spoken()), {"B talks for a while."})  # no "Sent." or "Queued." in words
 
     def test_the_word_is_said_in_the_language_you_spoke(self):
-        """The author, 2026-11-20, with the feedback on Voice: "Can you do that in Chinese?"."""
         hub = self.make(talk_feedback="voice")
         hub.sounds = FakeSounds()
         hub._voice_for = lambda s, lang: {"zh": "zf_xiaoxiao", "it": "if_sara"}.get(lang)
@@ -1426,9 +1425,8 @@ class PushToTalk(HubCase):
         self.assertEqual(hub.talk_target, "a")  # with the key held, the focus is who gets the words
         hub.talk_end()
         # B is heard from the moment the key is up, and the focus is its from then, not only once
-        # the words are out: in Selected Session its card is the one shown while it speaks (the
-        # author, 2026-11-26: "that session already starts talking but ... I don't see its detail
-        # box"). The words have had their session since the key came up.
+        # the words are out: in Selected Session its card is the one shown while it speaks. The
+        # words have had their session since the key came up.
         self.assertTrue(wait_for(lambda: hub.talk_target == "b"))
         self.assertFalse(to_a.wake.is_set(), "B got the focus only once the words were out")
         self.assertTrue(to_a.wake.wait(3), "the follow-up never reached the session it was said to")
@@ -2020,8 +2018,7 @@ class PushToTalk(HubCase):
 
     def test_a_clear_typed_after_its_turn_leaves_a_recording_on_screen(self):
         """The turn a clear waited for can end while you hold the talk key for another session;
-        the overlay shows one push-to-talk step, so "sent" would take the listening sign away
-        (the author, 2026-11-19: "I don't see the registering icon anymore")."""
+        the overlay shows one push-to-talk step, so "sent" would take the listening sign away."""
         hub = self.make()
         self.addCleanup(setattr, hub_module.terminal_mod, "tty_of", hub_module.terminal_mod.tty_of)
         hub_module.terminal_mod.tty_of = lambda pid: {4001: "/dev/pts/41"}.get(pid)

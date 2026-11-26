@@ -39,10 +39,9 @@ namespace ClaudeSpeaks
         // Amber is "needs you", and also the edge and marks of a request.
         public static Color Amber = Color.FromRgb(0xFF, 0xB3, 0x00), Working = Color.FromRgb(0x4F, 0xC3, 0xF7),
             Done = Color.FromRgb(0x66, 0xBB, 0x6A), Failed = Color.FromRgb(0xEF, 0x53, 0x50), Idle = Color.FromRgb(0xB0, 0xB6, 0xC0);
-        // The microphone's color: the light, bars and wave of the session you are talking to.
-        // The tool's blue since the author asked for "the hex code to be the brand color"
-        // (`mic_color`; it was a pink, "#FF6E8A", chosen to stand apart from the lights' own
-        // colors, of which the blue of "working" is the nearest to this one).
+        // The microphone's color (`mic_color`): the light, bars and wave of the session you
+        // are talking to. The tool's blue; of the lights' own colors the blue of "working" is
+        // the nearest to it.
         public static Color Mic = Color.FromRgb(0x00, 0x68, 0x96);
         // The same color for what is drawn thin on the dark glass (the wave of your voice, a
         // sign beside a name): a dark color is lifted toward white there, or it cannot be seen.
@@ -66,15 +65,12 @@ namespace ClaudeSpeaks
         public static bool SignInLight = true;  // where push-to-talk's sign goes: in the session's light, or at the right of its line
 
         // The overlay's own words about push-to-talk move ("Release to send", "Working out what
-        // you said...", "In focus", why nothing was sent; the author asked for "an animation on
-        // the text", then for more of it and on all of these and not only the first):
-        // shimmer = a glint of light runs along the words, then rests a moment |
-        // pulse = the words breathe between soft and full | still. Your own words stay plain.
-        // MicInk and LiveInk are only names for "this moving ink", in bold and in normal weight.
-        // Its color is a soft white with a white glint, the color of no session: it was the
-        // microphone's pink until the author saw it look like the name of a session whose own
-        // color is nearly that pink, and chose to change the words and keep the name. A color of
-        // your own (talk_text_color, "#RRGGBB") is used as it is, with a lighter glint.
+        // you said...", "In focus", why nothing was sent): shimmer = a glint of light runs along
+        // the words, then rests a moment | pulse = the words breathe between soft and full |
+        // still. Your own words stay plain. MicInk and LiveInk are only names for "this moving
+        // ink", in bold and in normal weight. Its color is a soft white with a white glint, the
+        // color of no session; a color of your own (talk_text_color, "#RRGGBB") is used as it
+        // is, with a lighter glint.
         public static string TalkText = "shimmer";
         public static bool Motionless;  // for pictures
         static Color askInk = Color.FromArgb(0x8C, 0xFF, 0xFF, 0xFF), askGlint = Colors.White;
@@ -99,9 +95,7 @@ namespace ClaudeSpeaks
         public static bool WorkingCalm = true;
         public static bool MutedSessionMark = true;  // `muted_session_mark`: the struck-out speaker on the light of a session muted by itself
         // How see-through the glass is, 0 to 100 (`glass_clear`): 0 plain dark glass with no blur,
-        // 50 the look it always had (a tint of 55 to 65 % over the blur), 100 the clearest (20 to
-        // 30 %). The author, 2026-11-21, of Blur and Plain: "both are glass-like ... percentage like
-        // from 0 to 100?".
+        // 50 a tint of 55 to 65 % over the blur, 100 the clearest (20 to 30 %).
         public static double GlassClear = 50;
         public static string WaitingMany = "face";  // above nine messages: a dismayed face | "number" = "9+"
         // Which messages show their number across the whole light before it goes to the corner:
@@ -620,11 +614,9 @@ namespace ClaudeSpeaks
         const double MarkMove = 0.55;  // seconds the number takes from the middle of the light to its corner
         static readonly Typeface MarkFace = new Typeface(new FontFamily("Segoe UI"), FontStyles.Normal, FontWeights.Bold, FontStretches.Normal);
 
-        // More than nine messages: a dismayed face in the yellow of a smiley, after a picture
-        // the author gave as the look to go for: brows raised in the middle, oval eyes with a
-        // line under each, and a wavy mouth turned down ("so many, what are you doing?").
-        // Before it: "9+", a tight fit in so small a circle; a shocked face in white on red,
-        // which looked frightening; a grinning one, which looked unwell; an unimpressed one.
+        // More than nine messages: a dismayed face in the yellow of a smiley: brows raised in
+        // the middle, oval eyes with a line under each, and a wavy mouth turned down ("so
+        // many, what are you doing?").
         static readonly Brush FaceSkin = Ui.Alpha(Color.FromRgb(0xFF, 0xCE, 0x4A), 1), FaceInk = Ui.Alpha(Color.FromRgb(0x5E, 0x40, 0x0A), 1);
 
         static void Dismayed(DrawingContext dc, Point at, double r)
@@ -822,12 +814,11 @@ namespace ClaudeSpeaks
 
     // A small sign for where push-to-talk stands: a microphone while it listens, three moving
     // dots while the words are worked out or wait to go, a paper plane once they are sent, a
-    // cross when nothing went out. It is drawn inside the session's light (see Orb), or by
-    // this element at the right of the session's line (the "talk_sign" setting).
-    // A speaker with a slash across it: the voice is off. Drawn, not taken from a font: the
-    // font's struck-out speaker has a small cross at its side that cannot be made out at the
-    // size of a line (the author: "it's not very clear ... very small"; they wanted a slash
-    // over it). Drawn in a box of `Side`, the slash cut out of the speaker by a gap.
+    // cross when nothing went out. Drawn inside the session's light (see Orb), or by this
+    // element at the right of the session's line (the "talk_sign" setting). A speaker with a
+    // slash across it: the voice is off. Drawn, not taken from a font (the font's struck-out
+    // speaker cannot be made out at the size of a line), in a box of `Side`, the slash cut
+    // out of the speaker by a gap.
     class MutedSpeaker : FrameworkElement
     {
         public double Side = 16;
@@ -1130,9 +1121,8 @@ namespace ClaudeSpeaks
                 Image.Source = cell;
                 shown = key;
             }
-            // No jump of its own when the moment or the session changes (the author, 2026-11-26:
-            // "I don't think they should be jumpy whenever I switch session ... their body is cut
-            // off from the bottom side"); a jump the drawing has, as done's, stays in its cell.
+            // No jump of its own when the moment or the session changes (it cut the figure off at
+            // the bottom); a jump the drawing has, as done's, stays in its cell.
             return true;
         }
     }
@@ -1208,8 +1198,7 @@ namespace ClaudeSpeaks
             Focusable = takesInput;
             IsHitTestVisible = takesInput;
             // CanMinimize is what lets a click on its place in the taskbar put it away: Windows
-            // only does that for a window that says it can be minimized. (The author: "if I click
-            // the icon in the start bar it appears and if I click it again it doesn't disappear".)
+            // only does that for a window that says it can be minimized.
             ResizeMode = takesInput ? ResizeMode.CanMinimize : ResizeMode.NoResize;
             baseWidth = unfoldingWidth;
             if (Unfolds) { Width = unfoldingWidth; Height = 1; MinHeight = 0; Panel.ClipToBounds = true; }
@@ -1274,14 +1263,11 @@ namespace ClaudeSpeaks
             if (Goal == 0) settled = false;
             if (Goal > 0) Away = 0;
             else if (moving) { if (Away == 0) foldFrom = Tall; Away += dt; }
-            // Opening: a soft spring of about half a second. Already open, a new height (the history
-            // of another session under the mouse) is taken at once: with the soft spring it never
-            // caught up while the mouse went from row to row and what was below the old height
-            // stayed cut off (the author, 2026-11-19: "if I move it real fast, there's a latency");
-            // a quick spring of 60 ms was "better", and they wanted it "more responsive".
-            // The author, asked which is the standard: under a tenth of a second reads as at once,
-            // and an animation must not hold the words back; so quick grows at once and only the
-            // shrinking moves ("Sure, yes").
+            // Opening: a soft spring of about half a second. Already open, a new height (the
+            // history of another session under the mouse) is taken at once: with the soft spring it
+            // never caught up while the mouse went from row to row and what was below the old
+            // height stayed cut off. Under a tenth of a second reads as at once, and an animation
+            // must not hold the words back; so quick grows at once and only the shrinking moves.
             bool resizing = settled && Goal > 0;
             if (!moving || instantly || (resizing && (Resize == "instant" || Goal > Tall))) { Tall = Goal; speed = 0; if (Goal > 0) settled = true; }
             else if (resizing)
@@ -1365,13 +1351,10 @@ namespace ClaudeSpeaks
         }
     }
 
-    // The tool's mark: a disc in the author's blue (#006896) with five white voice bars of
-    // uneven heights on its middle line, their ends cut on the slant. Drawn here and nowhere kept as a picture, so the
-    // window, its place in the taskbar and the files for the README (`logo` message) are all
-    // the same drawing. It is the one the author likes best of some thirty that were drawn
-    // ("I would probably prefer E ... but it's not very creative, it's pretty anonymous"),
-    // and it stands until a better one is found; CLAUDE.md has what was tried and what they
-    // said of each (bars riding a wave "seems like stocks going up and down").
+    // The tool's mark: a disc in the author's blue (#006896) with five white voice bars of uneven
+    // heights on its middle line, their ends cut on the slant. Drawn here and nowhere kept as a
+    // picture, so the window, its place in the taskbar and the files for the README (`logo`
+    // message) are all the same drawing. What was tried before it: docs/dev/name-and-logo.md.
     static class Logo
     {
         static readonly double[] Bars = { 0.26, 0.50, 0.36, 0.62, 0.30 };  // each bar's height, as a share of the side
@@ -1385,8 +1368,7 @@ namespace ClaudeSpeaks
             ink.Freeze();
             dc.DrawEllipse(ink, null, new Point(s / 2, s / 2), s / 2, s / 2);
             // Each bar is cut on the slant at both ends, higher at its right: what makes the mark
-            // less anonymous than plain round-ended bars (the author, of this one among six
-            // drawn after the ideas behind well-known logos: "S6 is good").
+            // less anonymous than plain round-ended bars.
             double wide = s * 0.094, apart = s * 0.148, cut = s * 0.04;
             var all = new StreamGeometry();
             using (StreamGeometryContext g = all.Open())
@@ -1507,10 +1489,9 @@ namespace ClaudeSpeaks
         }
     }
 
-    // Any color, chosen by eye (2026-11-24; the author: "remove one and make it a color picker
-    // icon"): a square of the hue's shades, white to the right's full color across and down to
-    // black, and a bar of the hues under it. A drag in either moves its mark; Moved hears each
-    // color on the way.
+    // Any color, chosen by eye: a square of the hue's shades, white to the right's full color
+    // across and down to black, and a bar of the hues under it. A drag in either moves its
+    // mark; Moved hears each color on the way.
     class ColorPlane : FrameworkElement
     {
         const double Square = 112, Gap = 10, Bar = 12;
@@ -1612,9 +1593,8 @@ namespace ClaudeSpeaks
     {
         public static readonly Color Accent = Color.FromRgb(0x00, 0x68, 0x96);  // the color of the tool's mark, the author's choice
         const double High = 560, Broad = 790, NavWidth = 176;
-        // Resized from any edge or corner, and maximized (the author, 2026-11-20: "for settings
-        // panel to be resizable and also to have like a maximized size button"). Maximized, the
-        // settings keep a width they read well at (ListMost), in the middle of the right side.
+        // Resized from any edge or corner, and maximized. Maximized, the settings keep a width
+        // they read well at (ListMost), in the middle of the right side.
         const double MinBroad = 700, MinHigh = 400, Edge = 6, ListMost = 760;
         bool maxed;
         Rect before;  // where it was before it was maximized
@@ -1624,8 +1604,7 @@ namespace ClaudeSpeaks
         readonly Action closed;                  // the window was closed from here
         readonly Action<bool> typingKey;         // a hotkey is being typed: the overlay's own hotkeys must let the keys through
         // A slider being moved, before it is let go: the overlay shows what that value looks like
-        // at once, and the hub is told only on release (the author, 2026-11-21, of Glass: "it
-        // updates only on release. Can you make it more responsive").
+        // at once, and the hub is told only on release.
         public Action<string, double> Previewing;
         public Action<string, string> PreviewingColor;  // a color being dragged in the picker
         readonly StackPanel nav = new StackPanel { Margin = new Thickness(10, 2, 10, 12) };
@@ -1646,9 +1625,8 @@ namespace ClaudeSpeaks
             Window.Icon = Logo.Picture(256, true);
 
             // Two columns over the whole height: the sections at the left on a darker ground of
-            // their own (the author: "the menu ... a different background color to compare to
-            // the right"), what one section holds at the right. The window is moved by the top
-            // of either.
+            // their own, what one section holds at the right. The window is moved by the top of
+            // either.
             var root = new Grid();
             root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(NavWidth) });
             root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -1724,9 +1702,7 @@ namespace ClaudeSpeaks
 
             list.MaxWidth = ListMost;
             // Stretched, so every section is as wide as the window lets it be (up to ListMost, then
-            // in the middle), whether its lines are long or short: Voices, with short lines, stood
-            // narrow in the middle (the author, 2026-11-21: "they should take up the spaces like
-            // the rest of the setting pages").
+            // in the middle), whether its lines are long or short.
             list.HorizontalAlignment = HorizontalAlignment.Stretch;
             var frame = new Grid();
             frame.Children.Add(root);
@@ -1856,8 +1832,8 @@ namespace ClaudeSpeaks
             if (quiet) return;
             if (Window.WindowState == WindowState.Minimized) Window.WindowState = WindowState.Normal;
             // Asked for with the command and not the key, Windows does not let it take the
-            // keyboard from the program in front, and it opened behind that program, unseen
-            // (the author: "I don't see it open"). Being on top for a moment brings it up.
+            // keyboard from the program in front, and it opened behind that program,
+            // unseen. Being on top for a moment brings it up.
             Window.Topmost = true;
             Window.Topmost = false;
             Window.Activate();
@@ -1987,8 +1963,8 @@ namespace ClaudeSpeaks
                         lines.Children.Add(more);
                     }
                     list.Children.Add(new Border { CornerRadius = new CornerRadius(10), Background = Ui.Paint("#12FFFFFF"), Child = lines, Margin = new Thickness(0, 0, 0, folding ? 8 : 4) });
-                    // 8 under an open language's card, as under a closed heading: with 4 the gap to the
-                    // next language was half the others (the author, 2026-11-21: "not very coherent").
+                    // 8 under an open language's card, as under a closed heading: with 4 the gap to
+                    // the next language was half the others.
                     lines = null;
                 };
                 foreach (object i in items)
@@ -2051,9 +2027,8 @@ namespace ClaudeSpeaks
             ShowThumb();
         }
 
-        // Under a section's card: its settings back as a new install has them (the author,
-        // 2026-11-20: "for each category ... a reset button at the end"). Faint while nothing
-        // differs; the first click asks, the second within 4 s resets.
+        // Under a section's card: its settings back as a new install has them. Faint while
+        // nothing differs; the first click asks, the second within 4 s resets.
         string confirming = "";
         UIElement ResetButton(string section, bool changed)
         {
@@ -2091,10 +2066,9 @@ namespace ClaudeSpeaks
         }
 
         // A voice unticked while its language is open stays where it was, without its tick, until
-        // the language or the window is closed; only then does it go under More Voices (the
-        // author, 2026-11-21: "whenever I untick a voice it immediately goes to like more
-        // voices"). `places` is, by language, the order of the voices at the top of its card (the
-        // ticked and those kept) since the first untick; `kept` the voices unticked meanwhile.
+        // the language or the window is closed; only then does it go under More Voices. `places`
+        // is, by language, the order of the voices at the top of its card (the ticked and those
+        // kept) since the first untick; `kept` the voices unticked meanwhile.
         readonly Dictionary<string, List<string>> places = new Dictionary<string, List<string>>();
         readonly HashSet<string> kept = new HashSet<string>();
 
@@ -2175,9 +2149,8 @@ namespace ClaudeSpeaks
 
         // A heading that opens and closes the card under it: a chevron, its name, and at the
         // right while it is closed what it holds ("4 selected"); open, the card below says it.
-        // With `speak`, a switch at the far right for whether you speak the language (the author,
-        // 2026-11-21: "if someone speaks only English, they should be able to disable the other
-        // languages"): off, the heading is dim and does not open; the last one on cannot go off.
+        // With `speak`, a switch at the far right for whether you speak the language: off, the
+        // heading is dim and does not open; the last one on cannot go off.
         UIElement FoldHead(string group, string name, string summary, bool open, string speak, bool spoken, bool last)
         {
             var row = new Grid();
@@ -2217,10 +2190,9 @@ namespace ClaudeSpeaks
             return head;
         }
 
-        // The heading of a language that is not installed (the author, 2026-11-23: "for chinese i
-        // want to install it from settings no?"): dim like a language that is off, with what it
-        // takes at the right and an Install button where the switch is; while it comes, a bar and
-        // how far; if it failed, why, and Try Again.
+        // The heading of a language that is not installed: dim like a language that is off, with
+        // what it takes at the right and an Install button where the switch is; while it comes, a
+        // bar and how far; if it failed, why, and Try Again.
         UIElement PackHead(Dictionary<string, object> item, string group, bool open)
         {
             string state = Overlay.Str(item, "pack"), key = Overlay.Str(item, "install");
@@ -2248,9 +2220,8 @@ namespace ClaudeSpeaks
             }
             else
             {
-                // The word, not an icon (the author, 2026-11-23, shown a round and a square download
-                // icon beside it: "keep install then"): the window's other one-time buttons, Reset and
-                // Remove, are words too.
+                // The word, not an icon: the window's other one-time buttons, Reset and Remove, are
+                // words too.
                 var button = new Border { CornerRadius = new CornerRadius(7), Padding = new Thickness(13, 4, 13, 5), Cursor = Cursors.Hand,
                     Background = Ui.Alpha(Accent, 0.85),
                     Child = new TextBlock { Text = state == "failed" ? "Try Again" : "Install", FontSize = 12, FontWeight = FontWeights.SemiBold, Foreground = Brushes.White } };
@@ -2296,8 +2267,7 @@ namespace ClaudeSpeaks
         }
 
         // A round button with a triangle: the voice says a sentence, and nothing is changed. While
-        // that sentence plays it shows a square, and a click on it stops it (the author,
-        // 2026-11-21: "click it, the preview goes, and then there's the square to stop it").
+        // that sentence plays it shows a square, and a click on it stops it.
         Border PlayButton(string voice, bool playing)
         {
             var sign = new System.Windows.Shapes.Path { Data = Geometry.Parse(playing ? "M0,0 L8,0 L8,8 L0,8 Z" : "M0,0 L7,4.5 L0,9 Z"), Fill = playing ? Brushes.White : Ui.Dim, Width = playing ? 8 : 7, Height = playing ? 8 : 9, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(playing ? 0 : 2, 0, 0, 0) };
@@ -2379,7 +2349,7 @@ namespace ClaudeSpeaks
         }
 
         // A small rounded word with an i in a circle, which says what it means when the mouse rests
-        // on it ("Faster" after Piper's voices; the author, 2026-11-21: "an info icon on why").
+        // on it.
         static Border Tag(string word, string meaning)
         {
             var inside = new StackPanel { Orientation = Orientation.Horizontal };
@@ -2392,7 +2362,7 @@ namespace ClaudeSpeaks
             var pill = new Border { CornerRadius = new CornerRadius(5), Padding = new Thickness(6, 1, 5, 2), Margin = new Thickness(8, 0, 0, 0), Background = Ui.Paint("#1AFFFFFF"), Child = inside, Cursor = Cursors.Help, ToolTip = tip, VerticalAlignment = VerticalAlignment.Center };
             ToolTipService.SetInitialShowDelay(pill, 150);
             // Down a pixel: centered, its word sat 1 px above the description's line (measured in a
-            // picture; the author, 2026-11-21: "the text is not very centered with the rest").
+            // picture).
             pill.RenderTransform = new TranslateTransform(0, 1);
             return pill;
         }
@@ -2601,12 +2571,11 @@ namespace ClaudeSpeaks
             var box = new Border { CornerRadius = new CornerRadius(8), BorderBrush = Ui.Paint("#24FFFFFF"), BorderThickness = new Thickness(1), Padding = new Thickness(11, 5, 10, 6), MinWidth = 160, Cursor = Cursors.Hand, Child = face };
             Lit(box, "#17FFFFFF", "#26FFFFFF");
             popup.PlacementTarget = box;
-            // A second click on the box closes the list (the author, 2026-11-20: "if I click again the
-            // select shouldn't it be closing"). The list already shuts on the press of that click, as
-            // any click outside it does, so the release must not open it again.
-            // The moment it shut is taken when IsOpen turns false, not from Closed, which comes
-            // later: with a quick tap (press and release together, as a touchpad gives) the
-            // release was handled before Closed and opened the list again (found 2026-11-22).
+            // A second click on the box closes the list. The list already shuts on the press of
+            // that click, as any click outside it does, so the release must not open it again. The
+            // moment it shut is taken when IsOpen turns false, not from Closed, which comes later:
+            // with a quick tap (press and release together, as a touchpad gives) the release was
+            // handled before Closed and opened the list again.
             DateTime shut = DateTime.MinValue;
             System.ComponentModel.DependencyPropertyDescriptor.FromProperty(System.Windows.Controls.Primitives.Popup.IsOpenProperty, typeof(System.Windows.Controls.Primitives.Popup))
                 .AddValueChanged(popup, delegate { if (!popup.IsOpen) shut = DateTime.UtcNow; });
@@ -2618,8 +2587,7 @@ namespace ClaudeSpeaks
             return box;
         }
 
-        // A color (2026-11-23; the author chose ready colors and a code over themes or a color
-        // wheel): a dot of it and its code, which can be typed over (Enter or a click elsewhere
+        // A color: a dot of it and its code, which can be typed over (Enter or a click elsewhere
         // takes it, Esc puts it back). A click on the dot or the arrow drops down the ready
         // colors, the setting's own first, and Reset. The code is typed here in the window and
         // not in the list, so that the keys go where the window's other keys go. "" (the glass's
@@ -3031,7 +2999,7 @@ namespace ClaudeSpeaks
         const int WH_KEYBOARD_LL = 13, WM_KEYDOWN = 0x0100, WM_SYSKEYDOWN = 0x0104, WM_KEYUP = 0x0101, WM_SYSKEYUP = 0x0105;
         const int WH_MOUSE_LL = 14, WM_MOUSEWHEEL = 0x020A, VK_SHIFT = 0x10, VK_CONTROL = 0x11, VK_MENU = 0x12, VK_LWIN = 0x5B, VK_RWIN = 0x5C, VK_RMENU = 0xA5;
         const int VK_LSHIFT = 0xA0, VK_RSHIFT = 0xA1, VK_LCONTROL = 0xA2, VK_RCONTROL = 0xA3, VK_LMENU = 0xA4;
-        const double PanelWidth = 380, BubbleWidth = 380, Gap = 6, Wide = PanelWidth - 32;  // 380 since 2026-11-22 (340 before; the author: "increase the overall width", "I think it's good")
+        const double PanelWidth = 380, BubbleWidth = 380, Gap = 6, Wide = PanelWidth - 32;
 
         [DllImport("user32.dll")] static extern bool RegisterHotKey(IntPtr hwnd, int id, uint modifiers, uint vk);
         [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr hwnd, int id);
@@ -3052,9 +3020,9 @@ namespace ClaudeSpeaks
         readonly TextWriter output;
         // The bar of lights, the panel that unfolds beside it, and the speech bubble.
         readonly Glass rail = new Glass(0), panel = new Glass(PanelWidth), bubble = new Glass(BubbleWidth);
-        // While the voice is off, a small piece of glass with a struck-out speaker just past the far
-        // end of the bar (overlay.muted_mark, off: the author did not like it there and chose a
-        // line in the details, muted_line). A window of its own, so the lights and rows stay put.
+        // While the voice is off, a small piece of glass with a struck-out speaker just past the
+        // far end of the bar (overlay.muted_mark, off by default). A window of its own, so the
+        // lights and rows stay put.
         readonly Glass muteChip = new Glass(0);
         // The session's character: on the bubble's top edge in a window of its own with nothing
         // but the figure (so the bubble keeps its size), or inside the bubble beside the words,
@@ -3106,8 +3074,7 @@ namespace ClaudeSpeaks
         readonly StackPanel sections = new StackPanel { Margin = new Thickness(3) };
         readonly StackPanel rowsPanel = new StackPanel();
         readonly StackPanel requestBox = new StackPanel(), bannerBox = new StackPanel(), historyBox = new StackPanel();
-        // "Voice is muted" in the details while the voice is off (overlay.muted_line): the author
-        // wanted it there rather than as a mark past the bar.
+        // "Voice is muted" in the details while the voice is off (overlay.muted_line).
         readonly StackPanel mutedBox = new StackPanel();
         readonly TextBlock mutedText = new TextBlock();
         // Under it, the same row for sessions muted by themselves ("web-app is muted", the key
@@ -3200,13 +3167,11 @@ namespace ClaudeSpeaks
         bool historyAll;  // the history shows every session's lines, not only those of the one under the mouse
         // The mouse alone on the bar brings the details out. `hover: keys` turns that off, for a
         // bar that must not answer to a mouse passing over it in a game: then only holding
-        // Ctrl+Alt brings them out. The author asked for that as the default, tried to picture
-        // it and took it back ("I like hovering ... opening up its details"), so it is a choice.
+        // Ctrl+Alt brings them out.
         bool hoverOpens = true;
         // With the details kept out (the list key), a drag on them moves the whole overlay, and
         // the panel goes along instead of folding away; a click on them still goes to what is
-        // behind. The author, 2026-11-19: "if it's fully displayed with Ctrl+Alt+L, I should be
-        // able to move the entire overlay" (only the narrow bar of lights could be grabbed).
+        // behind.
         bool panelDrag = true;
         bool panelHeld, panelCatching;
         object[] usage = new object[0];  // the plan's usage, from the hub: [what, percent, "warn" or ""] each
@@ -3227,15 +3192,12 @@ namespace ClaudeSpeaks
             return Fit();
         }
 
-        // The size in use: the one asked for, or as much smaller as it takes for every light to
-        // be on the screen (2026-11-25; before, a bar with more lights than the screen is tall ran
-        // off its end: past 21 sessions on a 1080p screen at 100 %, past 14 on a 768 px laptop).
-        // The details and the bubble shrink with the bar, so rows stay level with their lights.
-        // Beside a bar the room must hold the card of the details too (`CardRoom`), which stands
-        // past the rows' end: counted without it, twenty lights filled the room, the details
-        // with their card were 70 px taller than the bar and were pushed along it, and each name
-        // stood two lights from its own (a picture, 2026-11-26). A request or the history can be
-        // taller than that and still push them, as with any bar near the screen's end.
+        // The size in use: the one asked for, or as much smaller as it takes for every light to be
+        // on the screen (a bar ran off its end past 21 sessions on a 1080p screen at 100 %). The
+        // details and the bubble shrink with the bar, so rows stay level with their lights. Beside
+        // a bar the room must hold the card of the details too (`CardRoom`), which stands past the
+        // rows' end: counted without it, the details were pushed along the bar and each name stood
+        // two lights from its own. A request or the history can be taller and still push them.
         // Never under 40 %. It counts lights of the usual height (`row_lines` 1). True if it
         // changed anything.
         const double CardRoom = 104;  // the card with its four figures and the room around it, at 100 % (measured: 102)
@@ -3611,8 +3573,8 @@ namespace ClaudeSpeaks
                             settings.Previewing = delegate(string key, double value)
                             {
                                 if (key == "overlay.glass_clear") { Ui.GlassClear = value; SetGlass(); }
-                                // The overlay follows the size slider while it is dragged, not only once it is let go
-                                // (the author, 2026-11-22: "I'm wanting it to be more responsive").
+                                // The overlay follows the size slider while it is dragged, not only
+                                // once it is let go.
                                 if (key == "overlay.size" && SetZoom(value)) { Render(); Place(); }
                             };
                             // A color dragged in the picker shows on the overlay while it is dragged.
@@ -3728,13 +3690,12 @@ namespace ClaudeSpeaks
         }
 
         // The panel (names, titles, what each session is doing) is out in list mode, under the
-        // mouse, while Ctrl+Alt is held, and while there is something to ask or show. Otherwise there are only the lights.
-        // The details key is a zoom of three views (the author, 2026-11-22): "dots" the lights alone
-        // (the details come out under the mouse), "list" every session's row on one line, and
+        // mouse, while Ctrl+Alt is held, and while there is something to ask or show. Otherwise
+        // there are only the lights. The details key is a zoom of three views: "dots" the lights
+        // alone (the details come out under the mouse), "list" every session's row on one line, and
         // "focus" the card and only the row of the session it is about, with its sentence in full.
-        // "first only bar, second one row per each detail box, third only one detail box with all
-        // the rows of the summary". Rows that stretched with a long sentence were the trouble:
-        // here one view never grows and the other has a single row.
+        // One view never grows and the other has a single row, so no row stretches with a long
+        // sentence.
         bool Listed { get { return mode == "list" || mode == "focus"; } }
 
         bool IsOpen() { return (!BarHeld || panelHeld) && (Listed || hover || moving || hasRequest || hasBanner || keysOpen || Ui.Now < wheelUntil); }
@@ -3791,11 +3752,10 @@ namespace ClaudeSpeaks
             else if (!show && rail.IsVisible) rail.Hide();
             ShowMuteChip();
 
-            // Selected Session: the other rows are left out, so the glass holds the card and this row
-            // only, and the lights keep their own spacing. Before the panel is measured: measured
-            // first, it kept the room of the rows just left out until the next redraw, which with
-            // Ctrl+Alt still held did not come (the author, 2026-11-22: "the gap left by the second
-            // session still isn't covered ... because I'm still holding Ctrl+Alt").
+            // Selected Session: the other rows are left out, so the glass holds the card and this
+            // row only, and the lights keep their own spacing. Before the panel is measured:
+            // measured first, it kept the room of the rows just left out until the next redraw,
+            // which with Ctrl+Alt still held did not come.
             Row chosen = mode == "focus" ? Chosen() : null;
             foreach (Row row in order)
             {
@@ -4204,18 +4164,10 @@ namespace ClaudeSpeaks
             return moving;
         }
 
-        // What was said lately, shown in the panel while the cursor rests on it in list mode: the
-        // lines of the session under the mouse (the author hovered another session and expected
-        // its history, not the same lines as before). The session stays chosen while the mouse
-        // moves on to the lines themselves. Before any row was touched it is the one in focus.
-        // With `history: all` it is every session's lines, as it used to be.
-        // Writes the line of figures for the session the mouse is on (it stays chosen when the
-        // mouse moves off, like the history), else the one in focus, else the only one. False
-        // when there is nothing to say.
         // Where the bar in each place of the card stood when it was last drawn (0 when the card
-        // was away), so that a bar can glide from there; and notes where it stands now. The
-        // card is drawn anew whenever anything changes, also in the middle of a glide: then
-        // the bar goes on from where the glide had got to, not from its end.
+        // was away), so that a bar can glide from there; and notes where it stands now. The card
+        // is drawn anew whenever anything changes, also in the middle of a glide: then the bar
+        // goes on from where the glide had got to, not from its end.
         readonly Dictionary<string, double> stood = new Dictionary<string, double>();
         readonly Dictionary<string, double[]> gliding = new Dictionary<string, double[]>();  // place -> from, to, since when
         const double GlideTakes = 0.34;
@@ -4241,8 +4193,7 @@ namespace ClaudeSpeaks
         Row Chosen()
         {
             // In Selected Session the mouse only borrows the card: off the lights and the card, it
-            // goes back to the selected session (the author, 2026-11-22: "when I unhover from them,
-            // it should re-display the current" session).
+            // goes back to the selected session.
             if (mode == "focus" && hot != null) return hot;
             Row about = null;
             foreach (Row row in order) if (row.Name == historyOf) about = row;
@@ -4252,6 +4203,8 @@ namespace ClaudeSpeaks
             return about;
         }
 
+        // Writes the line of figures for the session `Chosen` names. False when there is nothing
+        // to say.
         bool BuildMetrics(bool withLines)
         {
             Row about = Chosen();
@@ -4279,9 +4232,8 @@ namespace ClaudeSpeaks
                 tiles.Children.Add(Tile(name, figure, detailsBars ? share : -2, warn, detailsBars && share >= 0 ? Stood("tile" + tiles.Children.Count, share) : -1));
             }
             if (!any) return false;
-            // Whose figures they are, where there is a choice; not in Selected Session, where the one
-            // row under the card says it already (the author, 2026-11-22: "the metric box shouldn't
-            // have the title repeated ... it's redundant").
+            // Whose figures they are, where there is a choice; not in Selected Session, where the
+            // one row under the card says it already.
             if (order.Count > 1 && mode != "focus")
             {
                 var whose = new TextBlock { FontSize = 12, Margin = new Thickness(0, 0, 0, 5), TextTrimming = TextTrimming.CharacterEllipsis };
@@ -4380,6 +4332,10 @@ namespace ClaudeSpeaks
             return tile;
         }
 
+        // What was said lately, shown in the panel while the cursor rests on it: the lines of the
+        // session under the mouse, which stays chosen while the mouse moves on to the lines
+        // themselves. Before any row was touched it is the one in focus. With `history: all` it
+        // is every session's lines.
         void BuildHistory()
         {
             historyLines.Children.Clear();
@@ -4408,9 +4364,8 @@ namespace ClaudeSpeaks
                 if (n >= most) break;
                 var line = new Grid { Margin = new Thickness(0, 4, 0, 4) };
                 // How long ago at the left, as in a log, and what the turn used at the right: one
-                // figure at each end (the author, 2026-11-22: both at the right "is not very
-                // aesthetic"; "I would do the time on the left"). Each as wide as its widest entry
-                // in this list, so the times stand under one another and so do the tokens.
+                // figure at each end. Each as wide as its widest entry in this list, so the times
+                // stand under one another and so do the tokens.
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "ago" });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -4420,11 +4375,9 @@ namespace ClaudeSpeaks
                 if (said.Length > 0)
                 {
                     // With the time shown, the time takes the mark's place, always green, so that
-                    // each line starts with something that stands out (the author, 2026-11-22:
-                    // "replacing the tick icons with the time"; not in the mark's own color, which
-                    // "nobody knows" without being told what each means); a line
-                    // never heard to its end keeps its white dot, after the time (its room kept on
-                    // every line, so the times stay lined up).
+                    // each line starts with something that stands out; a line never heard to its
+                    // end keeps its white dot, after the time (its room kept on every line, so the
+                    // times stay lined up).
                     var ago = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 8, 0), HorizontalAlignment = HorizontalAlignment.Right };
                     ago.Children.Add(new TextBlock { Text = said, FontSize = 12, Foreground = Ui.Alpha(Ui.Tint("done"), 1), MinWidth = AgoWidth(), TextAlignment = TextAlignment.Right });
                     ago.Children.Add(new Border { Width = 4, Height = 4, CornerRadius = new CornerRadius(2), Background = missed ? Brushes.White : Brushes.Transparent, Margin = new Thickness(2, 3, 0, 0), VerticalAlignment = VerticalAlignment.Top });
@@ -4496,8 +4449,7 @@ namespace ClaudeSpeaks
                 }
             }
             // Selected Session shows one row, so the panel's rows are not level with the lights:
-            // over the panel the mouse stays on the session the card shows (the author, 2026-11-22:
-            // hovering the second session's card "shows the first session").
+            // over the panel the mouse stays on the session the card shows.
             if (inside && !onBar && mode == "focus" && (hoverOpens || IsOpen())) under = hot != null ? hot : Chosen();
             bool sorting = onBar && CanReorder();
             bool wantCatch = (moving || (onBar && (dragKeys.Length == 0 || Held(dragKeys) || sorting))) && Ui.Now > passUntil;
@@ -4596,8 +4548,7 @@ namespace ClaudeSpeaks
             if (!holding && masked.Count > 0 && Ui.Now > maskedUntil && !unsent) masked.Clear();
             // In from the first of the hotkey's other keys (Ctrl, say), not once all are down: with
             // all of them, a talk key pressed within one look (30 ms) of the last came as a plain
-            // hotkey, its release reached the program in front, and a video paused (the author,
-            // 2026-11-22: "whenever I watch YouTube it pauses the video when I talk").
+            // hotkey, and its release reached the program in front (a video paused).
             bool ahead = talkKey != 0 && (keepTalk == "always" || (keepTalk == "held" && talkMods != 0 && AnyMod(talkMods)));
             // Shared keys keep the hook in for as long as there are any: a press that came before
             // the hook would go to the other program alone.
@@ -4808,11 +4759,10 @@ namespace ClaudeSpeaks
         }
 
         // The left button went down on the bar: from now on it follows the mouse, frame by frame,
-        // until the button comes up. The panel and bubble fold away while it travels.
-        // `at` is where on the bar the button went down, as the press itself reported it. Asking
-        // where the cursor is now is not the same: by the time the press is handled the mouse has
-        // moved on, further the busier the overlay was, and the bar then followed the cursor from
-        // beside it (the author: "sometimes the cursor is not aligned").
+        // until the button comes up. The panel and bubble fold away while it travels. `at` is
+        // where on the bar the button went down, as the press itself reported it; asking where
+        // the cursor is now is not the same: by the time the press is handled the mouse has moved
+        // on, and the bar then followed the cursor from beside it.
         void BeginDrag(Point at)
         {
             if (dragging) return;
@@ -4853,8 +4803,7 @@ namespace ClaudeSpeaks
             dragging = panelHeld = undecided = true;
             Edge();
             // Without this a press on a still overlay was never followed: the drag was left
-            // half begun, and every press after it was ignored (the author, 2026-11-19: "I
-            // cannot move the layout right now").
+            // half begun, and every press after it was ignored.
             Run(true);
         }
 
@@ -5383,10 +5332,8 @@ namespace ClaudeSpeaks
 
         // The voice off or on, as one row: the speaker (struck out, or sounding in the blue of
         // "working"), the words, and the key beside them. The mute key's banner and the line in the
-        // details while muted are this same row, so nothing moves when one gives way to the other
-        // (the author, 2026-11-19: "one layout does enough ... the side-by-side is good"), and the
-        // speaker is the same drawing at the same size and gap both ways (they saw the emoji
-        // speaker of "Voice on" sit out of line with its words).
+        // details while muted are this same row, so nothing moves when one gives way to the other,
+        // and the speaker is the same drawing at the same size and gap both ways.
         void VoiceRow(TextBlock row, bool muted, string text, string hint)
         {
             row.Inlines.Clear();
@@ -5435,7 +5382,7 @@ namespace ClaudeSpeaks
                     bannerTitle.Inlines.Add(new Run("  " + Str(msg, "text")) { Foreground = Ui.Dim });
                     bannerHint.Text = "";
                 }
-                else if (icon == "clear" || icon == "end")  // the clear key asks, as the mute key's row says what it did; a bin (an eraser was first: "I don't like it much"); the end key the same, with a power sign
+                else if (icon == "clear" || icon == "end")  // the clear key asks, as the mute key's row says what it did, with a bin; the end key the same, with a power sign
                 {
                     string sign = icon == "end" ? "\uE7E8" : "\uE74D";
                     FontFamily signs = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets");

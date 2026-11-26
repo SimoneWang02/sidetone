@@ -1,10 +1,5 @@
-"""The engine's third look, the two mixed, beside the other two: every familiar (the five in the
-overlay, then the five previews of familiars_next.py) as Classic, Mix and Refined, and the operators
-as Classic and Mix.
-
-LOOK 3 (2026-11-26) after a comparison of Classic and Refined, which found Classic's shading
-better (pillow tones, deep shadows, near-white lights: volume and punch) and Refined flat and chalky.
-The author: "I kinda prefer the default", "mostly the shading"; the refined working eyes "weird".
+"""Every familiar as Classic, Mix and Refined (LOOK 1, 3, 2) and the operators as Classic and Mix,
+side by side.
 
 Run: ~/.local/share/kokoro/venv/bin/python -I docs/dev/looks/look3.py OUT_DIR
 """

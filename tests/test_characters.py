@@ -83,7 +83,7 @@ class Drawing(unittest.TestCase):
         self.assertEqual(characters.pick("familiars", COLORS[6], "s"), 6)
 
     def test_at_random_a_session_keeps_one_figure_for_its_life(self):
-        # overlay.character_pick "random"; the author, 2026-11-26: "maybe someone want the companion to be random"
+        # overlay.character_pick "random"
         ids = [f"5f0c{i:04x}-1a2b-4c3d-8e9f-{i * 7919:012x}" for i in range(140)]
         for style, count in (("familiars", 7), ("operators", 5)):
             got = [characters.pick(style, COLORS[0], sid, "random") for sid in ids]
@@ -94,7 +94,7 @@ class Drawing(unittest.TestCase):
         self.assertEqual(characters.pick("familiars", COLORS[2], "", "random"), 2)  # no id yet: by its color
 
     def test_nothing_is_cut_off_at_the_top_or_the_sides(self):
-        # The author, 2026-11-26: "the animation seems cut"; leaves and hair ran past the cell.
+        # Nothing is cut: leaves and hair stay inside the cell.
         for style in self.styles:
             n = characters.cell(style)
             edges = [(x, 0) for x in range(n)] + [(0, y) for y in range(n)] + [(n - 1, y) for y in range(n)]
@@ -106,7 +106,7 @@ class Drawing(unittest.TestCase):
                         self.assertFalse(any(cell[(y * n + x) * 4 + 3] > 40 for x, y in edges), (style, kind, name, i))
 
     def test_the_sketch_is_one_operator_in_the_session_color(self):
-        # The author, 2026-11-26: "it's missing the hand-drawn operators"; one for all, the scarf in the session's color.
+        # The sketch: one figure for all, the scarf in the session's color.
         def colored(cell, color):
             r, g, b = (int(color[i:i + 2], 16) for i in (1, 3, 5))
             return sum(1 for i in range(0, len(cell), 4) if cell[i + 3] > 200 and abs(cell[i] - r) + abs(cell[i + 1] - g) + abs(cell[i + 2] - b) < 30)
@@ -141,9 +141,9 @@ class Drawing(unittest.TestCase):
                     self.assertEqual(changed(end, start), 0, (style, kind, name))
 
     def test_feet_stay_on_the_ground(self):
-        # The author, 2026-11-26: no jumping; the window is cut at the edge the figure stands on.
-        # Every figure stands on the same row: two above the cell's bottom (the overlay puts those
-        # below the edge), four in the sketch's cells of twice the size.
+        # No jumping: the window is cut at the edge the figure stands on. Every figure stands on
+        # the same row: two above the cell's bottom (the overlay puts those below the edge), four
+        # in the sketch's cells of twice the size.
         for style in self.styles:
             n = characters.cell(style)
             floor = n - 2 * n // characters.N
@@ -248,7 +248,6 @@ class Sheets(unittest.TestCase):
         self.assertEqual(sheets.path("familiars", ""), "")
 
     def test_each_look_has_its_own_sheet(self):
-        # overlay.character_look; the author, 2026-11-26: "I kinda prefer the default maybe. Let me try both."
         folder = tempfile.mkdtemp(prefix="cs-sprites-")
         sheets = characters.Sheets(folder)
         names = {sheets.name("familiars", 0, COLORS[0], look) for look in (1, 2, 3)}

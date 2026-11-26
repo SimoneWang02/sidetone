@@ -1,8 +1,6 @@
 """Is the running hub older than its code on disk?
 
-A fix only counts once the hub was restarted: on 2026-11-17 a reply was cut by a fault that had
-been mended and committed two minutes earlier, because the hub was still running the old code.
-`sidetone status` says so with this.
+A fix only counts once the hub was restarted; `sidetone status` says so with this.
 """
 from __future__ import annotations
 

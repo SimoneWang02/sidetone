@@ -1,13 +1,11 @@
 """Languages as packs to install, so each person chooses how much storage the voices take.
 
-Agreed with the author on 2026-11-23, from a second machine without Chinese ("for chinese i want
-to install it from settings no?"): a language is on or off, and on means installed. English is
-Kokoro's own model (install.sh fetches it); Italian's two Kokoro voices are in that same model,
-so Italian costs nothing; Chinese is Kokoro's Chinese model v1.1-zh and its pronunciation
-package. Only the voices someone ticks are fetched (the author: "i dont need all 100 chinese
-voices"): Hugging Face has each Chinese voice on its own, about 0.5 MB, so a voice ticked later
-is half a megabyte, and the 325 MB model is what every Chinese voice shares. A Piper voice is a
-model of its own (Paola 63 MB, the Piper program 26 MB once).
+A language is on or off, and on means installed. English is Kokoro's own model (install.sh
+fetches it); Italian's two Kokoro voices are in that same model, so Italian costs nothing;
+Chinese is Kokoro's Chinese model v1.1-zh and its pronunciation package. Only the voices someone
+ticks are fetched: Hugging Face has each Chinese voice on its own, about 0.5 MB, so a voice
+ticked later is half a megabyte, and the 325 MB model is what every Chinese voice shares. A
+Piper voice is a model of its own (Paola 63 MB, the Piper program 26 MB once).
 
 Everything is fetched from a fixed version and checked against its size, and its SHA-256 where
 it is known, before it is put in place; a download cut off leaves only a ".part" file.

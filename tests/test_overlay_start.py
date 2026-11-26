@@ -83,9 +83,8 @@ class Colors(unittest.TestCase):
 
 class Lights(unittest.TestCase):
     def test_the_calm_working_light_and_the_session_tick_are_read_by_the_window(self):
-        # Both from the review of 2026-11-25. A window started by a hub from before them is sent
-        # neither, so the window's own values must be what a new install has. The tick is off
-        # since 2026-11-26: the author did not like it on the screen.
+        # A window started by a hub from before these settings is sent neither, so the window's
+        # own values must be what a new install has.
         with open(os.path.join(ROOT, "overlay", "Overlay.cs"), encoding="ascii") as f:
             source = f.read()
         self.assertEqual(overlay.DEFAULTS["working_motion"], "calm")
@@ -96,8 +95,7 @@ class Lights(unittest.TestCase):
         self.assertIn("bool sessionTick = false;", source)
 
     def test_the_swift_close_is_what_the_window_has_by_itself(self):
-        # 2026-11-26: the details fold away in a set time, the spring kept as the other choice.
-        # As above: a hub from before it sends no close_motion, and the window must not need it.
+        # As above: a hub from before close_motion sends none, and the window must not need it.
         with open(os.path.join(ROOT, "overlay", "Overlay.cs"), encoding="ascii") as f:
             source = f.read()
         self.assertEqual(overlay.DEFAULTS["close_motion"], "swift")

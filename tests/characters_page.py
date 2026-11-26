@@ -1,10 +1,10 @@
 """A page that plays every character in every moment, from the sheets the hub really draws.
 
 Run: ~/.local/share/kokoro/venv/bin/python -I tests/characters_page.py OUT_DIR
-Writes OUT_DIR/index.html and OUT_DIR/sheets/*.png (each style's figures, each in the session
-color that gets it: the first seven colors for the seven familiars, the first five for the others). The page plays them as the overlay does: 12 frames a second, needs you and done play
-their start once then repeat their end, speaking picks its row by a made-up voice's loudness.
-The author, 2026-11-26: "can you give me a preview page for each character, each animation".
+Writes OUT_DIR/index.html and OUT_DIR/sheets/*.png (each style's figures, each in the session color
+that gets it: the first seven colors for the seven familiars, the first five for the others). The
+page plays them as the overlay does: 12 frames a second, needs you and done play their start once
+then repeat their end, speaking picks its row by a made-up voice's loudness.
 """
 import json
 import os

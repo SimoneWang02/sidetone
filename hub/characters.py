@@ -1,20 +1,16 @@
 """Characters beside the speech bubble: small pixel-art figures that act what a session is doing.
 
-The author, 2026-11-25, after many tries (plushies, an aquarium, twelve sketches, six looks):
-"all three of them are pretty good. So we can just put them as selection by the user", and of the
-previews, "these previews look good. You can build them." Two of the three are drawn here, as
-pixel art: Familiars (seven creatures with seven tempers since 2026-11-26, when the axolotl and the
-dragon joined and the shellback and the toadstool were redrawn; the author: "We can maybe do more
-than 5", and of the preview, "you can put them") and Operators (five people on the line, each with
-their own headset and something of their own). The previews they were drawn from are
-`docs/dev/looks/characters.html`; this is the same drawing, ported from its JavaScript.
+Two kinds are drawn here, as pixel art: Familiars (seven creatures with seven tempers) and
+Operators (five people on the line, each with their own headset and something of their own). The
+previews they were drawn from are `docs/dev/looks/characters.html`; this is the same drawing,
+ported from its JavaScript.
 
-The hub draws every frame of a session's character once, into a sheet of 40 by 40 pixel cells,
-one row for each moment (idle, working, speaking at four loudnesses, needs you, done, failed,
-listening), and keeps it as a PNG where the overlay can read it. The overlay only picks the cell:
-by the moment, the time since it began, and, while the session speaks, how loud the voice is.
-A session's character follows its color, so the same project keeps the same figure, or, with
-overlay.character_pick at random, its id (`pick`).
+The hub draws every frame of a session's character once, into a sheet of cells, one row for each
+moment (idle, working, speaking at four loudnesses, needs you, done, failed, listening), and keeps
+it as a PNG where the overlay can read it. The overlay only picks the cell: by the moment, the time
+since it began, and, while the session speaks, how loud the voice is. A session's character follows
+its color, so the same project keeps the same figure, or, with overlay.character_pick at random,
+its id (`pick`).
 """
 from __future__ import annotations
 
@@ -28,19 +24,10 @@ import zlib
 from typing import Callable
 
 N = 44  # a cell is N by N pixels
-# Which look the engine draws: 1 is the look the author has seen in the overlay; 2 is a pass on what
-# every figure shares (2026-11-26, after a pixel-art review: "charming at 2x and falls apart at
-# 35 px, and most of the damage comes from the engine"): ramps built in OKLCH with an outline that
-# shows on the dark glass, light from the top left, a selective outline, stepless glows, sparks in
-# place of the done beams, bigger wide eyes, eyes looking down while working, a sound glyph while
-# listening, a breath while speaking, working motions with in-betweens. Shown side by side in
-# docs/dev/looks/look2.py; 1 stays until the author has seen it. 3 is the two mixed (2026-11-26, after
-# a comparison of the two; the author: "I kinda prefer the default", "mostly the shading"): Classic's
-# tones and shading with an outline lifted to show on the glass, Refined's eyes, sparks, sound sign
-# and lantern, a glow without rings as strong as Classic's; shown in docs/dev/looks/look3.py.
-# The Mix (3) is the one look since 2026-11-26, and the setting that chose between them is gone
-# (the author: "There shouldn't be two choices. Make it only one. I guess mix is better."); 1 and
-# 2 stay only for the comparison pages until their branches are folded away.
+# Which look the engine draws. 3 (the Mix) is the only one the overlay uses: Classic's tones and
+# shading with an outline lifted to show on the glass, Refined's eyes, sparks, sound sign and
+# lantern, a glow without rings as strong as Classic's. 1 (Classic) and 2 (Refined) stay only for
+# the comparison pages docs/dev/looks/look2.py and look3.py, until their branches are folded away.
 LOOK = 3
 # What each look draws differently from Classic, by name; `has` asks the look being drawn.
 PARTS = {
@@ -63,8 +50,7 @@ PARTS = {
         "ramp3",      # Classic's tones with the outline lifted to show on the glass (_ramp3)
         "glow", "glow3",  # glows without rings, as strong as Classic's
         "sparks", "sparks3",  # the sparks, two pixels tall so they last at 35 px
-        # not "wide": the author, 2026-11-26, of the needs-you and listening eyes in the Mix, "I
-        # probably prefer the classic ... not consistent with the rest"
+        # not "wide": the Mix keeps Classic's needs-you and listening eyes
         "glyph", "ink", "lantern2",
     }),
 }
@@ -74,12 +60,10 @@ def has(part: str) -> bool:
     """Whether the look being drawn (`LOOK`) has this part of what tells the looks apart."""
     return part in PARTS[LOOK]
 # The figures are drawn on a 40 by 40 grid standing on row 38, and that grid sits this far down in
-# the cell: room above for leaves raised high, hair, a jump (the author, 2026-11-26: "the
-# animation seems cut when jumping and then falling down"; the sprout's leaves were cut flat).
+# the cell: room above for raised leaves, hair, a jump.
 OFF = 4
 FLOOR = 38  # the row the figures stand on, in the drawing's own rows
-# Frames a second, for every moment: 12 since 2026-11-26 (8 before; the author: "could we put
-# more FPS?"), as smooth as hand-made pixel art usually moves; the sheets are half as long again.
+# Frames a second, for every moment; the sheets' length follows it.
 FPS = 12
 TAU = math.tau
 STYLES = ("familiars", "operators", "sketch")  # sketch: the pencil operator, in hub/sketch.py
@@ -124,9 +108,8 @@ def kind_of(color: str, count: int) -> int:
 
 
 # How a session's figure is chosen (overlay.character_pick): by its color, so the same project
-# keeps the same figure, or at random, which here means by the session's id: it looks random, and
-# a session keeps its figure for its whole life with nothing stored. The author, 2026-11-26:
-# "maybe someone want the companion to be random".
+# keeps the same figure, or "random" = by the session's id, which keeps it for the session's life
+# with nothing stored.
 PICKS = ("color", "random")
 
 
@@ -286,9 +269,8 @@ def _ramp3(color: str) -> list[tuple[int, int, int]]:
         if hl > .75 and t[1] > Cc * 1.35 + .02:
             t[1] = Cc * 1.35 + .02
             moved.add(i)
-    # A yellow-green to green: its shadows turned to neon (the author, 2026-11-26, of the dragon
-    # on #B9F27C: "might be too green, might be too saturated"). The eye takes green as the
-    # brightest, so its shadows keep about the color's own strength and stay near its hue.
+    # A yellow-green to green: the eye takes green as the brightest, so its shadows keep about
+    # the color's own strength and stay near its hue (at full strength they turned to neon).
     h0 = oklch(color)[2]
     if 100 <= h0 <= 165:
         # and its body, light and highlights toned down: still the session's green, not lime
@@ -419,8 +401,8 @@ def SHAPE(f, box):
 def _tone(u) -> int:
     nz = math.sqrt(max(0, 1 - u[0] * u[0] - u[1] * u[1]))
     if has("flat"):
-        # A light from the top left, mostly flat across the part: its lit side and its shadow
-        # side, with no dark ring round every edge (the review: "every part a lit ball").
+        # A light from the top left, mostly flat across the part: a lit side and a shadow
+        # side, with no dark ring round every edge.
         lit = -u[0] * .7 - u[1] * .6 + nz * .12
         return 5 if lit > .72 else 4 if lit > .4 else 3 if lit > -.15 else 2
     lit = -u[0] * .5 - u[1] * .66 + nz * .55
@@ -804,7 +786,7 @@ def _lantern2(F: Frame, col: str):
         F.smoke(20, 8)
     elif s == "done":
         F.eyes([ex - 5, ex + 3], 19, "happy")
-    elif s in ("listen", "working"):  # white bars, as it always had (the author, 2026-11-26: "I actually like the white eyes only")
+    elif s in ("listen", "working"):  # white bars, as it always had
         for x in (ex - 5, ex + 3):
             c.dot(x, 22, WH, 3, 1)
     else:
@@ -835,7 +817,7 @@ def ember(F: Frame, col: str):
         else:  # the arms pump in turn, with frames in between
             la, ra = 3 * F.beat(2 / 3), 3 * F.beat(2 / 3, .5)
     if s == "done":
-        # no jump: the author, 2026-11-26, "when they're done, they're jumping"
+        # no jump when done: the author's choice
         la = ra = 9
     if dead:
         h = .62
@@ -931,8 +913,7 @@ def sprout(F: Frame, col: str):
 def shellback(F: Frame, col: str):
     """Shy, on all fours, seen from the front and a little above: a big domed shell in the session's
     color, its plates parted by dark seams, a light rim; a round face pokes out under it. It pulls
-    everything in when its session fails. (Redrawn 2026-11-26; the author: "I feel like the turtle
-    is the one that I like the least", then "Revamp it".)"""
+    everything in when its session fails."""
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
     C, D, Rm = ramp(col), ramp(tint(col, -.3)), ramp(tint(col, .3))
     # the face, and the legs a tone darker: green, or tan on a green shell, where green would merge
@@ -1039,8 +1020,7 @@ def shellback(F: Frame, col: str):
         c.dot(21, E + 4, K)
 
 
-# The shellback's face and legs: green, or tan on a green shell (2026-11-26, a review: on the
-# green session colors its face merged with the shell).
+# The shellback's face and legs: green, or tan on a green shell (green would merge with it).
 SHELL_SKIN = {False: ("#a9c47f", "#7f9f57"), True: ("#c9a67a", "#9a7a54")}
 
 
@@ -1052,8 +1032,7 @@ def _greenish(color: str) -> bool:
 
 def toadstool(F: Frame, col: str):
     """Grumpy, in one piece: a stout stem that flares up into the cap's gills, the face on the stem.
-    (Redrawn 2026-11-26; the author: "the mushroom person, like the head seems very detached from
-    the body".) A frown and brows while it idles and works."""
+    A frown and brows while it idles and works."""
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
     C, W, G, Ar = ramp(col), ramp("#ead9b6"), ramp("#b89470"), ramp("#cfae80")
     cy, ct, ra, la, br, lean, look = 0.0, 0.0, 0.0, 0.0, 1, 0.0, 0
@@ -1237,7 +1216,7 @@ def axolotl(F: Frame, col: str):
 def dragon(F: Frame, col: str):
     """Proud: a whelp in the session's color, short horns curving back, a muzzle, bat wings that
     spread, a little fire. Idle, it holds its chin up, its eyes half shut and its chest out, and
-    snorts a little smoke. (The author, 2026-11-26: "dragon not crazy, especially the wings".)"""
+    snorts a little smoke."""
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
     dead = s == "failed"
     C = ramp(tint(col, -.25) if dead else col)
@@ -1326,9 +1305,8 @@ def dragon(F: Frame, col: str):
     if s == "speaking":
         # A puff of fire once a second out of the side of its mouth, drifting out and up, cooling to
         # smoke. Every speaking row draws the same puff at the same moment, only smaller when
-        # quieter, so it carries on as the voice changes row (the author, 2026-11-26: they
-        # "disappear immediately ... a separate animation for the flames that retain in time");
-        # with no voice none is born, but one on its way finishes.
+        # quieter, so it carries on as the voice changes row; with no voice none is born, but one on
+        # its way finishes.
         k, g = F.cycle(1), .55 + .45 * V
         for j in range(3):
             q = k - j * .1
@@ -1379,7 +1357,7 @@ def operator(F: Frame, col: str, i: int, lag: list):
         k = math.sin(A * TAU) * F.lively  # waving, once a second, then the hand held up
         R1, eye, m, hy = (32.5 + k * 2, 17), "wide", .45, (-1 if A < .3 else 0)
     if s == "done":
-        # no jump: the author, 2026-11-26, "when they're done, they're jumping"
+        # no jump when done: the author's choice
         L1, R1, eye, m = (7.5, 20 + F.wave(1) * .6), (32.5, 20 + F.wave(1) * .6), "happy", .5  # cheering, gently
     if s == "failed":
         hy, hx, eye, slip, L1, R1 = 2.5, -.5, "sad", 1, (12, 35), (28, 35)

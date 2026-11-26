@@ -808,7 +808,7 @@ clicks = [click("Overlay", 716, 117, ("overlay.layout", "island")),
           click("Talking", 735, 117, ("followup_when", "end"))]
 send(type="settings", open=True, quiet=True, sections=SETTINGS, section="Speech", click=[46, 245])  # "Keys" at the left
 shot("settings-clicked-keys", 0.5)
-send(type="settings", open=True, quiet=True, sections=SETTINGS, click=[690, 230])  # the hotkey of "Keep the details out"
+send(type="settings", open=True, quiet=True, sections=SETTINGS, click=[690, 230])  # the hotkey of "Details"
 shot("settings-typing-key", 0.5)
 print("  the settings window answers to clicks:", "yes" if all(clicks) else "NO (see above)")
 send(type="settings", open=False)

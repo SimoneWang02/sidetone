@@ -202,8 +202,6 @@ class SessionKeys(HubCase):
         self.assertEqual(hub.sounds.played, ["ended"])
 
     def test_ending_shows_its_progress_until_it_has_ended(self):
-        """The author, 2026-11-26: "I confirm it, there's nothing visually that tells me that
-        you're deleting it"."""
         hub = self.make()
         self.assertTrue(hub.cfg.end_progress)  # a new install
         self.end_twice(hub)
@@ -291,7 +289,6 @@ class SessionKeys(HubCase):
         hub.reconcile()
 
     def test_claude_code_asks_first_the_overlay_asks_and_the_key_once_more_ends_it(self):
-        """The author, 2026-11-26: "it didn't end it, it asked me to confirm in the terminal"."""
         hub = self.make()
         hub.sounds = FakeSounds()
         self.assertEqual(hub.cfg.end_background, "ask")  # a new install
@@ -464,9 +461,7 @@ class OneSessionTwoTerminals(SessionKeys):
     def test_cleared_with_the_clear_key_the_light_goes_with_its_terminal(self):
         """The hub typed /clear into the terminal the light is about: the conversation that starts
         there keeps the name, color, voice and place, and the one that goes on in the other
-        terminal is a session of its own from its next sign of life (the author, 2026-11-26, the
-        other one a tmux session out of sight: "I cleared session 1. It's not cleared and it
-        created this session")."""
+        terminal is a session of its own from its next sign of life."""
         hub = self.make()
         s = hub.sessions.by_id["a"]
         s.pids = [4001, 4002]

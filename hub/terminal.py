@@ -44,8 +44,7 @@ DEFAULTS = {
     "window": False,
     # Where the new-session key has the editor put the terminal: beside = split next to the one of
     # the session in focus | tab = a terminal of its own, a new tab where the editor puts new
-    # terminals, one in sight at a time (the author, 2026-11-26: "the terminal is always created
-    # side by side ... a feature setting that lets me create a new tab").
+    # terminals, one in sight at a time.
     "new_session": "beside",
 }
 TINTS = ("focus", "all", "off")

@@ -21,7 +21,7 @@ import unicodedata
 from typing import NamedTuple
 
 # Variables that tie a new Claude Code process to the session whose hook started the hub. The
-# same list as in hub.py, which cannot be imported from here; a test keeps the two alike.
+# same list as in base.py, which cannot be imported from here; a test keeps the two alike.
 OWN_SESSION = re.compile(r"CLAUDECODE\Z|CLAUDE_(PID|EFFORT)\Z|CLAUDE_CODE_(CHILD|MESSAGING|SESSION)_"
                          r"|CLAUDE_CODE_(SSE_PORT|ENTRYPOINT|EXECPATH)\Z")
 SORRY = "I could not read the usage."
@@ -241,8 +241,8 @@ WORDS = BARE | frozenset("""
 # "Five hours" alone can be about anything; with one of these it is about the window.
 OF_A_WINDOW = frozenset("usage used use left remaining reset resets back start starts window limit".split())
 OPEN_END = frozenset("of in on for to at about a the my".split())  # a sentence that stops here is not finished
-# Words a spoken question opens with. "Alright, so what's the usage?" was the author's first
-# real one (2026-11-18), and "alright" sent it to the session.
+# Words a spoken question opens with ("Alright, so what's the usage?"): without them
+# "alright" sent it to the session.
 POLITE = re.compile(r"((hey|hi|ok|okay|alright|all right|right|yeah|yes|sure|oh|so|um|uh|well|and|also|then|now|"
                     r"claude|please|by the way|btw) )+")
 CAN_YOU = re.compile(r"(can|could|would|will) you (please |just |quickly )*")

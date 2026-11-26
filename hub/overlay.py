@@ -31,9 +31,7 @@ DEFAULTS = {
     "corner": "top-right",  # top-right | top-left | bottom-right | bottom-left
     "offset_x": 12,
     "offset_y": 96,  # below the title bar and tabs of a maximized app
-    # Closed capsules while nothing is happening. 1.0 since 2026-11-21 (was 0.9), and out of the
-    # settings window: the author, having seen it fade, "standard is 100% ... I don't think
-    # people are gonna use this".
+    # The closed capsules' opacity while nothing is happening. Only in config.json.
     "opacity": 1.0,
     "list_opacity": 1.0,
     "glass_clear": 50,  # how see-through the glass is, 0 (plain dark, no blur) to 100; 50 is the look it had
@@ -43,46 +41,34 @@ DEFAULTS = {
     # at once, with no springs, slides, pops or glints; the live voice levels still move. Also on
     # by itself while Windows' "Animation effects" are off. False = the motion as designed.
     "still": False,
-    # How big the bar, the details and the bubble are drawn, in percent (the author, 2026-11-22:
-    # "let the user pick ... You decide"): 75 to 150 in the window, as Windows' own display scale,
-    # which already sizes everything, overlay too. The settings window is not changed by it.
+    # How big the bar, the details and the bubble are drawn, in percent: 75 to 150 in the window.
+    # The settings window is not changed by it.
     "size": 100,
     # How the light of a session at work moves: calm = its arc goes round once in five seconds, at
-    # one length | lively = round in 1.4 seconds, breathing between short and long, its dot beating
-    # (as it was until 2026-11-25). Calm, so that the pulse of "needs you" is the only thing on
-    # the bar that moves fast: a review found the two at one tempo (docs/dev/overlay-review.md),
-    # and the author, shown both side by side: "all three steps look good".
+    # one length | lively = round in 1.4 seconds, breathing between short and long, its dot
+    # beating. Calm, so that the pulse of "needs you" is the only thing on the bar that moves fast.
     "working_motion": "calm",
     # A tick of each session's color beside its light in the bar, on the side the details come
-    # out: a closed bar then says which session a light is, in the color of its name and of its
-    # terminal's tint. The island has its dash under the light instead. Off since 2026-11-26:
-    # the author, seeing it live for a day: "visually I don't like it much". Two colors on
-    # each light, and the first two sessions' (a blue, an orange) are nearly those of
-    # "working" and "needs you"; and the details come out with every name whenever a session
-    # needs you, so the tick only serves a bar that is closed and calm.
+    # out, so that a closed bar says which session a light is (the island has its dash under
+    # the light instead). Off by default: two colors on each light, and the first two sessions'
+    # are nearly those of "working" and "needs you".
     "session_tick": False,
     # A small pixel-art figure beside the speech bubble that acts what its session is doing
-    # (hub/characters.py): none | familiars (five creatures with five tempers) | operators (five
-    # people on the line) | sketch (one operator in pencil, the scarf in the session's color;
-    # hub/sketch.py, 2026-11-26). The author, 2026-11-25: "put them as selection by the user ... You can
-    # build them". None by default, so that what people know does not change by itself.
+    # (hub/characters.py): none | familiars | operators | sketch (hub/sketch.py). None by default,
+    # so that what people know does not change by itself.
     "character": "none",
-    # Where it stands: edge = on the bubble's top edge, so the bubble keeps its size (the author:
-    # "On the edge is cool") | inside = in the bubble beside the words, smaller, so that the bubble
-    # is no taller ("decrease the size to make them fit").
+    # Where it stands: edge = on the bubble's top edge, so the bubble keeps its size | inside = in
+    # the bubble beside the words, smaller, so that the bubble is no taller.
     "character_place": "edge",
     # Which figure a session gets: color = by its color's place among the session colors, so the
-    # same project keeps the same figure | random = by the session's id, so it looks random and
-    # stays the same for the session's whole life (the author, 2026-11-26: "maybe someone want the
-    # companion to be random").
+    # same project keeps the same figure | random = by the session's id, the same for the
+    # session's whole life.
     "character_pick": "color",
-    # Also with the details out (the author, 2026-11-26: "most of the time I put the details always as
-    # seen ... show selected session, which is the one that I use mostly"): on their top edge in
-    # Selected Session, small beside each row in All Sessions. Off: only with the bubble.
+    # Also with the details out: on their top edge in Selected Session, small beside each row in All
+    # Sessions. Off: only with the bubble.
     "character_details": True,
     # While a session's subagents run, small copies of its character stand beside it on the edge,
-    # one for each (the author, 2026-11-26: "since I have a character, a companion per session
-    # ... sub-agents as many companions"). Off by default.
+    # one for each. Off by default.
     "character_agents": False,
     # Held by themselves these keys bring the panel out; with the mouse wheel they move the focus. "" = off
     "focus_wheel": "Ctrl+Alt",
@@ -101,14 +87,13 @@ DEFAULTS = {
     "talk_frees_keys": True,
     # A key another program has already reserved (Windows gives each to one program only): true =
     # the overlay listens for it through a keyboard hook and passes it on, so both programs act on
-    # it (the author, 2026-11-19, with the NVIDIA overlay holding Ctrl+Alt+M: "it execute both");
-    # false = that key does nothing for us, as before. Not for the talk key, whose hold is ours alone.
+    # it | false = that key does nothing for us. Not for the talk key, whose hold is ours alone.
     "share_taken_keys": True,
-    # While the voice is off: "Voice is muted" in the details (the author's choice), and/or a small
-    # struck-out speaker just past the end of the bar (tried first; they did not like it there).
+    # While the voice is off: "Voice is muted" in the details, and/or a small struck-out speaker
+    # just past the end of the bar.
     "muted_line": True,
-    # ... a slashed speaker in the top right of the bubble a line pops out in (their idea too), and
-    # in the top right of the card of figures (tried, then taken out: "remove it from the metrics box").
+    # ... a slashed speaker in the top right of the bubble a line pops out in, and in the top right
+    # of the card of figures.
     "muted_icon": True,
     "muted_card_icon": False,
     "muted_mark": False,
@@ -126,11 +111,9 @@ DEFAULTS = {
     # How the open details take a new height when the mouse goes to another session: quick = they
     # grow at once and shrink in about a tenth of a second | instant = both at once
     "resize": "quick",
-    # How the details and the bubble fold away: swift = in 180 ms, slow, fast, slow, what they hold
-    # gone in the first 90 and a little back toward the bar | spring = on a spring with no bounce,
-    # as until 2026-11-26 (the author: "when the detail box closes, I think that animation can be
-    # improved"). Measured on 125 px of details, the spring took 430 ms, 290 of them as an empty
-    # strip of glass creeping shut.
+    # How the details and the bubble fold away: swift = in 180 ms, what they hold gone in the first
+    # 90 and a little back toward the bar | spring = on a spring with no bounce (measured on 125 px
+    # of details: 430 ms, 290 of them an empty strip of glass creeping shut).
     "close_motion": "swift",
     # What the history under the kept-out details shows: session = the lines of the session the
     # mouse is on (before it touched one: the session in focus) | all = every session's lines
@@ -139,8 +122,7 @@ DEFAULTS = {
     # what it was at first; the details themselves come after 0.1)
     "history_after": 0.1,
     # In Selected Session: always = the session's history is in its card whenever the details are
-    # out | rest = only once the mouse rests on them, as in All Sessions (the author, 2026-11-22:
-    # "it would be cool to also have the history displayed by default")
+    # out | rest = only once the mouse rests on them, as in All Sessions.
     "focus_history": "always",
     # The plan's usage at the foot of the card: rows = each bar on a line of its own, names in
     # one column | line = the five hours and the week side by side, as at first
@@ -187,12 +169,11 @@ DEFAULTS = {
     # the figure large (and a bar: `details_bars`) | line = one line of
     # text, "Context 21%   Last reply 64k"
     "details_style": "tiles",
-    # A thin bar under a tile's figure where it is a share of a whole (context, tasks). Off
-    # since the author, 2026-11-19: "redundant since I already have the arc for the context".
+    # A thin bar under a tile's figure where it is a share of a whole (context, tasks). Off:
+    # the context's arc says it already.
     "details_bars": False,
-    # The number in front of each choice of a question: false = a plain number (the author:
-    # "only number without ... the rectangles with the number inside") | true = drawn as a
-    # key cap, like the keys in the line below the choices
+    # The number in front of each choice of a question: false = a plain number | true =
+    # drawn as a key cap, like the keys in the line below the choices.
     "choice_caps": False,
     "context_warn": 80,
     "context_color": "#FFFFFF",
@@ -214,28 +195,23 @@ DEFAULTS = {
                 "talk": "Ctrl+Alt+Space", "cancel": "Ctrl+Alt+Backspace",
                 "repeat": "Ctrl+Alt+R", "layout": "Ctrl+Alt+K",
                 # Go to the terminal of the session in focus; claimed only while an editor with the
-                # Sidetone extension holds that terminal. No key unless you give it one
-                # ("Ctrl+Alt+T" was its first): the author saw no use for it with terminals side by side.
+                # Sidetone extension holds that terminal. No key unless you give it one.
                 "jump": "",
                 # Open and close the settings window.
                 "settings": "Ctrl+Alt+S",
-                # /clear for the session in focus, pressed twice (the author, 2026-11-21: "making it
-                # like a shortcut ... double click it to confirm"); claimed only while that session's
+                # /clear for the session in focus, pressed twice; claimed only while that session's
                 # terminal is in an editor that can type it. Word has it for "©": shared then.
                 "clear": "Ctrl+Alt+C",
                 # A new session in a terminal beside the one in focus, and the session in focus
-                # ended, pressed twice (the author, 2026-11-22: "Ctrl Alt plus and Ctrl Alt minus to
-                # add a terminal session and remove it"); claimed only while an editor with the
-                # extension (0.5.0 on) can do it. Word has Ctrl+Alt+Minus for a long dash: shared.
+                # ended (pressed twice); claimed only while an editor with the extension (0.5.0 on)
+                # can do it. Word has Ctrl+Alt+Minus for a long dash: shared.
                 "new_session": "Ctrl+Alt+Plus", "end_session": "Ctrl+Alt+Minus",
-                # The voice off for every session, or on again (the author, 2026-11-19: "I would
-                # rather have ... a mute shortcut"; "M for mute"). The NVIDIA overlay has Ctrl+Alt+M for
-                # its microphone by default; where it does, both act on the key (share_taken_keys), which
-                # the author chose over another letter: "if there's conflict just do both".
+                # The voice off for every session, or on again. The NVIDIA overlay has Ctrl+Alt+M
+                # for its microphone by default; where it does, both act on the key
+                # (share_taken_keys).
                 "mute": "Ctrl+Alt+M",
-                # The voice off for the session in focus alone, or on again (the author, 2026-11-26:
-                # "a setting to mute single sessions ... I want to prioritize 2 out of 5"). The mute
-                # key with Shift; claimed only while there are two or more sessions, or one is muted.
+                # The voice off for the session in focus alone, or on again. The mute key with
+                # Shift; claimed only while there are two or more sessions, or one is muted.
                 "mute_session": "Ctrl+Alt+Shift+M",
                 # Move the focus to the session before or after; claimed only while there are two or more.
                 # The first pair is for the bar, where the lights run down; the second for the island,

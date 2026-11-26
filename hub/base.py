@@ -135,10 +135,8 @@ ASIDE_PROMPT = ("This is a side question from me, asked by voice while you work 
                 "speak tag, no code, no paths, no symbols and no markdown. You cannot use tools here: if the "
                 "answer would need reading a file, running a command or searching, say that it cannot be checked "
                 "from a side question. Do not continue or change the task you were working on. ")
-# Small words a spoken sentence may begin with before the opening of a side question: the
-# author's first real one was "Oh, by the way, what time is it right now?" (2026-11-18), and
-# with the "oh" it waited for the session like any other words.
-# The Italian ones after them ("e comunque, che ore sono?", the author's own, 2026-11-19).
+# Small words a spoken sentence may begin with before the opening of a side question ("Oh,
+# by the way, ..."); the Italian ones after the English.
 ASIDE_LEAD = ("oh|ah|so|hey|and|also|alright|all right|right|ok|okay|um|uh|well|yeah|actually|claude"
               "|e|allora|senti|ehi|beh|dai|quindi|ma")
 # The name of a language a side question may be heard in, for telling the copy which to answer in.
@@ -146,8 +144,8 @@ LANGUAGE_NAMES = {"it": "Italian", "zh": "Chinese", "es": "Spanish", "fr": "Fren
                   "pt": "Portuguese", "ja": "Japanese", "hi": "Hindi"}
 
 
-# The hub's spoken answers to your words in the language you used (the author, 2026-11-20, with
-# "When Your Words Go Out" on Voice: "Can you do that in Chinese?"). Others stay English.
+# The hub's spoken answers to your words, in the language you used; a language not listed stays
+# English.
 FEEDBACK_WORDS = {"Sent.": {"it": "Inviato.", "zh": "已发送。"},
                   "Queued.": {"it": "In attesa.", "zh": "排队中。"}}
 
@@ -173,9 +171,8 @@ def fixed_language(cfg) -> str:
 
 def languages_on(cfg) -> list:
     """The languages that are on: the ones push-to-talk listens for, which are also the only ones
-    spoken lines may be in (the author, 2026-11-23: "people who doesnt have installed chinese, are
-    not expecting chinese responses"). Empty means any ("auto"). A summary language chosen in
-    the settings (`reply_language`) is on as well."""
+    spoken lines may be in. Empty means any ("auto"). A summary language chosen in the settings
+    (`reply_language`) is on as well."""
     model = str(cfg.whisper_model or "")
     on = ["en"] if model.endswith(".en") else [c.lower() for c in str(cfg.whisper_language or "en").replace(",", " ").split()]
     if any(c in ("auto", "any", "all") for c in on):
@@ -185,16 +182,15 @@ def languages_on(cfg) -> list:
 
 
 def not_spoken(lang: str, installable: bool) -> str:
-    """What is said in place of a line in a language that is off or has no voice here (agreed
-    2026-11-23: the written reply has the line; this says why nothing else was heard)."""
+    """What is said in place of a line in a language that is off or has no voice here: the
+    written reply has the line, this says why nothing else was heard."""
     name = LANGUAGE_NAMES.get(lang, "another language")
     return f"Answered in {name}, which is not installed." if installable else f"Answered in {name}, which has no voice here."
 
 
 def aside_prompt(question: str, lang: str = "") -> str:
-    """What the copy is asked. It is told the day and the time, which it cannot look up (that
-    first real question got "I can't read the clock from a side question"). `lang`: the
-    language the question was heard in, which the answer is to be in ("" or "en": English)."""
+    """What the copy is asked. It is told the day and the time, which it cannot look up.
+    `lang`: the language the answer is to be in ("" or "en": English)."""
     told = ASIDE_PROMPT.replace("plain spoken English", f"plain spoken {LANGUAGE_NAMES[lang]}") if lang in LANGUAGE_NAMES else ASIDE_PROMPT
     return told + time.strftime("Right now it is %A, %d %B %Y, %H:%M. ") + "The question: " + question
 # Tools a copy on the session's own model may not use: it would have to ask, and nobody is there.
@@ -272,9 +268,7 @@ class Config:
     # The colors sessions' names are written in ("#RRGGBB"). A session that joins others gets
     # the one furthest from theirs, so a short list of very different colors serves best.
     colors: list = field(default_factory=lambda: list(COLORS))
-    # Say the session's name before its line: always | never. "auto" (only with several sessions and
-    # no overlay on screen) was dropped on 2026-11-20, the author: "make it two choices, either
-    # always or never ... I want to reduce [friction] ... I don't think it's that much needed".
+    # Say the session's name before its line: always | never.
     label: str = "never"
     # Where a session's title comes from. "ask": each session is asked to name what it is working
     # on, in its speak tag, and may change that as the work moves on. "auto": never asked; the
@@ -282,8 +276,7 @@ class Config:
     titles: str = "ask"
     # The language of the spoken line. "spoken": the one you wrote or spoke in; a line that is not
     # English carries lang="it" (or another code) in its tag and is said by a voice of that
-    # language. A code ("en", "it", ...): always that language, whatever you used (the author,
-    # 2026-11-20: "either dynamic ... or letting the user choose with a select"). "english" is
+    # language. A code ("en", "it", ...): always that language, whatever you used. "english" is
     # the old name of "en". The hook asks for it in its reminder.
     reply_language: str = "spoken"
     # A voice per language for those lines, such as {"it": "if_sara"}; else tts.PREFERRED_VOICE,
@@ -293,15 +286,13 @@ class Config:
     # the focus is moved with the arrow keys or the wheel. "next": the focus goes to the next
     # session, as it did before those keys existed.
     talk_tap: str = "none"
-    # A session that starts to speak takes the focus. When the talk key goes down within this
-    # many seconds of that, you cannot have meant the new speaker: nobody reacts that fast. The
-    # words then go to the session that had the focus before. 0 = the key always goes to
-    # whoever has the focus in that instant.
+    # Seconds after a session takes the focus by starting to speak in which the talk key still
+    # goes to the session that had the focus before (nobody reacts that fast). 0 = always
+    # whoever has the focus.
     focus_reach_back: float = 1.0
-    # A prompt typed to a session gives it the focus: you are there, so what you say next is
-    # meant for it. It covers what the editor cannot report (going back into the terminal
-    # you were in last, a terminal outside the editor). False: only the keys, the wheel,
-    # the terminal in front and whoever speaks move the focus.
+    # A typed prompt gives its session the focus; this covers what the editor cannot report
+    # (a terminal outside it). False: only the keys, the wheel, the terminal in front and
+    # whoever speaks move the focus.
     focus_on_prompt: bool = True
     max_age: float = 60.0  # seconds a line may wait before it is dropped
     idle_exit: float = 1800.0  # seconds with no sessions before the hub exits; 0 = never
@@ -309,10 +300,9 @@ class Config:
     # with no such notification after this long was answered in the terminal.
     permission_grace: float = 9.0
     whisper_model: str = "small.en"
-    # Where push-to-talk is written down: "auto" (the graphics card when an NVIDIA one and its
-    # libraries are there, else the processor), "cpu" or "gpu". On the card the model is
-    # `whisper_gpu_model`, which the card runs about as fast as the processor runs `small` and
-    # which gets more words right (measured 2026-11-22, docs/dev/facts.md).
+    # Where push-to-talk is written down: "auto" (an NVIDIA card with its libraries, else the
+    # processor), "cpu" or "gpu". On the card the model is `whisper_gpu_model` (speeds in
+    # docs/dev/facts.md).
     whisper_device: str = "auto"
     whisper_gpu_model: str = "large-v3-turbo"
     # Where the voice (Kokoro) is made, the same way: "auto", "cpu" or "gpu". On the card the first
@@ -325,127 +315,94 @@ class Config:
     # Whether the cancel key interrupts Claude, as Ctrl+C once does: words taken back from a
     # session that already has them end its turn, and with nothing else to cancel the key ends
     # the turn of the session in focus. False: neither; a session that already has the words is
-    # told to ignore them. It was "always", "sent" (only the first) or "never", which are still
-    # read: "sent" counts as on (see `interrupts`).
+    # told to ignore them. The old values "always", "sent" and "never" are still read: "sent"
+    # counts as on (see `interrupts`).
     cancel_stops: bool | str = True
     # Asking for the plan's usage by voice ("what's my usage", "how much of the five hours have
     # I used"): the hub answers aloud, the five-hour window first, and the words do not go to
     # a session. False: such words are a session's like any others.
     usage_by_voice: bool = True
-    # "Clear the chat" by voice (the author, 2026-11-19: "is it possible to say like, hey,
-    # Claude, clear the chat and you use the command slash clear"). No session can run
-    # /clear itself, it has to be typed, and only the editor can type into its terminals
-    # (see vscode/extension.js). Spoken words that are one of `clear_words` and nothing else,
-    # but for a greeting before and a "please" after, are not handed to the session: its
-    # editor types /clear into its terminal. Only for a session that is at its prompt, since
-    # the Enter that goes with it would answer a dialog that is open. False: such words are
-    # a session's like any others.
+    # "Clear the chat" by voice: words that are one of `clear_words` and nothing else (but a
+    # greeting before, a "please" after) are not handed to the session; its editor types
+    # /clear into its terminal, since no session can run /clear itself. Only for a session at
+    # its prompt: the Enter would answer an open dialog.
     clear_by_voice: bool = True
     # A banner with a turning ring from the moment /clear is asked of the editor until Claude Code
-    # has cleared (the author, 2026-11-24: "a loading progress for the clearing, because usually I
-    # didn't see anything").
+    # has cleared.
     clear_progress: bool = True
-    # A session that has work in the background (a command, an agent, a watch) is not ended by
-    # /exit at once: Claude Code lists what will stop and asks, in the terminal, "Exit and stop
-    # tasks" or "Stay". The author, 2026-11-26, after the end key on such a session: "it didn't
-    # end it, it asked me to confirm in the terminal". "ask": the overlay asks in its place and
-    # the end key, pressed once more, has the editor answer "Exit and stop tasks". "end": the
-    # editor answers so without your being asked again. "terminal": the question is left in
-    # the terminal, and the overlay only says it is there. Needs the extension from 0.8.0;
-    # with an older one it is "terminal".
+    # What the end key does when Claude Code asks "Exit and stop tasks" or "Stay" (a session
+    # with work in the background). "ask": the overlay asks and a second press has the editor
+    # answer | "end": the editor answers at once | "terminal": the question stays in the
+    # terminal. Needs the extension from 0.8.0; an older one counts as "terminal".
     end_background: str = "ask"
     # A banner with the ring of a clear from the end key's confirming press until the session has
-    # ended, then "Ended ..." for a moment (the author, 2026-11-26: "I confirm it, there's nothing
-    # visually that tells me that you're deleting it"). False: the question only goes.
+    # ended, then "Ended ..." for a moment. False: the question only goes.
     end_progress: bool = True
     clear_words: list = field(default_factory=lambda: [
         "clear the chat", "clear the context", "clear the conversation", "clear the session", "clear the history",
         "slash clear", "run slash clear", "do a slash clear", "use slash clear",
         "clear the shot"])  # how the speech model wrote "chat" once (2026-11-19)
-    # The plan's usage at the foot of the card of figures in the overlay: the five-hour window
-    # and the week, each a thin bar and its percent (the author's idea, 2026-11-17: "bar that
-    # shows the usage, the five-hour window and the weekly usage"). Read with the same call
-    # as for the voice, every `usage_every` seconds while a session is open and the overlay
-    # is up (about a second each time, no request to a model). From `usage_warn` percent on
-    # a bar is drawn in the warning color.
+    # The plan's usage at the foot of the card: the five-hour window and the week, each a bar
+    # and its percent. Read every `usage_every` seconds while a session is open and the
+    # overlay is up (about a second, no request to a model); from `usage_warn` percent a bar
+    # is in the warning color.
     usage_shown: bool = True
     usage_every: float = 300.0
     usage_warn: float = 80.0
     # The week of one model, where the plan counts it apart ("Fable 89%"), as a bar after those
-    # two: none | all | near = only from `usage_warn` on. Off unless asked for: the author did
-    # not want it, since such a limit comes and goes with the plans.
+    # two: none | all | near = only from `usage_warn` on. Off unless asked for: such a limit
+    # comes and goes with the plans.
     usage_models: str = "none"
     # What the two bars are called: short = "5H" and "7D", which leaves the bars more room
-    # (the author, 2026-11-22: "still understandable and it also saves space") | long =
-    # "5 hours" and "Week", as at first. A model's own week keeps its name either way.
+    # | long = "5 hours" and "Week". A model's own week keeps its name either way.
     usage_labels: str = "short"
-    # How full each session's context is, counted from its transcript, and where it shows:
-    # arc = a thin arc around the session's light, filling clockwise from the top (the author,
-    # 2026-11-18, found the words too long beside the running time and chose the arc of three
-    # ideas) | text = "context 56%" at the end of its row of the details | both | off.
-    # true and false, from when it was only the text, mean arc and off.
-    # `context_window`: the size it is held against, in tokens (the transcript does not say
-    # it; one million for the models measured).
+    # How full each session's context is, counted from its transcript, and where it shows: arc
+    # = a thin arc around the session's light, filling clockwise from the top | text =
+    # "context 56%" at the end of its row of the details | both | off. true and false are
+    # still read as arc and off. `context_window`: the size it is held against, in tokens (the
+    # transcript does not say it; one million for the models measured).
     context_shown: str | bool = "arc"
     context_window: int = 1_000_000
-    # What a turn used in tokens, at the right end of the session's row once the turn has
-    # ended ("64k tokens"), until its next prompt (the author, 2026-11-18: "for each reply,
-    # display the metrics, the token you've used"). new = what the model wrote plus what it
-    # read for the first time, the default: what it reads again at every step of a long
-    # conversation would make every figure millions | output = only what it wrote |
-    # all = with what was read again | off.
+    # What a turn used in tokens, at the right end of the session's row from the turn's end
+    # until its next prompt: new = what the model wrote plus what it read for the first
+    # time (what it reads again each step would make every figure millions) | output | all
+    # | off.
     turn_tokens: str | bool = "new"
-    # A word after that figure: "" = the bare number, "64k" (the author on seeing "64k tokens":
-    # the label is good, but "just putting the number is better", it takes room from the
-    # words of the row) | "tokens" = as it was at first, or any word of your own.
+    # A word after that figure: "" = the bare number, "64k", which leaves the words of the row
+    # more room | "tokens", or any word of your own.
     turn_tokens_label: str = ""
-    # The same figure at the right end of each line in the history under the rows: there it
-    # stays, where the row loses it at the next prompt (the author asked for it "as well in
-    # history", and then for the end of the message, not right after its time).
+    # The same figure at the right end of each line in the history, where it stays.
     turn_tokens_history: bool = True
-    # How long ago each line of the history was said ("3m"), before its tokens. Off: asked
-    # what the history could give up to make room, the author kept the tokens ("pretty
-    # cool") and doubted the time ("I don't know how useful it is"); the lines are in order,
-    # newest first, which says most of it.
+    # How long ago each line of the history was said ("3m"), before its tokens. Off: the
+    # lines are in order, newest first, which says most of it.
     history_time: bool = False
     # A white dot on the mark of a history line that was never heard to its end (cut off,
-    # too old, replaced). Off since the author, 2026-11-19: "I don't like the tick with the
-    # white ball on top right ... don't use the white ball."
+    # too old, replaced).
     history_missed: bool = False
-    # Where a session's figures go (the author, 2026-11-18, with tasks, time, context, tokens
-    # and waiting messages all wanting the right end of a row: "revamp a bit the design ...
-    # to have space for them", and chose a line of their own under the rows). `row_metrics`:
-    # what the right end of each row says, as bare figures. `detail_metrics`: what is said
-    # under the rows about the session the mouse is on (else the one in focus), each with
-    # its name; [] = nothing. How that looks is the overlay's `details_style`. Both are
-    # lists of: tasks (done/all of its task list), time (how long the turn has run, or the
-    # last one ran), context, tokens (what the turn has used, or the last one did), waiting
-    # (messages of yours held for it), session_tokens and session_time (what the whole
-    # session has used, and how long Claude has been at work in it, since it began or was
-    # cleared). Tasks left the card's default on 2026-11-19 (the author: "I don't think it's
-    # useful ... narrow that row to just three columns"). The card shows the session's totals
-    # since 2026-11-20: "This reply" and "This turn" were "not very intuitive", and "Tokens"
-    # alone would read as a total, so the author made it one; what each turn used stays at
-    # the end of its line in the history, and the turn's own clock in the row.
+    # Where a session's figures go. `row_metrics`: what the right end of each row says, as
+    # bare figures. `detail_metrics`: what is said under the rows about the session the mouse
+    # is on (else the one in focus), each with its name; [] = nothing. How that looks is the
+    # overlay's `details_style`. Both are lists of: tasks (done/all of its task list), time
+    # (how long the turn has run, or the last one ran), context, tokens (what the turn has
+    # used, or the last one did), waiting (messages of yours held for it), session_tokens and
+    # session_time (what the whole session has used, and how long Claude has been at work in
+    # it, since it began or was cleared).
     row_metrics: list = field(default_factory=lambda: ["time"])
     detail_metrics: list = field(default_factory=lambda: ["context", "session_tokens", "session_time"])
     # What stands between the parts of a line the hub writes for the overlay (tasks and time
-    # in a row, the keys under a request): "" = only a gap (the author, 2026-11-18: "don't
-    # use the dots, the central dots. I don't like them") | a sign of your own, "\u00b7" for
-    # the raised dot it was.
+    # in a row, the keys under a request): "" = only a gap | a sign of your own, "·" for a
+    # raised dot.
     separator: str = ""
-    # "2 messages waiting" in words at the end of a session's row. Off since the author said
-    # of it "I don't care", the number on the light says it already.
+    # "2 messages waiting" in words at the end of a session's row; the number on the light
+    # says it already.
     waiting_words: bool = False
     # Stopping at once: where the session runs in a terminal of an editor with the Sidetone
     # extension, Escape is typed into that terminal, which ends the turn in the same moment.
     # False: only by the hook, at the session's next step (which is also what happens anywhere else).
     stop_at_once: bool = True
-    # Words spoken to a session that is busy working: "step" = left where its PostToolUse hook
-    # (hooks/stop.sh) finds them, so Claude reads them after the step it is on and goes on with
-    # them in mind, as Claude Code does with a message typed while it works | "end" = they wait
-    # for the end of its reply (all there was before 2026-11-21). Either way, a reply with no
-    # further step gets them at its end.
+    # Words spoken to a busy session: "step" = left where its PostToolUse hook (hooks/stop.sh)
+    # finds them, so Claude reads them after the step it is on | "end" = they wait for the end
+    # of its reply. A reply with no further step gets them at its end either way.
     followup_when: str = "step"
     # Words spoken to a session that waits at a permission prompt: "details" = they are neither
     # a yes nor a no but more to go on: the request is turned down for now, the turn is ended
@@ -457,24 +414,17 @@ class Config:
     # after followup_delay unless cancelled), True, or "auto" (only for sessions that would act
     # on it without asking, i.e. not in default or plan mode).
     followup_confirm: bool | str = False
-    # What you said to a session, written in its terminal above the next lines it shows
-    # ("🎤 ..."): Claude Code itself shows only "Stop hook feedback" there, since spoken words
-    # reach it through a hook and not as a typed prompt. Off for a new install (the author,
-    # 2026-11-26: "put it as a setting, default as no"): the line is on screen only (the saved
-    # conversation keeps the reply as it was written), and it comes with the reply, not when
-    # you speak, so the overlay stays the place to check the words in time.
+    # What you said to a session, written in its terminal above the next lines it shows ("🎤
+    # ..."); Claude Code itself shows only "Stop hook feedback" there. On screen only (the
+    # saved conversation keeps the reply as written), and it comes with the reply, not when
+    # you speak.
     words_in_terminal: bool = False
-    # Side questions. Spoken words that open with one of `aside_words` do not wait for a busy
-    # session: a throwaway copy of that session answers them at once from what the session
-    # knows, without tools, and the answer is said in the session's voice. The session itself
-    # never sees the question or the answer. `aside`: True (or "busy") = only while the session
-    # is in the middle of a turn (an idle one gets the words as usual and can act on them) |
-    # False (or "off") | "always", out of the settings window since 2026-11-21 (`aside_mode`). `aside_model`: "session" = the copy runs on the session's own model with
-    # the session's own tools, which lets it reuse the conversation the session has saved, as
-    # Claude Code's `/btw` does (asking is then refused for every tool that acts) | a model's
-    # name such as "haiku" = that model reads the whole conversation anew, with no tools at
-    # all. If no answer comes within `aside_timeout` seconds, the words go to the session
-    # after all. `aside_claude`: the Claude Code program; "" = the one on the PATH.
+    # Side questions: spoken words that open with one of `aside_words` are answered at once by a
+    # throwaway copy of the session, which never sees them. `aside`: True/"busy" = only mid-turn |
+    # False/"off" | "always". `aside_model`: "session" = the session's own model and saved
+    # conversation (tools that act are refused) | a model's name = that model reads the conversation
+    # anew, no tools. No answer within `aside_timeout` seconds: the words go to the session.
+    # `aside_claude`: the Claude Code program, "" = the one on the PATH.
     aside: bool | str = True
     aside_words: list = field(default_factory=lambda: ["by the way", "btw", "comunque", "a proposito",
                                                        "顺便问一下", "顺便问下", "顺便说一下"])
@@ -499,15 +449,12 @@ class Config:
     # recording whose language the model is unsure of, so others cost nothing more.
     whisper_mixed: bool = True
     # Each push-to-talk recording that was heard is kept as a WAV beside what it was heard as,
-    # in <state>/recordings (list.jsonl: one line per recording), for a model of your own voice
-    # later (the author, 2026-11-22: "register every message I send and create a voice model
-    # based on my speaking"). Off for new installs: it keeps your voice on disk.
+    # in <state>/recordings (list.jsonl: one line per recording). Off for new installs: it
+    # keeps your voice on disk.
     keep_recordings: bool = False
-    # While the talk key is held (and the tail after it), the overlay holds this key down, for
-    # Discord's "Push to Mute" bound to it, so a call does not hear what you say to a session
-    # (the author, 2026-11-20: "is it possible that when talking I don't speak to Discord?").
-    # A key no keyboard has, so nothing else reacts to it; `sidetone discord-key` presses it
-    # while Discord records the keybind.
+    # While the talk key is held (and the tail after it) the overlay holds this key down, for
+    # Discord's "Push to Mute" bound to it. A key no keyboard has, so nothing else reacts;
+    # `sidetone discord-key` presses it while Discord records the keybind.
     push_to_mute: bool = True
     push_to_mute_key: str = "F24"
     # A headset's button, where its headphones are the ones you listen on (see headset.py; Windows
@@ -530,12 +477,10 @@ class Config:
     # question, a permission, "I need your input". Its other lines are only shown. Off: nothing
     # of it is said, and it waits until you look.
     muted_asks: bool = True
-    # The usage limit is the account's, not a session's: the first session that hits it says so,
-    # and the others, and that one when a background agent's end wakes it again, only show it.
-    # A turn you began yourself, typed or spoken, still says it: that is its answer to you. News
-    # again once a turn has ended well. Off: every session says it every time. (2026-11-26, three
-    # sessions at the limit said it eight times in two minutes; the author: "It gets said
-    # multiple times.")
+    # The usage limit is the account's: the first session that hits it says so; the others, and
+    # that one when a background agent's end wakes it, only show it. A turn you began yourself
+    # still says it. News again once a turn has ended well. Off: every session says it every
+    # time.
     limit_once: bool = True
 
     @property
@@ -767,9 +712,8 @@ def _read_out(question: dict, place: str = "") -> str:
 
 
 def _ago(seconds: float) -> str:
-    """How long ago a line of the history was said, in at most three letters, so the column
-    keeps one width (the author, 2026-11-22: "now" then "2m" and the whole history shifts;
-    "I want it to be ... consistent"): now, 1m to 59m, 1h to 23h, then days."""
+    """How long ago a line of the history was said, in at most three letters so the column
+    keeps one width: now, 1m to 59m, 1h to 23h, then days."""
     minutes = int(seconds // 60)
     if minutes < 1:
         return "now"
@@ -799,10 +743,9 @@ def _elapsed(seconds: float) -> str:
     return f"{minutes}m" if minutes < 60 else f"{minutes // 60}h{minutes % 60:02d}"
 
 
-# A permission prompt answered by voice with a bare yes or no (the author, 2026-11-21: "I can
-# just say yes or no to approve or refuse"); before, any words there turned the request down and
-# followed as the next message, a spoken "yes" too. Only the whole utterance counts, so "no, use
-# pnpm instead" is still more to go on. "Okay" is left out: it is said to oneself too.
+# A permission prompt answered by voice with a bare yes or no. Only the whole utterance counts,
+# so "no, use pnpm instead" is still more to go on. "Okay" is left out: it is said to oneself
+# too.
 SPOKEN_YES = {"yes", "yeah", "yep", "yup", "sure", "go ahead", "go for it", "do it", "allow it", "allow", "approve",
               "approved", "yes do it", "yes go ahead", "sì", "si", "certo", "vai", "procedi", "va bene", "fallo",
               "好", "好的", "是", "是的", "可以", "行"}
@@ -837,6 +780,3 @@ def log(cfg: Config, name: str, line: str) -> None:
             f.write(f"{time.strftime('%F %T')} {line}\n")
     except OSError:
         pass
-
-
-# --- HTTP over the Unix socket -----------------------------------------------------------------

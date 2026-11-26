@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
-# MessageDisplay hook: runs on each batch of streamed lines. When a line that is
-# exactly <speak>...</speak> appears, speak it right away and show it as "🔊 ...".
-# The tag may carry the session's title and the line's language (<speak title="..." lang="it">);
-# the hub keeps them, and they are not shown.
-# Must be fast: Claude Code waits for this hook before rendering the batch.
-# Muted, the line is still rewritten: a session keeps writing the tag after the mute key stops
-# the reminder (the author saw the raw tag, 2026-11-24), and the hub shows it at the session's
-# light instead of saying it.
+# MessageDisplay hook: runs on each batch of streamed lines. When a line that is exactly
+# <speak>...</speak> appears, speak it right away and show it as "🔊 ...". The tag may carry the
+# session's title and the line's language (<speak title="..." lang="it">); the hub keeps them,
+# and they are not shown. Must be fast: Claude Code waits for this hook before rendering the
+# batch. Muted, the line is still rewritten: a session keeps writing the tag after the mute key
+# stops the reminder, and the hub shows it at the session's light instead of saying it.
 #
 # With Your Words in the Terminal on (words_in_terminal), the hub also writes what you said to a
 # session above the next lines it shows, tag or no tag. It leaves a file in the run folder's
