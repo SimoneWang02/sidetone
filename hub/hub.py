@@ -870,7 +870,8 @@ class Hub(Permissions, Talk, Headset):
                 "muted": s.muted,  # its own voice is off: a struck-out speaker at its light and by its name
                 "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
                 # Its character's sheet ("" for none, or while it is being drawn).
-                "sprite": self.sheets.path(self.cfg.overlay.get("character", "none"), s.color),
+                "sprite": self.sheets.path(self.cfg.overlay.get("character", "none"), s.color,
+                                           2 if self.cfg.overlay.get("character_look") == "refined" else 1),
             } for s in self.sessions.by_id.values() for figures in [self._figures(s)]]
             asking = self.requests[0].question if self.requests else None
             keys = sorted(([f"option{i}" for i in range(1, len(asking["options"]) + 1)]

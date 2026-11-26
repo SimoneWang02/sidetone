@@ -196,6 +196,16 @@ class Sheets(unittest.TestCase):
         self.assertEqual(sheets.path("none", COLORS[0]), "")
         self.assertEqual(sheets.path("familiars", ""), "")
 
+    def test_each_look_has_its_own_sheet(self):
+        # overlay.character_look; the author, 2026-11-26: "I kinda prefer the default maybe. Let me try both."
+        folder = tempfile.mkdtemp(prefix="cs-sprites-")
+        sheets = characters.Sheets(folder)
+        self.assertNotEqual(sheets.name("familiars", 0, COLORS[0], 2), sheets.name("familiars", 0, COLORS[0], 1))
+        was = characters.LOOK
+        classic, refined = characters.sheet("familiars", 1, COLORS[1], 1), characters.sheet("familiars", 1, COLORS[1], 2)
+        self.assertNotEqual(classic, refined)
+        self.assertEqual(characters.LOOK, was)
+
     def test_a_sheet_already_on_disk_is_not_drawn_again(self):
         folder = tempfile.mkdtemp(prefix="cs-sprites-")
         first = characters.Sheets(folder)

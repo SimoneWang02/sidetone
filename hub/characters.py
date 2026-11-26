@@ -1201,8 +1201,20 @@ def row_frames(style: str, kind: int, color: str, name: str, extra: int = 0):
         yield frame(style, kind, color, s, t0 + i / FPS, a0 + i / FPS, v, lag)
 
 
-def sheet(style: str, kind: int, color: str) -> bytes:
-    """Every cell of one figure in one color, as a PNG."""
+def sheet(style: str, kind: int, color: str, look: int | None = None) -> bytes:
+    """Every cell of one figure in one color, as a PNG; `look` draws it in that look (1 classic,
+    2 refined) instead of the module's `LOOK`. Sheets are drawn one at a time (`Sheets`)."""
+    global LOOK
+    if look is None:
+        return _sheet(style, kind, color)
+    was, LOOK = LOOK, look
+    try:
+        return _sheet(style, kind, color)
+    finally:
+        LOOK = was
+
+
+def _sheet(style: str, kind: int, color: str) -> bytes:
     n = cell(style)
     width, height = max(count for _, count in ROWS) * n, len(ROWS) * n
     rgba = bytearray(width * height * 4)
@@ -1235,14 +1247,15 @@ class Sheets:
         self._ready: dict[tuple[str, int, str], str] = {}
         self._busy = False
 
-    def name(self, style: str, kind: int, color: str) -> str:
-        return os.path.join(self.folder, f"{style}-{kind}-{color.lstrip('#').lower()}-{_SOURCE}.png")
+    def name(self, style: str, kind: int, color: str, look: int = 1) -> str:
+        return os.path.join(self.folder, f"{style}-{kind}-{color.lstrip('#').lower()}-{'look2-' if look == 2 else ''}{_SOURCE}.png")
 
-    def path(self, style: str, color: str) -> str:
-        """The overlay's path to this session's sheet, or "" while it is being drawn."""
+    def path(self, style: str, color: str, look: int = 1) -> str:
+        """The overlay's path to this session's sheet, or "" while it is being drawn. `look`:
+        1 classic, 2 refined (overlay.character_look)."""
         if style not in STYLES or not color:
             return ""
-        key = (style, kind_of(color), color)
+        key = (style, kind_of(color), color, 2 if look == 2 and style != "sketch" else 1)
         with self._lock:
             if key in self._ready:
                 return self._ready[key]
