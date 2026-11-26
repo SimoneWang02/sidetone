@@ -35,7 +35,10 @@ N = 44  # a cell is N by N pixels
 # a comparison of the two; the author: "I kinda prefer the default", "mostly the shading"): Classic's
 # tones and shading with an outline lifted to show on the glass, Refined's eyes, sparks, sound sign
 # and lantern, a glow without rings as strong as Classic's; shown in docs/dev/looks/look3.py.
-LOOK = 1
+# The Mix (3) is the one look since 2026-11-26, and the setting that chose between them is gone
+# (the author: "There shouldn't be two choices. Make it only one. I guess mix is better."); 1 and
+# 2 stay only for the comparison pages until their branches are folded away.
+LOOK = 3
 # What each look draws differently from Classic, by name; `has` asks the look being drawn.
 PARTS = {
     1: frozenset(),
@@ -1325,14 +1328,16 @@ class Sheets:
         self._ready: dict[tuple[str, int, str], str] = {}
         self._busy = False
 
-    def name(self, style: str, kind: int, color: str, look: int = 1) -> str:
+    def name(self, style: str, kind: int, color: str, look: int | None = None) -> str:
+        look = LOOK if look is None else look
         return os.path.join(self.folder, f"{style}-{kind}-{color.lstrip('#').lower()}-{f'look{look}-' if look != 1 else ''}{_SOURCE}.png")
 
-    def path(self, style: str, color: str, look: int = 1) -> str:
+    def path(self, style: str, color: str, look: int | None = None) -> str:
         """The overlay's path to this session's sheet, or "" while it is being drawn. `look`:
-        1 classic, 2 refined, 3 the two mixed (overlay.character_look)."""
+        1 classic, 2 refined, 3 the two mixed; `LOOK` when not given."""
         if style not in STYLES or not color:
             return ""
+        look = LOOK if look is None else look
         key = (style, kind_of(color), color, look if look in PARTS and style != "sketch" else 1)
         with self._lock:
             if key in self._ready:

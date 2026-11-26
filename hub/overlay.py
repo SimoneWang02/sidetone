@@ -71,10 +71,6 @@ DEFAULTS = {
     # "On the edge is cool") | inside = in the bubble beside the words, smaller, so that the bubble
     # is no taller ("decrease the size to make them fit").
     "character_place": "edge",
-    # How the pixel figures are drawn (hub/characters.py, LOOK): classic | refined (2026-11-26,
-    # after a pixel-art review: outlines that show on dark glass, calmer shadows, flat light, a
-    # listening sign). The author: "I kinda prefer the default maybe. Let me try both."
-    "character_look": "classic",
     # Also with the details out (the author, 2026-11-26: "most of the time I put the details always as
     # seen ... show selected session, which is the one that I use mostly"): on their top edge in
     # Selected Session, small beside each row in All Sessions. Off: only with the bubble.
