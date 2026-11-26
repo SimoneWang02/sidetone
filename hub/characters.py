@@ -647,8 +647,7 @@ def lantern(F: Frame, col: str):
 
 
 def _lantern2(F: Frame, col: str):
-    """LOOK 2's lantern: dark eyes with a catchlight (its white bars read as glints at 35 pixels),
-    and the flame standing on the lantern's floor, growing up to just under the eyes, never over
+    """LOOK 2's lantern: its white bar eyes, kept at the author's word, and the flame standing on the lantern's floor, growing up to just under the eyes, never over
     them, so the face stays while it speaks."""
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
     C, W, H = ramp(col), ramp("#c9a45c"), ramp("#ffd27a")
@@ -682,8 +681,14 @@ def _lantern2(F: Frame, col: str):
     if dead:
         F.eyes([ex - 5, ex + 3], 19, "shut")
         F.smoke(20, 8)
+    elif s == "done":
+        F.eyes([ex - 5, ex + 3], 19, "happy")
+    elif s in ("listen", "working"):  # white bars, as it always had (the author, 2026-11-26: "I actually like the white eyes only")
+        for x in (ex - 5, ex + 3):
+            c.dot(x, 22, WH, 3, 1)
     else:
-        F.eyes([ex - 5, ex + 3], 19, "happy" if s == "done" else "wide" if s in ("needs", "listen") else "open", 3)
+        for x in (ex - 5, ex + 4):
+            c.dot(x, 19 if s == "needs" else 20, WH, 2, 5 if s == "needs" else 4)
     if s == "speaking" and V > .2:
         for i in range(5):
             a, r = (i + T) * TAU / 5, 13 + V * 4
