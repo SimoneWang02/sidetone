@@ -326,8 +326,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   - The hub sends each row's sheet (`sprite`, "" while it is drawn) and the layout
     (`sprite_layout`) with the state. The overlay (`Sprite`) only crops a cell: the bubble's
     session's moment (listening if you are talking to it, speaking, else its state), the time
-    since that moment began, and while it speaks the loudness of its voice for the row. It
-    hops up from the bubble in a fifth of a second when the moment changes. Edge: in a window
+    since that moment began, and while it speaks the loudness of its voice for the row.  It
+    makes a small jump when the moment changes (4 of its pixels up and down in a third of a
+    second; at first it rose from below the edge in a fifth, and its window cut it off: the
+    author, 2026-11-26, "the animation seems cut when jumping and then falling down"). The
+    cells are 44 px with the 40 px drawing 4 rows down (`OFF`), so raised leaves and hair are
+    not cut flat at the top. Edge: in a window
     of its own (`perch`, see-through, click-through, no blur) on the bubble's top edge, at
     its end away from the bar, 80 px; the bubble keeps its size ("On the edge is cool").
     Inside: 60 px in the bubble beside the words, which grows 50 px wider and no taller

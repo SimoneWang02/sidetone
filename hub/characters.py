@@ -24,8 +24,12 @@ import threading
 import zlib
 from typing import Callable
 
-N = 40  # a cell is N by N pixels
-FLOOR = 38  # the row the figures stand on
+N = 44  # a cell is N by N pixels
+# The figures are drawn on a 40 by 40 grid standing on row 38, and that grid sits this far down in
+# the cell: room above for leaves raised high, hair, a jump (the author, 2026-11-26: "the
+# animation seems cut when jumping and then falling down"; the sprout's leaves were cut flat).
+OFF = 4
+FLOOR = 38  # the row the figures stand on, in the drawing's own rows
 # Frames a second, for every moment: 12 since 2026-11-26 (8 before; the author: "could we put
 # more FPS?"), as smooth as hand-made pixel art usually moves; the sheets are half as long again.
 FPS = 12
@@ -225,9 +229,9 @@ class Canvas:
     def part(self, shape, R, k=0, flat=None, cast=1):
         f, (x0, y0, x1, y1) = shape
         inn = []
-        for y in range(max(0, math.floor(y0) - 1), min(N, math.ceil(y1) + 2)):
+        for y in range(max(0, math.floor(y0) + OFF - 1), min(N, math.ceil(y1) + OFF + 2)):
             for x in range(max(0, math.floor(x0) - 1), min(N, math.ceil(x1) + 2)):
-                u = f(x + .5, y + .5)
+                u = f(x + .5, y + .5 - OFF)
                 if u:
                     inn.append((x, y, u))
         if cast:
@@ -242,10 +246,10 @@ class Canvas:
             self.g[y][x] = [R, int(_clamp(z + k, 1, 5)), 0]
 
     def dot(self, x, y, c, w=1, h=1, a=1.0):
-        self.dots.append((_round(x), _round(y), _rgb(c), w, h, a))
+        self.dots.append((_round(x), _round(y) + OFF, _rgb(c), w, h, a))
 
     def glow(self, x, y, r, c, a):
-        self.under.append((x, y, r, _rgb(c), a))
+        self.under.append((x, y + OFF, r, _rgb(c), a))
 
     def pixels(self) -> bytearray:
         """The frame as RGBA, row by row."""

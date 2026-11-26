@@ -96,7 +96,7 @@ class Sheet(unittest.TestCase):
 
     def test_needs_you_holds_up_its_mark_and_done_settles(self):
         def gold(cell):  # the mark's yellow, in the top right corner
-            return sum(1 for y in range(0, 14) for x in range(30, 40)
+            return sum(1 for y in range(characters.OFF, characters.OFF + 14) for x in range(30, 40)
                        if cell[(y * 40 + x) * 4 + 3] > 200 and cell[(y * 40 + x) * 4] > 220 and cell[(y * 40 + x) * 4 + 2] < 120)
         self.assertGreater(gold(cell_of(self.sheet, "needs", 0)), 6)
         self.assertGreater(gold(cell_of(self.sheet, "needs_hold", 0)), 6)

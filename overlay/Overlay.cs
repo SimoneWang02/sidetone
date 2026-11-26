@@ -1093,9 +1093,11 @@ namespace ClaudeSpeaks
                 Image.Source = cell;
                 shown = key;
             }
-            // It hops up from the bubble in a fifth of a second, in whole steps of its own pixels.
+            // A small jump when the moment changes: up four of its own pixels and down again in a
+            // third of a second, in whole steps, never below where it stands (the sheet's cells
+            // have room above the figure; below, its window ends at the edge it stands on).
             double step = Image.Height / Cell;
-            hop.Y = still || state == "idle" ? 0 : Math.Round((1 - Ui.EaseOut(age / 0.2)) * 8) * step;
+            hop.Y = still || state == "idle" || age >= 0.33 ? 0 : -Math.Round(Math.Sin(Math.PI * age / 0.33) * 4) * step;
             return true;
         }
     }
@@ -2982,7 +2984,7 @@ namespace ClaudeSpeaks
         readonly DispatcherTimer spriteTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
         string character = "none", characterPlace = "edge";
         bool characterDetails = true;  // also in the details: on their edge in Selected Session, beside each row in All Sessions
-        const double InnerRoom = 50;  // what the bubble grows by, and its words move right by, with a character inside
+        const double InnerRoom = 56;  // what the bubble grows by, and its words move right by, with a character inside
         const double ChipSize = 32, ChipGap = 4;
         bool muted, mutedMark;
         readonly StackPanel lights = new StackPanel { Margin = new Thickness(3) };
@@ -3812,6 +3814,8 @@ namespace ClaudeSpeaks
             Row standing = null;
             if (bubbleWants && edge) { under = bubble; standing = r; }
             else if (chosen != null && edge && chosen.Sprite.Length > 0) { under = panel; standing = chosen; }
+            edgeSprite.Size(2 * Sprite.Cell);  // two screen pixels for each of its own
+            innerSprite.Size(1.5 * Sprite.Cell);
             bool onEdge = false;
             if (standing != null && under.IsVisible && under.Open > 0.85)
             {
@@ -3823,7 +3827,7 @@ namespace ClaudeSpeaks
             bool rowsMove = false;
             foreach (Row row in order)
             {
-                double size = !details || row.Sprite.Length == 0 ? 0 : focus ? (row == chosen && !edge ? 48 : 0) : 32;
+                double size = !details || row.Sprite.Length == 0 ? 0 : focus ? (row == chosen && !edge ? 1.2 * Sprite.Cell : 0) : 0.8 * Sprite.Cell;
                 string state = Moment(row);
                 bool calm = state == "idle" || state == "working";
                 row.Figure(size, state, row.Speaking ? row.Wave.At(now - Wave.Lag) : 0, now, still || calm);
@@ -3833,7 +3837,7 @@ namespace ClaudeSpeaks
             {
                 // At its end away from the bar, its feet (two rows above the cell's bottom) on the edge.
                 Rect work = WorkArea();
-                double tall = 80 * zoom, foot = 2 * tall / Sprite.Cell;
+                double tall = 2 * Sprite.Cell * zoom, foot = 2 * tall / Sprite.Cell;
                 perch.Left = corner.EndsWith("right") || Island ? under.Left + 6 * zoom : under.Left + under.Width - tall - 6 * zoom;
                 perch.Top = Math.Max(work.Top, under.Top - tall + foot + 1);
                 if (!perch.IsVisible) { perch.Show(); perch.Raise(); }
