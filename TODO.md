@@ -55,6 +55,14 @@ these come before anything new.
 - [ ] Clearing progress (2026-11-24, `clear_progress`): a turning ring and "Clearing sidetone 2…"
       until it is done, and no second /clear typed meanwhile. Tests and pictures only, **not yet
       tried by the author**; best tried with VS Code's window covered for some minutes too.
+- [ ] A session that speaks as you let go of the talk key shows at once (2026-11-26): its card
+      in Selected Session, its bubble in Bar Only, without waiting for your words to be worked
+      out and sent. Tests only, **not yet tried by the author**; needs `sidetone hub restart`.
+- [ ] The clear key on a conversation that is open in a second terminal too (2026-11-26): the
+      light is cleared and keeps its name; before, it stayed as it was and the terminal got a
+      new one. Tests only, **not yet tried by the author**; needs `sidetone hub restart`. Left:
+      /clear typed by hand in one of two terminals still gives a new light (no hook says in
+      which terminal; `report.sh` could send it).
 
 ## 2. To decide
 

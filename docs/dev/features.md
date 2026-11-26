@@ -734,6 +734,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   /clear, and both came at once; a clear is now under way for `base.CLEAR_CONFIRM` (75 s) before it
   counts as not done. Known: words spoken to the session while its clear waits in VS Code can be
   stopped and cleared by it. Keys for stopping (Escape) and ending (/exit) wait in VS Code the same.
+  One conversation in two terminals (2026-11-26): the author resumed in VS Code a conversation
+  that another session had started in a tmux session nobody was looking at, cleared it with the
+  key, and "It's not cleared and it created this session": the light kept the old conversation,
+  still open in tmux, and the cleared terminal got a new name, color and voice. A clear the hub
+  typed (`sid in _clearing`, `Hub._apply`) now takes the light along with its terminal as any
+  clear does, and the other terminal's conversation is a session of its own when it next reports
+  (it is not put in `_ended`). Typed by hand it is as before: no hook says in which terminal.
   Bug hunt in a lab, 2026-11-22 (a hub of its own run inside a script, keys handed to it as the
   overlay hands them, haiku sessions in tmux, a stand-in for the extension typing into the
   panes): clear, end and new session in every order, and the clear key next to mute, cancel,
@@ -1200,7 +1207,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `talk_target`, the session a spoken follow-up goes to. It moves to whoever speaks, and
   `Hub.focus(step)` moves it by hand and stops at the first and last session (the author asked
   that the wheel not jump from the bottom back to the top). A line that starts between the talk
-  key going down and the words being sent does not take the focus (`Hub._transcribing`): on
+  key going down and the words being sent did not take the focus (`Hub._transcribing`; since 2026-11-26 only while the key is held): on
   2026-11-17 the author spoke to one session, another one's reply started on release, and the
   words went to that one. The words go to whoever was listening when the key came up
   (`talk_end` hands that session to `_transcribe`): the author let go, moved the focus at
@@ -1527,6 +1534,20 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   you are doing (`listening`, `transcribing`, `ready`, `aside`) and what went wrong
   (`failed`) keep the bubble. `overlay.sent_first: true` is how it was. **Not seen by the
   author yet.**
+  2026-11-26, the author again, in Selected Session: "whenever a session is ready to talk and
+  I'm still talking, I finish talking, the transcript hasn't appeared yet. and that session
+  already starts talking but ... I don't see its detail box getting displayed while it's
+  talking", and on holding the voice until the transcript is up: "I'm not asking you to pause
+  ... I want to immediately see the voice going off". Two causes. The card of Selected Session
+  follows the focus, and a line that began while the words were being worked out did not take
+  it (`Hub._speech_changed`, a guard from before the words had their session at key-up): it
+  was heard to its end under another session's card. It takes the focus now; only a held key
+  keeps it. And in Bar Only `transcribing` kept the bubble for the 0.3 to 3 s the speech model
+  takes: it is `quiet` too now, and so is `ready` when the words go out at once (no go-ahead
+  to give, no `followup_delay`), or the bubble would jump to them and back. The price: your
+  own words are then a sign on a light, or on a row Selected Session does not show.
+  `sent_first` keeps them first in the bubble as before (not in the card). Tests only, **not
+  seen by the author**.
 - `hub/stale.py`: the hub takes a fingerprint of each of its own files as it starts (of
   what they hold, not their time of change, so a file that was only touched does not count),
   and the overlay does the same for its source when a window is started. `/state` carries

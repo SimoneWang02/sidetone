@@ -1314,21 +1314,46 @@ class PushToTalk(HubCase):
         self.assertFalse(sounds.Sounds().play("nothing"))
 
     def test_a_line_that_starts_while_you_talk_does_not_take_your_words(self):
-        hub = self.make(duration=0.3)
-        hub.transcriber.seconds = 0.15  # B's line is already being heard when the words come back
+        hub = self.make(duration=0.6)
+        hub.transcriber.seconds = 0.4  # B's line is already being heard when the words come back
         hub.talk_target = "a"
         to_a, to_b = hub.listen("a"), hub.listen("b")
         hub.talk_start()
         hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B is done.")))
+        self.assertEqual(hub.talk_target, "a")  # with the key held, the focus is who gets the words
         hub.talk_end()
+        # B is heard from the moment the key is up, and the focus is its from then, not only once
+        # the words are out: in Selected Session its card is the one shown while it speaks (the
+        # author, 2026-11-26: "that session already starts talking but ... I don't see its detail
+        # box"). The words have had their session since the key came up.
+        self.assertTrue(wait_for(lambda: hub.talk_target == "b"))
+        self.assertFalse(to_a.wake.is_set(), "B got the focus only once the words were out")
         self.assertTrue(to_a.wake.wait(3), "the follow-up never reached the session it was said to")
         self.assertEqual(hub.collect(to_a), "also add a test")
         self.assertFalse(to_b.wake.is_set())
         self.assertEqual(self.spoken(), ["B is done.", "Sent."])
-        self.assertEqual(self.in_focus(), "a")
-        hub.on_display(ev("MessageDisplay", sid="b", cwd="/w/b", delta=tag("B once more.")))
-        self.spoken()
-        self.assertEqual(self.in_focus(), "b")  # with the talk over, whoever speaks takes the focus again
+        self.assertEqual(self.in_focus(), "b")  # "Sent." in A's voice does not take it back
+
+    def test_steps_that_ask_nothing_of_you_give_way_to_a_session_that_speaks(self):
+        """They are sent `quiet`: the overlay shows them on the light and leaves the bubble to a
+        session that is speaking. Your words being worked out too, and "ready" when they go out
+        at once; not while you talk, nor with time to take them back, nor with `sent_first`."""
+        hub = self.make()
+
+        def steps():
+            hub.overlay = self.overlay = FakeOverlay()
+            hub.talk_target = "a"
+            hub.listen("a")
+            hub.talk_start()
+            hub.talk_end()
+            self.assertTrue(wait_for(lambda: "sent" in [step for step, _, _ in self.talks()]))
+            return {m["state"]: bool(m.get("quiet")) for m in self.overlay.of("talk") if m.get("state")}
+
+        self.assertEqual(steps(), {"listening": False, "transcribing": True, "ready": False, "sent": True})
+        hub.cfg.followup_delay = 0
+        self.assertEqual(steps(), {"listening": False, "transcribing": True, "ready": True, "sent": True})
+        hub.cfg.overlay["sent_first"] = True
+        self.assertEqual(steps(), {"listening": False, "transcribing": False, "ready": False, "sent": False})
 
     def test_time_spent_talking_does_not_make_a_waiting_line_too_old(self):
         hub = self.make(duration=0.0, max_age=0.2)
@@ -1401,8 +1426,9 @@ class PushToTalk(HubCase):
         hub.listen("a")  # idle and listening
         hub.follow_up("run the tests", "a", delay=0)
         self.assertTrue(wait_for(lambda: ("sent", "a", "run the tests") in self.talks()))
-        # The sign for words that went out leaves the bubble to a session that is speaking.
-        self.assertEqual([m.get("quiet", False) for m in self.overlay.of("talk") if m.get("state") in ("ready", "sent")], [False, True])
+        # The sign for words that went out leaves the bubble to a session that is speaking; shown
+        # for no time at all before that, the words themselves do too, or it would jump to them.
+        self.assertEqual([m.get("quiet", False) for m in self.overlay.of("talk") if m.get("state") in ("ready", "sent")], [True, True])
         hub.cfg.overlay["sent_first"] = True  # as it was: the sign's words first
         hub.follow_up("and again", "a", delay=0)
         self.assertTrue(wait_for(lambda: ("sent", "a", "and again") in self.talks()))

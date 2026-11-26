@@ -255,6 +255,32 @@ class OneSessionTwoTerminals(SessionKeys):
         self.assertEqual(hub.sessions.by_id["a"].state, "done")  # its turn is still heard
         self.assertNotEqual(hub.sessions.by_id["c"].name, hub.sessions.by_id["a"].name)
 
+    def test_cleared_with_the_clear_key_the_light_goes_with_its_terminal(self):
+        """The hub typed /clear into the terminal the light is about: the conversation that starts
+        there keeps the name, color, voice and place, and the one that goes on in the other
+        terminal is a session of its own from its next sign of life (the author, 2026-11-26, the
+        other one a tmux session out of sight: "I cleared session 1. It's not cleared and it
+        created this session")."""
+        hub = self.make()
+        s = hub.sessions.by_id["a"]
+        s.pids = [4001, 4002]
+        before = {k: getattr(s, k) for k in ("name", "color", "voice", "order")}
+        editor = hub.editor_waits([4001], opens=True, clears=True)
+        hub.on_overlay({"type": "hotkey", "name": "clear"})
+        hub.on_overlay({"type": "hotkey", "name": "clear"})
+        self.assertTrue(editor.wake.is_set())
+        hub.on_event(ev("SessionEnd", sid="a", cwd="/w/a", reason="clear"))
+        self.assertNotIn("a", hub.sessions.by_id)
+        self.assertEqual(hub.sessions.by_id["cleared:a"].name, before["name"])  # its light stays, the arc at 0
+        hub.on_event(ev("SessionStart", sid="c", cwd="/w/a", source="clear"))
+        self.assertEqual({k: getattr(hub.sessions.by_id["c"], k) for k in before}, before)
+        self.assertEqual([o.name for o in hub.sessions.by_id.values()].count(before["name"]), 1)
+        self.assertEqual(self.overlay.of("banner")[-1]["text"], f"Cleared {before['name']}")
+        # The other terminal still has the old conversation: it is heard, under a name of its own.
+        hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message="<speak>Still here.</speak>"))
+        self.assertEqual(hub.sessions.by_id["a"].state, "done")
+        self.assertNotEqual(hub.sessions.by_id["a"].name, before["name"])
+
     def test_the_terminal_that_is_left_is_found(self):
         hub = self.make()
         s = hub.sessions.by_id["a"]
