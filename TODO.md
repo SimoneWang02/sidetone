@@ -34,9 +34,11 @@ these come before anything new.
       don't like it much", so off for a new install from that day and kept as a setting; a
       hub from before the change still sends it on until `sidetone hub restart` (or the
       switch in the settings window). The working light: **nothing said of it yet**. The
-      shrinking: **not seen by anyone yet**, it needs more sessions than the screen holds
-      (14 to 21), or a picture from `tests/overlay_check.py` with made-up ones, which has no
-      such view yet.
+      shrinking: in pictures since 2026-11-26 (`tests/overlay_check.py OUT --only=many`:
+      twenty sessions in a laptop's room, 63 in an island), which showed the names two
+      lights from their own with the details out; mended (the room now holds the details'
+      card too) and measured level. **Not seen live**: the author's screen holds 27
+      sessions before anything shrinks. The mending needs `sidetone overlay restart`.
 
 - [ ] Clearing progress (2026-11-24, `clear_progress`): a turning ring and "Clearing sidetone 2…"
       until it is done, and no second /clear typed meanwhile. Tests and pictures only, **not yet

@@ -304,8 +304,19 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     place to the end of the screen (the width, for the island), never under 40 %. Checked at
     each `Render`. The details and the bubble shrink with the bar, so rows stay level with
     their lights; their words get smaller too, which at twenty sessions on a 768 px screen
-    (68 %) is small. With the default place and a 48 px taskbar nothing changes up to 21
-    sessions on a 1080p screen at 100 %, 16 at 125 %, 12 at 150 %, 14 on a 768 px laptop.
+    (63 %) is small. Beside a bar the room also holds the card of the details (`CardRoom`,
+    104 units; the card and what is round it measured 102): the first pictures (2026-11-26,
+    `many-*` in `tests/overlay_check.py`: twenty sessions in the 620 units a 768 px laptop
+    has, and an island of 63 lights on a screen 2560 wide) had every light on the screen,
+    but the details with their card were 70 px taller than the bar that filled the room,
+    so they were pushed along it and every name stood two lights from its own. With the
+    card's room the details end 0 px from the bar's end. Not covered: a request or the
+    history, which can be taller than the card and push the rows the same way, as beside
+    any bar near the screen's end. With the default place and a 48 px taskbar nothing
+    changes up to 18 sessions on a 1080p screen at 100 %, 13 at 125 %, 10 at 150 %, 11 on a
+    768 px laptop (measured there: 11 at 100 %, 12 at 97 %, 20 at 63 %), 27 on the author's
+    own (1440 px high, no taskbar). Seen in pictures only: no screen has held that many
+    real sessions.
 - Character (`overlay.character`: none, familiars, operators; none by default) and Character
   Place (`overlay.character_place`: edge, inside), in the Overlay section (2026-11-25). A small
   pixel-art figure with the bubble that acts what its session is doing. Where it came from:

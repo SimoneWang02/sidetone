@@ -507,6 +507,92 @@ for size in (75, 150):
     send(type="state", sessions=sessions(), history=HISTORY)
     time.sleep(0.5)
 look()
+
+
+def screen_area():
+    """The first screen's working area in its own pixels (left, top, right, bottom), and how many
+    of them one unit of the overlay is (the display scale); None when Windows does not say."""
+    script = ("Add-Type -Namespace Dpi -Name Win -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool SetProcessDPIAware();'; "
+              "[void][Dpi.Win]::SetProcessDPIAware(); Add-Type -AssemblyName System.Windows.Forms, System.Drawing; "
+              "$a = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea; $g = [System.Drawing.Graphics]::FromHwnd([IntPtr]::Zero); "
+              "\"$($a.Left) $($a.Top) $($a.Right) $($a.Bottom) $($g.DpiX)\"")
+    try:
+        said = subprocess.run(["powershell.exe", "-NoProfile", "-Command", script], capture_output=True, text=True,
+                              cwd="/mnt/c/Windows", timeout=30).stdout.split()
+        return [int(n) for n in said[:4]], float(said[4]) / 96
+    except (OSError, subprocess.SubprocessError, ValueError, IndexError):
+        return None
+
+
+# More sessions than the screen holds (2026-11-26, `Fit` in Overlay.cs): the whole overlay is
+# drawn as much smaller as it takes for every light to be on the screen. Twenty sessions in the
+# room a 768 px laptop has (620 units: its taskbar and the place of a new install taken off),
+# closed, with the details out and with one speaking; the most that fit there untouched and one
+# more, measured only; and an island of more lights than the screen is wide. Each bar is
+# measured against the screen's working area, and how small it was drawn is printed. With the
+# details out, their rows must be level with the lights: the room holds their card too (104
+# units), without which they were pushed 71 px along the bar.
+if not ONLY or ONLY.startswith("many"):
+    measured = screen_area()
+    MORE = ("billing search mobile-app docs-site auth infra design-system analytics payments onboarding ml-models "
+            "cli scheduler inbox landing-page").split()
+    DOING = [("working", "Reading the code", "40s"), ("done", "Done, ready for review.", ""), ("idle", "", ""),
+             ("working", "Running the tests", "2m"), ("needs_you", "asks: May I run the migration?", ""), ("failed", "error: the build failed", "")]
+
+    def crowd(n, speaking=None):
+        """`n` sessions: the five of `sessions`, then made-up ones in every state."""
+        rows = sessions(speaking)
+        for i in range(len(rows), n):
+            doing, text, meta = DOING[i % len(DOING)]
+            name = MORE[(i - 5) % len(MORE)] + ("" if i - 5 < len(MORE) else f"-{(i - 5) // len(MORE) + 1}")
+            rows.append(dict(name=name, title="", state=doing, text=text, meta=meta, speaking=False, target=False, waiting=0,
+                             context=None, color=state.COLORS[i % len(state.COLORS)]))
+        return rows[:n]
+
+    def fitted(name, b, n, wide=False):
+        """Says whether the bar of this view is inside the screen, and at what size it was drawn."""
+        if not measured or not b or not b.get("visible"):
+            print(f"  {name}: not measured")
+            return
+        (left, top, right, bottom), scale = measured
+        inside = left <= b["x"] and b["x"] + b["w"] <= right and top <= b["y"] and b["y"] + b["h"] <= bottom
+        size = (b["w"] if wide else b["h"]) / scale / (n * 44 + 8)  # the bar: 44 units a light and 8 of its own
+        print(f"  {name}: {n} lights, bar {b['w']} x {b['h']} px at {b['x']},{b['y']}, drawn at {size:.1%}: "
+              + ("every light on the screen" if inside else "!! PAST THE SCREEN"))
+        if b.get("open") and len(b["pieces"]) > 1:  # the details: their rows end where the bar ends (it is at the bottom)
+            off = b["pieces"][1][1] + b["pieces"][1][3] - (b["y"] + b["h"])
+            print(f"  {name}: the details are {b['pieces'][1][3]} px tall and end {off} px from the bar's end: "
+                  + ("rows level with their lights" if abs(off) <= 2 else "!! ROWS NOT LEVEL WITH THEIR LIGHTS"))
+
+    if measured:
+        (left, top, right, bottom), scale = measured
+        LAPTOP = dict(HERE, offset_y=max(0, round((bottom - top) / scale) - 4 - 620))  # 620 units of room for the lights
+        send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, **LAPTOP)
+        for n in (11, 12):  # with the card's 104 units, 11 are 596: untouched; 12 are 640: a little smaller
+            send(type="state", sessions=crowd(n), history=HISTORY)
+            time.sleep(0.6)
+            fitted(f"many-{n}", bounds(), n)
+        send(type="state", sessions=crowd(20), history=HISTORY)
+        fitted("many-20", shot("many-20", 1.2), 20)
+        send(type="peek", on=True)
+        fitted("many-20-open", shot("many-20-open", 0.8), 20)
+        send(type="peek", on=False)
+        send(type="flash", state="done", name="api-server", text=SAID, seconds=3)
+        send(type="state", sessions=crowd(20, "api-server"), history=HISTORY)
+        send(type="wave", name="api-server", levels=voice(6), step=0.04, delay=0.0)
+        fitted("many-20-speaking", shot("many-20-speaking", 1.6), 20)
+        send(type="state", sessions=crowd(20), history=HISTORY)
+        send(type="flash", name="api-server", text="", seconds=0)
+        across = int((round((right - left) / scale) - 8 - 8) // 44) + 6  # six lights more than the screen is wide
+        send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="island", **HERE)
+        send(type="state", sessions=crowd(across), history=HISTORY)
+        fitted(f"many-island-{across}", shot(f"many-island-{across}", 1.2), across, wide=True)
+        send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, layout="bar", **HERE)
+    else:
+        print("  many: the screen's size is not known, no pictures")
+    send(type="state", sessions=sessions(), history=HISTORY)
+    time.sleep(0.5)
+    look()
 # Colors of one's own (2026-11-23): every status light, and the glass, in colors other than
 # the hub's, closed and with the details out; then the hub's own colors again.
 OWN_COLORS = dict(working_color="#B388FF", needs_you_color="#FF7043", done_color="#26C6DA",

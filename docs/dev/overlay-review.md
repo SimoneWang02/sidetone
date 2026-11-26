@@ -276,6 +276,15 @@ paid.
   details the second line (what the session is doing) would have to go when rows are squeezed,
   or show only for the session in focus. To decide before building.
 - No fold and no count by state: both move lights or add a thing to read.
+- Checked in pictures, 2026-11-26 (made-up sessions, `tests/overlay_check.py`, the view
+  `many`): twenty sessions in the room a 768 px laptop has, and 63 in an island. Every light
+  was on the screen. One fault, which the plan above had named as a hope ("the details stop
+  outgrowing the screen too") and the build had not met: the details hold a card beside the
+  rows, so beside a bar that filled the room they were 70 px too tall, were pushed along the
+  bar, and each name stood two lights from its own. Mended by counting the card's room: the
+  squeeze starts three sessions sooner (18 on a 1080p screen at 100 %, 11 on the laptop) and
+  twenty on the laptop are drawn at 63 %, not 70 %. At that size the names are about 8 px
+  high: readable in the picture, small on a screen. A guess, since nobody has had twenty.
 
 ### The preview
 

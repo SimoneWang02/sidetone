@@ -3132,15 +3132,21 @@ namespace ClaudeSpeaks
         // be on the screen (2026-11-25; before, a bar with more lights than the screen is tall ran
         // off its end: past 21 sessions on a 1080p screen at 100 %, past 14 on a 768 px laptop).
         // The details and the bubble shrink with the bar, so rows stay level with their lights.
+        // Beside a bar the room must hold the card of the details too (`CardRoom`), which stands
+        // past the rows' end: counted without it, twenty lights filled the room, the details
+        // with their card were 70 px taller than the bar and were pushed along it, and each name
+        // stood two lights from its own (a picture, 2026-11-26). A request or the history can be
+        // taller than that and still push them, as with any bar near the screen's end.
         // Never under 40 %. It counts lights of the usual height (`row_lines` 1). True if it
         // changed anything.
+        const double CardRoom = 104;  // the card with its four figures and the room around it, at 100 % (measured: 102)
         bool Fit()
         {
             double size = asked;
             if (order.Count > 0 && hwnd != IntPtr.Zero)
             {
                 Rect work = WorkArea();
-                double natural = order.Count * Row.High + 8;  // the lights and the bar's own edge, at 100 %
+                double natural = order.Count * Row.High + 8 + (Island ? 0 : CardRoom);  // the lights, the bar's own edge, the card; at 100 %
                 double room = Island ? work.Width - 8 : work.Height - offsetY - 4;
                 if (natural * size > room) size = Math.Max(Math.Min(0.4, asked), room / natural);
             }
