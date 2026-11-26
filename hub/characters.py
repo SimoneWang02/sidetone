@@ -25,6 +25,14 @@ import zlib
 from typing import Callable
 
 N = 44  # a cell is N by N pixels
+# Which look the engine draws: 1 is the look the author has seen in the overlay; 2 is a pass on what
+# every figure shares (2026-11-26, after a pixel-art review: "charming at 2x and falls apart at
+# 35 px, and most of the damage comes from the engine"): ramps built in OKLCH with an outline that
+# shows on the dark glass, light from the top left, a selective outline, stepless glows, sparks in
+# place of the done beams, bigger wide eyes, eyes looking down while working, a sound glyph while
+# listening, a breath while speaking, working motions with in-betweens. Shown side by side in
+# docs/dev/looks/look2.py; 1 stays until the author has seen it.
+LOOK = 1
 # The figures are drawn on a 40 by 40 grid standing on row 38, and that grid sits this far down in
 # the cell: room above for leaves raised high, hair, a jump (the author, 2026-11-26: "the
 # animation seems cut when jumping and then falling down"; the sprout's leaves were cut flat).
@@ -98,6 +106,11 @@ def ramp(color: str) -> list[tuple[int, int, int]]:
     """Six tones of a color, from the outline to the highlight. Shadows turn a little towards
     violet and lights towards yellow, as pixel artists do; warm light colors (skin) turn less, so
     that a cheek in shadow does not go red."""
+    if LOOK != 1:
+        key = (LOOK, color)
+        if key not in _ramps:
+            _ramps[key] = _ramp2(color)
+        return _ramps[key]
     if color in _ramps:
         return _ramps[color]
     r, g, b = (v / 255 for v in _rgb(color))
@@ -114,6 +127,85 @@ def ramp(color: str) -> list[tuple[int, int, int]]:
         rr, gg, bb = colorsys.hls_to_rgb(hue / 360, lit, sat)
         out.append((round(rr * 255), round(gg * 255), round(bb * 255)))
     _ramps[color] = out
+    return out
+
+
+# LOOK 2's ramps are built in OKLCH, where equal steps of lightness look about equal, so a pale
+# color keeps four lights apart and a dark one four shadows.
+
+def _lin(v: float) -> float:
+    return v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4
+
+
+def _gam(v: float) -> float:
+    return v * 12.92 if v <= .0031308 else 1.055 * v ** (1 / 2.4) - .055
+
+
+def oklch(color) -> tuple[float, float, float]:
+    r, g, b = (_lin(v / 255) for v in _rgb(color))
+    l_ = (.4122214708 * r + .5363325363 * g + .0514459929 * b) ** (1 / 3)
+    m_ = (.2119034982 * r + .6806995451 * g + .1073969566 * b) ** (1 / 3)
+    s_ = (.0883024619 * r + .2817188376 * g + .6299787005 * b) ** (1 / 3)
+    L = .2104542553 * l_ + .7936177850 * m_ - .0040720468 * s_
+    a = 1.9779984951 * l_ - 2.4285922050 * m_ + .4505937099 * s_
+    bb = .0259040371 * l_ + .7827717662 * m_ - .8086757660 * s_
+    return L, math.hypot(a, bb), math.degrees(math.atan2(bb, a)) % 360
+
+
+def _oklch_lin(L: float, C: float, h: float) -> tuple[float, float, float]:
+    a, b = C * math.cos(math.radians(h)), C * math.sin(math.radians(h))
+    l_, m_, s_ = L + .3963377774 * a + .2158037573 * b, L - .1055613458 * a - .0638541728 * b, L - .0894841775 * a - 1.2914855480 * b
+    l, m, s = l_ ** 3, m_ ** 3, s_ ** 3
+    return (4.0767416621 * l - 3.3077115913 * m + .2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - .3413193965 * s,
+            -.0041960863 * l - .7034186147 * m + 1.7076147010 * s)
+
+
+def from_oklch(L: float, C: float, h: float) -> tuple[int, int, int]:
+    """The color, its chroma lowered until it fits in sRGB (its lightness and hue kept)."""
+    lo, hi = 0.0, C
+    if any(not -1e-4 <= v <= 1.0001 for v in _oklch_lin(L, C, h)):
+        for _ in range(24):
+            mid = (lo + hi) / 2
+            if all(-1e-4 <= v <= 1.0001 for v in _oklch_lin(L, mid, h)):
+                lo = mid
+            else:
+                hi = mid
+        C = lo
+    return tuple(round(_clamp(_gam(_clamp(v)), 0, 1) * 255) for v in _oklch_lin(L, C, h))
+
+
+def luminance(color) -> float:
+    r, g, b = (_lin(v / 255) for v in _rgb(color))
+    return .2126 * r + .7152 * g + .0722 * b
+
+
+GLASS = (0x1e, 0x1f, 0x2b)  # the overlay's dark glass, which the figures stand on
+
+
+def _ramp2(color: str) -> list[tuple[int, int, int]]:
+    """LOOK 2: the outline light enough to show on the dark glass (about 1.6:1 against it), yet
+    darker than every other tone; shadows at about 0.7 of the color's chroma, turning towards
+    violet (skin less, so it stays brown); lights turning towards yellow and kept under white;
+    the color itself in the middle, a pale one a little lower so its lights stay apart."""
+    Lc, Cc, h = oklch(color)
+    warm = 25 < h < 100 and Cc < .13  # skin, sand, wood: warm and soft, their shadows brown, not red
+    # Shadows turn towards violet, at most 30 degrees; a yellow's turn towards orange instead
+    # (through green it would go olive and sickly).
+    cool = 30 if 75 < h < 125 else 285
+    L3 = Lc if Lc <= .86 else .86 + (Lc - .86) * .3
+    d = _clamp((.955 - L3) * .42, .042, .095)
+    L0 = max(L3 * .5, min(.385, L3 - .2))
+    out = []
+    for i, (L, c, k) in enumerate(((L0, 1.15, .3), (L3 - (L3 - L0) * .7, 1.25, .22), (L3 - (L3 - L0) * .4, 1.15, .12),
+                                   (L3, 1, 0), (L3 + d, .86, -.12), (L3 + 2 * d, .62, -.24))):
+        if i == 3 and L3 == Lc:
+            out.append(_rgb(color))
+            continue
+        # a pale color's shadows a little richer than it, a strong color's at about 0.7 of it
+        cc = min(Cc * (c if not warm else (.75, .8, .9)[i]), (.09, .12, .14)[i]) if i < 3 else Cc * c
+        turn = ((((cool if k >= 0 else 95) - h) + 540) % 360) - 180
+        turn = _clamp(turn * abs(k), -100 * abs(k), 100 * abs(k)) * (.25 if warm and k > 0 else 1)
+        out.append(from_oklch(L, cc, (h + turn) % 360))
     return out
 
 
@@ -222,6 +314,11 @@ def SHAPE(f, box):
 
 def _tone(u) -> int:
     nz = math.sqrt(max(0, 1 - u[0] * u[0] - u[1] * u[1]))
+    if LOOK != 1:
+        # A light from the top left, mostly flat across the part: its lit side and its shadow
+        # side, with no dark ring round every edge (the review: "every part a lit ball").
+        lit = -u[0] * .7 - u[1] * .6 + nz * .12
+        return 5 if lit > .72 else 4 if lit > .4 else 3 if lit > -.15 else 2
     lit = -u[0] * .5 - u[1] * .66 + nz * .55
     return 5 if lit > .93 else 4 if lit > .62 else 3 if lit > .16 else 2 if lit > -.32 else 1
 
@@ -235,13 +332,22 @@ class Canvas:
         self.g = [[None] * N for _ in range(N)]  # [ramp, tone, shaded]
         self.dots: list = []
         self.under: list = []
+        # LOOK 2: how much taller than drawn everything is, about the line it stands on (a breath
+        # while it speaks: the head rises a fraction of a pixel, the feet stay)
+        self.tall = 1.0
+
+    def _y(self, y: float) -> float:  # where a point drawn at y lands, as the figure breathes
+        return y if self.tall == 1.0 else FLOOR + (y - FLOOR) * self.tall
 
     def part(self, shape, R, k=0, flat=None, cast=1):
         f, (x0, y0, x1, y1) = shape
         inn = []
+        if self.tall != 1.0:
+            y0, y1 = self._y(y0) - 1, self._y(y1) + 1
         for y in range(max(0, math.floor(y0) + self.off - 1), min(N, math.ceil(y1) + self.off + 2)):
             for x in range(max(0, math.floor(x0) - 1), min(N, math.ceil(x1) + 2)):
-                u = f(x + .5, y + .5 - self.off)
+                q = y + .5 - self.off
+                u = f(x + .5, q if self.tall == 1.0 else FLOOR + (q - FLOOR) / self.tall)
                 if u:
                     inn.append((x, y, u))
         if cast:
@@ -256,10 +362,10 @@ class Canvas:
             self.g[y][x] = [R, int(_clamp(z + k, 1, 5)), 0]
 
     def dot(self, x, y, c, w=1, h=1, a=1.0):
-        self.dots.append((_round(x), _round(y) + self.off, _rgb(c), w, h, a))
+        self.dots.append((_round(x), _round(self._y(y)) + self.off, _rgb(c), w, h, a))
 
     def glow(self, x, y, r, c, a):
-        self.under.append((x, y + self.off, r, _rgb(c), a))
+        self.under.append((x, self._y(y) + self.off, r, _rgb(c), a))
 
     def pixels(self) -> bytearray:
         """The frame as RGBA, row by row."""
@@ -274,11 +380,14 @@ class Canvas:
                 p[j] = (c[j] * a + p[j] * p[3] * (1 - a)) / out
             p[3] = out
         for cx, cy, r, c, a in self.under:
+            if LOOK != 1:  # stepless, and in a strong tone of its color, not a grey film
+                L, C, h = oklch(c)
+                c = from_oklch(_clamp(L, .6, .82), max(C, .13), h)
             for Y in range(max(0, math.floor(cy - r)), min(N, math.ceil(cy + r) + 1)):
                 for X in range(max(0, math.floor(cx - r)), min(N, math.ceil(cx + r) + 1)):
                     d = math.hypot(X + .5 - cx, Y + .5 - cy) / r
                     if d < 1:
-                        over(Y * N + X, c, a * (1 if d < .45 else .6 if d < .72 else .3))
+                        over(Y * N + X, c, a * ((1 - d * d) ** 2 if LOOK != 1 else 1 if d < .45 else .6 if d < .72 else .3))
         for Y in range(N):
             for X in range(N):
                 p = self.g[Y][X]
@@ -287,7 +396,9 @@ class Canvas:
                     continue
                 for a, b in ((0, 1), (1, 0), (-1, 0), (0, -1)):
                     if 0 <= Y + b < N and 0 <= X + a < N and self.g[Y + b][X + a]:
-                        over(Y * N + X, self.g[Y + b][X + a][0][0], 1)
+                        # LOOK 2: a selective outline, a tone lighter on the lit top and left
+                        lit = LOOK != 1 and (a, b) in ((0, 1), (1, 0))
+                        over(Y * N + X, self.g[Y + b][X + a][0][1 if lit else 0], 1)
                         break
         for X, Y, c, w, h, a in self.dots:
             for y in range(max(0, Y), min(N, Y + h)):
@@ -321,6 +432,15 @@ class Frame:
         # five seconds, fading out in the last, then only the mark keeps bobbing.
         self.lively = _clamp(5 - A) if s == "needs" else 1.0
         self.c = Canvas(off)
+        if LOOK != 1 and s == "speaking":
+            # a breath once a second, the head about half a pixel up and down, so that speaking
+            # in silence is not a still picture after the breathing idle (the review)
+            self.c.tall = 1 + .5 / 30 * self.wave(1)
+
+    def beat(self, period: float, ph: float = 0.0) -> float:
+        """LOOK 2: from 0 to 1 and back once in `period`, smoothly (a tap, a step, a chatter): drawn
+        at 12 frames a second it has frames in between, where LOOK 1 jumped from one pose to the other."""
+        return (1 - math.cos(TAU * self.cycle(period, ph))) / 2
 
     def turns(self, period: float) -> int:
         """How many times a motion of about this period goes round in the row: none (it holds
@@ -340,7 +460,19 @@ class Frame:
     def common(self, color: str, top: int):
         R, c, A = ramp(color), self.c, self.A
         if self.s == "done":
-            if A < 1.1:
+            if A < 1.1 and LOOK != 1:
+                # sparks rising past it, bright single pixels with a short tail, in place of the
+                # grey beams of LOOK 1 (the review: "translucent rectangles over the figure")
+                for i in range(9):
+                    k = _clamp(A / 1.1 * 1.2 - i * .02)
+                    if k >= .9:
+                        continue
+                    y = FLOOR - 3 - ((k * 44 + i * 11) % 34)
+                    x = 7 + ((i * 13) % 27)
+                    # bright the whole way, white, then gold, then the color's own light: no grey
+                    c.dot(x, y, WH if k < .35 else "#fff3a8" if k < .65 else GOLD)
+                    c.dot(x, y + 1, GOLD if k < .65 else R[4], 1, 2 if k < .4 else 1)
+            elif A < 1.1:
                 k = A / 1.1
                 H = _round(34 * (1 - (1 - k) ** 2))
                 for i in range(4):
@@ -366,6 +498,16 @@ class Frame:
             c.dot(35, y + 6, GOLD, 2, 1)
             c.dot(35, y + 8, GOLD, 2, 2)
             c.dot(34, y + 1, "#fff3a8", 1, 3)
+        if self.s == "listen" and LOOK != 1:
+            # LOOK 2: sound coming in, where the "!" is when it needs you: three thin arcs ")",
+            # the nearest always there, the others coming on in turn
+            y, on = top + 1, self.cycle(1)
+            c.dot(32, y + 5, "#8fd0ff", 1, 2)
+            for k, pts in enumerate((((34, 3), (35, 4), (35, 5), (35, 6), (34, 7)),
+                                     ((36, 1), (37, 2), (38, 3), (38, 4), (38, 5), (38, 6), (38, 7), (37, 8), (36, 9)))):
+                a = (1 if on < .8 else .4) if k == 0 else (1 if .25 <= on < .8 else .4)
+                for X, Y in pts:
+                    c.dot(X, y + Y, "#8fd0ff", 1, 1, a)
 
     def smoke(self, x, y, rise=13):
         rise = min(rise, y + self.c.off - 1)  # it fades out below the cell's top
@@ -373,7 +515,19 @@ class Frame:
             k = self.cycle(2, i / 3)
             self.c.dot(x + math.sin(k * 6 + i) * 2, y - k * rise, "#aab2c2", 2 if k < .5 else 1, 2 if k < .5 else 1, 1 - k)
 
+    def ink(self, x, y):
+        """LOOK 2: a line on the face that shows: near-black on a light face, a light tone of the
+        face's own color on a dark one (a failed, greyed figure)."""
+        X, Y = _round(x), _round(self.c._y(y)) + self.c.off
+        p = self.c.g[Y][X] if 0 <= X < N and 0 <= Y < N else None
+        if not p:
+            return K
+        tone = p[0][int(_clamp(p[1] - p[2], 1, 5))]
+        return K if luminance(tone) > .16 else p[0][5]
+
     def eyes(self, xs, y, kind, h=3):
+        if LOOK != 1:
+            return self._eyes2(xs, y, kind, h)
         c = self.c
         for i, x in enumerate(xs):
             # once in the idle row's four seconds, away from its first frame (the list holds that
@@ -393,6 +547,42 @@ class Frame:
                 c.dot(x, Y, K, 2, H)
                 c.dot(x, Y, WH)
 
+    def _eyes2(self, xs, y, kind, h=3):
+        """LOOK 2's eyes: wide ones a pixel wider and taller than open (3 by 3 at least) with a
+        catchlight, so needing you reads at 35 pixels; while it works, open eyes look down (a lid
+        across their top, the shine low); x and shut in a tone that shows on the face."""
+        c = self.c
+        blink = kind == "open" and self.s == "idle" and 2 <= self.T % 4 < 2.15
+        if kind in ("open", "wide") and self.s == "working":
+            kind = "down"
+        for i, x in enumerate(xs):
+            out = -1 if (len(xs) > 1 and i == 0) or (len(xs) == 1 and x < 20) else 0  # which side grows
+            if kind == "x":
+                ink = self.ink(x, y + 1)
+                for a, b in ((-1, 0), (1, 0), (0, 1), (-1, 2), (1, 2)):
+                    c.dot(x + a, y + b, ink)
+            elif kind == "happy":
+                ink = self.ink(x, y + 2)
+                c.dot(x - 1, y + 2, ink)
+                c.dot(x, y + 1, ink, 2, 1)
+                c.dot(x + 2, y + 2, ink)
+            elif kind == "shut" or blink:
+                c.dot(x - (0 if i else 1), y + 2, self.ink(x, y + 2), 3, 1)
+            elif kind == "down":
+                H = max(2, h - 1)
+                c.dot(x + out, y + h - H - 1, self.ink(x, y), 3, 1)  # the lid
+                c.dot(x, y + h - H, K, 2, H)
+                c.dot(x + 1, y + h - 1, WH)
+            elif kind == "wide":
+                H = max(3, h + 1)
+                c.dot(x + out, y - 1, K, 3, H)
+                c.dot(x + out, y - 1, WH)
+                if H > 3:
+                    c.dot(x + out + 1, y, WH)  # a catchlight of two pixels, a diagonal
+            else:
+                c.dot(x, y, K, 2, h)
+                c.dot(x, y, WH)
+
     def mouth(self, x, y, v):
         c = self.c
         if v < .08:
@@ -408,6 +598,8 @@ class Frame:
 # ---- the familiars: five creatures, five tempers ------------------------------------------------
 
 def lantern(F: Frame, col: str):
+    if LOOK != 1:
+        return _lantern2(F, col)
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
     C, W, H = ramp(col), ramp("#c9a45c"), ramp("#ffd27a")
     # it swings on its ring: slowly, or hard once a second while it starts needing you
@@ -454,6 +646,50 @@ def lantern(F: Frame, col: str):
             c.dot(tx + math.cos(a) * r, 24 + math.sin(a) * r * .75, "#ffe6a0", 1, 1, .9)
 
 
+def _lantern2(F: Frame, col: str):
+    """LOOK 2's lantern: dark eyes with a catchlight (its white bars read as glints at 35 pixels),
+    and the flame standing on the lantern's floor, growing up to just under the eyes, never over
+    them, so the face stays while it speaks."""
+    s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
+    C, W, H = ramp(col), ramp("#c9a45c"), ramp("#ffd27a")
+    sw = math.sin(A * TAU) * 2.6 * F.lively if s == "needs" else F.wave(4) * .5
+    f = .35 + .1 * F.wave(.5)
+    if s == "speaking":
+        f = .2 + V * .95
+    if s == "listen":
+        f = .25 + .05 * F.wave(1)
+    if s == "done":
+        f = .95 + .05 * F.wave(1, TAU / 4)
+    if s == "working":
+        f = .45 + .15 * F.wave(1)
+    dead = s == "failed"
+    tx, y = 20 + sw, (1 if dead else 0)
+    if not dead:
+        c.glow(tx, 27, 8 + f * 8, "#ffc861", .12 + f * .14)
+    c.part(RING(20 + sw * .4, 9 + y, 4.6, 4.2, 1.2), W)
+    c.part(LIMB(14, 37, 14, 36, 1.5), W)
+    c.part(LIMB(26, 37, 26, 36, 1.5), W)
+    c.part(ELL(tx, 24 + y, 9.2, 10), C, k=-1)
+    if not dead:  # the flame's foot on the floor, its tip at most up to row 23, under the eyes
+        b = 2.6 + f * 2.4
+        c.part(FLAME(tx, 33.5 - b, 2.4 + f * 2.6, b, 0, T), H, k=1, cast=0)
+        b2 = 1.5 + f * 1.5
+        c.part(FLAME(tx, 33.5 - b2, 1.3 + f * 1.3, b2, 1, T), ramp("#fff2c2"), k=1, cast=0)
+    c.part(POLY([(14 + sw * .7, 13.5 + y), (17 + sw * .6, 10.5 + y), (23 + sw * .6, 10.5 + y), (26 + sw * .7, 13.5 + y),
+                 (28.5 + sw * .8, 16.5 + y), (11.5 + sw * .8, 16.5 + y)]), W)
+    c.part(BOX(tx, 34 + y, 8.6, 1.6), W)
+    ex = _round(tx)
+    if dead:
+        F.eyes([ex - 5, ex + 3], 19, "shut")
+        F.smoke(20, 8)
+    else:
+        F.eyes([ex - 5, ex + 3], 19, "happy" if s == "done" else "wide" if s in ("needs", "listen") else "open", 3)
+    if s == "speaking" and V > .2:
+        for i in range(5):
+            a, r = (i + T) * TAU / 5, 13 + V * 4
+            c.dot(tx + math.cos(a) * r, 24 + math.sin(a) * r * .75, "#ffe6a0", 1, 1, .9)
+
+
 def ember(F: Frame, col: str):
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
     C = ramp(col)
@@ -467,8 +703,11 @@ def ember(F: Frame, col: str):
         # it bounces in place, feet down: the flame stretches up once a second and the arm waves
         h, ra = 1.04 + abs(math.sin(A * TAU / 2)) * .14 * F.lively, 9 + F.wave(1) * 1.5 * F.lively
     if s == "working":
-        k = math.floor(T * 6) % 4
-        la, ra = (5, 0) if k < 2 else (0, 5)
+        if LOOK == 1:
+            k = math.floor(T * 6) % 4
+            la, ra = (5, 0) if k < 2 else (0, 5)
+        else:  # the arms pump in turn, with frames in between
+            la, ra = 3 * F.beat(2 / 3), 3 * F.beat(2 / 3, .5)
     if s == "done":
         # no jump: the author, 2026-11-26, "when they're done, they're jumping"
         la = ra = 9
@@ -507,13 +746,17 @@ def sprout(F: Frame, col: str):
         a, sq = .15 + V * .75 + F.wave(.5) * .06 * V, 1 - V * .04  # the leaves flutter with the voice
     if s == "needs":
         a, up, wv = 1.25, 3, F.wave(1) * 1.5 * F.lively  # it hops on the spot, feet down, and waves
-        by = -_round(abs(math.sin(A * TAU / 2)) * 2 * F.lively)
+        if LOOK == 1:
+            by = -_round(abs(math.sin(A * TAU / 2)) * 2 * F.lively)
+        else:  # off the ground by fractions of a pixel, and squashed a little where it lands
+            hop = abs(math.sin(A * TAU / 2))
+            by, sq = -hop * 2.2 * F.lively, 1 - .09 * max(0.0, 1 - hop * 3) * F.lively
     if s == "failed":
         a, sq = -.75 + F.wave(2) * .05, .9 + F.wave(2, 1) * .015  # a slow sigh
     if s == "done":
         bl, a = _ease((A - .3) / .5), .5 + F.wave(1) * .05  # in flower, the leaves breathing
     if s == "working":
-        a = .3 + .25 * F.wave(.67)
+        a = .3 + .25 * F.wave(.67) if LOOK == 1 else .3 + .14 * F.wave(.67)  # LOOK 2: a smaller flutter
     if s == "listen":
         a, up = .95 + F.wave(1) * .08, 1
     y = 28.5 + by + (1 - sq) * 8
@@ -531,7 +774,8 @@ def sprout(F: Frame, col: str):
             q = i * TAU / 6 + .3
             c.part(ELL(tx + math.cos(q) * 4 * bl, sy - 6 + math.sin(q) * 4 * bl, 2.6 * bl, 2.6 * bl), P)
         c.part(ELL(tx, sy - 6, 2.2 * bl, 2.2 * bl), ramp("#ffd95a"))
-    c.part(LIMB(11.5, 30 + by, 10, 33 + by - (3 if s == "working" and math.floor(T * 6) % 2 else 0), 1.8), C, k=-1)
+    tap = (3 if s == "working" and math.floor(T * 6) % 2 else 0) if LOOK == 1 else 3 * F.beat(2 / 3) if s == "working" else 0
+    c.part(LIMB(11.5, 30 + by, 10, 33 + by - tap, 1.8), C, k=-1)
     c.part(LIMB(28.5, 30 + by, 30 + wv, 33 + by - (8 if s == "needs" else 9 if s == "listen" else 0), 1.8), C, k=-1)
     ey = _round(y - 3)
     if s == "failed":
@@ -540,6 +784,8 @@ def sprout(F: Frame, col: str):
         F.eyes([14, 23], ey, "happy")
     elif s == "needs":
         F.eyes([14, 24], ey, "wide")
+    elif s == "working" and LOOK != 1:
+        F.eyes([14, 24], ey, "down")
     else:
         for x in (14, 23):
             c.dot(x, ey + 1, K, 3, 2)
@@ -565,7 +811,11 @@ def shellback(F: Frame, col: str):
     if s == "needs":
         hx, hy, leg, jaw = 1, -8 + math.sin(A * TAU) * 1.2 * F.lively, 5 + F.wave(1, 1) * 1.5 * F.lively, .4
     if s == "working":
-        hx, hy, leg = -.5, 2 + math.floor(T * 6) % 2, math.floor(T * 6) % 2 * 2
+        if LOOK == 1:
+            hx, hy, leg = -.5, 2 + math.floor(T * 6) % 2, math.floor(T * 6) % 2 * 2
+        else:  # a nod and a tap, with frames in between
+            b = F.beat(2 / 3)
+            hx, hy, leg = -.5, 2 + b, 2 * b
     if s == "done":
         # no jump: the author, 2026-11-26, "when they're done, they're jumping"
         hy, jaw = -4 + F.wave(1) * .5, .4
@@ -597,6 +847,8 @@ def shellback(F: Frame, col: str):
         X, Y = _round(31 + hx), _round(24 + hy + by)
         if s == "done":
             F.eyes([X - 1], Y - 1, "happy")
+        elif LOOK != 1:
+            F.eyes([X], Y - 1, "wide" if s in ("needs", "listen") else "open", 3)
         else:
             c.dot(X, Y - 1, K, 2, 4 if s in ("needs", "listen") else 3)
             c.dot(X, Y - 1, WH)
@@ -615,13 +867,21 @@ def toadstool(F: Frame, col: str):
     if s == "needs":
         cy, ct, ra, br = -2 + _round(math.sin(A * TAU) * .9 * F.lively), 3.5, 9 + F.wave(1, 1) * 1.5 * F.lively, 0
     if s == "done":
-        cy = -_round(math.sin(_clamp(A / .8) * math.pi) * 3) if A < .8 else 0
+        if LOOK == 1:
+            cy = -_round(math.sin(_clamp(A / .8) * math.pi) * 3) if A < .8 else 0
+        else:  # the cap pops up and settles, between whole pixels
+            cy = -math.sin(_clamp(A / .8) * math.pi) * 3 if A < .8 else 0
         ra, br = 9 + F.wave(1) * .8, -1
     if s == "failed":
         cy, ct = 5, -1.5
+    la = 0.0
     if s == "working":
-        by = math.floor(T * 6) % 2
-        ra = 3 if by else 0
+        if LOOK == 1:
+            by = math.floor(T * 6) % 2
+            ra = 3 if by else 0
+            la = 0 if by else 4
+        else:  # the arms in turn with frames between, the body still
+            ra, la = 3 * F.beat(2 / 3), 3 * F.beat(2 / 3, .5)
     if s == "listen":
         cy, ct, ra, br = -2 + F.wave(1) * .5, 3, 10 + F.wave(1, 1) * .8, 0
     if s == "idle":
@@ -629,7 +889,7 @@ def toadstool(F: Frame, col: str):
     c.part(ELL(16, 36.8, 2.8, 1.6), W, k=-1)
     c.part(ELL(24, 36.8, 2.8, 1.6), W, k=-1)
     c.part(ELL(20, 30.5 + by * .5, 7, 6.8), W)
-    c.part(LIMB(14, 30, 11, 33.5 - (4 if s == "working" and not by else 0), 1.8), W, k=-1)
+    c.part(LIMB(14, 30, 11, 33.5 - la, 1.8), W, k=-1)
     c.part(LIMB(26, 30, 29.5 + (.5 if ra > 5 else 0), 33.5 - ra, 1.8), W, k=-1)
     X, y = 20 + ct * .5, 22.5 + cy
     c.part(ELL(X, y + .6, 11, 2.6), G, k=-1)
@@ -687,6 +947,8 @@ def operator(F: Frame, col: str, i: int, lag: list):
     if s == "working":
         k = math.floor(T * 6) % 4  # typing, two frames a key
         L1, R1, eye, hy = (14, 33 - (2 if k < 2 else 0)), (26, 33 - (0 if k < 2 else 2)), "down", 1
+        if LOOK != 1:  # the hands in turn, with frames in between
+            L1, R1 = (14, 33 - 2 * F.beat(2 / 3)), (26, 33 - 2 * F.beat(2 / 3, .5))
     if s == "needs":
         k = math.sin(A * TAU) * F.lively  # waving, once a second, then the hand held up
         R1, eye, m, hy = (32.5 + k * 2, 17), "wide", .45, (-1 if A < .3 else 0)
@@ -874,7 +1136,7 @@ def operator(F: Frame, col: str, i: int, lag: list):
                 for q in range(-2, 3):
                     a = math.pi + q * .3
                     c.dot(X - 9 + math.cos(a) * r, E + 7 + math.sin(a) * r, C[4], 1, 1, 1 - k * .25)
-    if s == "listen":
+    if s == "listen" and LOOK == 1:  # LOOK 2 has the shared sound glyph instead
         for k in range(3):
             if F.cycle(2, k / 3) < .53:  # the rings go out one after another
                 r = 3.5 + k * 2

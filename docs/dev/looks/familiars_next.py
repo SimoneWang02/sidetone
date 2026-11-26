@@ -39,6 +39,8 @@ def toadstool(F: Frame, col: str):
     if s == "working":
         k = math.floor(T * 6) % 2
         ra, la = (3, 0) if k else (0, 3)
+        if ch.LOOK != 1:  # in turn, with frames in between
+            ra, la = 3 * F.beat(2 / 3), 3 * F.beat(2 / 3, .5)
     if s == "listen":  # a hand cupped to the side of its face, the cap tipped to that side, eyes to it
         cy, ct, br, look, lean = -.5 + F.wave(1) * .4, -3, 0, -1, -.6
         lh = (11 + F.wave(1, 1) * .4, 24.5)
@@ -124,6 +126,8 @@ def shellback(F: Frame, col: str):
     if s == "working":  # nibbling, or reading: the head bobs down, the front feet tap in turn
         k = math.floor(T * 6) % 2
         hy, lift = .4 + k, (1, 0) if k else (0, 1)
+        if ch.LOOK != 1:  # with frames in between
+            hy, lift = .4 + F.beat(2 / 3), (F.beat(2 / 3), F.beat(2 / 3, .5))
     if s == "speaking":  # it nods with the voice
         hy, mouth = -V * 1.2 + F.wave(.5) * .7 * V, V
     if s == "needs":  # the head stretches up and out on its neck, a front foot waves
@@ -176,24 +180,31 @@ def shellback(F: Frame, col: str):
         return
     # the front legs, stubby, on the line it stands on; the right one waves while it needs you
     Ln = ramp(tint("#7f9f57", -.62))  # a dark line round the legs and the face, where they lie on the shell
+    line = True
+    if ch.LOOK != 1:  # LOOK 2: the line in the legs' own outline tone, as the engine draws round them, not a near-black
+        Ln = Wa
     for i, x in enumerate((10, 30)):
         sd = -1 if i == 0 else 1
         if i == 1 and wave_ is not None:
             fx, fy = 33.5 + wave_ * .6, 25 - wave_
-            c.part(LIMB(29, 31, fx, fy, 3.2, 2.9), Ln, flat=1, cast=0)
+            if line:
+                c.part(LIMB(29, 31, fx, fy, 3.2, 2.9), Ln, flat=1, cast=0)
             c.part(LIMB(29, 31, fx, fy, 2.3, 2), Wa)
             c.part(ELL(fx + .2, fy - .5, 2.3, 2.1), Wa)
             continue
         up = lift[i]
-        c.part(LIMB(x - sd * .3, 31.5, x + sd * .3, 35 - up, 3.4), Ln, flat=1, cast=0)
+        if line:
+            c.part(LIMB(x - sd * .3, 31.5, x + sd * .3, 35 - up, 3.4), Ln, flat=1, cast=0)
         c.part(LIMB(x - sd * .3, 31.5, x + sd * .3, 35 - up, 2.5), Wa)
         c.part(ELL(x + sd * .6, 36.6 - up, 3.3, 1.7), Wa, k=-1)
     # the head: a neck when it stretches, then the round face (its middle on whole pixels)
     hc = _round(30 + hy)
     if hc < 28:
-        c.part(LIMB(20, 33, 20, hc + 3, 3.1), Ln, flat=1, cast=0)
+        if line:
+            c.part(LIMB(20, 33, 20, hc + 3, 3.1), Ln, flat=1, cast=0)
         c.part(LIMB(20, 33, 20, hc + 3, 2.2), Wa, k=-1)
-    c.part(RE(20, hc, 8.3, 7.1, tilt) if tilt else ELL(20, hc, 8.3, 7.1), Ln, flat=1, cast=0)
+    if line:
+        c.part(RE(20, hc, 8.3, 7.1, tilt) if tilt else ELL(20, hc, 8.3, 7.1), Ln, flat=1, cast=0)
     c.part(RE(20, hc, 7.4, 6.2, tilt) if tilt else ELL(20, hc, 7.4, 6.2), W)
     E = hc - 2
     dy = 1 if tilt else 0  # tilted: the far eye a pixel higher
@@ -231,6 +242,8 @@ def dragon(F: Frame, col: str):
         k = math.floor(T * 6) % 2
         la, ra = (3, 0) if k else (0, 3)
         wing = .2 + k * .06
+        if ch.LOOK != 1:  # in turn, with frames in between
+            la, ra, wing = 3 * F.beat(2 / 3), 3 * F.beat(2 / 3, .5), .23
     if s == "done":  # wings spread wide and flapping
         wing, la, ra, mouth, eye = .85 + F.wave(.5) * .12, 9, 9, .6, "happy"
     if dead:
@@ -324,7 +337,7 @@ def mimic(F: Frame, col: str):
     if s == "needs":
         op, eye, gold = 5 + math.sin(A * TAU) * .8 * F.lively, "wide", True
     if s == "working":  # an even chatter, four times a second
-        op = 1 + (math.floor(T * 4) % 2) * 2
+        op = 1 + (math.floor(T * 4) % 2) * 2 if ch.LOOK == 1 else 1 + 1.6 * F.beat(.5)
     if s == "done":
         op, eye, gold, tongue = 6 + F.wave(1) * .5, "happy", True, 1
     if s == "failed":  # the lid knocked askew, down on one side
@@ -413,6 +426,8 @@ def axolotl(F: Frame, col: str):
         k = math.floor(T * 6) % 2
         spread = .35 + k * .1
         L, R = ((11.5, 29), (28.5, 32)) if k else ((11.5, 32), (28.5, 29))
+        if ch.LOOK != 1:  # in turn, with frames in between
+            spread, L, R = .4, (11.5, 32 - 3 * F.beat(2 / 3)), (28.5, 32 - 3 * F.beat(2 / 3, .5))
     if s == "done":  # both hands up and out, cheeks pink, the gills fanning
         spread, eye, blush, hy = .85 + abs(F.wave(1)) * .1, "happy", 1, -.5
         L, R = (5.5 - F.wave(1) * .6, 24 - abs(F.wave(1)) * .8), (34.5 + F.wave(1) * .6, 24 - abs(F.wave(1)) * .8)
