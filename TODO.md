@@ -1497,8 +1497,12 @@ Kept for the history: what was asked, what was found, and the author's words on 
       author, to deleting the trial: "Yes, let's do that." Its environment, the model and the
       package copies it added are gone (9.6 GB); the scripts and what each model wrote are
       kept in `~/.local/share/stt-trial` (0.7 MB; `pip install qwen-asr` to run them again).
-      Not tried: NVIDIA's Nemotron 3.5 Transcribe, Cohere Transcribe, Granite Speech 4.1, and
-      Qwen's faster vLLM way.
+      The other free models above Whisper do not fit (`docs/dev/facts.md`): Nemotron 3.5
+      Transcribe and Voxtral Small need a card of 55 GB or more, Granite Speech 4.1 has
+      neither Italian nor Chinese, and Cohere Transcribe has all three but must be told the
+      language first. Not tried: Cohere's with Whisper finding the language for it, Qwen's
+      faster vLLM way, and ElevenLabs' Scribe (paid and off the machine; that test was turned
+      down the same day).
 - [x] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
       too short to tell the language and English wins. Perhaps lean to the language of the

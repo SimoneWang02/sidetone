@@ -601,6 +601,14 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   languages with all three, the weights behind a form). Parakeet TDT 0.6B v3 has 25 European
   languages and no Chinese; Canary-Qwen 2.5B is English only. The card had 6.6 of its 12 GB in
   use with the hub running turbo.
+  Looked at closer the same day (again by write-ups, not the models' own cards): Nemotron 3.5
+  Transcribe has 30 billion parameters or more and takes about 75 GB of a card; Voxtral Small
+  has 24 billion, 55 to 60 GB, and no Chinese among its languages; Granite Speech 4.1 (2
+  billion) writes English, French, German, Spanish, Portuguese and Japanese, so neither Italian
+  nor Chinese; Cohere Transcribe (Apache 2.0) does not find the language itself, one of its 14
+  must be chosen first. So of the free models above Whisper only Qwen3-ASR can run on this
+  card in the author's three languages as push-to-talk needs, and Cohere's only with something
+  else finding the language.
 - Qwen3-ASR 1.7B against Whisper turbo on the author's voice (2026-11-26; 481 kept recordings,
   445 English and 36 Italian, each alone as push-to-talk gives them; `whisper_run.py`,
   `qwen_run.py` and `compare.py` in `~/.local/share/stt-trial`, with the words each wrote in
