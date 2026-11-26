@@ -170,6 +170,16 @@ voice, and the wait for the transcript.
       said). Fetching Ming (the maker's code from GitHub, its packages, 3 GB of weights, into
       the trial folder) was stopped by Claude Code's own check as not clearly allowed by
       them: **needs their plain yes** to installing Ming and Breeze for a trial.
+      On Breeze, told it is for private use only: "quindi non potrei usare per pubblicarlo.
+      E invece Ming?" Ming is MIT for code and weights, so it may be shipped. Then: "Ok,
+      prova Ming allora." Tried on the card the same day (`docs/dev/facts.md`): it runs in
+      2.85 GB beside the hub, but a line takes about as long to make as to say and nothing
+      is heard until a piece is whole: 2 s for five words, 6 to 12 s for a usual line, where
+      Kokoro starts in 0.12 s and Phonon in 0.04. So as its maker ships it, it cannot be the
+      voice of a tool that speaks while a reply streams; it could only be a voice for those
+      who choose to wait. Five lines by its Emma and George beside Heart are on
+      `~/.cache/sidetone-voice-trials/2026-11-26/ming.html`, opened for them. **Waiting for
+      their ears** on both pages. Breeze still not tried, and not publishable.
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a

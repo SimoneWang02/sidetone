@@ -591,6 +591,21 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   Five lines the hub had spoken, by those three and by Heart at 1.1, are on a page with the
   voices under letters and every clip at one loudness (`index.html` there; the key: A Hadley,
   B Heart, C Harper, D Preston), opened for the author the same night.
+- Ming-3.0-tts-0.5B tried here (2026-11-26, on the author's "Ok, prova Ming allora";
+  github.com/inclusionAI/Ming-3.0-tts at c88c023 and huggingface.co/inclusionAI/Ming-3.0-tts-0.5B,
+  MIT for code and weights by both pages; `ming-src`, `ming-venv` (7.3 GB) and `ming-0.5b`
+  (2.8 GB) in `~/.cache/sidetone-voice-trials/2026-11-26/`; its pinned torch 2.6 replaced by
+  2.8.0+cu128 for the RTX 5070, everything else as its requirements.txt, pynini from pip).
+  On the card, in bfloat16: loads in 1.4 s, 2.85 GB of card memory, 44.1 kHz. A line takes
+  about as long to make as to say: 82 to 93% of its length (5.6 s for 6.8 s of speech, 12.2 s
+  for 14.3 s), at 14 to 16 steps a second; five words ("Done, both fixes are live.") 1.9 to
+  2.3 s. Nothing comes out until a piece of up to 24 words is whole, so no first sound before
+  about 2 to 6 s. Built-in voices by name (`task="IP"`, `controls={"ip": "US_Emma"}`; UK_George
+  also tried). Languages by its card: Chinese, English, German, Spanish, French, Korean,
+  Japanese; no Italian. The five lines by Emma, George and Heart are on `ming.html` there,
+  the voices under numbers (the key: 1 Heart, 2 Emma, 3 George), opened for the author.
+  Importing transformers once without `HF_HOME` set made it "migrate" the default Hugging
+  Face cache (0 files moved).
 - Breeze TTS 2 by its own card (huggingface.co/BreezeBlue/Breeze-TTS-2, read 2026-11-26): 3
   billion parameters, 7.7 GiB of card memory (14.4 on its fast path, a 24 GB card), no ready
   voices (one is described in words or copied from a recording), English and Chinese, run
