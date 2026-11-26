@@ -1463,7 +1463,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   after, `msrdc` 1.00 throughout, the one moved by hand kept, all back when the overlay's
   input closed with them low. Claude's choices, not asked for: 30 as the level and on for a
   new install, calls and Windows' own sounds lowered like the rest, the two fade times, and
-  no lowering while the talk key is held. Not built: programs to leave alone by name, and
+  no lowering while the talk key is held. Of calls going down too, the author, the same
+  evening: "I guess Discord is fine". Not built: programs to leave alone by name, and
   pausing or muffling in place of lowering (Superwhisper offers Pause, Mute, Lower, Muffle;
   `docs/dev/inspiration.md`). Limits: only with the Windows overlay, and an overlay that is
   killed during a line (not closed) leaves the levels low until the next line ends.

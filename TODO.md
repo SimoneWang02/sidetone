@@ -23,10 +23,11 @@ these come before anything new.
       music, videos and calls go down to 30% of their own level for the length of a line and
       come back after it ("Other Sound While Speaking" under Speech; 100 leaves them alone;
       see `docs/dev/features.md`). Tests, and the real overlay on the author's own programs
-      with the levels read back from Windows. **Not heard by the author yet.** To judge by
-      ear: 30 as the level, how fast it goes down and comes back, and whether a call
-      (Discord) should go down like the music. Not built: the same while the talk key is
-      held, and programs to leave alone.
+      with the levels read back from Windows, and one line said through the live hub. On in
+      the author's hub since that evening. To judge by ear: 30 as the level, and how fast it
+      goes down and comes back. Calls go down like the music; the author, the same evening:
+      "I guess Discord is fine". Not built: the same while the talk key is held, and leaving
+      calls alone (step 4).
 - [ ] The end key on a session with work in the background (2026-11-26, the author by voice,
       after Ctrl+Alt+Minus on "sidetone 6": "non l'ha cancellato, mi chiedeva di confermare
       sul terminale"). Claude Code asks in the terminal before it exits such a session; now
@@ -211,6 +212,12 @@ voice, and the wait for the transcript.
 
 Roughly easiest first, the larger ones after.
 
+- [ ] Calls left alone while a line is spoken (an idea of 2026-11-26, not asked for: the author
+      is fine with Discord going down, "I guess Discord is fine"). A switch beside "Other
+      Sound While Speaking", off for a new install or not, to decide. No list of brands: a
+      program that has the microphone open is in a call, and Windows lists who has it the
+      same way it lists who plays (`docs/dev/facts.md`); not tried. Windows' own habit is the
+      other way round: during a call it lowers everything else (Sound, Communications).
 - [ ] What following the terminal does not do yet:
       - VS Code only reports a change of the active terminal. Clicking back into the
         terminal you were last in (from the editor, or after another session spoke and
