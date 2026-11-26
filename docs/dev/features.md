@@ -456,7 +456,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     equal (the critic: tighter between the small ones, 8 px, would read more as a group); when
     one goes the others move over at once, with no slide. Not measured: an agent in the
     foreground (not seen on Claude Code 2.1.332); whether a failed agent also sends a
-    `SubagentStop`. Not tried by the author.
+    `SubagentStop`. A page to try it, from the real sheets (`tests/companions_page.py`: start, finish and stop
+    subagents by hand, each kind of character, both corners, a dark and a light backdrop), made
+    when the author asked for a preview. Not tried by the author.
   - Seen in pictures (`overlay_check.py --only=character`): both kinds, both places,
     speaking, needs you, done, failed; Selected Session on the edge and inside, All Sessions.
     Not in the request card yet, and Reduce Motion holds the first frame.
