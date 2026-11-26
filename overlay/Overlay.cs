@@ -1067,7 +1067,9 @@ namespace ClaudeSpeaks
         public bool Show(string file, string state, double loudness, double now, bool still)
         {
             if (file.Length == 0 || Rows.Count == 0) { Image.Source = null; shown = ""; return false; }
-            if (state != moment || file != path) { moment = state; path = file; since = now; }
+            // A moment's first part (needs you waving, done cheering) plays when the session's moment
+            // changes, not when another session's figure takes this place: that one shows the rest.
+            if (state != moment || file != path) { since = file != path && path.Length > 0 && state == moment ? now - 3600 : now; moment = state; path = file; }
             double age = now - since, a = age;
             string row = state;
             if (state == "speaking") row = "speaking" + (loudness < 0.12 ? 0 : loudness < 0.4 ? 1 : loudness < 0.7 ? 2 : 3);

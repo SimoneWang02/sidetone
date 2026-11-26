@@ -437,7 +437,7 @@ def ember(F: Frame, col: str):
         k = math.floor(T * 7) % 4
         la, ra = (5, 0) if k < 2 else (0, 5)
     if s == "done":
-        by = -_round(math.sin(A / .6 * math.pi) * 6) if A < .6 else 0
+        # no jump: the author, 2026-11-26, "when they're done, they're jumping"
         la = ra = 9
     if dead:
         h = .62
@@ -534,7 +534,7 @@ def shellback(F: Frame, col: str):
     if s == "working":
         hx, hy, leg = -.5, 2 + math.floor(T * 6) % 2, math.floor(T * 6) % 2 * 2
     if s == "done":
-        by = -_round(math.sin(A / .5 * math.pi) * 5) if A < .5 else 0
+        # no jump: the author, 2026-11-26, "when they're done, they're jumping"
         hy, jaw = -4, .4
     if s == "failed":
         hide = 1
@@ -657,7 +657,7 @@ def operator(F: Frame, col: str, i: int, lag: list):
         k = math.sin(A * TAU * 1.5) if A < 5 else .4
         R1, eye, m, hy = (32.5 + k * 2, 17), "wide", .45, (-1 if A < .3 else 0)
     if s == "done":
-        by = -_round(math.sin(A / .55 * math.pi) * 5) if A < .55 else 0
+        # no jump: the author, 2026-11-26, "when they're done, they're jumping"
         L1, R1, eye, m = (7.5, 20), (32.5, 20), "happy", .5
     if s == "failed":
         hy, hx, eye, slip, L1, R1 = 2.5, -.5, "sad", 1, (12, 35), (28, 35)

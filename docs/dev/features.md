@@ -350,8 +350,10 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     does not jump when the moment or the session changes: it did at first (rising from below
     the edge, then 4 of its pixels up and down in a third of a second), and the author,
     2026-11-26: "the animation seems cut when jumping", then "I don't think they should be
-    jumpy whenever I switch session ... their body is cut off from the bottom side". Jumps
-    drawn in a sheet (done's) stay inside the cell. The
+    jumpy whenever I switch session ... their body is cut off from the bottom side"). Nor when
+    done ("when they're done, they're jumping"): they raise their arms and smile, feet down.
+    When another session's figure takes the same place in the same moment, it shows that
+    moment's repeating part, not its start (needs you waving, done cheering). The
     cells are 44 px with the 40 px drawing 4 rows down (`OFF`), so raised leaves and hair are
     not cut flat at the top. Edge: in a window
     of its own (`perch`, see-through, click-through, no blur) on the bubble's top edge, at

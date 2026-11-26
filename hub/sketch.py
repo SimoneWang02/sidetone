@@ -10,7 +10,7 @@ doubled. The lines shake a little three times a second, as an animatic redrawn o
 
 Changes from the preview, so that rows repeat without a jump and nothing leaves its cell: the
 head's sway while speaking and the arm while working go once a second (the rows are whole
-seconds long), and when it fails it sinks 7 units, not 9, with its feet kept on the ground.
+seconds long), it does not jump when done, and when it fails it sinks 7 units, not 9, with its feet kept on the ground.
 """
 from __future__ import annotations
 
@@ -129,8 +129,7 @@ def frame(kind: int, color: str, s: str, T: float, A: float, V: float) -> bytear
     if s == "needs":
         arm, brow, tilt, m = 1.5 + (math.sin(A * TAU) * .22 if A < 5 else 0), 1, -.1, .25
     if s == "done":
-        arm, lid, m = 1.1, 2, .2
-        dy = -max(0.0, math.sin(min(1.0, max(0.0, A / .4)) * math.pi)) * 7
+        arm, lid, m = 1.1, 2, .2  # no jump (the author, 2026-11-26: "when they're done, they're jumping")
     if s == "failed":
         tilt, dy, brow = .38, 7.0, -1
     if s == "working":
