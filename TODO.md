@@ -207,7 +207,8 @@ Roughly easiest first, the larger ones after.
       them are pretty good. So we can just put them as selection by the user"; details that move
       and not the same headset and scarf for all: each operator their own (`characters.html`, a
       Character choice of Familiars, Operators, Sketch or None). Then: one size (the small one);
-      the sketches told apart by more than color; On the Edge "is cool"; Inside smaller so the
+      the sketches told apart by more than color (tried, then undone: "I prefer the previous version
+      where they are all the same ... They don't seem very polished"); On the Edge "is cool"; Inside smaller so the
       bubble keeps its height. Done, **not seen by them yet**. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
       influence the current overlay". WPF cannot run WebGL as it is: to decide how, if chosen.
       Not checked: the plushies' names and shapes against existing characters. Open: whether WPF
