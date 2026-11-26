@@ -587,6 +587,20 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   wrong in 100 on their own English test set (AA-WER): ElevenLabs Scribe v3 1.95 and Scribe v2
   2.18 (3.67 dollars per 1000 minutes), Whisper large-v3 4.07 to 4.53 by host, large-v3-turbo
   4.62 (Groq's). None of it is the author's voice, and none was measured here.
+- Free speech-to-text models ahead of Whisper (2026-11-26, from write-ups found by a search,
+  not the leaderboards' own pages, and none tried here). Hugging Face's Open ASR Leaderboard,
+  average words wrong in 100: NVIDIA Nemotron 3.5 Transcribe 5.33 (first among free models, by
+  apidog.com on 2026-10-29); Qwen3-ASR 1.7B 5.40, Cohere Transcribe 5.77, Granite Speech 4.1
+  5.96, Parakeet TDT v2 6.02 (by pinggy.io, the board of 2026-10-09); Whisper large-v3 7.16,
+  41st. Artificial Analysis puts Mistral's Voxtral Small first among free models at 2.8, on
+  the test where Scribe v3 has 1.95 and turbo 4.62. By language: Qwen3-ASR 1.7B (Apache 2.0)
+  has English, Italian and Chinese among 30 languages and 22 Chinese dialects, and its report
+  (arxiv 2601.21337) says it was trained to use context given in the system prompt;
+  `pip install qwen-asr`, `Qwen3ASRModel.from_pretrained("Qwen/Qwen3-ASR-1.7B",
+  dtype=torch.bfloat16, device_map="cuda:0")`. Cohere Transcribe (2 billion parameters, 14
+  languages with all three, the weights behind a form). Parakeet TDT 0.6B v3 has 25 European
+  languages and no Chinese; Canary-Qwen 2.5B is English only. The card had 6.6 of its 12 GB in
+  use with the hub running turbo.
 - Kokoro, by its own card (huggingface.co/hexgrad/Kokoro-82M, read 2026-11-26): 82 million
   parameters, Apache 2.0, built on StyleTTS 2 and ISTFTNet, v1.0 on 2025-01-27, trained on "a
   few hundred hours of audio" for "about $1000 for 1000 hours of A100"; 8 languages, 54 voices.

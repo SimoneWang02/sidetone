@@ -128,6 +128,20 @@ voice, and the wait for the transcript.
       probability is low for the words it gets wrong ("side tone", "five coding" for "vibe
       coding", "cloud" for "Claude" four times in ten), so the hub could hand them to Claude
       marked as unsure, as a setting. **To decide.**
+- [ ] A newer speech model in place of Whisper, tried on the kept recordings (offered
+      2026-11-26, not answered; the author, by voice: "do you think we could improve the
+      reception of my words as in transcript?"). Whisper is no longer the best free model: on
+      the Open ASR Leaderboard large-v3 gets 7.2 words wrong in 100 and the best free ones 5.3
+      to 5.4 (`docs/dev/facts.md`; by others' write-ups, none on the author's voice). The one
+      that fits here: Qwen3-ASR 1.7B (Apache 2.0; English, Italian and Chinese among its 30
+      languages; trained to take names and context as a prompt; `pip install qwen-asr`).
+      Not known: its time on the RTX 5070 against turbo's 0.2 s, short answers, and whether
+      it invents words. `stt.Named`, leaning and mixed languages are built on Whisper's
+      insides and would need redoing for another engine. So first a trial outside the hub:
+      the kept recordings through both, the known mistakes counted ("cloud" for "Claude",
+      "side tone", "five coding", short Italian answers), the differences read, the time
+      measured. Nobody has written down what was really said, so "better" is by those counts
+      and by reading. **To decide.**
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a
