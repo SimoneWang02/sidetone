@@ -130,8 +130,23 @@ voice, and the wait for the transcript.
       (`~/.cache/sidetone-voice-trials/2026-11-26/index.html`), opened for them. **Waiting
       for their ears.** Breeze not tried: it wants 7.7 GB of the card and 6.4 were free, so
       the hub's models would have to leave the card meanwhile. **To decide:** that.
-      A study by four researchers of what a model like V4 takes is in `reports/` and
-      `research_notes/` (kept out of git by `.git/info/exclude`).
+      The study they asked for (four researchers, 2026-11-26; `reports/Voice model like
+      ElevenLabs v4.md` with its sources, notes in `research_notes/`, both kept out of git by
+      `.git/info/exclude`). Its verdict: V4 cannot be rebuilt by one person; ElevenLabs has
+      published nothing of how it is made and has 800 people and over 1000 labellers behind
+      it. A model trained alone costs hundreds to a few thousand dollars and lands near
+      Kokoro; no one person's model has beaten Kokoro in blind votes. Fine-tuning gives a
+      voice or a language, not a better rank. Copying V4, Drama 3 or Breeze into a model of
+      one's own by training on what they say is forbidden by their terms. The nearest to V4
+      that can be downloaded, Drama 3, loses to it 59 to 41 but wants a 48 GB card and may
+      not be offered as a speech service. What fits here: Breeze TTS 2 (a build by someone
+      else at 4.3 GB, so beside the hub; private use only), Ming-3.0-tts (MIT, level with
+      Eleven v3, 3 GB, speed unknown, no Italian), Phonon (free to ship, English). Its
+      advice: the voice is a part to swap, not to build; ship Phonon and Kokoro, offer better
+      voices as the user's own choice (a Breeze pack, or a key for a paid voice), and put the
+      work where no ranking exists: Italian, code and file names read aloud, what is said and
+      when. Proof would be a blind test against V4 itself, about 1000 votes for 70 to 170
+      dollars. **To decide:** time Breeze and Ming on the card next, or leave it here.
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a
