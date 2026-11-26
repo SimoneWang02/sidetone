@@ -540,6 +540,27 @@ Measured facts about Claude Code, Windows, WPF, sound, speech models and this ma
   list harms. Either way 3.5 to 4.3% of all words change, mostly punctuation-like ("all
   right" / "alright", "eight" / "8"). `beam_size=5` in place of 1 fixed none of the names and
   took 0.24 s where 1 takes 0.20.
+- What the kept recordings sound like, and where the model is unsure (2026-11-26, 417
+  recordings, all from the desk microphone through WSLg's `RDPSource`, 44.1 kHz brought to
+  16 kHz; the headphones in use have no microphone). Speech at -18 dB of full scale in nearly
+  all of them (-20 to -17, so something upstream evens the level out), peaks at -5 dB, none
+  clipped; the room's noise at -54 dB, so speech is 35 dB over it (22 dB in the worst
+  twentieth); no dead gaps; sound up to 7 kHz, so not a telephone band. Speech starts within
+  60 ms of the key in 18 recordings and they are heard no worse. Whisper's own probability for
+  each word (`word_timestamps=True`, 10,285 words): the middle word 0.98, 6% under 0.5, 1.5%
+  under 0.3, most of those "okay", "yeah", "like", "the". Unsure words (under 0.5) by length
+  of recording: under 3 s 13%, 3 to 10 s 8%, 10 to 30 s 6%, over 30 s 5%; in the first tenth
+  of a recording 13%, after it 5%; English 8%, Italian 6%; noisier recordings (under 28 dB)
+  no worse than quiet ones. The wrong words are unsure ones: "side" of "side tone" 0.30 and
+  "five" of "five coding" 0.23 (the lowest hundredth), "cloud" for "Claude" 0.59 (the lowest
+  tenth, 38% of them under 0.5), where "the", "overlay" and "session" are at 0.96 to 0.98.
+  A recording with little sound above 4 kHz is a short one with few s sounds, not another
+  microphone (32 of them, median 2.8 s): that was first taken for a telephone band.
+- Who says the lines (2026-11-26, `voice.log` since 2026-11-22, 506 lines): Heart 256 and
+  Bella 80 (Kokoro's own grades A and A-), Emma 119 (B-), Paola 27, the rest 24. A line's
+  first sound 0.12 s after it is asked for (median; 0.32 s for the slowest tenth). Kokoro's
+  VOICES.md: "Weakness on short utterances, especially less than 10-20 tokens", which is what
+  a session's label said by itself before its line is.
 - From the talk key to the reply's first sound (2026-11-22, the author's last 12 spoken
   messages to one session, both models on the RTX 5070): release delay 0.4 s (`talk_tail`);
   transcription 0.14 to 0.5 s; from the transcript (the kept recording's time, in ms) to Claude

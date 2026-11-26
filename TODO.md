@@ -82,19 +82,22 @@ Questions for the author; nothing to build until they answer.
 What gets in the way every day: words heard in the wrong language, lines read by the wrong
 voice, and the wait for the transcript.
 
-- [ ] Names the speech model should know (the author, by voice, 2026-11-26, about the
-      microphone in Claude's own apps: "it seems very precise, accurate. So, can we imitate?
-      ... Can we use that?"). Theirs cannot be used: it runs on Anthropic's servers for their
-      own apps only, with no interface for another program, and it has no Chinese and one
-      language at a time (`docs/dev/facts.md`). What it has that ours lacks: the project's name
-      and branch given to the model as hints, and the words shown while you speak. Measured
-      the same day on the 407 kept recordings: with "Claude, Sidetone" as hints, "Claude" is
-      written right 19 times of 26 where it is 12 now, "Sidetone" 4 times where it is never,
-      with no time added; a list of 19 words did better on "Claude" but put words in nobody
-      said. **To decide:** build it as a setting, off or on by default: "Claude" and the names
-      of the open sessions' projects by themselves, plus a short "Words To Know" line of the
-      user's own. The words while you speak are a larger piece (Whisper read again every half
-      second on the card), not looked into yet.
+- [ ] Where push-to-talk and the voice lose quality (the author, by voice, 2026-11-26: "I want
+      to know how to get better recordings, how to get better transcripts, less ambiguity and
+      better voice output as well"). Measured the same day on their 417 kept recordings
+      (`docs/dev/facts.md`). The recordings are clean: speech 35 dB over the room's noise,
+      nothing clipped, no gaps, the whole band; where speech starts with the key (18 of them)
+      it is heard no worse. A better microphone would change little. The model is sure of 94 words in 100, and most of the
+      rest are "okay" and "yeah". What is left: answers under 3 s (twice the unsure words, and
+      where the language goes wrong) and names. The words it gets wrong are the ones it was
+      least sure of ("side tone" and "five coding" for "vibe coding" every time, "cloud" for
+      "Claude" four times in ten). **To decide:** hand Claude the unsure words marked as such, so it asks or works
+      them out from what the session is about; nothing for the user to keep up. The voice:
+      since 2026-11-22 two lines in three are said by Kokoro's two best voices (Heart and
+      Bella), one in four by Emma (graded B-), and a line starts in 0.12 s. A more natural engine means about 2 s
+      of waiting before each line (Chatterbox, measured 2026-11-19, when they kept Heart).
+      **To ask:** what about the voice they want better: its tone, its speed (1.1 now), or
+      the words of the spoken line.
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a
@@ -1272,6 +1275,18 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] Names the speech model should know: not built (the author, by voice, 2026-11-26, about the
+      microphone in Claude's own apps: "it seems very precise, accurate. So, can we imitate?
+      ... Can we use that?"). Theirs cannot be used: it runs on Anthropic's servers for their
+      own apps only, with no interface for another program, and it has no Chinese and one
+      language at a time (`docs/dev/facts.md`). What it has that ours lacks: the project's name
+      and branch given to the model as hints, and the words shown while you speak. Measured
+      the same day on the 407 kept recordings: with "Claude, Sidetone" as hints, "Claude" is
+      written right 19 times of 26 where it is 12 now, "Sidetone" 4 times where it is never,
+      with no time added; a list of 19 words did better on "Claude" but put words in nobody
+      said. Offered as a setting; the author: "as a setting for capturing more better true
+      words ... no, I don't think it's worth it". The words while you speak (Whisper read
+      again every half second on the card) were not looked into.
 - [x] Short Italian answers heard as English: "procedi" and "sì" came out as "See you
       soon" and "See you" with `whisper_language: "en,it"` (2026-11-19), since a word or two is
       too short to tell the language and English wins. Perhaps lean to the language of the
