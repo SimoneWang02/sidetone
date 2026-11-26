@@ -286,6 +286,16 @@ def _ramp3(color: str) -> list[tuple[int, int, int]]:
         if hl > .75 and t[1] > Cc * 1.35 + .02:
             t[1] = Cc * 1.35 + .02
             moved.add(i)
+    # A yellow-green to green: its shadows turned to neon (the author, 2026-11-26, of the dragon
+    # on #B9F27C: "might be too green, might be too saturated"). The eye takes green as the
+    # brightest, so its shadows keep about the color's own strength and stay near its hue.
+    h0 = oklch(color)[2]
+    if 100 <= h0 <= 165:
+        for i, t in enumerate(tones[1:], 1):
+            d = (t[2] - h0 + 180) % 360 - 180
+            if t[1] > Cc * 1.05 or abs(d) > 20:
+                t[1], t[2] = min(t[1], Cc * 1.05), (h0 + max(-20, min(20, d))) % 360
+                moved.add(i)
     # the outline: lifted to about 1.6:1 against the glass, but kept under the darkest shadow (a dark
     # color's stays about as dark as Classic's: lifting its shadows too flattened it, and an arm
     # ran into the body); as strong as the color, up to a dark's .12, in the shadow's hue
