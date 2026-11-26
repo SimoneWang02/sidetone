@@ -108,78 +108,11 @@ Questions for the author; nothing to build until they answer.
 What gets in the way every day: words heard in the wrong language, lines read by the wrong
 voice, and the wait for the transcript.
 
-- [ ] Where push-to-talk and the voice lose quality (the author, by voice, 2026-11-26: "I want
-      to know how to get better recordings, how to get better transcripts, less ambiguity and
-      better voice output as well"). Measured the same day on their 417 kept recordings
-      (`docs/dev/facts.md`). The recordings are clean: speech 35 dB over the room's noise,
-      nothing clipped, no gaps, the whole band; where speech starts with the key (18 of them)
-      it is heard no worse. A better microphone would change little. The model is sure of 94 words in 100, and most of the
-      rest are "okay" and "yeah". What is left: answers under 3 s (twice the unsure words, and
-      where the language goes wrong) and names. The words it gets wrong are the ones it was
-      least sure of ("side tone" and "five coding" for "vibe coding" every time, "cloud" for
-      "Claude" four times in ten). **To decide:** hand Claude the unsure words marked as such, so it asks or works
-      them out from what the session is about; nothing for the user to keep up. The voice:
-      since 2026-11-22 two lines in three are said by Kokoro's two best voices (Heart and
-      Bella), one in four by Emma (graded B-), and a line starts in 0.12 s. A more natural engine means about 2 s
-      of waiting before each line (Chatterbox, measured 2026-11-19, when they kept Heart).
-      **To ask:** what about the voice they want better: its tone, its speed (1.1 now), or
-      the words of the spoken line.
-      Then asked to be scored against ElevenLabs ("you score me and them"). By others' blind
-      tests (`docs/dev/facts.md`) their best voice, Eleven v4, is picked over Kokoro 5 times
-      in 6, while their fast one, Flash, is level with Kokoro; their speech to text gets 2
-      words wrong in 100 where Whisper turbo gets 4.6. Ours is quicker to start, stays on the
-      machine and costs nothing; theirs would be about 3 dollars a month to listen and, at
-      some 600,000 characters a month, their 99 dollar plan or more to speak (plans from
-      memory, to check). Our voice is clear: read back by the speech model it loses about 1
-      word in 400. **To decide:** whether to hear it on their own lines: with a key from a
-      free ElevenLabs account, a page with five of their lines by Heart, Flash and Eleven v4,
-      unnamed, and twenty of their recordings written by Scribe beside ours. That sends those
-      lines and recordings to ElevenLabs. An optional engine only if their ears say so.
-      Then: "can we make ourselves a model that's basically V4?" Not by training one: Kokoro
-      took a few hundred hours of audio and about 1000 dollars, and the best free model on
-      the list is 400 times its size and needs a 48 GB card to run. What fits this machine
-      (`docs/dev/facts.md`): Gradium's Phonon 31M (English, Apache 2.0, smaller than Kokoro,
-      picked over it a little more than half the time) and Breeze TTS 2 (English and Chinese,
-      picked over Kokoro nearly 3 times in 4, fills most of the RTX 5070, and its weights are
-      for non-commercial use, so never bundled). The author: "Sure", and "my goal is to have
-      a product, a model that's very similar to V4". Phonon tried the same night on the
-      processor: first sound in 0.04 s, a line made in a ninth of its length. Five of their
-      lines by three of its voices and by Heart are on a page under letters
-      (`~/.cache/sidetone-voice-trials/2026-11-26/index.html`), opened for them. **Waiting
-      for their ears.** Breeze not tried: it wants 7.7 GB of the card and 6.4 were free, so
-      the hub's models would have to leave the card meanwhile. **To decide:** that.
-      The study they asked for (four researchers, 2026-11-26; `reports/Voice model like
-      ElevenLabs v4.md` with its sources, notes in `research_notes/`, both kept out of git by
-      `.git/info/exclude`). Its verdict: V4 cannot be rebuilt by one person; ElevenLabs has
-      published nothing of how it is made and has 800 people and over 1000 labellers behind
-      it. A model trained alone costs hundreds to a few thousand dollars and lands near
-      Kokoro; no one person's model has beaten Kokoro in blind votes. Fine-tuning gives a
-      voice or a language, not a better rank. Copying V4, Drama 3 or Breeze into a model of
-      one's own by training on what they say is forbidden by their terms. The nearest to V4
-      that can be downloaded, Drama 3, loses to it 59 to 41 but wants a 48 GB card and may
-      not be offered as a speech service. What fits here: Breeze TTS 2 (a build by someone
-      else at 4.3 GB, so beside the hub; private use only), Ming-3.0-tts (MIT, level with
-      Eleven v3, 3 GB, speed unknown, no Italian), Phonon (free to ship, English). Its
-      advice: the voice is a part to swap, not to build; ship Phonon and Kokoro, offer better
-      voices as the user's own choice (a Breeze pack, or a key for a paid voice), and put the
-      work where no ranking exists: Italian, code and file names read aloud, what is said and
-      when. Proof would be a blind test against V4 itself, about 1000 votes for 70 to 170
-      dollars. **To decide:** time Breeze and Ming on the card next, or leave it here.
-      The author, by voice, later that night: "Kokoro al momento è quella migliore, ma a me
-      non dispiace, c'è qualcosa meglio di Kokoro" (whether after hearing the page, not
-      said). Fetching Ming (the maker's code from GitHub, its packages, 3 GB of weights, into
-      the trial folder) was stopped by Claude Code's own check as not clearly allowed by
-      them: **needs their plain yes** to installing Ming and Breeze for a trial.
-      On Breeze, told it is for private use only: "quindi non potrei usare per pubblicarlo.
-      E invece Ming?" Ming is MIT for code and weights, so it may be shipped. Then: "Ok,
-      prova Ming allora." Tried on the card the same day (`docs/dev/facts.md`): it runs in
-      2.85 GB beside the hub, but a line takes about as long to make as to say and nothing
-      is heard until a piece is whole: 2 s for five words, 6 to 12 s for a usual line, where
-      Kokoro starts in 0.12 s and Phonon in 0.04. So as its maker ships it, it cannot be the
-      voice of a tool that speaks while a reply streams; it could only be a voice for those
-      who choose to wait. Five lines by its Emma and George beside Heart are on
-      `~/.cache/sidetone-voice-trials/2026-11-26/ming.html`, opened for them. **Waiting for
-      their ears** on both pages. Breeze still not tried, and not publishable.
+- [ ] Unsure words marked for Claude (offered 2026-11-26, not answered; the measurements are
+      under "Where push-to-talk and the voice lose quality" in Decided): Whisper's own
+      probability is low for the words it gets wrong ("side tone", "five coding" for "vibe
+      coding", "cloud" for "Claude" four times in ten), so the hub could hand them to Claude
+      marked as unsure, as a setting. **To decide.**
 - [ ] A model of the author's own voice from their kept recordings (`keep_recordings`, on for
       them since 2026-11-22: "register every message I send and create a voice model based on
       my speaking ... you don't have to do the voice model right now"). Chosen the same day: a
@@ -1427,6 +1360,83 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] Where push-to-talk and the voice lose quality: Kokoro stays (the author, by voice, 2026-11-26: "I want
+      to know how to get better recordings, how to get better transcripts, less ambiguity and
+      better voice output as well"). Measured the same day on their 417 kept recordings
+      (`docs/dev/facts.md`). The recordings are clean: speech 35 dB over the room's noise,
+      nothing clipped, no gaps, the whole band; where speech starts with the key (18 of them)
+      it is heard no worse. A better microphone would change little. The model is sure of 94 words in 100, and most of the
+      rest are "okay" and "yeah". What is left: answers under 3 s (twice the unsure words, and
+      where the language goes wrong) and names. The words it gets wrong are the ones it was
+      least sure of ("side tone" and "five coding" for "vibe coding" every time, "cloud" for
+      "Claude" four times in ten). **To decide:** hand Claude the unsure words marked as such, so it asks or works
+      them out from what the session is about; nothing for the user to keep up. The voice:
+      since 2026-11-22 two lines in three are said by Kokoro's two best voices (Heart and
+      Bella), one in four by Emma (graded B-), and a line starts in 0.12 s. A more natural engine means about 2 s
+      of waiting before each line (Chatterbox, measured 2026-11-19, when they kept Heart).
+      **To ask:** what about the voice they want better: its tone, its speed (1.1 now), or
+      the words of the spoken line.
+      Then asked to be scored against ElevenLabs ("you score me and them"). By others' blind
+      tests (`docs/dev/facts.md`) their best voice, Eleven v4, is picked over Kokoro 5 times
+      in 6, while their fast one, Flash, is level with Kokoro; their speech to text gets 2
+      words wrong in 100 where Whisper turbo gets 4.6. Ours is quicker to start, stays on the
+      machine and costs nothing; theirs would be about 3 dollars a month to listen and, at
+      some 600,000 characters a month, their 99 dollar plan or more to speak (plans from
+      memory, to check). Our voice is clear: read back by the speech model it loses about 1
+      word in 400. **To decide:** whether to hear it on their own lines: with a key from a
+      free ElevenLabs account, a page with five of their lines by Heart, Flash and Eleven v4,
+      unnamed, and twenty of their recordings written by Scribe beside ours. That sends those
+      lines and recordings to ElevenLabs. An optional engine only if their ears say so.
+      Then: "can we make ourselves a model that's basically V4?" Not by training one: Kokoro
+      took a few hundred hours of audio and about 1000 dollars, and the best free model on
+      the list is 400 times its size and needs a 48 GB card to run. What fits this machine
+      (`docs/dev/facts.md`): Gradium's Phonon 31M (English, Apache 2.0, smaller than Kokoro,
+      picked over it a little more than half the time) and Breeze TTS 2 (English and Chinese,
+      picked over Kokoro nearly 3 times in 4, fills most of the RTX 5070, and its weights are
+      for non-commercial use, so never bundled). The author: "Sure", and "my goal is to have
+      a product, a model that's very similar to V4". Phonon tried the same night on the
+      processor: first sound in 0.04 s, a line made in a ninth of its length. Five of their
+      lines by three of its voices and by Heart are on a page under letters
+      (`~/.cache/sidetone-voice-trials/2026-11-26/index.html`), opened for them. **Waiting
+      for their ears.** Breeze not tried: it wants 7.7 GB of the card and 6.4 were free, so
+      the hub's models would have to leave the card meanwhile. **To decide:** that.
+      The study they asked for (four researchers, 2026-11-26; `reports/Voice model like
+      ElevenLabs v4.md` with its sources, notes in `research_notes/`, both kept out of git by
+      `.git/info/exclude`). Its verdict: V4 cannot be rebuilt by one person; ElevenLabs has
+      published nothing of how it is made and has 800 people and over 1000 labellers behind
+      it. A model trained alone costs hundreds to a few thousand dollars and lands near
+      Kokoro; no one person's model has beaten Kokoro in blind votes. Fine-tuning gives a
+      voice or a language, not a better rank. Copying V4, Drama 3 or Breeze into a model of
+      one's own by training on what they say is forbidden by their terms. The nearest to V4
+      that can be downloaded, Drama 3, loses to it 59 to 41 but wants a 48 GB card and may
+      not be offered as a speech service. What fits here: Breeze TTS 2 (a build by someone
+      else at 4.3 GB, so beside the hub; private use only), Ming-3.0-tts (MIT, level with
+      Eleven v3, 3 GB, speed unknown, no Italian), Phonon (free to ship, English). Its
+      advice: the voice is a part to swap, not to build; ship Phonon and Kokoro, offer better
+      voices as the user's own choice (a Breeze pack, or a key for a paid voice), and put the
+      work where no ranking exists: Italian, code and file names read aloud, what is said and
+      when. Proof would be a blind test against V4 itself, about 1000 votes for 70 to 170
+      dollars. **To decide:** time Breeze and Ming on the card next, or leave it here.
+      The author, by voice, later that night: "Kokoro al momento è quella migliore, ma a me
+      non dispiace, c'è qualcosa meglio di Kokoro" (whether after hearing the page, not
+      said). Fetching Ming (the maker's code from GitHub, its packages, 3 GB of weights, into
+      the trial folder) was stopped by Claude Code's own check as not clearly allowed by
+      them: **needs their plain yes** to installing Ming and Breeze for a trial.
+      On Breeze, told it is for private use only: "quindi non potrei usare per pubblicarlo.
+      E invece Ming?" Ming is MIT for code and weights, so it may be shipped. Then: "Ok,
+      prova Ming allora." Tried on the card the same day (`docs/dev/facts.md`): it runs in
+      2.85 GB beside the hub, but a line takes about as long to make as to say and nothing
+      is heard until a piece is whole: 2 s for five words, 6 to 12 s for a usual line, where
+      Kokoro starts in 0.12 s and Phonon in 0.04. So as its maker ships it, it cannot be the
+      voice of a tool that speaks while a reply streams; it could only be a voice for those
+      who choose to wait. Five lines by its Emma and George beside Heart are on
+      `~/.cache/sidetone-voice-trials/2026-11-26/ming.html`, opened for them. **Waiting for
+      their ears** on both pages. Breeze still not tried, and not publishable.
+      Their decision, by voice, after Ming's numbers ("So Kokoro is faster, Ming is better,
+      but way slower"): "No, I don't mind Kokoro. Kokoro is pretty good, so we can live
+      [with] Kokoro." So no other voice engine, no ElevenLabs test and no Breeze trial; the
+      voice stays a part that can be swapped when a free model both sounds better and starts
+      as fast. The trial folder (11 GB, with both listening pages) is kept.
 - [x] Names the speech model should know: not built (the author, by voice, 2026-11-26, about the
       microphone in Claude's own apps: "it seems very precise, accurate. So, can we imitate?
       ... Can we use that?"). Theirs cannot be used: it runs on Anthropic's servers for their
