@@ -108,6 +108,7 @@ namespace ClaudeSpeaks
         // on it is drawn in the second color (0 = never).
         public static double ContextWarn = 80;
         public static Color Context = Colors.White, ContextFull = Color.FromRgb(0xFF, 0x8A, 0x3D);
+        public static Color UsageFull = Color.FromRgb(0xEF, 0x53, 0x50);  // a plan usage bar at its limit
 
         public static Color ColorOr(string hex, Color otherwise)
         {
@@ -3244,7 +3245,7 @@ namespace ClaudeSpeaks
         // name small above it, the figure large, and under it a thin bar where the figure is a
         // share of a whole. Every figure keeps its place whether it is known or not, so the eye
         // learns where each one is.
-        readonly Border metricsCard = new Border { CornerRadius = new CornerRadius(8), Background = Ui.Paint("#12FFFFFF"), Padding = new Thickness(11, 7, 11, 12), Margin = new Thickness(-3, 2, -3, -3) };
+        readonly Border metricsCard = new Border { CornerRadius = new CornerRadius(8), Background = Ui.Paint("#12FFFFFF"), Padding = new Thickness(11, 7, 11, 8), Margin = new Thickness(-3, 2, -3, -3) };
         readonly StackPanel metricsBody = new StackPanel();
         // While the voice is off, a struck-out speaker in the card's top right corner (the
         // author's idea, overlay.muted_icon), laid over the card so nothing in it moves.
@@ -3591,6 +3592,7 @@ namespace ClaudeSpeaks
                     Ui.ContextWarn = Num(msg, "context_warn", Ui.ContextWarn);
                     if (msg.ContainsKey("context_color")) Ui.Context = Ui.ColorOr(Str(msg, "context_color"), Colors.White);
                     if (msg.ContainsKey("context_warn_color")) Ui.ContextFull = Ui.ColorOr(Str(msg, "context_warn_color"), Ui.ContextFull);
+                    if (msg.ContainsKey("usage_full_color")) Ui.UsageFull = Ui.ColorOr(Str(msg, "usage_full_color"), Ui.UsageFull);
                     Ui.WaitingHold = Math.Max(0, Num(msg, "waiting_hold", Ui.WaitingHold));
                     Ui.WaitingSize = Math.Max(5, Math.Min(13, Num(msg, "waiting_size", Ui.WaitingSize)));
                     if (msg.ContainsKey("waiting_many")) Ui.WaitingMany = Str(msg, "waiting_many") == "number" ? "number" : "face";
@@ -3880,7 +3882,6 @@ namespace ClaudeSpeaks
             bool inCard = showHistory && detailsStyle != "line" && !historyAll;
             bool showMetrics = asked && BuildMetrics(inCard);
             if (showHistory && !(inCard && showMetrics)) BuildHistory();
-            metricsCard.Padding = new Thickness(11, 7, 11, usage.Length == 0 && inCard && showMetrics && metricsBody.Children.Count > 2 ? 8 : 11);
             metricsLine.Visibility = showMetrics && detailsStyle == "line" ? Visibility.Visible : Visibility.Collapsed;
             metricsCard.Visibility = showMetrics && detailsStyle != "line" ? Visibility.Visible : Visibility.Collapsed;
             if (metricsCard.Visibility != Visibility.Visible) { stood.Clear(); gliding.Clear(); }  // the bars fill from nothing when it comes up again
@@ -4435,16 +4436,17 @@ namespace ClaudeSpeaks
                     var part = o as object[];
                     if (part == null || part.Length < 2) continue;
                     double used = Ui.Clamp(Convert.ToDouble(part[1], CultureInfo.InvariantCulture) / 100);
-                    bool warn = part.Length > 2 && Convert.ToString(part[2], CultureInfo.InvariantCulture) == "warn";
+                    string level = part.Length > 2 ? Convert.ToString(part[2], CultureInfo.InvariantCulture) : "";
+                    bool full = level == "full", warn = full || level == "warn";
                     var cell = new Grid { Margin = stacked ? new Thickness(0, plan.Children.Count > 0 ? 5 : 0, 0, 0) : new Thickness(0, 0, 14, 0) };
                     cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = stacked ? "planName" : null });
                     cell.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
                     cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = stacked ? "planFigure" : null });
                     cell.Children.Add(new TextBlock { Text = Convert.ToString(part[0], CultureInfo.InvariantCulture), FontSize = 10.5, Foreground = Ui.Faint, VerticalAlignment = VerticalAlignment.Center });
-                    UIElement bar = Meter(used, warn, Stood("plan" + plan.Children.Count, used), new Thickness(stacked ? 9 : 7, 1, stacked ? 9 : 7, 0));
+                    UIElement bar = Meter(used, warn, Stood("plan" + plan.Children.Count, used), new Thickness(stacked ? 9 : 7, 1, stacked ? 9 : 7, 0), full);
                     Grid.SetColumn(bar, 1);
                     cell.Children.Add(bar);
-                    var figure = new TextBlock { Text = Math.Round(used * 100) + "%", FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Ui.Dim, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
+                    var figure = new TextBlock { Text = Math.Round(used * 100) + "%", FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = full ? Ui.Alpha(Ui.UsageFull, 1) : warn ? Ui.Alpha(Ui.ContextFull, 1) : Ui.Dim, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
                     Grid.SetColumn(figure, 2);
                     cell.Children.Add(figure);
                     string resets = part.Length > 3 ? Convert.ToString(part[3], CultureInfo.InvariantCulture) : "";
@@ -4465,9 +4467,9 @@ namespace ClaudeSpeaks
 
         // A thin bar for a share of a whole: its own color when that is nearly the whole, over
         // a faint step of the same color.
-        static Grid Meter(double share, bool warn, double from, Thickness margin)
+        static Grid Meter(double share, bool warn, double from, Thickness margin, bool full = false)
         {
-            Color ink = warn ? Ui.ContextFull : Colors.White;
+            Color ink = full ? Ui.UsageFull : warn ? Ui.ContextFull : Colors.White;
             double shown = Math.Max(share, 0.02);
             var bar = new Grid { Height = 4, Margin = margin, VerticalAlignment = VerticalAlignment.Center };
             bar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(shown, GridUnitType.Star) });

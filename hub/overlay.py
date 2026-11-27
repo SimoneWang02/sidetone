@@ -181,6 +181,8 @@ DEFAULTS = {
     "context_warn": 80,
     "context_color": "#FFFFFF",
     "context_warn_color": "#FF8A3D",
+    # A plan usage bar at its limit, past the warning color.
+    "usage_full_color": "#EF5350",
     # The status lights' colors, "#RRGGBB" (2026-11-23). Each state has its own shape as well
     # (see Orb), so a light still reads without color vision. needs_you's amber also edges a
     # request and marks its keys.

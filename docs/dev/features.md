@@ -2055,6 +2055,12 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the overlay sizes the name column to fit, so it needed no change. Out of the settings
   window the same day (the author: "I don't think that is needed"); still read from
   `config.json`.
+- **A usage bar at its limit is red** (2026-11-26, `overlay.usage_full_color`, `#EF5350`
+  as the Failed light, only in `config.json` like the context colors). At 100% the bar and
+  its percent go from the warning orange to red (the hub sends "full" in place of "warn").
+  The author by voice: "when it reaches 100% the bar should be red instead of still orange".
+  A mark on the bar for the share of the window gone by (pace) was offered first and turned
+  down: "I don't think it's necessary".
 - **When Usage Resets** (2026-11-26, `usage_resets`, on by default, in the window under
   Plan Usage). Beside each bar's percent, in a faint column of its own so the percents stay
   aligned: the time the five hours start again ("2:39 AM", `clock`) and the day a week does

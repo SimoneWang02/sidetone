@@ -2128,6 +2128,10 @@ class PushToTalk(HubCase):
         self.assertEqual(hub._plan_bars(), [["5H", 26, "", ""], ["7D", 38, "", ""]])
         hub.cfg.usage_warn = 80
         self.assertEqual(hub._plan_bars()[-1], ["Fable", 89, "warn", ""])
+        fable = fable.replace("89% used", "100% used")  # at its limit: past the warning
+        hub.usage_ask = lambda program, timeout: (fable, "")
+        hub.usage(quiet=True)
+        self.assertEqual(hub._plan_bars()[-1][:3], ["Fable", 100, "full"])
         hub.cfg.usage_resets = True  # when each starts again: the time for the five hours, the day for a week
         day = hub._plan_bars()[1][3]
         self.assertIn(day, ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))

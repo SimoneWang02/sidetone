@@ -630,7 +630,7 @@ shot("metrics-usage-line", 0.6)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, usage_layout="rows", **HERE)
 send(type="peek", on=True, over="web-app")
 # With the week of one model as a third bar at the foot.
-send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE[:1] + [["7D", 47, "", "Sun"], ["Fable", 89, "warn", "Sun"]])
+send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE[:1] + [["7D", 47, "", "Sun"], ["Fable", 100, "full", "Sun"]])
 shot("metrics-model", 0.6)
 send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE)
 send(type="peek", on=True, over="sidetone")
