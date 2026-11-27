@@ -160,6 +160,24 @@ def _say_it(usage: Usage | None) -> str:
     return " ".join(said) or SORRY_IT
 
 
+def reset_shown(resets: str, week: bool = False, today: datetime.date | None = None) -> str:
+    """When a window starts again, short enough to sit beside its bar: the time for the five
+    hours ("2:39 AM"), the day for a week ("Sun"); "" when it is not said."""
+    if not week:
+        return clock(resets)
+    m = re.search(r"\b([A-Za-z]{3})[a-z]* (\d{1,2})\b", resets or "")
+    if not m:
+        return clock(resets)
+    today = today or datetime.date.today()
+    try:  # Claude Code writes no year; a date well before today is next year's
+        day = datetime.datetime.strptime(f"{m.group(1).title()} {m.group(2)} {today.year}", "%b %d %Y").date()
+    except ValueError:
+        return ""
+    if day < today - datetime.timedelta(days=2):
+        day = day.replace(year=today.year + 1)
+    return day.strftime("%a")
+
+
 def clock24(resets: str) -> str:
     """`clock` on a 24-hour clock, as Italian says the time: "2:39 AM" gives "2:39", "3 PM" "15"."""
     said = clock(resets)

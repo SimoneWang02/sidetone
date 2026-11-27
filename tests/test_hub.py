@@ -2094,12 +2094,12 @@ class PushToTalk(HubCase):
         self.assertFalse(listener.wake.is_set(), "the session was given the question")
 
     def test_the_plans_usage_goes_to_the_overlay_and_is_read_again_only_when_it_is_old(self):
-        hub = self.make(usage_shown=True, usage_warn=30)
+        hub = self.make(usage_shown=True, usage_warn=30, usage_resets=False)
         asked = []
         hub.usage_ask = lambda program, timeout: asked.append(program) or (self.USAGE, "")
         hub.on_event(ev("UserPromptSubmit", sid="a", cwd="/w/a"))
         hub.reconcile()
-        self.assertTrue(wait_for(lambda: self.overlay.of("state")[-1]["usage"] == [["5H", 26, ""], ["7D", 38, "warn"]]))
+        self.assertTrue(wait_for(lambda: self.overlay.of("state")[-1]["usage"] == [["5H", 26, "", ""], ["7D", 38, "warn", ""]]))
         hub.reconcile()
         hub.reconcile()
         self.assertEqual(len(asked), 1, "read a moment ago")
@@ -2108,26 +2108,30 @@ class PushToTalk(HubCase):
         hub.reconcile()
         self.assertTrue(wait_for(lambda: not hub._plan_busy))
         hub.publish()
-        self.assertEqual(self.overlay.of("state")[-1]["usage"][0], ["5H", 26, ""])
+        self.assertEqual(self.overlay.of("state")[-1]["usage"][0], ["5H", 26, "", ""])
         hub.cfg.usage_shown = False
         hub.on_event(ev("Stop", sid="a", cwd="/w/a", last_assistant_message=tag("Done.")))
         self.assertEqual(self.overlay.of("state")[-1]["usage"], [])
 
     def test_the_week_of_one_model_can_be_a_bar_of_its_own(self):
-        hub = self.make(usage_shown=True)
+        hub = self.make(usage_shown=True, usage_resets=False)
         fable = self.USAGE + "Current week (Fable): 89% used \u00b7 resets Nov 23, 7:59am (America/New_York)\n"
         hub.usage_ask = lambda program, timeout: (fable, "")
         hub.usage(quiet=True)
-        self.assertEqual(hub._plan_bars(), [["5H", 26, ""], ["7D", 38, ""]])  # not unless asked for
+        self.assertEqual(hub._plan_bars(), [["5H", 26, "", ""], ["7D", 38, "", ""]])  # not unless asked for
         hub.cfg.usage_models = "all"
-        self.assertEqual(hub._plan_bars(), [["5H", 26, ""], ["7D", 38, ""], ["Fable", 89, "warn"]])
+        self.assertEqual(hub._plan_bars(), [["5H", 26, "", ""], ["7D", 38, "", ""], ["Fable", 89, "warn", ""]])
         hub.cfg.usage_labels = "long"  # the names as at first; a model keeps its own
-        self.assertEqual(hub._plan_bars(), [["5 hours", 26, ""], ["Week", 38, ""], ["Fable", 89, "warn"]])
+        self.assertEqual(hub._plan_bars(), [["5 hours", 26, "", ""], ["Week", 38, "", ""], ["Fable", 89, "warn", ""]])
         hub.cfg.usage_labels = "short"
         hub.cfg.usage_models, hub.cfg.usage_warn = "near", 95  # only once it is near its end
-        self.assertEqual(hub._plan_bars(), [["5H", 26, ""], ["7D", 38, ""]])
+        self.assertEqual(hub._plan_bars(), [["5H", 26, "", ""], ["7D", 38, "", ""]])
         hub.cfg.usage_warn = 80
-        self.assertEqual(hub._plan_bars()[-1], ["Fable", 89, "warn"])
+        self.assertEqual(hub._plan_bars()[-1], ["Fable", 89, "warn", ""])
+        hub.cfg.usage_resets = True  # when each starts again: the time for the five hours, the day for a week
+        day = hub._plan_bars()[1][3]
+        self.assertIn(day, ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"))
+        self.assertEqual([bar[3] for bar in hub._plan_bars()], ["2:39 AM", day, day])
 
     def test_usage_that_cannot_be_read_says_so_and_can_be_switched_off(self):
         hub = self.make(talk_feedback="none")

@@ -2045,6 +2045,13 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the overlay sizes the name column to fit, so it needed no change. Out of the settings
   window the same day (the author: "I don't think that is needed"); still read from
   `config.json`.
+- **When Usage Resets** (2026-11-26, `usage_resets`, on by default, in the window under
+  Plan Usage). Beside each bar's percent, in a faint column of its own so the percents stay
+  aligned: the time the five hours start again ("2:39 AM", `clock`) and the day a week does
+  ("Sun", `usage.reset_shown`; Claude Code writes "Nov 29, 7:59am" with no year, so a date more
+  than two days back is taken as next year's). The author asked by voice: "besides the
+  percentage to put the time of the reset". The day rather than the date or day and time, to
+  leave the bar room; with `usage_layout: line` the five-hour bar gets short.
 - **The card's figures are the session's totals** (2026-11-20). The author found "This
   reply" and "This turn" "not very intuitive"; "Tokens" and "Running" alone would read as
   totals, "Turn tokens" and "Turn time" were offered, and the author chose to make them
@@ -2080,7 +2087,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`always`/`never`, `never` by default; `auto`, said only with several sessions and no overlay, dropped 2026-11-20: "make it two choices ... I want to reduce [friction]"), `titles` (`ask`/`auto`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `headset_button`, `headset_seconds`, `headset_send`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_progress`, `end_progress`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `headset_button`, `headset_seconds`, `headset_send`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_progress`, `end_progress`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `usage_resets`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `SIDETONE_OVERLAY=off` disables the overlay.
 - `~/.local/state/sidetone/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).

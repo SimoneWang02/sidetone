@@ -3318,7 +3318,7 @@ namespace ClaudeSpeaks
         // behind.
         bool panelDrag = true;
         bool panelHeld, panelCatching;
-        object[] usage = new object[0];  // the plan's usage, from the hub: [what, percent, "warn" or ""] each
+        object[] usage = new object[0];  // the plan's usage, from the hub: [what, percent, "warn" or "", when it resets] each
         string focusWas = "";  // the session in focus as of the last state, to notice when it moves
         string historyOf = "";  // the session whose lines the history shows: the one the mouse was on last
         bool focusHistory = true;  // Selected Session: the history is in the card without the mouse resting (`focus_history: always`)
@@ -4432,6 +4432,14 @@ namespace ClaudeSpeaks
                     var figure = new TextBlock { Text = Math.Round(used * 100) + "%", FontSize = 11.5, FontWeight = FontWeights.SemiBold, Foreground = warn ? Ui.Alpha(Ui.ContextFull, 1) : Ui.Dim, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
                     Grid.SetColumn(figure, 2);
                     cell.Children.Add(figure);
+                    string resets = part.Length > 3 ? Convert.ToString(part[3], CultureInfo.InvariantCulture) : "";
+                    if (resets.Length > 0)
+                    {
+                        cell.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = stacked ? "planResets" : null });
+                        var when = new TextBlock { Text = resets, FontSize = 10.5, Foreground = Ui.Faint, Margin = new Thickness(7, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
+                        Grid.SetColumn(when, 3);
+                        cell.Children.Add(when);
+                    }
                     if (stacked) { ((Grid)plan).RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); Grid.SetRow(cell, plan.Children.Count); }
                     plan.Children.Add(cell);
                 }

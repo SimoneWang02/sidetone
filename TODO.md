@@ -18,6 +18,10 @@ Built, and working in the automated tests or in pictures taken from WSL, but not
 by the author with the real keys, voice or eyes. Every untried feature may hide a bug, so
 these come before anything new.
 
+- [ ] When each usage bar resets, beside its percent (2026-11-26, `usage_resets`, on; the
+      author by voice: "besides the percentage to put the time of the reset"): "2:39 AM" for
+      the five hours, the day ("Sun") for the week. Tests and pictures only. To judge by eye:
+      the day for the week, or the date, or day and time.
 - [ ] Other programs go quieter while a line is spoken (2026-11-26, `other_volume`, 30, the
       author by voice: "the audio level should be lower so I can focus more on your voice"):
       music, videos and calls go down to 30% of their own level for the length of a line and

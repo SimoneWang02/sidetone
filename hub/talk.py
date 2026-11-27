@@ -726,7 +726,8 @@ class Talk:
         threading.Thread(target=read, name="usage", daemon=True).start()
 
     def _plan_bars(self) -> list:
-        """The plan's usage for the foot of the overlay's card: [what, percent, "warn" or ""].
+        """The plan's usage for the foot of the overlay's card: [what, percent, "warn" or "",
+        when it starts again or ""].
         After the five hours and the week, the week of each model that has a figure of its
         own (`usage_models`: all, near = only from the warning on, none). `usage_labels`
         names the first two "5H" and "7D" or "5 hours" and "Week"."""
@@ -739,7 +740,10 @@ class Talk:
         which = str(self.cfg.usage_models).lower()
         if bars and which in ("all", "near"):
             bars += [[name, w] for name, w in (plan.get("models") or {}).items() if w and (which == "all" or near(w))]
-        return [[name, round(w["used"]), "warn" if near(w) else ""] for name, w in bars]
+        resets = bool(self.cfg.usage_resets)
+        return [[name, round(w["used"]), "warn" if near(w) else "",
+                 usage.reset_shown(w.get("resets", ""), week=i > 0) if resets else ""]
+                for i, (name, w) in enumerate(bars)]
 
     def _hand_over(self, s, text: str, lang: str = "") -> None:
         """Words for a session go out: as the answer to the question it is asking, to its

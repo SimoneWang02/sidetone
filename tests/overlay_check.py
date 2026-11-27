@@ -617,7 +617,7 @@ send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=
 shot("context-waiting")
 # A session's figures in a line of their own under the rows: of the session in focus, and
 # of the one the mouse is on (which has four of them).
-USAGE = [["5H", 41, ""], ["7D", 86, "warn"]]  # the plan's usage, at the foot of the card
+USAGE = [["5H", 41, "", "2:39 AM"], ["7D", 86, "warn", "Sun"]]  # the plan's usage, at the foot of the card
 send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE)
 send(type="peek", on=True)
 shot("metrics", 0.6)
@@ -630,7 +630,7 @@ shot("metrics-usage-line", 0.6)
 send(type="config", opaque=True, still=True, mode="dots", hotkeys=KEYS, usage_layout="rows", **HERE)
 send(type="peek", on=True, over="web-app")
 # With the week of one model as a third bar at the foot.
-send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE[:1] + [["7D", 47, ""], ["Fable", 89, "warn"]])
+send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE[:1] + [["7D", 47, "", "Sun"], ["Fable", 89, "warn", "Sun"]])
 shot("metrics-model", 0.6)
 send(type="state", sessions=sessions(context=CONTEXT, waiting=WAITING), history=HISTORY, usage=USAGE)
 send(type="peek", on=True, over="sidetone")

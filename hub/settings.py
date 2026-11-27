@@ -261,6 +261,7 @@ SECTIONS = [
         # (overlay.details_bars) left the window on 2026-11-22, the author: "keep it tiles by
         # default ... we can remove this setting", the bars "as well". Still read from config.json.
         switch("usage_shown", "Plan Usage", "The five-hour window and the week, at the foot of the details."),
+        switch("usage_resets", "When Usage Resets", "The time the five hours start again and the day the week does, beside each bar."),
         # "Usage Labels" (usage_labels: short, long) left the window on 2026-11-22, the author:
         # "I don't think that is needed". Still 5H and 7D, still read from config.json.
         # "Usage Bars" (overlay.usage_layout: rows, line) and "A Model's Own Week" (usage_models:

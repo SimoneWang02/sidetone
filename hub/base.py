@@ -356,6 +356,9 @@ class Config:
     # What the two bars are called: short = "5H" and "7D", which leaves the bars more room
     # | long = "5 hours" and "Week". A model's own week keeps its name either way.
     usage_labels: str = "short"
+    # When each bar starts again, beside its percent: the time for the five hours, the day for
+    # a week.
+    usage_resets: bool = True
     # How full each session's context is, counted from its transcript, and where it shows: arc
     # = a thin arc around the session's light, filling clockwise from the top | text =
     # "context 56%" at the end of its row of the details | both | off. true and false are
@@ -520,7 +523,7 @@ class Config:
             user = {}
         user = cfg._checked(user, path)
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
-                    "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "voice_device", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_progress", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
+                    "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "voice_device", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_progress", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "usage_resets", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
                     "followup_confirm", "end_background", "end_progress", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "volume", "other_volume", "muted_asks", "limit_once", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:

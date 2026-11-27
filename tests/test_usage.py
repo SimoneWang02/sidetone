@@ -342,6 +342,15 @@ class Recognising(unittest.TestCase):
                                                 "La settimana è al 37 percento, Fable al 70.")
         self.assertEqual(usage.say(None, "it"), usage.SORRY_IT)
         self.assertEqual(usage.clock24("resets 2:39am"), "2:39")
+
+    def test_when_a_window_resets_is_short_beside_its_bar(self):
+        import datetime
+        today = datetime.date(2026, 11, 26)
+        self.assertEqual(usage.reset_shown("Nov 26, 2:39am", today=today), "2:39 AM")
+        self.assertEqual(usage.reset_shown("Nov 29, 7:59am", week=True, today=today), "Sun")
+        self.assertEqual(usage.reset_shown("Jan 3, 7:59am", week=True, today=today), "Sun")  # next year's
+        self.assertEqual(usage.reset_shown("3pm", week=True, today=today), "3 PM")
+        self.assertEqual(usage.reset_shown("", week=True, today=today), "")
         self.assertEqual(usage.clock24("resets 12:05am"), "0:05")
         self.assertEqual(usage.clock24("resets 14:30"), "14:30")
         self.assertEqual(usage.say_context(34.4, "it"), "Il contesto è al 34 percento.")
