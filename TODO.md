@@ -348,10 +348,9 @@ Roughly easiest first, the larger ones after.
       random"), or a setting for which familiars are in use, not built. The dragon redrawn
       2026-11-26 (a neck, a belly of plates, darker wings, haunches, clawed feet, a longer
       tail; "not very detailed ... his central body is a bit weird"), previewed, then in the
-      overlay; **not yet tried live by the author**. The axolotl retouched 2026-11-26 as a
-      preview (`docs/dev/looks/familiars_next.py`: its tail along the floor and up with a fin,
-      a row clear of the right hand; its arms in one tone), **for the author to judge**, not
-      in the overlay. Character Color
+      overlay; **not yet tried live by the author**. The axolotl stays as it is: a
+      retouch (its tail along the floor and up with a fin, its arms in one tone) was previewed
+      2026-11-26 and not taken ("I think I prefer today's"). Character Color
       Strength (2026-11-26, "too, too saturated on familiars"): every figure wears a calmer
       tone of its session's color, 25 % by default, a light green as a leaf green
       (docs/dev/features.md); seen live by the author at 25 % ("this looks good"), the other
