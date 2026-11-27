@@ -1585,7 +1585,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   (found by polling the cursor position, since the window is click-through). It shows the
   lines of the session under the mouse (`historyOf`; before a row was touched, the session
   in focus): the author hovered another session, saw it light up and expected its history
-  (2026-11-17). `overlay.history: all` shows every session's lines mixed, as before.
+  (2026-11-17). `overlay.history: all` shows every session's lines mixed, as before. Each line is named only then; one session's lines go without the name, as in the card (2026-11-27, the author: "why do some sessions have history with their own repo name for each row?").
   In Selected Session the history is in the card whenever the details are out, without the
   mouse resting (`overlay.focus_history: always`, "History in Selected Session"; `rest` waits
   as All Sessions does). The author, 2026-11-22: "it would be cool to also have the history

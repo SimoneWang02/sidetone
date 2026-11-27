@@ -4525,7 +4525,7 @@ namespace ClaudeSpeaks
                 if (of == null) foreach (Row row in order) if (row.Focus) of = row.Name;
                 if (mode == "focus" && hot != null) of = hot.Name;  // the card's session, as in Chosen
             }
-            FillHistory(historyLines, of, of != null ? 4 : 6, true);
+            FillHistory(historyLines, of, of != null ? 4 : 6, of == null);  // a name only where sessions are mixed
         }
 
         // The last lines said, newest first: of one session (`of`), or of all of them. Each
