@@ -453,6 +453,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     not cut flat at the top. Edge: in a window
     of its own (`perch`, see-through, click-through, no blur) on the bubble's top edge, at
     its end away from the bar, 80 px; the bubble keeps its size ("On the edge is cool").
+    At the screen's top it goes past it and is cut off, no longer pushed down onto the bubble
+    (2026-11-26, the author: "it's like on top of the overlay ... it's fine if it gets cut off").
     Inside: 60 px in the bubble beside the words, which grows 50 px wider and no taller
     ("decrease the size to make them fit").
   - Character in the Details (`overlay.character_details`, on; 2026-11-26). The first build

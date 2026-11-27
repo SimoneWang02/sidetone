@@ -4096,11 +4096,10 @@ namespace ClaudeSpeaks
             {
                 // At its end away from the bar, its feet (two rows above the cell's bottom) on the edge;
                 // its companions stand on from there, towards the bar.
-                Rect work = WorkArea();
                 double tall = 2 * Sprite.Cell * zoom, foot = 2 * tall / Sprite.Cell;
                 double wide = companions.Count > 0 ? perchRow.DesiredSize.Width : tall;
                 perch.Left = !mirrored ? under.Left + 6 * zoom : under.Left + under.Width - wide - 6 * zoom;
-                perch.Top = Math.Max(work.Top, under.Top - tall + foot + 1);
+                perch.Top = under.Top - tall + foot + 1;  // past the screen's top it is cut off rather than pushed down onto the bubble
                 if (!perch.IsVisible) { perch.Show(); perch.Raise(); }
             }
             else if (perch.IsVisible) perch.Hide();
