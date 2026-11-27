@@ -40,7 +40,6 @@ from base import (ASIDE_ASK, ASIDE_PROMPT, Aside, BUSY, CONFIRM_WINDOW, Config, 
                   OWN_SESSION, PROMPTING_MODES, Pending, Request, SAFE_ID, SAID, STOP_WAIT, Sent, Stopping,  # noqa: E402,F401
                   TAKE_BACK, TAP, VOICE_AT_PROMPT, _ago, _answerable, _elapsed, _end, _read_out, _runs,  # noqa: E402,F401
                   _same_call, _spoken_name, aside_question, context_mode, log, session_model, spoken_answer)  # noqa: E402,F401
-from headset import Headset, Program as HeadsetProgram  # noqa: E402
 from permissions import Permissions  # noqa: E402
 from server import Handler, Server, serve  # noqa: E402,F401
 from talk import NEW_WAIT, Talk  # noqa: E402
@@ -51,7 +50,7 @@ DETAIL_NAMES = {"context": "Context", "tokens": "Turn Tokens", "time": "Turn Tim
                 "session_time": "Total Time", "tasks": "Tasks", "waiting": "Waiting"}
 
 
-class Hub(Permissions, Talk, Headset):
+class Hub(Permissions, Talk):
     def __init__(self, cfg: Config, engine):
         self.cfg = cfg
         self.lock = threading.Lock()
@@ -67,7 +66,7 @@ class Hub(Permissions, Talk, Headset):
         self._plan_asked, self._plan_busy = float("-inf"), False
         self.requests: list[Request] = []  # open permission prompts, oldest first
         self.recorder = None  # stt.Recorder, set by main() or the tests
-        self._mic = None  # what records now, or did last: the recorder, or the headset's microphone
+        self._mic = None  # what records now, or did last
         self.transcriber = None  # stt.Transcriber
         self.sounds = None  # sounds.Sounds, set by main() or the tests
         self.listeners: dict[str, Listener] = {}  # session id -> its waiting hook
@@ -1071,7 +1070,6 @@ class Hub(Permissions, Talk, Headset):
                         self.talk_target = s.id
                     kind = u.entry["kind"] if u.kind == "notice" and u.entry else u.kind  # said again: as it first looked
                     self._flash(s, u.text, FLASH_LOOK.get(kind, kind))
-        self.headset_spoke(u)
         level = self.cfg.other_volume / 100 if u else 1
         if self.overlay and (level < 1 or not u):  # other programs quieter while it is heard
             self.overlay.send({"type": "duck", "level": max(0.0, level)})
@@ -1199,8 +1197,6 @@ def main() -> int:
         hub.recorder = stt.Recorder(cfg.mic_source)
         hub.recorder.on_chunk = hub._mic_heard
         hub.transcriber = stt.Transcriber(cfg.whisper_model, cfg.whisper_language, cfg.whisper_device, cfg.whisper_gpu_model)
-        if HeadsetProgram.available():
-            hub.headset_setup()
     server = serve(hub, cfg.sock)
     stop = lambda *_: threading.Thread(target=server.shutdown, daemon=True).start()  # noqa: E731
     signal.signal(signal.SIGTERM, stop)
@@ -1223,7 +1219,6 @@ def main() -> int:
             try:
                 hub.reconcile()
                 hub.publish()
-                hub.headset_tick()
                 last = ""
             except Exception:  # noqa: BLE001  one bad second must not freeze the overlay for good
                 error = traceback.format_exc(limit=-3).strip()
@@ -1239,8 +1234,6 @@ def main() -> int:
     finally:
         hub.speech.close()
         hub.terminals.close()
-        if hub.headset:
-            hub.headset.stop()
         if hub.overlay:
             hub.overlay.stop()
         server.server_close()

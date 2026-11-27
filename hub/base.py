@@ -464,14 +464,6 @@ class Config:
     # `sidetone discord-key` presses it while Discord records the keybind.
     push_to_mute: bool = True
     push_to_mute_key: str = "F24"
-    # A headset's button, where its headphones are the ones you listen on (see headset.py; Windows
-    # 11): pressed once it records from the headset's own microphone, pressed twice quickly it
-    # sends. The button is Sidetone's while a session speaks and this many seconds after, else the
-    # music's. `headset_send`: presses | silence (4 s after your words) | auto = silence too, until
-    # the two presses have worked on these headphones. Off for new installs: it takes a button.
-    headset_button: bool = False
-    headset_seconds: float = 60
-    headset_send: str = "auto"
     whisper_unload_minutes: float = 10  # free the speech model's memory after this long unused; 0 = keep
     sessions_dir: str = os.path.expanduser("~/.claude/sessions")  # Claude Code's own session files
     config_path: str = ""  # the user's config.json; overlay placement chosen by dragging is saved there
@@ -525,7 +517,7 @@ class Config:
         user = cfg._checked(user, path)
         for key in ("voices", "voice_pool", "colors", "label", "max_age", "idle_exit", "default_voice", "speed",
                     "permission_grace", "whisper_model", "whisper_device", "whisper_gpu_model", "voice_device", "mic_source", "followup_delay", "talk_tail", "unsend_seconds", "cancel_stops", "stop_at_once", "followup_when", "voice_at_prompt", "usage_by_voice", "clear_by_voice", "clear_progress", "clear_words", "usage_shown", "usage_every", "usage_warn", "usage_models", "usage_labels", "usage_resets", "context_shown", "context_window", "turn_tokens", "turn_tokens_label", "turn_tokens_history", "history_time", "history_missed", "separator", "waiting_words", "row_metrics", "detail_metrics",
-                    "followup_confirm", "end_background", "end_progress", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "headset_button", "headset_seconds", "headset_send", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
+                    "followup_confirm", "end_background", "end_progress", "words_in_terminal", "whisper_language", "whisper_lean", "whisper_mixed", "keep_recordings", "push_to_mute", "push_to_mute_key", "whisper_unload_minutes", "talk_tap", "focus_reach_back", "focus_on_prompt", "titles", "reply_language", "language_voices",
                     "talk_feedback", "sound_volume", "volume", "other_volume", "muted_asks", "limit_once", "aside", "aside_words", "aside_model", "aside_timeout", "aside_claude", "projects_dir"):
             if key in user:
                 setattr(cfg, key, user[key])

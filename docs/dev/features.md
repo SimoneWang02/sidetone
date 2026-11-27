@@ -1461,7 +1461,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   the bar. Holding the same keys for 0.2 s also brings the panel out while they are held (the
   author: "ctrl+alt should open the details"), except during push-to-talk, which shows in its
   bubble. AltGr (right Alt, which Windows reports as Ctrl+Alt) is ignored for both.
-- A headset's button to talk (2026-11-24, `headset_button`, `headset_seconds`, `headset_send`;
+- Removed 2026-11-27 (see `TODO.md`, Decided: not flexible enough, and the headset's microphone
+  makes music sound worse). A headset's button to talk (2026-11-24, `headset_button`, `headset_seconds`, `headset_send`;
   `hub/headset.py`, `headset/Headset.cs`). The author was listening to a message while walking
   away from the PC and wanted to answer. What was measured with their Bose is in `TODO.md`
   ("AirPods paired with the PC"); the test for it is `tests/headset`. While a session speaks and
@@ -2106,7 +2107,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   `voice_pool`, `colors`, `label` (`always`/`never`, `never` by default; `auto`, said only with several sessions and no overlay, dropped 2026-11-20: "make it two choices ... I want to reduce [friction]"), `titles` (`ask`/`auto`), `max_age`, `idle_exit`, `default_voice`, `speed`,
   and `overlay` (`enabled`, `mode`, `monitor`, `corner`, `offset_x`, `offset_y`, `opacity`,
   `list_opacity`, `glass` (`blur`/`acrylic`/`none`), `flash_seconds`, `talk_sign` (`light`/`line`), `hotkeys`), `permission_grace`, `whisper_model`, `mic_source`, `followup_delay`, `unsend_seconds`,
-  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `headset_button`, `headset_seconds`, `headset_send`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_progress`, `end_progress`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `usage_resets`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
+  `talk_tail`, `push_to_mute`, `push_to_mute_key`, `talk_feedback`, `sound_volume`, `cancel_stops`, `clear_by_voice`, `clear_progress`, `end_progress`, `clear_words`, `usage_shown`, `usage_every`, `usage_warn`, `usage_models`, `usage_labels`, `usage_resets`, `history_time`, `context_shown` (`arc`/`text`/`both`/`off`), `context_window`, `turn_tokens` (`new`/`output`/`all`/`off`), `turn_tokens_label`, `turn_tokens_history`, `separator`, `waiting_words`, `row_metrics`, `detail_metrics`, `aside`, `aside_words`, `aside_model`, `aside_timeout`, and `terminal` (`tint`, `strength`, `background`,
   `pulse`, `pulse_strength`, `title`, `follow`). `SIDETONE_OVERLAY=off` disables the overlay.
 - `~/.local/state/sidetone/voices.json`: the voice each project was given, kept so it stays
   the same across hub restarts (a future settings panel would edit this and `config.json`).
@@ -2272,7 +2273,6 @@ On 2026-11-26 the comments were cut back to what the code cannot show (a constra
 - `hub/settings.py`, `cancel_stops` (2026-11-21): "by escape you mean control C ... If it's conventional, yes"
 - `hub/settings.py`, at "Off for a new install, and what ..." (2026-11-26): "put it as a setting, default as no ... in the description maybe put a info icon to show the downside of them activating it"
 - `hub/settings.py`, `talk_tail` (2026-11-21): "Is this conventional?"
-- `hub/settings.py`, `headset_button` (2026-11-24): "I guess we can notify this to users who use this headphones"
 - `hub/settings.py`, `overlay.layout` (2026-11-21): "in the description of layout put the combination key to switch"
 - `hub/settings.py`, `overlay.mode` (2026-11-21): "the same thing, the shortcut. And maybe shorten the answers"
 - `hub/settings.py`, `CHINESE_CLARITY`: "can you rank them in a sort of way? Four are too [few]"

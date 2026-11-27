@@ -146,12 +146,6 @@ SECTIONS = [
         # Named after Discord's own "Push to Talk Release Delay".
         number("talk_tail", "Release Delay", "After you let go of the talk key, it keeps listening this long, "
                "so your last word is not cut off.", 0, 1, 0.1, "s"),
-        switch("headset_button", "Headset Button", "After a session speaks, press your Bluetooth headset's button to talk through its "
-               "microphone, and press twice to send. Turn off its auto pause: taking the headset off can look like a press."),
-        number("headset_seconds", "Headset Button Time", "How long after a session speaks the button is Sidetone's. Before and after, it is your music's.",
-               10, 300, 10, "s"),
-        choice("headset_send", "Headset Sends", "Automatic also sends when you stop talking, until two presses have worked on your headset.",
-               ("auto", "Automatic"), ("presses", "Two Presses"), ("silence", "Silence")),
         # Out of the window, all on 2026-11-21, and all still read from config.json:
         # "Time to Cancel Before Sending" (followup_delay, 0 to 5 s), the author: "if it's unsure ...
         # they could just toggle the confirmation before sending"; confirming and taking words back

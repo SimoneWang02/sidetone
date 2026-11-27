@@ -637,82 +637,6 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
       nothing outside this machine can make it speak, approve or inject. Anything from a
       phone opens that door a little: it should go through a login that already exists
       (SSH), never a new open port, and approving from afar may deserve its own switch.
-- [ ] AirPods paired with the PC: a press on the stem reaches Windows as a media key
-      (play/pause, next, previous). The overlay could claim one as a talk key: press to start
-      recording, press again to send, since a press cannot be held. To check: whether the
-      overlay can take the key away from the music player, how to keep it out of the way
-      while music plays (only claim it while a session is open?), and how bad the sound gets
-      when Windows switches the AirPods to their microphone mode (playback drops to phone
-      call quality while the microphone is open). Works only within Bluetooth range.
-      Asked for again on 2026-11-24 (the author was listening to a message while walking away
-      from the PC and wanted to answer), with their AirPods Pro 3 and Bose QC Ultra Headphones 2.
-      Read up that day by an agent, nothing tried here and neither headset tested in anything
-      found; the main source is one project's logged trials with a Shokz headset on Windows 11
-      (github.com/johnjuuljensen/GodMode, `tools/GodMode.HeadsetSpike/README.md`):
-      - the press went to Windows' current media session (SMTC), not to the keyboard hook; some
-        older reports do see a key (0xB3), perhaps when no media session exists. The overlay
-        would hold a media session of its own only while a session waits for a reply, since
-        the music player gets no button meanwhile, and takes the session when it starts.
-      - with the headset microphone open no press reached SMTC, so the second press (send) is
-        the hard part. There, reporting a VoIP call to Windows (24H2 or later) turned it into
-        "end call". AirPods may send mute instead. Otherwise: press to start, silence to send.
-      - the microphone took 0.7 to 1.1 s to open (so a tone says when to speak), and full
-        quality came back about 5 s after closing. Stray presses come during the switch.
-      - Bose pauses when taken off, which may look like a press.
-      - tried with the Bose on 2026-11-24 (a throwaway logging window, one press each; build
-        26300; Spotify paused but open): with a media session of ours, a press came as Play
-        while it said paused and Pause while it said playing, a double press as Next; the
-        hook saw none of them (without our session the press went to Spotify). Taking the
-        headphones off and on sent nothing, with nothing playing. With the Bose microphone
-        open (first audio after 0.8 s, the count from one to ten heard whole) no press
-        arrived, neither plainly nor with a VoIP call reported (the author pressed in both;
-        the test said "Got it" wrongly in the call, for two mute events of its own start). So: press to start works, the second press does not, so far.
-        Windows' default microphone is the Nuroum on the desk: the hub would have to
-        open the headset's by name. (Later that day the default was the Bose's own, which
-        distorted playback while talking, as the author noticed; see `docs/dev/facts.md`. Not
-        yet set back: changing it from a session was refused. The Nuroum is the webcam and does
-        not follow them to another room, the author objected; tried: the Bose over LE
-        Audio, which Windows does not carry the sound over, so far. Paired again, Windows calls
-        the headset "Leviathan", and the default is the Nuroum again.) Not tried: Spotify playing, AirPods, through a wall.
-      - second test with the Bose, the same evening (`tests/headset/run.sh`; AirPods: `--mic=`
-        and part of their name in Windows), one try of each: microphone closed, a press came
-        as Play again. Microphone open: one press, two, and a hold all sent nothing. In a
-        reported VoIP call: one press nothing (as in the first test), **two quick presses "end
-        requested"** (1 s after the tone), a hold nothing. So press to start, double
-        press to send can work on this headset; seen once, not yet repeated. The part with
-        music playing was skipped by the test (nothing was playing when Start was pressed).
-      - the rehearsal with the Bose (`tests/headset/run.sh --rehearse`), the same night: press
-        once, microphone and reported call, a tone, talk, two quick presses. **5 of 5 rounds
-        started and were sent**; the tone came 0.73 to 0.84 s after the press. Spotify playing:
-        with our session saying paused the press went to Spotify (it paused); with ours
-        closed and back saying playing, it came to us (Pause) and Spotify played on. Taking
-        the headphones off and on with music sent nothing and Spotify played on. So our session
-        has to say playing while it wants the press over music, and then the press does not
-        pause the music. The taking off (here and in the first test) says nothing about other
-        people's headsets: the author has Bose's pause on taking off turned off, for its false
-        alarms. Left on, it probably comes as Pause, which is also what a press is while our
-        session says playing. While it says paused a press is Play, so a Pause can be ignored:
-        say paused when no music plays, and have a recording without words send nothing. Not tried: AirPods, distance, a press while a reply is being spoken.
-      - built the same night on the author's word ("we can proceed"; a minute after a session
-        speaks was proposed and not objected to), in this repo in files of its own
-        (`headset/Headset.cs`, `hub/headset.py`): `headset_button`, "Headset Button", off by
-        default, on in their config; the auto pause is in the setting's description ("we can
-        notify this to users"). **To try by them**: their first press
-        arrived (2026-11-24, 23:56) but the Bose's microphone gave no sound, since it was paired
-        again with LE Audio on (see `docs/dev/facts.md`); talking and sending are not tried yet.
-        (`tests/headset` needs `--mic=Leviathan` now.) Paired again since, it gives
-        sound. The music is left playing while you talk, in call quality: pausing it was offered,
-        the author: "we can move on ... It's not a big deal" (2026-11-25).
-        **Used by them** at 00:01 that night, start to end: pressed, open after 0.77 s, two
-        presses, 4.5 s heard as "Is there a fix to that?" and sent to this session. Left to
-        try: from the kitchen, over music, the keyboard's media keys, AirPods.
-        Seen live without a press: it took the button from Chrome while that played and gave
-        it back, and opened the Bose microphone in 0.6 s, in a call. Keyboard media keys in that
-        minute are passed on to the music, also not pressed by anyone. Not built: wired
-        headsets, Mac and Linux.
-      - to check by hand first, with a small logging window: what the hook, SMTC and the VoIP
-        call see for a press with nothing open, with Spotify, and with the microphone open;
-        and whether Windows records from the headset at all (there is a Nuroum V11 microphone).
 - [ ] AirPods on the phone, PC out of range: the phone has to be the bridge, because the
       gestures cannot be given to another program there. Candidates:
       - a phone Shortcut ("Hey Siri, tell Claude ...", or the Action button) that dictates a
@@ -1476,6 +1400,88 @@ Kept for the history: what was asked, what was found, and the author's words on 
 
 ### Decided
 
+- [x] Removed 2026-11-27, the headset button (`headset_button`, `headset/Headset.cs`,
+      `hub/headset.py`, `tests/headset`). The author, by voice, after trying it with the Bose: not
+      flexible (once the minute had run out, so the press went to the music; once a press meant
+      to pause a song started a recording), and opening the headset microphone puts it in call
+      mode, so music sounds worse; "I'm not using that either". A wake word was offered instead
+      and turned down for the same call mode. The code is in git before this commit. What it was:
+      AirPods paired with the PC: a press on the stem reaches Windows as a media key
+      (play/pause, next, previous). The overlay could claim one as a talk key: press to start
+      recording, press again to send, since a press cannot be held. To check: whether the
+      overlay can take the key away from the music player, how to keep it out of the way
+      while music plays (only claim it while a session is open?), and how bad the sound gets
+      when Windows switches the AirPods to their microphone mode (playback drops to phone
+      call quality while the microphone is open). Works only within Bluetooth range.
+      Asked for again on 2026-11-24 (the author was listening to a message while walking away
+      from the PC and wanted to answer), with their AirPods Pro 3 and Bose QC Ultra Headphones 2.
+      Read up that day by an agent, nothing tried here and neither headset tested in anything
+      found; the main source is one project's logged trials with a Shokz headset on Windows 11
+      (github.com/johnjuuljensen/GodMode, `tools/GodMode.HeadsetSpike/README.md`):
+      - the press went to Windows' current media session (SMTC), not to the keyboard hook; some
+        older reports do see a key (0xB3), perhaps when no media session exists. The overlay
+        would hold a media session of its own only while a session waits for a reply, since
+        the music player gets no button meanwhile, and takes the session when it starts.
+      - with the headset microphone open no press reached SMTC, so the second press (send) is
+        the hard part. There, reporting a VoIP call to Windows (24H2 or later) turned it into
+        "end call". AirPods may send mute instead. Otherwise: press to start, silence to send.
+      - the microphone took 0.7 to 1.1 s to open (so a tone says when to speak), and full
+        quality came back about 5 s after closing. Stray presses come during the switch.
+      - Bose pauses when taken off, which may look like a press.
+      - tried with the Bose on 2026-11-24 (a throwaway logging window, one press each; build
+        26300; Spotify paused but open): with a media session of ours, a press came as Play
+        while it said paused and Pause while it said playing, a double press as Next; the
+        hook saw none of them (without our session the press went to Spotify). Taking the
+        headphones off and on sent nothing, with nothing playing. With the Bose microphone
+        open (first audio after 0.8 s, the count from one to ten heard whole) no press
+        arrived, neither plainly nor with a VoIP call reported (the author pressed in both;
+        the test said "Got it" wrongly in the call, for two mute events of its own start). So: press to start works, the second press does not, so far.
+        Windows' default microphone is the Nuroum on the desk: the hub would have to
+        open the headset's by name. (Later that day the default was the Bose's own, which
+        distorted playback while talking, as the author noticed; see `docs/dev/facts.md`. Not
+        yet set back: changing it from a session was refused. The Nuroum is the webcam and does
+        not follow them to another room, the author objected; tried: the Bose over LE
+        Audio, which Windows does not carry the sound over, so far. Paired again, Windows calls
+        the headset "Leviathan", and the default is the Nuroum again.) Not tried: Spotify playing, AirPods, through a wall.
+      - second test with the Bose, the same evening (`tests/headset/run.sh`; AirPods: `--mic=`
+        and part of their name in Windows), one try of each: microphone closed, a press came
+        as Play again. Microphone open: one press, two, and a hold all sent nothing. In a
+        reported VoIP call: one press nothing (as in the first test), **two quick presses "end
+        requested"** (1 s after the tone), a hold nothing. So press to start, double
+        press to send can work on this headset; seen once, not yet repeated. The part with
+        music playing was skipped by the test (nothing was playing when Start was pressed).
+      - the rehearsal with the Bose (`tests/headset/run.sh --rehearse`), the same night: press
+        once, microphone and reported call, a tone, talk, two quick presses. **5 of 5 rounds
+        started and were sent**; the tone came 0.73 to 0.84 s after the press. Spotify playing:
+        with our session saying paused the press went to Spotify (it paused); with ours
+        closed and back saying playing, it came to us (Pause) and Spotify played on. Taking
+        the headphones off and on with music sent nothing and Spotify played on. So our session
+        has to say playing while it wants the press over music, and then the press does not
+        pause the music. The taking off (here and in the first test) says nothing about other
+        people's headsets: the author has Bose's pause on taking off turned off, for its false
+        alarms. Left on, it probably comes as Pause, which is also what a press is while our
+        session says playing. While it says paused a press is Play, so a Pause can be ignored:
+        say paused when no music plays, and have a recording without words send nothing. Not tried: AirPods, distance, a press while a reply is being spoken.
+      - built the same night on the author's word ("we can proceed"; a minute after a session
+        speaks was proposed and not objected to), in this repo in files of its own
+        (`headset/Headset.cs`, `hub/headset.py`): `headset_button`, "Headset Button", off by
+        default, on in their config; the auto pause is in the setting's description ("we can
+        notify this to users"). **To try by them**: their first press
+        arrived (2026-11-24, 23:56) but the Bose's microphone gave no sound, since it was paired
+        again with LE Audio on (see `docs/dev/facts.md`); talking and sending are not tried yet.
+        (`tests/headset` needs `--mic=Leviathan` now.) Paired again since, it gives
+        sound. The music is left playing while you talk, in call quality: pausing it was offered,
+        the author: "we can move on ... It's not a big deal" (2026-11-25).
+        **Used by them** at 00:01 that night, start to end: pressed, open after 0.77 s, two
+        presses, 4.5 s heard as "Is there a fix to that?" and sent to this session. Left to
+        try: from the kitchen, over music, the keyboard's media keys, AirPods.
+        Seen live without a press: it took the button from Chrome while that played and gave
+        it back, and opened the Bose microphone in 0.6 s, in a call. Keyboard media keys in that
+        minute are passed on to the music, also not pressed by anyone. Not built: wired
+        headsets, Mac and Linux.
+      - to check by hand first, with a small logging window: what the hook, SMTC and the VoIP
+        call see for a press with nothing open, with Spotify, and with the microphone open;
+        and whether Windows records from the headset at all (there is a Nuroum V11 microphone).
 - [x] Where push-to-talk and the voice lose quality: Kokoro stays (the author, by voice, 2026-11-26: "I want
       to know how to get better recordings, how to get better transcripts, less ambiguity and
       better voice output as well"). Measured the same day on their 417 kept recordings
