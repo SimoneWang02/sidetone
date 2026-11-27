@@ -411,7 +411,8 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     tells them apart. At 100 % a figure wears the session's color itself (a green is lime
     again). Each strength has its own sheet (`-s25-` in its name); the Sketch, which is
     lines, keeps the session's color and one sheet. Tried and not taken: the cut alone
-    (knee .11, 30 %) with no darker green.
+    (knee .11, 30 %) with no darker green. The author, of the figures live at 25 %: "I
+    haven't checked the other options but this looks good".
   - `hub/sketch.py` draws the Sketch: the preview's canvas lines with smooth edges (each
     pixel's coverage; numpy), in 88 px cells, twice the pixel styles', shown at their own size
     on the edge and scaled down smoothly inside and in the details (the overlay reads a

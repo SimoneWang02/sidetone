@@ -351,7 +351,8 @@ Roughly easiest first, the larger ones after.
       overlay; **not yet tried live by the author**. Character Color
       Strength (2026-11-26, "too, too saturated on familiars"): every figure wears a calmer
       tone of its session's color, 25 % by default, a light green as a leaf green
-      (docs/dev/features.md), **for the author to judge**, live and in the settings window. Open: ghost and owl
+      (docs/dev/features.md); seen live by the author at 25 % ("this looks good"), the other
+      values **not yet tried by the author**. Open: ghost and owl
       offered, not drawn; the
       Classic and Refined branches in `hub/characters.py`, kept only for comparison pages, to
       fold away once the author is sure. 5 (counts and labels at 20) and 6 (small flaws) not done. Previews only: "don't
