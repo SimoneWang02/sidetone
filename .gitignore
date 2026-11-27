@@ -9,3 +9,6 @@ voices-*.bin
 venv/
 # Python
 __pycache__/
+# Local tools and personal settings (the Impeccable design skill, Claude Code local settings)
+/.claude/
+/.impeccable/
