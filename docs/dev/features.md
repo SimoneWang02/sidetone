@@ -2201,6 +2201,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 On 2026-11-26 the comments were cut back to what the code cannot show (a constraint, a measured fact, a platform quirk); what the author said, when, and how a thing was before went out of them. Most of it was already in this file. These are the words that were in no document yet, each with the file and the setting or the comment it stood at. The whole comment as it was is in that file's history (`git log -S "a few of its words" -- FILE`).
 
 - `docs/dev/looks/familiars_next.py`, at "A familiar to come, as a preview ..." (2026-11-26): "I feel like the turtle is the one that I like the least. And the mushroom person, like the head seems very detached from the body"
+- `docs/dev/looks/familiars_next.py`, at "Proud, redrawn: the head on a neck ..." (2026-11-26): "the dragon familiar is not very detailed ... His central body is a bit weird". Measured on the live one: head and chest both 17 px wide with the muzzle 3 px into the chest (no neck), a belly of one tone, wings as light as the body and touching the head, a 4 px tail.
 - `docs/dev/looks/familiars_next.py`, at "A familiar to come, as a preview ..." (2026-11-26): "any other familiars who would be cool, dragons and stuff?"
 - `docs/dev/looks/familiars_next.py`, at "A familiar to come, as a preview ...": "do a preview. Don't delete the turtle yet. Revamp it. We can maybe do more than 5"
 - `docs/dev/looks/familiars_next.py`, at "A familiar to come, as a preview ...": "improve but don't stray from the main idea"

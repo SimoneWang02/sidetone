@@ -345,7 +345,10 @@ Roughly easiest first, the larger ones after.
       critiqued by subagents, docs/dev/features.md; of their preview: "they're good. You can
       put it"), **not yet tried live by the author**. As figures nine and ten they come up By
       Color only with nine sessions open: with Character Pick at Random ("I'll probably pick
-      random"), or a setting for which familiars are in use, not built. Character Color
+      random"), or a setting for which familiars are in use, not built. The dragon redrawn
+      2026-11-26 as a preview (`docs/dev/looks/familiars_next.py`: a neck, a belly of plates,
+      darker wings, haunches, clawed feet, a longer tail; "not very detailed ... his central
+      body is a bit weird"), **for the author to judge**, not in the overlay. Character Color
       Strength (2026-11-26, "too, too saturated on familiars"): every figure wears a calmer
       tone of its session's color, 25 % by default, a light green as a leaf green
       (docs/dev/features.md), **for the author to judge**, live and in the settings window. Open: ghost and owl

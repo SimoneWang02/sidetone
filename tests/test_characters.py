@@ -431,6 +431,11 @@ class PreviewsBothLooks(unittest.TestCase):
     def setUpClass(cls):
         sys.path.insert(0, os.path.join(ROOT, "docs", "dev", "looks"))
         import familiars_next
+        # A hub of an earlier test may still be drawing a sheet, and a sheet sets LOOK back as it
+        # ends: in the middle of this test, that drew a row's end and its start in two looks.
+        for thread in threading.enumerate():
+            if thread.name == "characters":
+                thread.join()
         cls.was, cls.base = characters.LOOK, len(characters.FAMILIARS)
         characters.FAMILIARS.extend(f for _, _, f in familiars_next.FIGURES)
         cls.colors = [c for _, c, _ in familiars_next.FIGURES]
