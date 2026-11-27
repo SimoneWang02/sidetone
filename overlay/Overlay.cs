@@ -3872,6 +3872,9 @@ namespace ClaudeSpeaks
             metricsLine.Visibility = showMetrics && detailsStyle == "line" ? Visibility.Visible : Visibility.Collapsed;
             metricsCard.Visibility = showMetrics && detailsStyle != "line" ? Visibility.Visible : Visibility.Collapsed;
             if (metricsCard.Visibility != Visibility.Visible) { stood.Clear(); gliding.Clear(); }  // the bars fill from nothing when it comes up again
+            // The card's own background sets it apart from the rows; a hairline as well is one edge too many.
+            (historyBox.Children[0] is Border ? historyBox.Children[0] : historyBox.Children[1]).Visibility =
+                metricsCard.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
             // The same room above the card as below it (10 px), whichever of the two is the
             // panel's edge and whichever the dividing line; more when the history follows.
             bool linesFollow = historyLines.Children.Count > 0;

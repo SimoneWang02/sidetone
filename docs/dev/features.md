@@ -2052,6 +2052,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   than two days back is taken as next year's). The author asked by voice: "besides the
   percentage to put the time of the reset". The day rather than the date or day and time, to
   leave the bar room; with `usage_layout: line` the five-hour bar gets short.
+- **No line between the rows and the card** (2026-11-26). The panel's hairline above the history (`Section`) is hidden while the figures' card shows: its own background already parts it from the rows. The author: "there's a divider between the session bar and the metrics bar ... you can remove that". The "line" style, with no card, keeps it.
 - **The card's figures are the session's totals** (2026-11-20). The author found "This
   reply" and "This turn" "not very intuitive"; "Tokens" and "Running" alone would read as
   totals, "Turn tokens" and "Turn time" were offered, and the author chose to make them
