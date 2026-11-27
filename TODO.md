@@ -734,6 +734,29 @@ that starts push-to-talk. Nothing below has been tried; the notes are guesses to
       them"): the keys held with the mouse (`focus_wheel`, `drag_keys`, `reorder_keys`, only in
       `config.json`), what the panel rows show, where the bubble goes.
 
+- [ ] Claude outside Claude Code: the desktop app and claude.ai in Chrome (the author, by voice,
+      2026-11-27: "I asked Claude on Chrome something and I don't know when it finishes ... I
+      would also like a quick answer such as this, like a summary"; on these ideas: "put them
+      in the TODO"). Ideas only, nothing built or tried. A search on 2026-11-27 (store
+      listings' snippets only) found the pieces apart but not together: "done" sounds
+      (Prompt Notifier, AI Response Notifier), full-text read-aloud and hold-space dictation
+      (Voice Control for ChatGPT, Gemini, etc.), Claude in Chrome's own "task complete"
+      notification. None speaks a summary. Neither the desktop app nor claude.ai has a hook for
+      a reply that has finished.
+      - A `speak` MCP tool from Sidetone, for the desktop app (and claude.ai, if a local tool
+        can reach it, not checked). The profile's preferences ask Claude to end each reply
+        by calling it with a one-line summary. That gives the summary and the "done" notice
+        without reading the page. Risks: Claude forgets the call, the call shows in the chat,
+        and it needs "always allow".
+      - Push-to-talk into the window in front: the hub types the words into whatever window
+        has focus, for the desktop app and Chrome alike.
+      - Only if the tool is forgotten too often: a Chrome extension that reads the first
+        line of each reply from claude.ai's page and notices when the reply ends. One row per
+        tab in the overlay. It reaches the hub through Chrome's native messaging (a TCP port
+        would undo the socket's safety). The page's markup changes and breaks it. claude.ai
+        installed as a Chrome app looks like the desktop app and keeps the extension.
+      - Check first: whether Code sessions inside the desktop app already run the hooks.
+
 The two below were step 4's larger extras, moved here on 2026-11-24 when the author chose to go
 on to the release ("let's go to publish unless there's something else to implement first"):
 
