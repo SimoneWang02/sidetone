@@ -56,6 +56,12 @@ PARTS = {
 }
 
 
+# How much of a session color's strength its figure keeps, in percent (overlay.character_strength):
+# 100 is the color itself, 0 a pastel of it.
+STRENGTH = 25
+PASTEL = .10  # the chroma (OKLCH) every figure may keep
+
+
 def has(part: str) -> bool:
     """Whether the look being drawn (`LOOK`) has this part of what tells the looks apart."""
     return part in PARTS[LOOK]
@@ -227,6 +233,19 @@ def luminance(color) -> float:
 GLASS = (0x1e, 0x1f, 0x2b)  # the overlay's dark glass, which the figures stand on
 
 
+def calm(color: str) -> str:
+    """A session's color as its figure wears it. The colors are picked to tell a line of words
+    apart on the glass, and a figure filled with one glares: its chroma above `PASTEL` is cut to
+    `STRENGTH` percent. A strong light green also goes darker, to a leaf green (measured: as light
+    as it was, it still read as lime at a chroma of .13)."""
+    if STRENGTH >= 100:
+        return color
+    k = max(0, STRENGTH) / 100
+    L, C, h = oklch(color)
+    green = max(0, 1 - abs(h - 135) / 25) * min(1, C / .16)
+    return _hex(from_oklch(L - (1 - k) * green * max(0, L - .78), min(C, PASTEL + (C - PASTEL) * k), h))
+
+
 def _ramp2(color: str) -> list[tuple[int, int, int]]:
     """LOOK 2: the outline light enough to show on the dark glass (about 1.6:1 against it), yet
     darker than every other tone; shadows at about 0.7 of the color's chroma, turning towards
@@ -258,26 +277,20 @@ def _ramp3(color: str) -> list[tuple[int, int, int]]:
     """LOOK 3: Classic's tones, their volume and punch, with two changes. The outline, as Classic's
     where that shows on the glass, lifted elsewhere to about 1.6:1 against it, as far as the
     darkest shadow lets it (four dark session colors of the twenty, and dark clothes, stay near
-    Classic's). And a pale color's shadows (lightness above .75) kept from going to full
-    strength: a pale green's to lime, a pale blue's to royal blue."""
+    Classic's). And the shadows kept to a little over the color's own strength: Classic builds
+    them in HSL, where a darker tone of the same saturation is far stronger to the eye (a pink of
+    chroma .19 had shadows of .28, a pale blue's went to royal blue)."""
     out = _ramp1(color)
-    hl = colorsys.rgb_to_hls(*(v / 255 for v in _rgb(color)))[1]
-    Cc = oklch(color)[1]
+    Cc, h0 = oklch(color)[1:]
     tones = [list(oklch(t)) for t in out[:3]]
     moved = set()
     for i, t in enumerate(tones):
-        if hl > .75 and t[1] > Cc * 1.35 + .02:
-            t[1] = Cc * 1.35 + .02
+        if t[1] > Cc * 1.2 + .02:
+            t[1] = Cc * 1.2 + .02
             moved.add(i)
     # A yellow-green to green: the eye takes green as the brightest, so its shadows keep about
     # the color's own strength and stay near its hue (at full strength they turned to neon).
-    h0 = oklch(color)[2]
     if 100 <= h0 <= 165:
-        # and its body, light and highlights toned down: still the session's green, not lime
-        # (then: "still ... very green. Very, very bright")
-        for i in (3, 4, 5):
-            L, C, H = oklch(out[i])
-            out[i] = from_oklch(L - .12 + .02 * (i - 3), C * .75, H)
         for i, t in enumerate(tones[1:], 1):
             d = (t[2] - h0 + 180) % 360 - 180
             if t[1] > Cc * 1.05 or abs(d) > 20:
@@ -2011,6 +2024,7 @@ def frame(style: str, kind: int, color: str, s: str, T: float, A: float, V: floa
     """One cell, as RGBA."""
     if style == "sketch":
         return sketch.frame(kind, color, s, T, A, V)
+    color = calm(color)
     # the operators are drawn one row higher, to stand on the same row as the familiars (42 of 44)
     F = Frame(s, T, A, V, OFF - 1 if style == "operators" else OFF)
     if style == "operators":
@@ -2053,17 +2067,17 @@ def row_frames(style: str, kind: int, color: str, name: str, extra: int = 0):
         yield frame(style, kind, color, s, t0 + i / FPS, a0 + i / FPS, v, lag)
 
 
-def sheet(style: str, kind: int, color: str, look: int | None = None) -> bytes:
+def sheet(style: str, kind: int, color: str, look: int | None = None, strength: int | None = None) -> bytes:
     """Every cell of one figure in one color, as a PNG; `look` draws it in that look (1 classic,
-    2 refined, 3 the two mixed) instead of the module's `LOOK`. Sheets are drawn one at a time (`Sheets`)."""
-    global LOOK
-    if look is None:
-        return _sheet(style, kind, color)
-    was, LOOK = LOOK, look
+    2 refined, 3 the two mixed) instead of the module's `LOOK`, `strength` at that percent of its
+    color's strength instead of `STRENGTH`. Sheets are drawn one at a time (`Sheets`)."""
+    global LOOK, STRENGTH
+    was = LOOK, STRENGTH
+    LOOK, STRENGTH = LOOK if look is None else look, STRENGTH if strength is None else strength
     try:
         return _sheet(style, kind, color)
     finally:
-        LOOK = was
+        LOOK, STRENGTH = was
 
 
 def _sheet(style: str, kind: int, color: str) -> bytes:
@@ -2099,19 +2113,24 @@ class Sheets:
         self._ready: dict[tuple[str, int, str], str] = {}
         self._busy = False
 
-    def name(self, style: str, kind: int, color: str, look: int | None = None) -> str:
+    def name(self, style: str, kind: int, color: str, look: int | None = None, strength: int | None = None) -> str:
         look = LOOK if look is None else look
-        return os.path.join(self.folder, f"{style}-{kind}-{color.lstrip('#').lower()}-{f'look{look}-' if look != 1 else ''}{_SOURCE}.png")
+        strength = STRENGTH if strength is None else strength
+        return os.path.join(self.folder, f"{style}-{kind}-{color.lstrip('#').lower()}-{f'look{look}-' if look != 1 else ''}"
+                                         f"{f's{strength}-' if strength != 100 else ''}{_SOURCE}.png")
 
-    def path(self, style: str, color: str, look: int | None = None, kind: int | None = None) -> str:
+    def path(self, style: str, color: str, look: int | None = None, kind: int | None = None, strength=None) -> str:
         """The overlay's path to this session's sheet, or "" while it is being drawn. `look`:
         1 classic, 2 refined, 3 the two mixed; `LOOK` when not given. `kind`: which figure (`pick`);
-        the color's when not given."""
+        the color's when not given. `strength`: the percent of its color's strength
+        (overlay.character_strength); `STRENGTH` when not given or not a number."""
         if style not in STYLES or not color:
             return ""
         look = LOOK if look is None else look
         kind = kind_of(color, kinds(style)) if kind is None else kind % kinds(style)
-        key = (style, kind, color, look if look in PARTS and style != "sketch" else 1)
+        strength = round(_clamp(strength, 0, 100)) if isinstance(strength, (int, float)) else STRENGTH
+        # the sketch is lines in the session's own color: one look, one strength
+        key = (style, kind, color) + ((look if look in PARTS else 1, strength) if style != "sketch" else (1, 100))
         with self._lock:
             if key in self._ready:
                 return self._ready[key]

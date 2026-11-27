@@ -901,6 +901,7 @@ class Hub(Permissions, Talk, Headset):
         # A row's right end: what the settings name, and what older settings still ask for there.
         in_row = list(self.cfg.row_metrics) + ["waiting"] * bool(self.cfg.waiting_words) + ["context"] * (context in ("text", "both"))
         style, pick = self.cfg.overlay.get("character", "none"), self.cfg.overlay.get("character_pick", "color")
+        strength = self.cfg.overlay.get("character_strength")
         with self.lock:
             rows = [{
                 "name": s.name,
@@ -923,7 +924,7 @@ class Hub(Permissions, Talk, Headset):
                 "synth": not self.speech.meter,  # no real loudness to draw: the overlay makes up a motion
                 # Its character's sheet ("" for none, or while it is being drawn): the figure by
                 # its color, or by its id when the pick is at random (overlay.character_pick).
-                "sprite": self.sheets.path(style, s.color, kind=characters.pick(style, s.color, s.id, pick)),
+                "sprite": self.sheets.path(style, s.color, kind=characters.pick(style, s.color, s.id, pick), strength=strength),
                 # Its subagents as small companions beside that character, and how many more than those.
                 "agents": agents, "agents_more": more,
             } for s in self.sessions.by_id.values() for figures in [self._figures(s)] for agents, more in [self._companions(s)]]

@@ -262,6 +262,15 @@ class Sheets(unittest.TestCase):
         sheets.path("familiars", COLORS[0], 3)
         self.assertEqual([key[3] for key in sheets._wanted[:2]], [1, 3])
 
+    def test_each_strength_has_its_own_sheet(self):
+        sheets = characters.Sheets(tempfile.mkdtemp(prefix="cs-sprites-"))
+        sheets._busy = True  # nothing drawn: only what is asked for
+        for strength in (None, 60, 60.2, 400, "strong"):  # the setting as config.json may hold it
+            sheets.path("familiars", COLORS[0], strength=strength)
+            sheets.path("sketch", COLORS[0], strength=strength)  # lines in the session's own color: one sheet
+        self.assertEqual([key[3:] for key in sheets._wanted], [(3, 25), (1, 100), (3, 60), (3, 100)])
+        self.assertEqual(len({sheets.name(*key) for key in sheets._wanted}), 4)
+
     def test_the_kind_given_names_the_sheet(self):
         # the hub hands the figure it picked (by color, or at random by the session's id)
         sheets = characters.Sheets(tempfile.mkdtemp(prefix="cs-sprites-"))
@@ -341,10 +350,9 @@ class Look3Mix(Look3, unittest.TestCase):
             characters.LOOK = 1
             classic = characters.ramp(color)
             characters.LOOK = 3
-            if 100 <= characters.oklch(color)[2] <= 165:  # a green: toned down ("very, very bright")
-                self.assertLess(characters.oklch(R[3])[1], characters.oklch(classic[3])[1], color)
-            else:
-                self.assertEqual(R[3:], classic[3:], color)  # the color and its lights as Classic's
+            self.assertEqual(R[3:], classic[3:], color)  # the color and its lights as Classic's
+            for t in R[:3]:  # the shadows a little over the color's own strength, not HSL's full strength
+                self.assertLess(characters.oklch(t)[1], characters.oklch(color)[1] * 1.2 + .03, color)
             L = [characters.oklch(t)[0] for t in R]
             self.assertLessEqual(L[0], L[1], color)  # the outline no lighter than any shadow
             if color in COLORS[:8]:  # the colors handed out first: the darkest shadow leaves room
@@ -352,6 +360,28 @@ class Look3Mix(Look3, unittest.TestCase):
         # pale colors' shadows not at full strength: no lime under a pale green, no royal blue
         for color, tone in (("#DAF0B8", 1), ("#8AB4FF", 1)):
             self.assertLess(characters.oklch(characters.ramp(color)[tone])[1], .2, color)
+
+    def test_a_figure_wears_its_color_calmer(self):
+        # The author, three times on 2026-11-26: a figure filled with its session's color is "too
+        # saturated". Measured before: a pink's shadows at a chroma of .28, a green's lighter and
+        # stronger than its body.
+        for color in COLORS:
+            R = [characters.oklch(t) for t in characters.ramp(characters.calm(color))]
+            self.assertLess(max(C for _, C, _ in R), .19, color)
+            self.assertLess(R[2][0], R[3][0], color)  # a shadow darker than the body
+            hue = (characters.oklch(characters.calm(color))[2] - characters.oklch(color)[2] + 180) % 360 - 180
+            self.assertLess(abs(hue), 4, color)  # still its session's color
+        self.assertEqual(characters.calm("#7FDBCA"), "#7fdbca")  # a soft color stays as it is
+        self.assertLess(characters.oklch(characters.calm("#B9F27C"))[0], .85)  # a light green: leaf, not lime
+        self.assertGreater(characters.oklch(characters.calm("#F9E27D"))[0], .9)  # a yellow stays light
+        soft, own = (characters.sheet("familiars", 6, COLORS[7], strength=k) for k in (0, 100))
+        self.assertNotEqual(soft, own)
+        self.assertEqual(characters.STRENGTH, 25)
+        characters.STRENGTH = 100
+        try:
+            self.assertEqual(characters.calm("#ED44EC"), "#ED44EC")  # the color itself
+        finally:
+            characters.STRENGTH = 25
 
     def test_it_moves_as_classic_while_working(self):
         # Held poses, not the eased cycles of LOOK 2: the figure's own pixels where Classic's are.
@@ -465,6 +495,14 @@ class HubRows(unittest.TestCase):
         hub.publish()
         by_color, by_id = characters.kind_of(hub.sessions.by_id["s1"].color, 7), characters.pick("familiars", "", "s1", "random")
         self.assertEqual([key[1] for key in hub.sheets._wanted], list(dict.fromkeys([by_color, by_id])))
+
+    def test_the_figure_is_drawn_at_the_strength_set(self):
+        hub, sent = self.make("familiars")
+        hub.sheets._busy = True  # nothing drawn: only what is asked for
+        hub.publish()
+        hub.cfg.overlay["character_strength"] = 70
+        hub.publish()
+        self.assertEqual([key[4] for key in hub.sheets._wanted], [25, 70])
 
     def test_a_character_reaches_the_overlay_once_drawn(self):
         hub, sent = self.make("familiars")

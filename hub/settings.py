@@ -225,6 +225,8 @@ SECTIONS = [
         choice("overlay.character_pick", "Character Pick", "Which figure a session gets: by its color, so the same "
                "project keeps the same one, or at random, kept for as long as the session lasts.",
                ("color", "By Session Color"), ("random", "At Random")),
+        number("overlay.character_strength", "Character Color Strength", "How strong a pixel figure's color is: 100 is its "
+               "session's color as it is, 0 a pastel of it. The Sketch keeps the session's color.", 0, 100, 5, "%"),
         # Character Look (classic, mix, refined) left on 2026-11-26: the Mix is the one look (the author: "There
         # shouldn't be two choices. Make it only one. I guess mix is better.").
         switch("overlay.character_details", "Character in the Details", "With the details out too: on their edge in "

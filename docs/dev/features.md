@@ -385,6 +385,31 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     hence the begging. Not taken: hops for needs you (feet stay on the floor: a head bob
     instead). By Color, figures nine and ten come up only with nine sessions open (the eight
     soft colors go out first): the author would use Character Pick at Random.
+  - Character Color Strength (`overlay.character_strength`, 0 to 100 %, 25 by default;
+    2026-11-26). The author, three times that day, of a figure filled with its session's
+    color: "might be too green, might be too saturated", then "still ... very green. Very,
+    very bright", then "some colors like this one, which is green ... are too, too saturated
+    on familiars". The first two answers were rules for greens only (their shadows near the
+    color's own strength; then body and lights darker and at .75 of their chroma), and the
+    second left a light green's first shadow lighter and stronger than its body (lightness
+    .81 against .79, chroma .167 against .127). The cause was wider. The session colors are
+    picked to tell a line of words apart on the glass (chroma in OKLCH up to .27), and
+    Classic's tones are built in HSL, where a darker tone of the same saturation is far
+    stronger to the eye: a pink of chroma .19 had shadows of .28, a violet of .19 shadows of
+    .27. Now one rule for every hue, in two parts. `calm` gives the color a figure wears: its
+    chroma above .10 (`PASTEL`) cut to the strength's percent, hue kept, lightness kept but
+    for a strong light green (hue within 25 degrees of 135), which goes down towards .78: as
+    light as it was it still read as lime at a chroma of .13. And in `_ramp3` every color's
+    shadows stay within 1.2 times its chroma plus .02 (pale colors only before, at 1.35). At
+    25 %: the strongest tone of any of the twenty colors is .18 (.28 before), the pink
+    `#FF7FD9` is worn as chroma .12, the magenta `#ED44EC` as .14, the author's green
+    `#B9F27C` as a leaf green of lightness .83 and chroma .11 with darker shadows. Seen in
+    pictures of all ten familiars and five operators in all twenty colors; two nearby
+    greens (`#B9F27C`, `#A3FA30`) are now nearly the same on a figure, the name's color still
+    tells them apart. At 100 % a figure wears the session's color itself (a green is lime
+    again). Each strength has its own sheet (`-s25-` in its name); the Sketch, which is
+    lines, keeps the session's color and one sheet. Tried and not taken: the cut alone
+    (knee .11, 30 %) with no darker green.
   - `hub/sketch.py` draws the Sketch: the preview's canvas lines with smooth edges (each
     pixel's coverage; numpy), in 88 px cells, twice the pixel styles', shown at their own size
     on the edge and scaled down smoothly inside and in the details (the overlay reads a
@@ -2193,6 +2218,7 @@ On 2026-11-26 the comments were cut back to what the code cannot show (a constra
 - `hub/characters.py`, at "not 'wide': the author, 2026-11-26, of the ..." (2026-11-26): "I probably prefer the classic ... not consistent with the rest"
 - `hub/characters.py`, at "The figures are drawn on a 40 ..." (2026-11-26): "the animation seems cut when jumping and then falling down"
 - `hub/characters.py`, at "A yellow-green to green: its shadows turned ..." (2026-11-26): "might be too green, might be too saturated"
+- `hub/characters.py`, `calm` (2026-11-26): "some colors like this one, which is green ... are too, too saturated on familiars"
 - `hub/characters.py`, at "A light from the top left, mostly ...", a review: "every part a lit ball"
 - `hub/characters.py`, at "white bars, as it always had (the ..." (2026-11-26): "I actually like the white eyes only"
 - `hub/characters.py`, at "Shy, on all fours, seen from the ..." (2026-11-26): "I feel like the turtle is the one that I like the least"

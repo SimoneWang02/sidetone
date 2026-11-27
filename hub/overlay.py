@@ -64,6 +64,9 @@ DEFAULTS = {
     # same project keeps the same figure | random = by the session's id, the same for the
     # session's whole life.
     "character_pick": "color",
+    # How much of its session color's strength a pixel figure keeps, in percent: 100 = the color
+    # itself, 0 = a pastel of it (characters.calm). The sketch keeps the color as it is.
+    "character_strength": 25,
     # Also with the details out: on their top edge in Selected Session, small beside each row in All
     # Sessions. Off: only with the bubble.
     "character_details": True,
