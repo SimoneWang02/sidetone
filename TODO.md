@@ -834,6 +834,10 @@ Kept for the history: what was asked, what was found, and the author's words on 
       under Talking, and its name ends in "the Terminal", which is also a section. The
       "Downsides" sign's words (rest the mouse on it) are not known to have been read.
 
+- [ ] The new-session key brings VS Code to the front (2026-11-26, the overlay's `Raise`): behind
+      another program its new terminal waited 20 s until clicked. Built, test of the hub's side
+      only; not yet tried by hand with VS Code behind another program, nor minimized.
+
 - [x] A new session in a tab of its own (2026-11-26, `terminal.new_session`, "New Session
       Opens" under Terminal: Side by Side, the default, or In a New Tab; the author: "a
       feature setting that lets me create a new tab, which is not side by side"). Set to In a

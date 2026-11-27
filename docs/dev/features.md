@@ -954,6 +954,16 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
   banner takes its place, and "Ended" is then not said over that one. No "waiting for the
   editor" as a clear has: the end key is only claimed while an editor is waiting to be asked.
   Tests and pictures only, not tried by the author yet; needs `sidetone hub restart`.
+- The new-session key brings up the editor's window (2026-11-26, the overlay's `Raise`, message
+  `raise` with the folder's name). Seen in `hub.log`: asked at 22:19:23, the session started at
+  22:19:43, when the author clicked VS Code ("it loaded only when I clicked Visual Studio
+  Code"); with VS Code in front it takes 1 s. Behind another program its window's timers run
+  about once a minute (`CLEAR_CONFIRM`), so the terminal waits. The author: "you should bring it
+  up like in front". The overlay finds the visible window of `Code` whose title has a part
+  " - "-separated that is the folder's name (then " [WSL: ...]" or " (Workspace)"), restores
+  it if minimized and sets it in front, with an Alt tap first if Windows refuses. No setting:
+  without it the session does not start until you switch there. A window title changed by
+  `window.title` without the folder's name is not found, and nothing happens.
 - Where a new session opens (2026-11-26, `terminal.new_session`, "New Session Opens" under
   Terminal: `beside` | `tab`; `sidetone terminal new beside|tab`). The author, by voice:
   "whenever I do Ctrl Alt Plus, the terminal is always created side by side. I think there

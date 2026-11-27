@@ -59,6 +59,7 @@ class Editor:
     windows: bool = False  # it can also bring another of the editor's windows up (0.7.0 on)
     confirms: bool = False  # it can also type the Enter that answers what Claude Code asks before it exits with work in the background (0.8.0 on)
     window: str = ""  # the folder of the window it is asked to bring up, if it is the one in front
+    folder: str = ""  # what its own window has open, as a URI
 
 
 EDITOR_WAIT = 25.0  # seconds an editor's request is held before it is sent back empty and asked again

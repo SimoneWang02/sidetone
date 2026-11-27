@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import threading
 import time
+import urllib.parse
 
 import base
 import claude_sessions
@@ -345,6 +346,9 @@ class Talk:
             editor.open.append({"cwd": s.cwd if s else "", "beside": beside})
             editor.wake.set()
             self._opening = time.monotonic()
+            if self.overlay:  # its window must be shown for the terminal to start
+                name = urllib.parse.unquote(editor.folder.rstrip("/").rsplit("/", 1)[-1]).removesuffix(".code-workspace")
+                self.overlay.send({"type": "raise", "name": name})
         log(self.cfg, "hub.log", f"new session asked of the editor, in {s.cwd if s else 'its own folder'}"
             + (f", beside the terminal of {s.name} ({tty})" if beside else ", in a tab of its own"))
 
@@ -1118,7 +1122,7 @@ class Talk:
         `confirms`: it can also type the Enter that answers what Claude Code asks before it
         exits with work in the background."""
         ttys = {tty: pid for pid in pids for tty in [terminal_mod.tty_of(pid)] if tty}
-        editor = Editor(ttys, shows=shows, clears=clears, opens=opens, windows=windows, confirms=confirms)
+        editor = Editor(ttys, shows=shows, clears=clears, opens=opens, windows=windows, confirms=confirms, folder=folder)
         repaint = False
         with self.lock:
             self.editors.append(editor)

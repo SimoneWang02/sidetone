@@ -3158,6 +3158,15 @@ namespace ClaudeSpeaks
         [DllImport("kernel32.dll")] static extern IntPtr GetModuleHandle(string name);
         [StructLayout(LayoutKind.Sequential)] struct MouseHookData { public CursorPoint Point; public uint Data, Flags, Time; public IntPtr Extra; }
         [DllImport("user32.dll")] static extern void mouse_event(uint flags, uint dx, uint dy, uint data, UIntPtr extra);
+        delegate bool WindowProc(IntPtr hwnd, IntPtr unused);
+        [DllImport("user32.dll")] static extern bool EnumWindows(WindowProc proc, IntPtr unused);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetWindowText(IntPtr hwnd, StringBuilder text, int max);
+        [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+        [DllImport("user32.dll")] static extern bool IsIconic(IntPtr hwnd);
+        [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr hwnd, int how);
+        [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr hwnd);
+        [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+        [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
 
         readonly JavaScriptSerializer json = new JavaScriptSerializer();
         readonly TextWriter output;
@@ -3678,6 +3687,9 @@ namespace ClaudeSpeaks
                     break;
                 case "banner":
                     ShowBanner(msg);
+                    break;
+                case "raise":
+                    Raise(Str(msg, "name", ""));
                     break;
                 case "keys":
                     liveKeys.Clear();
@@ -4767,6 +4779,45 @@ namespace ClaudeSpeaks
             if (heldDown != 0) Press((int)heldDown, true);
             heldDown = key;
             if (key != 0) Press((int)key, false);
+        }
+
+        // Bring up the VS Code window whose title names this folder: hidden behind another program,
+        // its timers run about once a minute, so a terminal asked of it starts only when it is shown.
+        static void Raise(string name)
+        {
+            if (name.Length == 0) return;
+            IntPtr found = IntPtr.Zero;
+            EnumWindows(delegate(IntPtr hwnd, IntPtr unused) {
+                if (!IsWindowVisible(hwnd) || !Titled(hwnd, name) || !IsCode(hwnd)) return true;
+                found = hwnd;
+                return false;
+            }, IntPtr.Zero);
+            if (found == IntPtr.Zero || found == GetForegroundWindow()) return;
+            if (IsIconic(found)) ShowWindow(found, 9);  // SW_RESTORE
+            if (SetForegroundWindow(found) && GetForegroundWindow() == found) return;
+            // Windows lets the program that sent the last input set the foreground window: an Alt tap makes that us.
+            Press(VK_MENU, false);
+            Press(VK_MENU, true);
+            SetForegroundWindow(found);
+        }
+
+        // VS Code's title is its parts joined by " - "; the folder's part is its name, then " [WSL: ...]"
+        // when remote or " (Workspace)" for a workspace file.
+        static bool Titled(IntPtr hwnd, string name)
+        {
+            StringBuilder text = new StringBuilder(512);
+            GetWindowText(hwnd, text, text.Capacity);
+            foreach (string part in text.ToString().Split(new string[] { " - " }, StringSplitOptions.None))
+                if (part == name || part.StartsWith(name + " [") || part.StartsWith(name + " (")) return true;
+            return false;
+        }
+
+        static bool IsCode(IntPtr hwnd)
+        {
+            uint pid;
+            GetWindowThreadProcessId(hwnd, out pid);
+            try { using (Process process = Process.GetProcessById((int)pid)) return process.ProcessName == "Code"; }
+            catch (ArgumentException) { return false; }
         }
 
         static void Press(int key, bool up)

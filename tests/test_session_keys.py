@@ -105,6 +105,12 @@ class SessionKeys(HubCase):
         hub.on_overlay({"type": "hotkey", "name": "new_session"})
         self.assertEqual(editor.open, [{"cwd": "", "beside": None}])
 
+    def test_the_editors_window_is_brought_up_by_its_folders_name(self):
+        hub = self.make()
+        hub.editor_waits([4001], opens=True, folder="vscode-remote://wsl%2Bubuntu/w/my%20app")
+        hub.on_overlay({"type": "hotkey", "name": "new_session"})
+        self.assertEqual(self.overlay.of("raise"), [{"type": "raise", "name": "my app"}])
+
     def test_as_a_tab_it_names_no_terminal_to_sit_beside(self):
         """`terminal.new_session` "tab": a terminal of its own, still asked of the editor that
         holds the terminal of the session in focus, in that session's folder, and its session
