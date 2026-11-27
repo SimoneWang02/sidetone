@@ -1227,15 +1227,17 @@ def axolotl(F: Frame, col: str):
 
 
 def dragon(F: Frame, col: str):
-    """Proud: a whelp in the session's color, short horns curving back, a muzzle, bat wings that
-    spread, a little fire. Idle, it holds its chin up, its eyes half shut and its chest out, and
-    snorts a little smoke."""
+    """Proud: a whelp in the session's color, short horns curving back, a snout over a neck in
+    shadow, a belly of cream plates, bat wings well darker than the body that spread, haunches and
+    clawed feet, a tail with a spade, a little fire. Idle, it holds its chin up, its eyes half shut
+    and its chest out, and snorts a little smoke."""
     s, T, A, V, c = F.s, F.T, F.A, F.V, F.c
     dead = s == "failed"
-    C = ramp(tint(col, -.25) if dead else col)
-    # the wings' membrane a little darker than the body, so arms in front of them stand out; its
-    # bones a tone darker again
-    B, H, M = ramp(tint(tint(col, -.25) if dead else col, .45)), ramp("#f3e2b8"), ramp(tint(col, -.14))
+    base = tint(col, -.25) if dead else col
+    # horns, belly plates and claws in one cream; the wings' membrane well darker than the body,
+    # so the body and the arms stand in front of it
+    C, H, M = ramp(base), ramp("#f3e2b8"), ramp(tint(base, -.3))
+    C = C[:5] + [C[4]]  # no brightest tone: on a body this small it was specks, not a shine
     wing, la, ra, mouth, eye, hy, chin, puff = .25, 0, 0, 0.0, "open", 0.0, 0, 0.0
     if s == "idle":  # proud: chin up, eyes half shut, chest out
         wing, eye, chin, puff = .25 + F.wave(4) * .3, "smug", 1, 1.0
@@ -1255,33 +1257,48 @@ def dragon(F: Frame, col: str):
         wing, eye, hy = -.35 + F.wave(2) * .04, "x", 1
     if s == "listen":
         wing, ra, eye = .5 + F.wave(1) * .06, 6, "wide"
-    # wings behind: a bat's wing, an arm up to the wrist, two fingers down from it, membrane between
+    # wings behind, from the shoulders: an arm up to the wrist, two fingers down from it, the
+    # membrane scalloped between them; the wrist stays two pixels clear of the head
     for sd in (-1, 1):
-        sx, w = 20 + sd * 5, wing
-        wx, wy = sx + sd * (6 + w * 2), 15 - w * 6
-        tips = [(wx + sd * (4 + w), wy + 4.5 - w * 2), (wx + sd * 2, wy + 12.5 - w * .75)]
-        edge = ((tips[0][0] + tips[1][0]) / 2 - sd * 1.8, (tips[0][1] + tips[1][1]) / 2)  # curving in between the tips
-        c.part(POLY([(sx, 23.5), (wx, wy), tips[0], edge, tips[1], (sx + sd * 3, 29), (sx, 29)]), M)
-        c.part(LIMB(sx, 23.5, wx, wy, .65), M, flat=2, cast=0)
-        for tip in tips:
-            c.part(LIMB(wx, wy, tip[0] - sd * .4, tip[1] - .2, .5), M, flat=2, cast=0)
-    # the tail, curling out to the right, a spade at its tip
-    c.part(LIMB(25, 34, 31, 35, 2.4, 1.6), C, k=-1)
-    c.part(LIMB(31, 35, 33.5, 31.5, 1.6, 1), C, k=-1)
-    c.part(POLY([(32.5, 31.8), (35.5, 28.8), (35, 32.6)]), M, flat=3)
-    c.part(ELL(15.5, 36.6, 3, 1.8), C, k=-1)
-    c.part(ELL(24.5, 36.6, 3, 1.8), C, k=-1)
-    c.part(ELL(20, 30.5 - puff * .5, 8 + puff * .4, 6.8 + puff * .5), C)  # the chest a pixel out when proud
-    c.part(ELL(20, 32 - puff * .5, 4.8 + puff * .4, 4.6 + puff * .5), B, flat=3, cast=0)  # a flat, lighter belly
-    # the head: short horns curving back to a point, a small crest, the skull, then the muzzle
+        ax, ay, w = 20 + sd * 6, 25, wing
+        wx, wy = ax + sd * (5 + 3.5 * w), 20 - 9 * w
+        t1, t2, root = (wx + sd * (3 + .5 * w), wy + 5 - 2 * w), (wx + sd * .5, wy + 9.5 - 1.5 * w), (ax - sd, 28.5)
+        e1 = ((t1[0] + t2[0]) / 2 - sd * 1.6, (t1[1] + t2[1]) / 2 - .5)
+        e2 = ((t2[0] + root[0]) / 2, (t2[1] + root[1]) / 2 - 1.6)
+        c.part(POLY([(ax, ay), (wx, wy), t1, e1, t2, e2, root]), M, flat=2, cast=0)
+        c.part(LIMB(ax, ay, wx, wy, .7), M, flat=4, cast=0)
+        for tip in (t1, t2):
+            c.part(LIMB(wx, wy, tip[0] - sd * .4, tip[1] - .3, .5), M, flat=4, cast=0)
+    # the tail, out to the right and up, a spade at its tip
+    pts = [(25, 35.6), (30.5, 36.3), (34.8, 35), (37, 32)]
+    for i in range(3):
+        c.part(LIMB(*pts[i], *pts[i + 1], 2.3 - i / 3, 2.3 - (i + 1) / 3), C, flat=2, cast=0)
+    c.part(POLY([(37, 26.6), (40, 31.2), (37, 30.2), (34, 31.2)]), M, flat=2, cast=0)
+    # sitting: haunches, the body, a neck in shadow under the chin, the belly's plates, clawed feet
+    for sd in (-1, 1):
+        c.part(ELL(20 + sd * 6.8, 34.4, 4, 3.6), C, k=-1)
+    c.part(ELL(20, 29.6 - puff * .4, 7.2 + puff * .4, 8.2), C)  # the chest out when proud
+    c.part(ELL(20, 23.4, 5.2, 2.4), C, flat=2, cast=0)
+    by, bw, bh = 30.6 - puff * .4, 4.4 + puff * .4, 5.2
+    c.part(ELL(20, by, bw, bh), H, flat=3, cast=0)
+    for y in (28, 31, 34):
+        hw = bw * math.sqrt(max(0, 1 - ((y + .5 - by) / bh) ** 2))
+        x0, x1 = math.ceil(20 - hw - .5), math.floor(20 + hw - .5)
+        c.dot(x0, y, H[2], x1 - x0 + 1, 1)
+    for fx in (15.2, 24.8):
+        c.part(ELL(fx, 36.7, 2.9, 1.7), C)
+        for d in (-2, 0, 2):
+            c.dot(fx + d, 37, H[4])
+    # the head: short horns curving back to a point, a small crest, the skull, then the snout
     for sd in (-1, 1):
         c.part(POLY([(20 + sd * 3, 10.2 + hy), (20 + sd * 4.6, 7.4 + hy), (20 + sd * 6.6, 5.6 + hy), (20 + sd * 8.6, 5.2 + hy),
                      (20 + sd * 7, 7 + hy), (20 + sd * 6.4, 10.4 + hy)]), H)
-    c.part(POLY([(18.6, 9.5 + hy), (20, 6.5 + hy), (21.4, 9.5 + hy)]), M, flat=3)
-    c.part(ELL(20, 15 + hy, 8.4, 6.6), C)
-    c.part(ELL(20, 20.3 + hy - chin, 4.6, 4), C)  # the muzzle, standing out below the skull
-    c.part(LIMB(13, 27, 10.5 - la * .2, 31 - la, 1.8), C)
-    c.part(LIMB(27, 27, 29.5 + (.5 if ra > 5 else 0), 31 - ra, 1.8), C)
+    c.part(POLY([(18.6, 9.5 + hy), (20, 6.5 + hy), (21.4, 9.5 + hy)]), M, flat=2)
+    c.part(ELL(20, 15 + hy, 9, 6.8), C)
+    c.part(ELL(20, 19.6 + hy - chin, 5.4, 3.7), C, flat=4, cast=0)
+    # the arms in one tone: shaded, three pixels of arm were specks on the flank
+    c.part(LIMB(13.5, 27, 11.5 - la * .2, 31 - la, 1.7), C, flat=4)
+    c.part(LIMB(26.5, 27, 28.5 + (.5 if ra > 5 else 0), 31 - ra, 1.7), C, flat=4)
     E = _round(13 + hy)
     if eye == "smug":  # half shut: a lid across the top of each eye, the pupil under it
         for i, x in enumerate((15, 23)):
@@ -1291,7 +1308,7 @@ def dragon(F: Frame, col: str):
     else:
         F.eyes([15, 23], E, eye, 3)
     ny = E + 5 - chin
-    for x in (18, 22):  # nostrils: small slits on top of the muzzle
+    for x in (18, 22):  # nostrils: small slits on top of the snout
         c.dot(x, ny, C[1])
     if dead:  # it sneezed: soot on its face, smoke out of both nostrils, drifting out past its cheeks
         c.dot(16, E + 6, "#3a3440", 3, 1, .8)
@@ -1315,11 +1332,7 @@ def dragon(F: Frame, col: str):
             q = (k - .6) / .2
             for x in (18, 22):
                 c.dot(x + (1 if x > 20 else -1) * _round(1 + q * 3), ny + 1 + _round(q * 1.5), "#e4e8f0", 1, 1, 1 - q * .7)
-    if s == "speaking":
-        # A puff of fire once a second out of the side of its mouth, drifting out and up, cooling to
-        # smoke. Every speaking row draws the same puff at the same moment, only smaller when
-        # quieter, so it carries on as the voice changes row; with no voice none is born, but one on
-        # its way finishes.
+    if s == "speaking":  # a puff of fire once a second out of the side of its mouth, cooling to smoke
         k, g = F.cycle(1), .55 + .45 * V
         for j in range(3):
             q = k - j * .1

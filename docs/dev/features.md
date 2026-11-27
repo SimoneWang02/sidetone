@@ -353,7 +353,9 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
     side view, "the one that I like the least"), a grumpy toadstool (one piece, the cap on its
     stem: "the head seems very detached from the body"), a sweet axolotl (gills as fronds that
     fan with the voice) and a proud dragon whelp (two-finger wings, smug in idle, a snort of
-    smoke), and since its rework a sneaky mimic (an innocent treasure chest nearly shut, eyes
+    smoke; redrawn 2026-11-26 with a neck, a belly of cream plates, wings darker than the body
+    and clear of the head, haunches, clawed feet and a longer tail, its acting kept: previewed
+    beside the old one, then in), and since its rework a sneaky mimic (an innocent treasure chest nearly shut, eyes
     glinting in the gap, fangs when it opens, wooden planks with its metal in the session's
     color; the author: "It looks good ... you can put that"), eight in all, ten with the cat and the dog below. Previewed, reviewed
     by subagents (a pixel-art critic among them) and simplified before going in. Character Pick (`overlay.character_pick`): by session
@@ -2201,7 +2203,7 @@ Claude sessions ──hooks (bash + curl)──▶ hub (Python, in the Kokoro ve
 On 2026-11-26 the comments were cut back to what the code cannot show (a constraint, a measured fact, a platform quirk); what the author said, when, and how a thing was before went out of them. Most of it was already in this file. These are the words that were in no document yet, each with the file and the setting or the comment it stood at. The whole comment as it was is in that file's history (`git log -S "a few of its words" -- FILE`).
 
 - `docs/dev/looks/familiars_next.py`, at "A familiar to come, as a preview ..." (2026-11-26): "I feel like the turtle is the one that I like the least. And the mushroom person, like the head seems very detached from the body"
-- `docs/dev/looks/familiars_next.py`, at "Proud, redrawn: the head on a neck ..." (2026-11-26): "the dragon familiar is not very detailed ... His central body is a bit weird". Measured on the live one: head and chest both 17 px wide with the muzzle 3 px into the chest (no neck), a belly of one tone, wings as light as the body and touching the head, a 4 px tail.
+- `hub/characters.py`, at "Proud: a whelp in the session's color ..." (2026-11-26): "the dragon familiar is not very detailed ... His central body is a bit weird"; of the redrawn one's preview, as transcribed: "Yeah, I used the Wii drone", taken as "use the redrawn". Measured on the one before: head and chest both 17 px wide with the muzzle 3 px into the chest (no neck), a belly of one tone, wings as light as the body and touching the head, a 4 px tail.
 - `docs/dev/looks/familiars_next.py`, at "A familiar to come, as a preview ..." (2026-11-26): "any other familiars who would be cool, dragons and stuff?"
 - `docs/dev/looks/familiars_next.py`, at "A familiar to come, as a preview ...": "do a preview. Don't delete the turtle yet. Revamp it. We can maybe do more than 5"
 - `docs/dev/looks/familiars_next.py`, at "A familiar to come, as a preview ...": "improve but don't stray from the main idea"
